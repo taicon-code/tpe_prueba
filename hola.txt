@@ -1,2 +1,4 @@
 git clon = descarga todos lo subido a GitHub
 gti pull = solo los nuevo archivos adjuntados (de la nube a la pc)
+git add ___  = subir a la nube pero sin confirmar
+git commit -m "descripción" = sube para confimar con una descripcion
