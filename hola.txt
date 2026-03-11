@@ -1,1 +1,2 @@
-sfsdafasd
+git clon = descarga todos lo subido a GitHub
+gti pull = solo los nuevo archivos adjuntados (de la nube a la pc)
