@@ -83,7 +83,7 @@ class PM(models.Model):
         ('RESERVA_ACTIVA', 'Reserva Activa'),
     ]
 
-    PM_CI        = models.DecimalField(max_digits=8, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
+    PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
     PM_ESCALAFON = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
     PM_GRADO     = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado')
     PM_ARMA      = models.CharField(max_length=20, choices=ARMA_CHOICES,      null=True, blank=True, verbose_name='Arma')
@@ -114,7 +114,7 @@ class PM(models.Model):
 # ============================================================
 class ABOG(models.Model):
 
-    AB_CI      = models.DecimalField(max_digits=8, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
+    AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
     AB_GRADO   = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
     AB_ARMA    = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
     AB_ESPEC   = models.CharField(max_length=15, null=True, blank=True, verbose_name='Especialidad')
