@@ -1,2 +1,0 @@
-nuevo código, creo que el add es como colocar la bola en el cañon
-y el git push es apretar el botón de lanzamiento

@@ -1,3 +1,0 @@
-git add hola3.txt    solo para estar seguro primero colocar la bala al cañon
-git commit -m "coordenadas y objetivo"                 decir donde estas apuntando  y a que coordenadas "destrucción de aeropuerto"
-git push        y tecer paso apretar el botón de lanzamiento
