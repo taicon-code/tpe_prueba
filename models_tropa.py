@@ -1,8 +1,6 @@
 # ============================================================
 #  MODELOS DJANGO — SISTEMA DE SUMARIOS INFORMATIVOS MILITARES
-#  Versión 3.0 — Sincronizado con db_sumarios_v1.2
-#  Correcciones: SIM_FECING, SIM_ESTADO, RES_EDICTO, RR_FECLIMITE,
-#                RAP_FECLIMITE, RES_TIPO completo, DocumentoAdjunto
+#  Versión 3.1 — Agrega escalafón TROPA y grado DRAGONEANTE en PM
 # ============================================================
 
 from django.db import models
@@ -75,9 +73,9 @@ class PM(models.Model):
         ('COMUNICACIONES',  'Comunicaciones'),
         ('INTENDENCIA',     'Intendencia'),
         ('SANIDAD',         'Sanidad'),
-        ('TOPGRAFIA',       'TOPOGRAFIA'),
+        ('JAM',             'JAM'),
         ('AVIACION',        'Aviación del Ejército'),
-        ('MUSICA',          'MÚSICA'),
+        ('POLICIA_MILITAR', 'Policía Militar'),
     ]
     ESTADO_CHOICES = [
         ('ACTIVO',         'Activo'),
@@ -86,7 +84,7 @@ class PM(models.Model):
         ('RESERVA_ACTIVA', 'Reserva Activa'),
     ]
 
-    PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
+    PM_CI        = models.DecimalField(max_digits=8, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
     PM_ESCALAFON = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
     PM_GRADO     = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado')
     PM_ARMA      = models.CharField(max_length=20, choices=ARMA_CHOICES,      null=True, blank=True, verbose_name='Arma')
@@ -105,19 +103,14 @@ class PM(models.Model):
 
     def __str__(self):
         return f"{self.get_PM_GRADO_display()} {self.PM_NOMBRE} {self.PM_PATERNO}"
-    def save(self, *args, **kwargs):
-        self.PM_NOMBRE  = self.PM_NOMBRE.upper()  if self.PM_NOMBRE  else self.PM_NOMBRE
-        self.PM_PATERNO = self.PM_PATERNO.upper() if self.PM_PATERNO else self.PM_PATERNO
-        self.PM_MATERNO = self.PM_MATERNO.upper() if self.PM_MATERNO else self.PM_MATERNO
-        self.PM_ESPEC   = self.PM_ESPEC.upper()   if self.PM_ESPEC   else self.PM_ESPEC
-        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 2: ABOG — Abogados del Tribunal
 # ============================================================
 class ABOG(models.Model):
 
-    AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
+    AB_CI      = models.DecimalField(max_digits=8, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
     AB_GRADO   = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
     AB_ARMA    = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
     AB_ESPEC   = models.CharField(max_length=15, null=True, blank=True, verbose_name='Especialidad')
@@ -133,12 +126,7 @@ class ABOG(models.Model):
 
     def __str__(self):
         return f"{self.AB_GRADO} {self.AB_NOMBRE} {self.AB_PATERNO}"
-    def save(self, *args, **kwargs):
-        self.AB_NOMBRE  = self.AB_NOMBRE.upper()  if self.AB_NOMBRE  else self.AB_NOMBRE
-        self.AB_PATERNO = self.AB_PATERNO.upper() if self.AB_PATERNO else self.AB_PATERNO
-        self.AB_MATERNO = self.AB_MATERNO.upper() if self.AB_MATERNO else self.AB_MATERNO
-        self.AB_ESPEC   = self.AB_ESPEC.upper()   if self.AB_ESPEC   else self.AB_ESPEC
-        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 3: SIM — Sumario Informativo Militar (tabla central)
@@ -263,14 +251,7 @@ class AUTOTPE(models.Model):
 
     def __str__(self):
         return f"{self.TPE_NUM} — {self.get_TPE_TIPO_display()}"
-    def save(self, *args, **kwargs):
-        self.TPE_NUM          = self.TPE_NUM.upper()          if self.TPE_NUM          else self.TPE_NUM
-        self.TPE_RESOL        = self.TPE_RESOL.upper()        if self.TPE_RESOL        else self.TPE_RESOL
-        self.TPE_NOT          = self.TPE_NOT.upper()          if self.TPE_NOT          else self.TPE_NOT
-        self.TPE_EDICTO_PERIOD= self.TPE_EDICTO_PERIOD.upper()if self.TPE_EDICTO_PERIOD else self.TPE_EDICTO_PERIOD
-        self.TPE_EJECU_NOT    = self.TPE_EJECU_NOT.upper()    if self.TPE_EJECU_NOT    else self.TPE_EJECU_NOT
-        self.TPE_MEMO_NUM     = self.TPE_MEMO_NUM.upper()     if self.TPE_MEMO_NUM     else self.TPE_MEMO_NUM
-        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 6: RES — Primera Resolución del TPE
@@ -321,14 +302,7 @@ class RES(models.Model):
 
     def __str__(self):
         return f"{self.RES_NUM} — {self.get_RES_TIPO_display()}"
-    def save(self, *args, **kwargs):
-        self.RES_NUM   = self.RES_NUM.upper()   if self.RES_NUM   else self.RES_NUM
-        self.RES_RESOL = self.RES_RESOL.upper() if self.RES_RESOL else self.RES_RESOL
-        self.RES_RESUM = self.RES_RESUM.upper() if self.RES_RESUM else self.RES_RESUM
-        self.RES_NOT   = self.RES_NOT.upper()   if self.RES_NOT   else self.RES_NOT
-        self.RES_AGENDA= self.RES_AGENDA.upper()if self.RES_AGENDA else self.RES_AGENDA
-        self.RES_EDICTO_PERIOD = self.RES_EDICTO_PERIOD.upper() if self.RES_EDICTO_PERIOD else self.RES_EDICTO_PERIOD
-        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 7: RR — Segunda Resolución (Recurso de Reconsideración)
@@ -364,13 +338,6 @@ class RR(models.Model):
 
     def __str__(self):
         return f"{self.RR_NUM} — {self.RR_RESUM or 'Sin resumen'}"
-    def save(self, *args, **kwargs):
-        self.RR_NUM    = self.RR_NUM.upper()    if self.RR_NUM    else self.RR_NUM
-        self.RR_RESOL  = self.RR_RESOL.upper()  if self.RR_RESOL  else self.RR_RESOL
-        self.RR_RESUM  = self.RR_RESUM.upper()  if self.RR_RESUM  else self.RR_RESUM
-        self.RR_NOT    = self.RR_NOT.upper()    if self.RR_NOT    else self.RR_NOT
-        self.RR_AGENDA = self.RR_AGENDA.upper() if self.RR_AGENDA else self.RR_AGENDA
-        super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):
         """Devuelve color de alerta según proximidad a RR_FECLIMITE."""
@@ -420,14 +387,6 @@ class RAP(models.Model):
 
     def __str__(self):
         return f"{self.RAP_NUM or 'Sin número'} — {self.ID_SIM.SIM_COD}"
-    
-    def save(self, *args, **kwargs):
-        self.RAP_OFI   = self.RAP_OFI.upper()   if self.RAP_OFI   else self.RAP_OFI
-        self.RAP_NUM   = self.RAP_NUM.upper()   if self.RAP_NUM   else self.RAP_NUM
-        self.RAP_RESOL = self.RAP_RESOL.upper() if self.RAP_RESOL else self.RAP_RESOL
-        self.RAP_RESUM = self.RAP_RESUM.upper() if self.RAP_RESUM else self.RAP_RESUM
-        self.RAP_NOT   = self.RAP_NOT.upper()   if self.RAP_NOT   else self.RAP_NOT
-        super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):
         """Devuelve color de alerta según proximidad a RAP_FECLIMITE."""
@@ -477,14 +436,7 @@ class RAEE(models.Model):
 
     def __str__(self):
         return f"{self.RAE_NUM or 'Sin número'} — {self.ID_SIM.SIM_COD}"
-    def save(self, *args, **kwargs):
-        self.RAE_OFI   = self.RAE_OFI.upper()   if self.RAE_OFI   else self.RAE_OFI
-        self.RAE_NUM   = self.RAE_NUM.upper()   if self.RAE_NUM   else self.RAE_NUM
-        self.RAE_RESOL = self.RAE_RESOL.upper() if self.RAE_RESOL else self.RAE_RESOL
-        self.RAE_RESUM = self.RAE_RESUM.upper() if self.RAE_RESUM else self.RAE_RESUM
-        self.RAE_NOT   = self.RAE_NOT.upper()   if self.RAE_NOT   else self.RAE_NOT
-        self.RAE_AGENDA= self.RAE_AGENDA.upper()if self.RAE_AGENDA else self.RAE_AGENDA
-        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 10: AUTOTSP — Autos del TSP
@@ -530,13 +482,7 @@ class AUTOTSP(models.Model):
 
     def __str__(self):
         return f"{self.TSP_NUM} — {self.get_TSP_TIPO_display()}"
-    def save(self, *args, **kwargs):
-        self.TSP_NUM          = self.TSP_NUM.upper()          if self.TSP_NUM          else self.TSP_NUM
-        self.TSP_RESOL        = self.TSP_RESOL.upper()        if self.TSP_RESOL        else self.TSP_RESOL
-        self.TSP_NOT          = self.TSP_NOT.upper()          if self.TSP_NOT          else self.TSP_NOT
-        self.TSP_EDICTO_PERIOD= self.TSP_EDICTO_PERIOD.upper()if self.TSP_EDICTO_PERIOD else self.TSP_EDICTO_PERIOD
-        self.TSP_EJECU_NOT    = self.TSP_EJECU_NOT.upper()    if self.TSP_EJECU_NOT    else self.TSP_EJECU_NOT
-        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 11: DocumentoAdjunto — PDFs escaneados (2013–2026)
