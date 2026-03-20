@@ -9,7 +9,10 @@ set DB_USER=root
 set DB_NAME=db_sumarios_militares
 set DB_HOST=127.0.0.1
 set DB_PORT=3306
-set ONEDRIVE=C:\Users\%USERNAME%\OneDrive\backups_tpe
+set ONEDRIVE=C:\Users\%USERNAME%\OneDrive\  
+
+
+backups_tpe
 set MYSQL="C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 
 echo.

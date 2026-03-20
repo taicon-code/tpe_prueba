@@ -12,7 +12,7 @@ set DB_HOST=127.0.0.1
 set DB_PORT=3306
 
 :: Carpeta de destino en OneDrive — cambia el path según tu PC
-set ONEDRIVE=C:\Users\%USERNAME%\OneDrive\backups_tpe
+set ONEDRIVE=C:\Users\%USERNAME%\OneDrive\TPEsystem\BBDD\backups_tpe
 
 :: Path de mysqldump — ajusta si MySQL está en otra ruta
 set MYSQLDUMP="C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe"
