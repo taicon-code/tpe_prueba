@@ -17,6 +17,10 @@ class PMAdmin(admin.ModelAdmin):
     list_filter     = ('PM_ESCALAFON', 'PM_ARMA', 'PM_ESTADO')
     search_fields   = ('PM_CI', 'PM_PATERNO', 'PM_NOMBRE')
     ordering        = ('PM_PATERNO', 'PM_NOMBRE')
+    
+    class Media:
+        js = ('js/filtro_grado.js',)
+
     fieldsets = (
         ('Datos Personales', {
             'fields': ('PM_CI', 'PM_NOMBRE', 'PM_PATERNO', 'PM_MATERNO')
