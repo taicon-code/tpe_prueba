@@ -1,0 +1,52 @@
+/* ============================================================
+   tpe_app/static/tpe_app/css/admin_custom.css
+   Colorea las 3 secciones del panel admin por tribunal
+   ============================================================ */
+
+/* ── Sección 1: Sumario Informativo Militar — Azul ────────── */
+#content-main .app-tpe_app .model-pm,
+#content-main .app-tpe_app .model-abog,
+#content-main .app-tpe_app .model-sim {
+    border-left: 4px solid #185FA5;
+}
+
+#content-main .app-tpe_app .model-pm caption,
+#content-main .app-tpe_app .model-abog caption,
+#content-main .app-tpe_app .model-sim caption {
+    background-color: #E6F1FB;
+    color: #0C447C;
+    font-weight: 600;
+    padding: 8px 12px;
+}
+
+/* ── Sección 2: Tribunal de Personal del Ejército — Verde ─── */
+#content-main .app-tpe_app .model-res,
+#content-main .app-tpe_app .model-rr,
+#content-main .app-tpe_app .model-autotpe {
+    border-left: 4px solid #3B6D11;
+}
+
+#content-main .app-tpe_app .model-res caption,
+#content-main .app-tpe_app .model-rr caption,
+#content-main .app-tpe_app .model-autotpe caption {
+    background-color: #EAF3DE;
+    color: #27500A;
+    font-weight: 600;
+    padding: 8px 12px;
+}
+
+/* ── Sección 3: Tribunal Superior FF.AA. — Morado ──────────── */
+#content-main .app-tpe_app .model-rap,
+#content-main .app-tpe_app .model-raee,
+#content-main .app-tpe_app .model-autotsp {
+    border-left: 4px solid #534AB7;
+}
+
+#content-main .app-tpe_app .model-rap caption,
+#content-main .app-tpe_app .model-raee caption,
+#content-main .app-tpe_app .model-autotsp caption {
+    background-color: #EEEDFE;
+    color: #3C3489;
+    font-weight: 600;
+    padding: 8px 12px;
+}

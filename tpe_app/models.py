@@ -75,9 +75,9 @@ class PM(models.Model):
         ('COMUNICACIONES',  'Comunicaciones'),
         ('INTENDENCIA',     'Intendencia'),
         ('SANIDAD',         'Sanidad'),
-        ('TOPGRAFIA',       'TOPOGRAFIA'),
+        ('TOPOGRAFIA',       'Topografía'),
         ('AVIACION',        'Aviación del Ejército'),
-        ('MUSICA',          'MÚSICA'),
+        ('MÚSICA',          'Música'),
     ]
     ESTADO_CHOICES = [
         ('ACTIVO',         'Activo'),
@@ -147,19 +147,23 @@ class SIM(models.Model):
 
     TIPO_CHOICES = [
         ('DISCIPLINARIO',  'Disciplinario'),
-        ('ADMINISTRATIVO', 'Administrativo'),
-        ('PENAL',          'Penal'),
+        ('LETRA D',        'Letra D'),
+        ('RESTITUCIÓN ANTIGUEDAD', 'Restición Antiguedad'),
+        ('ASCENSO AL GRADO INMEDIATO SUPERIOR', 'Ascenso al Grado Inmediato Superior'),
+        ('ASCENSO POSTUMO', 'Ascenso Postumo'),
+        ('Licencia Maxima', 'Licencia Máxima'),
     ]
 
     # ✅ CORREGIDO v1.2: estados del sumario
     ESTADO_CHOICES = [
-        ('RADICADO_TPE',      'Radicado en el TPE'),
-        ('PARA_AGENDA',       'Para Agenda'),
+        ('PARA_AGENDA',      'Para Agenda'),
+        ('PROCESO_EN_EL_TPE', 'Proceso en el TPE'),
         ('EN_APELACION_TSP',  'En Apelación TSP'),
     ]
 
     ID_ABOG   = models.ForeignKey(
-                    ABOG, on_delete=models.RESTRICT,
+                    ABOG, on_delete=models.SET_NULL,
+                    null=True, blank=True,
                     db_column='ID_ABOG', verbose_name='Abogado')
     militares = models.ManyToManyField(
                     PM, through='PM_SIM', verbose_name='Militares investigados')
@@ -170,11 +174,11 @@ class SIM(models.Model):
     # ✅ NUEVO v1.2: estado del sumario
     SIM_ESTADO    = models.CharField(
                         max_length=20, choices=ESTADO_CHOICES,
-                        default='RADICADO_TPE', verbose_name='Estado del Sumario')
+                        default='PARA_AGENDA', verbose_name='Estado')
     SIM_OBJETO    = models.TextField(verbose_name='Objeto del sumario')
     SIM_RESUM     = models.CharField(max_length=200, verbose_name='Resumen')
     SIM_AUTOFINAL = models.TextField(null=True, blank=True, verbose_name='Auto Final / Dictamen')
-    SIM_TIPO      = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name='Tipo')
+    SIM_TIPO      = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo')
     SIM_FECREG    = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Registro')
 
     class Meta:

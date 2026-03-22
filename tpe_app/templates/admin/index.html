@@ -1,0 +1,206 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+
+{% if app_list %}
+
+  <!-- ══════════════════════════════════════════════════════
+       SECCIÓN 1 — SUMARIO INFORMATIVO MILITAR
+       ══════════════════════════════════════════════════════ -->
+  <div style="margin-bottom:30px;">
+    <div style="
+      background: linear-gradient(90deg, #185FA5, #378ADD);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px 6px 0 0;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    ">
+      Sumario Informativo Militar
+    </div>
+    <div style="
+      border: 1px solid #B5D4F4;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      padding: 12px;
+      background: #F7FBFF;
+    ">
+      {% for app in app_list %}
+        {% for model in app.models %}
+          {% if model.object_name == 'PM' or model.object_name == 'ABOG' or model.object_name == 'SIM' %}
+            <div style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 8px 12px;
+              margin-bottom: 6px;
+              background: white;
+              border-left: 4px solid #185FA5;
+              border-radius: 4px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            ">
+              <span style="font-weight:500; color:#0C447C; font-size:14px;">
+                {{ model.name }}
+              </span>
+              <span style="display:flex; gap:8px;">
+                {% if model.add_url %}
+                  <a href="{{ model.add_url }}" style="
+                    background:#185FA5; color:white;
+                    padding:4px 12px; border-radius:4px;
+                    text-decoration:none; font-size:12px;
+                  ">+ Agregar</a>
+                {% endif %}
+                {% if model.admin_url %}
+                  <a href="{{ model.admin_url }}" style="
+                    background:#E6F1FB; color:#185FA5;
+                    padding:4px 12px; border-radius:4px;
+                    text-decoration:none; font-size:12px;
+                    border: 1px solid #B5D4F4;
+                  ">Ver lista</a>
+                {% endif %}
+              </span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECCIÓN 2 — TRIBUNAL DE PERSONAL DEL EJÉRCITO (TPE)
+       ══════════════════════════════════════════════════════ -->
+  <div style="margin-bottom:30px;">
+    <div style="
+      background: linear-gradient(90deg, #3B6D11, #639922);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px 6px 0 0;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    ">
+      Tribunal de Personal del Ejército — TPE
+    </div>
+    <div style="
+      border: 1px solid #C0DD97;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      padding: 12px;
+      background: #F5FBF0;
+    ">
+      {% for app in app_list %}
+        {% for model in app.models %}
+          {% if model.object_name == 'RES' or model.object_name == 'RR' or model.object_name == 'AUTOTPE' %}
+            <div style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 8px 12px;
+              margin-bottom: 6px;
+              background: white;
+              border-left: 4px solid #3B6D11;
+              border-radius: 4px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            ">
+              <span style="font-weight:500; color:#27500A; font-size:14px;">
+                {{ model.name }}
+              </span>
+              <span style="display:flex; gap:8px;">
+                {% if model.add_url %}
+                  <a href="{{ model.add_url }}" style="
+                    background:#3B6D11; color:white;
+                    padding:4px 12px; border-radius:4px;
+                    text-decoration:none; font-size:12px;
+                  ">+ Agregar</a>
+                {% endif %}
+                {% if model.admin_url %}
+                  <a href="{{ model.admin_url }}" style="
+                    background:#EAF3DE; color:#3B6D11;
+                    padding:4px 12px; border-radius:4px;
+                    text-decoration:none; font-size:12px;
+                    border: 1px solid #C0DD97;
+                  ">Ver lista</a>
+                {% endif %}
+              </span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SECCIÓN 3 — TRIBUNAL SUPERIOR DE PERSONAL FF.AA. (TSP)
+       ══════════════════════════════════════════════════════ -->
+  <div style="margin-bottom:30px;">
+    <div style="
+      background: linear-gradient(90deg, #3C3489, #7F77DD);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 6px 6px 0 0;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    ">
+      Tribunal Superior de Personal FF.AA. — TSP
+    </div>
+    <div style="
+      border: 1px solid #AFA9EC;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      padding: 12px;
+      background: #F5F4FE;
+    ">
+      {% for app in app_list %}
+        {% for model in app.models %}
+          {% if model.object_name == 'RAP' or model.object_name == 'RAEE' or model.object_name == 'AUTOTSP' %}
+            <div style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 8px 12px;
+              margin-bottom: 6px;
+              background: white;
+              border-left: 4px solid #534AB7;
+              border-radius: 4px;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            ">
+              <span style="font-weight:500; color:#3C3489; font-size:14px;">
+                {{ model.name }}
+              </span>
+              <span style="display:flex; gap:8px;">
+                {% if model.add_url %}
+                  <a href="{{ model.add_url }}" style="
+                    background:#534AB7; color:white;
+                    padding:4px 12px; border-radius:4px;
+                    text-decoration:none; font-size:12px;
+                  ">+ Agregar</a>
+                {% endif %}
+                {% if model.admin_url %}
+                  <a href="{{ model.admin_url }}" style="
+                    background:#EEEDFE; color:#534AB7;
+                    padding:4px 12px; border-radius:4px;
+                    text-decoration:none; font-size:12px;
+                    border: 1px solid #AFA9EC;
+                  ">Ver lista</a>
+                {% endif %}
+              </span>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+{% else %}
+  <p>No hay modelos disponibles.</p>
+{% endif %}
+
+</div>
+{% endblock %}
