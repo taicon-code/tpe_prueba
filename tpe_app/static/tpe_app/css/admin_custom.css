@@ -1,0 +1,350 @@
+/* ============================================================
+   tpe_app/static/tpe_app/css/admin_custom.css — v4.0 FORZADO
+   CSS con !important para asegurar que funciona
+   ============================================================ */
+
+/* FORZAR ancho máximo en TODAS las páginas */
+#content-main {
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+}
+
+#content {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+}
+
+body {
+    background-color: #f8f9fa !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESTILOS HOME (index.html)
+   ══════════════════════════════════════════════════════════ */
+
+/* SECCIÓN 1: AZUL */
+.section-sim {
+    margin-bottom: 30px !important;
+}
+
+.section-sim .section-header {
+    background: linear-gradient(90deg, #185FA5, #378ADD) !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    border-radius: 6px 6px 0 0 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.section-sim .section-content {
+    border: 1px solid #B5D4F4 !important;
+    border-top: none !important;
+    border-radius: 0 0 6px 6px !important;
+    padding: 12px !important;
+    background: #F7FBFF !important;
+}
+
+.section-sim .model-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+    background: white !important;
+    border-left: 4px solid #185FA5 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+.section-sim .model-name {
+    font-weight: 500 !important;
+    color: #0C447C !important;
+    font-size: 14px !important;
+}
+
+.section-sim .model-actions a {
+    padding: 4px 12px !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    font-size: 12px !important;
+    margin-left: 8px !important;
+    display: inline-block !important;
+}
+
+.section-sim .btn-add {
+    background: #185FA5 !important;
+    color: white !important;
+}
+
+.section-sim .btn-add:hover {
+    background: #0f3f7a !important;
+}
+
+.section-sim .btn-view {
+    background: #E6F1FB !important;
+    color: #185FA5 !important;
+    border: 1px solid #B5D4F4 !important;
+}
+
+.section-sim .btn-view:hover {
+    background: #d1e5f7 !important;
+}
+
+/* SECCIÓN 2: VERDE */
+.section-tpe {
+    margin-bottom: 30px !important;
+}
+
+.section-tpe .section-header {
+    background: linear-gradient(90deg, #3B6D11, #639922) !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    border-radius: 6px 6px 0 0 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.section-tpe .section-content {
+    border: 1px solid #C0DD97 !important;
+    border-top: none !important;
+    border-radius: 0 0 6px 6px !important;
+    padding: 12px !important;
+    background: #F5FBF0 !important;
+}
+
+.section-tpe .model-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+    background: white !important;
+    border-left: 4px solid #3B6D11 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+.section-tpe .model-name {
+    font-weight: 500 !important;
+    color: #27500A !important;
+    font-size: 14px !important;
+}
+
+.section-tpe .model-actions a {
+    padding: 4px 12px !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    font-size: 12px !important;
+    margin-left: 8px !important;
+    display: inline-block !important;
+}
+
+.section-tpe .btn-add {
+    background: #3B6D11 !important;
+    color: white !important;
+}
+
+.section-tpe .btn-add:hover {
+    background: #2a500b !important;
+}
+
+.section-tpe .btn-view {
+    background: #EAF3DE !important;
+    color: #3B6D11 !important;
+    border: 1px solid #C0DD97 !important;
+}
+
+.section-tpe .btn-view:hover {
+    background: #d9e8c7 !important;
+}
+
+/* SECCIÓN 3: MORADO */
+.section-tsp {
+    margin-bottom: 30px !important;
+}
+
+.section-tsp .section-header {
+    background: linear-gradient(90deg, #3C3489, #7F77DD) !important;
+    color: white !important;
+    padding: 12px 16px !important;
+    border-radius: 6px 6px 0 0 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.section-tsp .section-content {
+    border: 1px solid #AFA9EC !important;
+    border-top: none !important;
+    border-radius: 0 0 6px 6px !important;
+    padding: 12px !important;
+    background: #F5F4FE !important;
+}
+
+.section-tsp .model-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+    background: white !important;
+    border-left: 4px solid #534AB7 !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+
+.section-tsp .model-name {
+    font-weight: 500 !important;
+    color: #3C3489 !important;
+    font-size: 14px !important;
+}
+
+.section-tsp .model-actions a {
+    padding: 4px 12px !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    font-size: 12px !important;
+    margin-left: 8px !important;
+    display: inline-block !important;
+}
+
+.section-tsp .btn-add {
+    background: #534AB7 !important;
+    color: white !important;
+}
+
+.section-tsp .btn-add:hover {
+    background: #3d3580 !important;
+}
+
+.section-tsp .btn-view {
+    background: #EEEDFE !important;
+    color: #534AB7 !important;
+    border: 1px solid #AFA9EC !important;
+}
+
+.section-tsp .btn-view:hover {
+    background: #dddcfd !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESTILOS GENERALES PARA TABLAS
+   ══════════════════════════════════════════════════════════ */
+
+#result_list {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    background: white !important;
+    border: 1px solid #ddd !important;
+    margin-top: 20px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+#result_list thead {
+    background: #f8f9fa !important;
+}
+
+#result_list thead th {
+    padding: 12px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    border-bottom: 2px solid #ddd !important;
+    border-right: 1px solid #ddd !important;
+}
+
+#result_list tbody tr {
+    border-bottom: 1px solid #ddd !important;
+    transition: background-color 0.2s ease !important;
+}
+
+#result_list tbody tr:hover {
+    background-color: #f5f5f5 !important;
+}
+
+#result_list tbody td {
+    padding: 10px 12px !important;
+    border-right: 1px solid #ddd !important;
+}
+
+#result_list tbody td a {
+    color: #0066cc !important;
+    text-decoration: none !important;
+}
+
+#result_list tbody td a:hover {
+    text-decoration: underline !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESTILOS PARA OTROS ELEMENTOS
+   ══════════════════════════════════════════════════════════ */
+
+#changelist-filter {
+    margin-right: 0 !important;
+}
+
+.paginator {
+    text-align: center !important;
+    padding: 20px 0 !important;
+    border-top: 1px solid #ddd !important;
+    margin-top: 20px !important;
+}
+
+.submit-row {
+    text-align: right !important;
+    padding-top: 20px !important;
+    margin-top: 20px !important;
+    border-top: 1px solid #ddd !important;
+}
+
+.button,
+.button:visited {
+    padding: 8px 16px !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    margin-right: 8px !important;
+    cursor: pointer !important;
+}
+
+.button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVO
+   ══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+    #content-main {
+        padding: 10px !important;
+    }
+    
+    .section-sim .model-item,
+    .section-tpe .model-item,
+    .section-tsp .model-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    
+    #result_list {
+        font-size: 12px !important;
+    }
+    
+    #result_list th,
+    #result_list td {
+        padding: 6px !important;
+    }
+}

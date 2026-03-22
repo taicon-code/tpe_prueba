@@ -129,9 +129,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+
+# ✅ CONFIGURACIÓN CORRECTA PARA ARCHIVOS ESTÁTICOS
+# Django busca automáticamente en: tpe_app/static/
+
+# STATIC_ROOT es donde Django copia los archivos en producción
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
