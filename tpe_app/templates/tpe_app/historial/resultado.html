@@ -1,0 +1,686 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Resultado Historial Disciplinario{% endblock %}
+
+{% block content %}
+<style>
+  .resultado-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+
+  .boton-volver {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.3s;
+  }
+
+  .boton-volver:hover {
+    background-color: #5a6268;
+  }
+
+  .mensaje-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .mensaje-informacion {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  /* RESULTADOS MÚLTIPLES */
+  .resultados-multiples {
+    display: grid;
+    gap: 15px;
+  }
+
+  .tarjeta-personal {
+    background: white;
+    border: 1px solid #ddd;
+    border-left: 4px solid #185FA5;
+    padding: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .tarjeta-personal:hover {
+    box-shadow: 0 4px 12px rgba(24, 95, 165, 0.2);
+    transform: translateX(5px);
+  }
+
+  .tarjeta-personal h3 {
+    margin: 0 0 10px 0;
+    color: #185FA5;
+    font-size: 16px;
+  }
+
+  .tarjeta-personal p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 13px;
+  }
+
+  .tarjeta-personal a {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 16px;
+    background-color: #185FA5;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .tarjeta-personal a:hover {
+    background-color: #0d3d7a;
+  }
+
+  /* HISTORIAL COMPLETO */
+  .historial-completo {
+    background: white;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .encabezado-personal {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #185FA5;
+  }
+
+  .datos-personales h2 {
+    color: #185FA5;
+    margin: 0 0 15px 0;
+    font-size: 22px;
+  }
+
+  .dato-fila {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .dato-etiqueta {
+    font-weight: 600;
+    color: #333;
+  }
+
+  .dato-valor {
+    color: #666;
+  }
+
+  .estado-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  .estado-activo {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .estado-en-proceso {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+
+  .estado-en-apelacion {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .resumen-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+  }
+
+  .stat-box {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 15px;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .stat-numero {
+    font-size: 28px;
+    font-weight: 700;
+    color: #185FA5;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+  }
+
+  /* SECCIONES DE HISTORIAL */
+  .seccion-historial {
+    margin-bottom: 40px;
+  }
+
+  .seccion-titulo {
+    background: linear-gradient(90deg, #185FA5, #378ADD);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 4px 4px 0 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .seccion-contador {
+    background-color: rgba(255, 255, 255, 0.3);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .seccion-contenido {
+    border: 1px solid #B5D4F4;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    padding: 0;
+  }
+
+  .sin-datos {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    font-size: 14px;
+    font-style: italic;
+  }
+
+  .registro-item {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    background: white;
+  }
+
+  .registro-item:last-child {
+    border-bottom: none;
+  }
+
+  .registro-item:nth-child(even) {
+    background-color: #f8fbff;
+  }
+
+  .registro-encabezado {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .registro-codigo {
+    font-weight: 700;
+    color: #185FA5;
+    font-family: monospace;
+  }
+
+  .registro-tipo {
+    background-color: #e7f3ff;
+    color: #185FA5;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .registro-detalles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 10px;
+  }
+
+  .detalle {
+    font-size: 13px;
+  }
+
+  .detalle-etiqueta {
+    font-weight: 600;
+    color: #666;
+  }
+
+  .detalle-valor {
+    color: #333;
+  }
+
+  /* TABLA */
+  .tabla {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .tabla thead {
+    background-color: #f8f9fa;
+  }
+
+  .tabla th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  .tabla td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+  }
+
+  .tabla tbody tr:nth-child(even) {
+    background-color: #f8fbff;
+  }
+
+  .tabla tbody tr:hover {
+    background-color: #f0f7ff;
+  }
+
+  /* RESPONSIVO */
+  @media (max-width: 768px) {
+    .encabezado-personal {
+      grid-template-columns: 1fr;
+    }
+
+    .dato-fila {
+      grid-template-columns: 1fr;
+    }
+
+    .resultado-container {
+      padding: 10px;
+    }
+
+    .historial-completo {
+      padding: 15px;
+    }
+
+    .tabla {
+      font-size: 12px;
+    }
+
+    .tabla th, .tabla td {
+      padding: 8px;
+    }
+  }
+</style>
+
+<div class="resultado-container">
+  <a href="{% url 'tpe_app:buscar_historial' %}" class="boton-volver">← Volver a Búsqueda</a>
+
+  {% if error %}
+    <div class="mensaje-error">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  {% if multiples_resultados %}
+    <!-- MOSTRAR MÚLTIPLES RESULTADOS -->
+    <div class="mensaje-informacion">
+      Se encontraron <strong>{{ cantidad_resultados }}</strong> resultados. Haz clic en uno para ver el historial completo.
+    </div>
+
+    <div class="resultados-multiples">
+      {% for personal in personales %}
+        <div class="tarjeta-personal">
+          <h3>{{ personal.PM_NOMBRE }} {{ personal.PM_PATERNO }} {% if personal.PM_MATERNO %}{{ personal.PM_MATERNO }}{% endif %}</h3>
+          <p><strong>Cédula:</strong> {{ personal.PM_CI }}</p>
+          <p><strong>Grado:</strong> {{ personal.get_PM_GRADO_display|default:"N/A" }}</p>
+          <p><strong>Escalafón:</strong> {{ personal.get_PM_ESCALAFON_display|default:"N/A" }}</p>
+          <p><strong>Arma:</strong> {{ personal.get_PM_ARMA_display|default:"N/A" }}</p>
+          <p><strong>Estado:</strong> {{ personal.get_PM_ESTADO_display }}</p>
+          <a href="{% url 'tpe_app:historial_detalle' personal.id %}">Ver Historial Completo →</a>
+        </div>
+      {% endfor %}
+    </div>
+
+  {% elif personal_seleccionado and historial %}
+    <!-- MOSTRAR HISTORIAL COMPLETO -->
+    <div class="historial-completo">
+      
+      <!-- ENCABEZADO PERSONAL -->
+      <div class="encabezado-personal">
+        <div class="datos-personales">
+          <h2>{{ personal_seleccionado.PM_NOMBRE }} {{ personal_seleccionado.PM_PATERNO }} {{ personal_seleccionado.PM_MATERNO }}</h2>
+          
+          <div class="dato-fila">
+            <span class="dato-etiqueta">Cédula:</span>
+            <span class="dato-valor">{{ personal_seleccionado.PM_CI }}</span>
+          </div>
+          
+          <div class="dato-fila">
+            <span class="dato-etiqueta">Grado:</span>
+            <span class="dato-valor">{{ personal_seleccionado.get_PM_GRADO_display|default:"N/A" }}</span>
+          </div>
+          
+          <div class="dato-fila">
+            <span class="dato-etiqueta">Escalafón:</span>
+            <span class="dato-valor">{{ personal_seleccionado.get_PM_ESCALAFON_display|default:"N/A" }}</span>
+          </div>
+          
+          <div class="dato-fila">
+            <span class="dato-etiqueta">Arma:</span>
+            <span class="dato-valor">{{ personal_seleccionado.get_PM_ARMA_display|default:"N/A" }}</span>
+          </div>
+          
+          <div class="dato-fila">
+            <span class="dato-etiqueta">Estado:</span>
+            <span class="dato-valor">{{ personal_seleccionado.get_PM_ESTADO_display }}</span>
+          </div>
+        </div>
+
+        {% if estado %}
+          <div class="resumen-stats">
+            <div class="stat-box">
+              <div class="stat-numero">{{ estado.total_sumarios }}</div>
+              <div class="stat-label">Sumarios</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-numero">{{ estado.total_resoluciones }}</div>
+              <div class="stat-label">Resoluciones</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-numero">{{ estado.total_apelaciones }}</div>
+              <div class="stat-label">Apelaciones</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-numero">{{ estado.total_raees }}</div>
+              <div class="stat-label">RAEE</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- ESTADO ACTUAL -->
+      {% if estado %}
+        <div style="margin-bottom: 30px;">
+          <span class="estado-badge {% if 'TSP' in estado.estado_actual %}estado-en-apelacion{% elif 'TPE' in estado.estado_actual %}estado-en-proceso{% else %}estado-activo{% endif %}">
+            📋 Estado Actual: {{ estado.estado_actual }}
+          </span>
+        </div>
+      {% endif %}
+
+      <!-- SUMARIOS -->
+      {% if historial.sumarios %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            📄 Sumarios Informativos Militares (SIM)
+            <span class="seccion-contador">{{ historial.sumarios.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            {% for sim in historial.sumarios %}
+              <div class="registro-item">
+                <div class="registro-encabezado">
+                  <span class="registro-codigo">{{ sim.SIM_COD }}</span>
+                  <span class="registro-tipo">{{ sim.SIM_TIPO }}</span>
+                </div>
+                <div class="registro-detalles">
+                  <div class="detalle">
+                    <div class="detalle-etiqueta">Objeto:</div>
+                    <div class="detalle-valor">{{ sim.SIM_RESUM }}</div>
+                  </div>
+                  <div class="detalle">
+                    <div class="detalle-etiqueta">Abogado:</div>
+                    <div class="detalle-valor">{{ sim.ID_ABOG|default:"N/A" }}</div>
+                  </div>
+                  <div class="detalle">
+                    <div class="detalle-etiqueta">Fecha Ingreso:</div>
+                    <div class="detalle-valor">{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</div>
+                  </div>
+                  <div class="detalle">
+                    <div class="detalle-etiqueta">Estado:</div>
+                    <div class="detalle-valor">{{ sim.SIM_ESTADO }}</div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- RESOLUCIONES -->
+      {% if historial.resoluciones %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            ✍️ Resoluciones (RES)
+            <span class="seccion-contador">{{ historial.resoluciones.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>Notificado a</th>
+                  <th>Fecha Notif.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for res in historial.resoluciones %}
+                  <tr>
+                    <td><strong>{{ res.RES_NUM }}</strong></td>
+                    <td>{{ res.get_RES_TIPO_display }}</td>
+                    <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                    <td>{{ res.RES_NOT|default:"Pendiente" }}</td>
+                    <td>{{ res.RES_FECNOT|date:"d/m/Y"|default:"N/A" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- SEGUNDAS RESOLUCIONES -->
+      {% if historial.segundas_resoluciones %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            📋 Segundas Resoluciones (RR)
+            <span class="seccion-contador">{{ historial.segundas_resoluciones.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th>Presentado</th>
+                  <th>Notificado</th>
+                  <th>Fecha Notif.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for rr in historial.segundas_resoluciones %}
+                  <tr>
+                    <td><strong>{{ rr.RR_NUM }}</strong></td>
+                    <td>{{ rr.RR_FEC|date:"d/m/Y" }}</td>
+                    <td>{{ rr.RR_FECPRESEN|date:"d/m/Y"|default:"N/A" }}</td>
+                    <td>{{ rr.RR_NOT|default:"Pendiente" }}</td>
+                    <td>{{ rr.RR_FECNOT|date:"d/m/Y"|default:"N/A" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- RECURSOS DE APELACIÓN -->
+      {% if historial.recursos_apelacion %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            🔼 Recursos de Apelación (RAP)
+            <span class="seccion-contador">{{ historial.recursos_apelacion.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Oficio</th>
+                  <th>Fecha Resolución</th>
+                  <th>Notificado</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for rap in historial.recursos_apelacion %}
+                  <tr>
+                    <td><strong>{{ rap.RAP_NUM|default:"Pendiente" }}</strong></td>
+                    <td>{{ rap.RAP_OFI|default:"N/A" }}</td>
+                    <td>{{ rap.RAP_FEC|date:"d/m/Y"|default:"N/A" }}</td>
+                    <td>{{ rap.RAP_NOT|default:"Pendiente" }}</td>
+                    <td><span style="background:#fff3cd;padding:4px 8px;border-radius:3px;font-size:11px;">En apelación</span></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- RAEE -->
+      {% if historial.raees %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            📝 RAEE (Aclaración, Explicación y Enmienda)
+            <span class="seccion-contador">{{ historial.raees.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th>Resumen</th>
+                  <th>Notificado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for raee in historial.raees %}
+                  <tr>
+                    <td><strong>{{ raee.RAE_NUM|default:"N/A" }}</strong></td>
+                    <td>{{ raee.RAE_FEC|date:"d/m/Y"|default:"N/A" }}</td>
+                    <td>{{ raee.RAE_RESUM|default:"N/A" }}</td>
+                    <td>{{ raee.RAE_NOT|default:"Pendiente" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- AUTOS TPE -->
+      {% if historial.autos_tpe %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            ⚖️ Autos del TPE
+            <span class="seccion-contador">{{ historial.autos_tpe.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>Notificado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for auto in historial.autos_tpe %}
+                  <tr>
+                    <td><strong>{{ auto.TPE_NUM }}</strong></td>
+                    <td>{{ auto.get_TPE_TIPO_display }}</td>
+                    <td>{{ auto.TPE_FEC|date:"d/m/Y" }}</td>
+                    <td>{{ auto.TPE_NOT|default:"Pendiente" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- AUTOS TSP -->
+      {% if historial.autos_tsp %}
+        <div class="seccion-historial">
+          <div class="seccion-titulo">
+            ⚖️ Autos del TSP
+            <span class="seccion-contador">{{ historial.autos_tsp.count }}</span>
+          </div>
+          <div class="seccion-contenido">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Tipo</th>
+                  <th>Fecha</th>
+                  <th>Notificado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for auto in historial.autos_tsp %}
+                  <tr>
+                    <td><strong>{{ auto.TSP_NUM }}</strong></td>
+                    <td>{{ auto.get_TSP_TIPO_display }}</td>
+                    <td>{{ auto.TSP_FEC|date:"d/m/Y" }}</td>
+                    <td>{{ auto.TSP_NOT|default:"Pendiente" }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

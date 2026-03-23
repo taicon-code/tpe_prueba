@@ -1,0 +1,225 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Buscar Historial Disciplinario{% endblock %}
+
+{% block content %}
+<style>
+  .buscar-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .buscar-titulo {
+    text-align: center;
+    color: #185FA5;
+    margin-bottom: 30px;
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .buscar-descripcion {
+    text-align: center;
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .formulario {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .campo-grupo {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .campo-grupo.completo {
+    grid-column: 1 / -1;
+  }
+
+  .campo-grupo label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    font-size: 14px;
+  }
+
+  .campo-grupo input {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.3s;
+  }
+
+  .campo-grupo input:focus {
+    outline: none;
+    border-color: #185FA5;
+    box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.1);
+  }
+
+  .botones {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-buscar {
+    background-color: #185FA5;
+    color: white;
+  }
+
+  .btn-buscar:hover {
+    background-color: #0d3d7a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 95, 165, 0.3);
+  }
+
+  .btn-limpiar {
+    background-color: #e0e0e0;
+    color: #333;
+  }
+
+  .btn-limpiar:hover {
+    background-color: #d0d0d0;
+  }
+
+  .mensaje-error {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .mensaje-error.rojo {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+
+  .info-box {
+    background-color: #e7f3ff;
+    border-left: 4px solid #185FA5;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #0c3d78;
+  }
+
+  .info-box i {
+    margin-right: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .formulario {
+      grid-template-columns: 1fr;
+    }
+
+    .buscar-container {
+      margin: 15px;
+      padding: 20px;
+    }
+
+    .botones {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="buscar-container">
+  <h1 class="buscar-titulo">🔍 Consulta de Historial Disciplinario</h1>
+
+  <div class="info-box">
+    ℹ️ Ingresa los datos del personal militar para consultar su historial completo de procesos disciplinarios.
+  </div>
+
+  {% if error %}
+    <div class="mensaje-error {% if 'Error' in error %}rojo{% endif %}">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <form method="POST" class="formulario-buscar">
+    {% csrf_token %}
+
+    <div class="formulario">
+      <div class="campo-grupo">
+        <label for="nombre">Nombre</label>
+        <input 
+          type="text" 
+          id="nombre" 
+          name="nombre" 
+          placeholder="Ej: Juan"
+          value="{{ nombre }}"
+        >
+      </div>
+
+      <div class="campo-grupo">
+        <label for="apellido_paterno">Apellido Paterno</label>
+        <input 
+          type="text" 
+          id="apellido_paterno" 
+          name="apellido_paterno" 
+          placeholder="Ej: García"
+          value="{{ apellido_paterno }}"
+        >
+      </div>
+
+      <div class="campo-grupo">
+        <label for="apellido_materno">Apellido Materno</label>
+        <input 
+          type="text" 
+          id="apellido_materno" 
+          name="apellido_materno" 
+          placeholder="Ej: López"
+          value="{{ apellido_materno }}"
+        >
+      </div>
+
+      <div class="campo-grupo">
+        <label for="cedula">Cédula de Identidad</label>
+        <input 
+          type="text" 
+          id="cedula" 
+          name="cedula" 
+          placeholder="Ej: 1234567"
+          value="{{ cedula }}"
+        >
+      </div>
+    </div>
+
+    <div class="botones">
+      <button type="submit" class="btn btn-buscar">🔍 Buscar Historial</button>
+      <button type="reset" class="btn btn-limpiar">🗑️ Limpiar</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

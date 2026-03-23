@@ -1,0 +1,270 @@
+═══════════════════════════════════════════════════════════════════════════════
+  CONSULTAS DE HISTORIAL DE PERSONAL MILITAR
+═══════════════════════════════════════════════════════════════════════════════
+
+INSTALACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Crea una carpeta: TPEsystem\tpe_app\queries\
+
+2. Crea archivo vacío: TPEsystem\tpe_app\queries\__init__.py
+
+3. Copia el archivo: historial_personal.py en esa carpeta
+
+Estructura final:
+  tpe_app/
+  ├── queries/              ← NUEVA CARPETA
+  │   ├── __init__.py       ← NUEVO (vacío)
+  │   └── historial_personal.py  ← NUEVO (descargado)
+  ├── utils/
+  ├── templates/
+  └── models.py
+
+═══════════════════════════════════════════════════════════════════════════════
+  USO DESDE DJANGO SHELL
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Abre terminal en TPEsystem y ejecuta:
+
+python manage.py shell
+
+PASO 2: Importa las consultas:
+
+from tpe_app.queries.historial_personal import ConsultasHistorialPersonal
+
+PASO 3: Usa las consultas (ver ejemplos abajo)
+
+PASO 4: Para salir escribe: exit()
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 1: BUSCAR PERSONAL POR NOMBRE
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> from tpe_app.queries.historial_personal import ConsultasHistorialPersonal
+
+# Buscar por nombre (parcial)
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> for pm in personales:
+...     print(f"{pm.PM_NOMBRE} {pm.PM_PATERNO} {pm.PM_MATERNO} - CI: {pm.PM_CI}")
+
+Resultado esperado:
+Juan García López - CI: 1234567
+Juan Martínez Pérez - CI: 2345678
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 2: BUSCAR POR APELLIDO PATERNO
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(apellido_paterno="García")
+>>> for pm in personales:
+...     print(f"{pm.PM_NOMBRE} {pm.PM_PATERNO} {pm.PM_MATERNO}")
+
+Resultado:
+Juan García López
+María García Rodríguez
+Pedro García Gómez
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 3: BUSCAR POR APELLIDO PATERNO, MATERNO Y NOMBRE COMPLETO
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(
+...     nombre="Juan",
+...     apellido_paterno="García",
+...     apellido_materno="López"
+... )
+>>> for pm in personales:
+...     print(f"Encontrado: {pm.PM_NOMBRE} {pm.PM_PATERNO} {pm.PM_MATERNO}")
+
+Resultado:
+Encontrado: Juan García López
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 4: BUSCAR POR CÉDULA DE IDENTIDAD
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(ci="1234567")
+>>> if personales.exists():
+...     pm = personales.first()
+...     print(f"Encontrado: {pm.PM_NOMBRE} {pm.PM_PATERNO}")
+
+Resultado:
+Encontrado: Juan García
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 5: OBTENER TODO EL HISTORIAL DE UN PERSONAL
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> # Primero busca el personal
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> personal = personales.first()
+
+>>> # Obtén su historial completo
+>>> historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.id)
+
+>>> # Accede a los datos
+>>> print(f"Sumarios: {historial['sumarios'].count()}")
+>>> print(f"Resoluciones: {historial['resoluciones'].count()}")
+>>> print(f"Apelaciones: {historial['recursos_apelacion'].count()}")
+
+Resultado:
+Sumarios: 3
+Resoluciones: 2
+Apelaciones: 1
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 6: VER HISTORIAL FORMATEADO (TEXTO LEGIBLE)
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> personal = personales.first()
+
+>>> # Obtén el historial formateado
+>>> texto = ConsultasHistorialPersonal.obtener_historial_formateado(personal.id)
+>>> print(texto)
+
+Resultado:
+═══════════════════════════════════════════════════════════════════════════════
+  HISTORIAL DISCIPLINARIO
+═══════════════════════════════════════════════════════════════════════════════
+
+PERSONAL:
+  Nombre:          Juan García López
+  Cédula:          1234567
+  Grado:           Teniente
+  Escalafón:       Oficial Subalterno
+  Arma:            Infantería
+  Estado:          Activo
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SUMARIOS (SIM):  3 registro(s)
+
+  [DJE-1/26] - Disciplinario
+    Objeto:        Establecer circunstancias de incumplimiento
+    Abogado:       Mayor Rodríguez López
+    Fecha Ingreso: 2026-01-15
+    Estado:        En Apelación TSP
+
+  [DJE-2/26] - Disciplinario
+    Objeto:        Investigación por conducta irregular
+    Abogado:       Capitán Martínez
+    Fecha Ingreso: 2026-02-10
+    Estado:        Proceso en el TPE
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RESOLUCIONES (RES):  2 registro(s)
+
+  [RES-001/26] - Sanción Arresto (Ejecutiva)
+    Fecha:         2026-01-20
+    Notificado:    Juan García López
+    Fecha Notif:   2026-01-21
+
+  [RES-002/26] - Sanción Letra B (Pérdida de Antigüedad)
+    Fecha:         2026-02-15
+    Notificado:    Juan García López
+    Fecha Notif:   2026-02-16
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RECURSOS DE APELACIÓN (RAP):  1 registro(s)
+
+  [RAP-001/26]
+    Fecha Oficio:  2026-02-01
+    Fecha Resolución TSP: 2026-02-28
+    Notificado:    Juan García López
+
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 7: VER ESTADO ACTUAL DEL PERSONAL
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> personal = personales.first()
+
+>>> # Obtén estado resumido
+>>> estado = ConsultasHistorialPersonal.obtener_estado_actual(personal.id)
+
+>>> print(f"Personal: {estado['personal']}")
+>>> print(f"Total sumarios: {estado['total_sumarios']}")
+>>> print(f"Total resoluciones: {estado['total_resoluciones']}")
+>>> print(f"Total apelaciones: {estado['total_apelaciones']}")
+>>> print(f"Estado actual: {estado['estado_actual']}")
+>>> print(f"Último sumario: {estado['ultimo_sumario'].SIM_COD if estado['ultimo_sumario'] else 'N/A'}")
+
+Resultado:
+Personal: Juan García López
+Total sumarios: 3
+Total resoluciones: 2
+Total apelaciones: 1
+Total raees: 0
+Estado actual: En Apelación TSP
+Último sumario: DJE-3/26
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 8: LISTAR TODOS LOS SUMARIOS DE UN PERSONAL
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> personal = personales.first()
+
+>>> # Obtén todos los sumarios
+>>> sumarios = ConsultasHistorialPersonal.obtener_sumarios_de_personal(personal.id)
+
+>>> for sim in sumarios:
+...     print(f"[{sim.SIM_COD}] {sim.SIM_TIPO} - {sim.SIM_RESUM}")
+
+Resultado:
+[DJE-1/26] Disciplinario - Incumplimiento de disposiciones
+[DJE-2/26] Disciplinario - Conducta irregular
+[DJE-3/26] Letra D - Solicitud de permiso médico
+
+═══════════════════════════════════════════════════════════════════════════════
+  EJEMPLO 9: OBTENER DETALLES DE CADA RESOLUCIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> personal = personales.first()
+>>> historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.id)
+
+>>> for res in historial['resoluciones']:
+...     print(f"Resolución: {res.RES_NUM}")
+...     print(f"  Tipo: {res.get_RES_TIPO_display()}")
+...     print(f"  Fecha: {res.RES_FEC}")
+...     print(f"  Sumario: {res.ID_SIM.SIM_COD}")
+...     print()
+
+Resultado:
+Resolución: RES-001/26
+  Tipo: Sanción Arresto (Ejecutiva)
+  Fecha: 2026-01-20
+  Sumario: DJE-1/26
+
+Resolución: RES-002/26
+  Tipo: Sanción Letra B (Pérdida de Antigüedad)
+  Fecha: 2026-02-15
+  Sumario: DJE-2/26
+
+═══════════════════════════════════════════════════════════════════════════════
+  COMANDOS ÚTILES
+═══════════════════════════════════════════════════════════════════════════════
+
+# Contar total de registros
+>>> personales = ConsultasHistorialPersonal.buscar_personal(nombre="Juan")
+>>> print(f"Total de personas encontradas: {personales.count()}")
+
+# Ordenar por fecha de ingreso
+>>> historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.id)
+>>> sims_ordenados = historial['sumarios'].order_by('SIM_FECING')
+
+# Filtrar solo por año
+>>> sims_2026 = historial['sumarios'].filter(SIM_FECING__year=2026)
+>>> print(f"Sumarios en 2026: {sims_2026.count()}")
+
+# Obtener último sumario
+>>> ultimo_sumario = historial['sumarios'].order_by('-SIM_FECING').first()
+>>> print(f"Último sumario: {ultimo_sumario.SIM_COD}")
+
+═══════════════════════════════════════════════════════════════════════════════
