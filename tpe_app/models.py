@@ -37,8 +37,8 @@ class PM(models.Model):
         ('TENIENTE',           'Teniente'),
         ('SUBTENIENTE',        'Subteniente'),
         # Suboficiales
-        ('SUBOFICIAL_MAYOR',   'Suboficial Mayor'),
         ('SUBOFICIAL_MAESTRE', 'Suboficial Maestre'),
+        ('SUBOFICIAL_MAYOR',   'Suboficial Mayor'),      
         ('SUBOFICIAL_1RO',     'Suboficial Primero'),
         ('SUBOFICIAL_2DO',     'Suboficial Segundo'),
         ('SUBOFICIAL_INICIAL', 'Suboficial Inicial'),
@@ -81,9 +81,10 @@ class PM(models.Model):
     ]
     ESTADO_CHOICES = [
         ('ACTIVO',         'Activo'),
+        ('RETIRO OBLIGATORIO', 'Retiro Obligatorio'),
+        ('RESERVA_ACTIVA', 'Reserva Activa'),
         ('BAJA',           'Baja'),
         ('FALLECIDO',      'Fallecido'),
-        ('RESERVA_ACTIVA', 'Reserva Activa'),
     ]
 
     PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
@@ -94,7 +95,7 @@ class PM(models.Model):
     PM_NOMBRE    = models.CharField(max_length=25, verbose_name='Nombre')
     PM_PATERNO   = models.CharField(max_length=25, verbose_name='Apellido Paterno')
     PM_MATERNO   = models.CharField(max_length=25, null=True, blank=True, verbose_name='Apellido Materno')
-    PM_ESTADO    = models.CharField(max_length=15, choices=ESTADO_CHOICES, default='ACTIVO', verbose_name='Estado')
+    PM_ESTADO    = models.CharField(max_length=25, choices=ESTADO_CHOICES, default='ACTIVO', verbose_name='Estado')
     PM_PROMOCION = models.DateField(null=True, blank=True, verbose_name='Fecha de Promoción')
 
     class Meta:
@@ -152,6 +153,7 @@ class SIM(models.Model):
         ('ASCENSO AL GRADO INMEDIATO SUPERIOR', 'Ascenso al Grado Inmediato Superior'),
         ('ASCENSO POSTUMO', 'Ascenso Postumo'),
         ('Licencia Maxima', 'Licencia Máxima'),
+        ('Art. 114 LOFA', 'Artículo 114 LOFA'),
     ]
 
     # ✅ CORREGIDO v1.2: estados del sumario
@@ -232,6 +234,7 @@ class AUTOTPE(models.Model):
         ('AUTO_CUMPLIMIENTO',          'Auto de Cumplimiento'),
         ('AUTO_EJECUTORIA',            'Auto de Ejecutoria'),
         ('AUTO_EXCUSA',                'Auto de Excusa'),
+        ('AUTO_RECHAZO_RECURSO',        'Auto de Rechazo de Recurso'),
     ]
 
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
@@ -293,6 +296,7 @@ class RES(models.Model):
         ('SOLICITUD_ASCENSO',              'Solicitud de Ascenso'),
         ('SOLICITUD_RESTITUCION_ANTIGUEDAD','Solicitud de Restitución de Antigüedad'),
         ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
+        ('SOLICITUD_ART_114_LOFA',           'Solicitud Artículo 114 LOFA'),
         ('OTRO',                           'Otro'),
     ]
 
