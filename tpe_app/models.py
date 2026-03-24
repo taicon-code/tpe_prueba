@@ -5,6 +5,8 @@
 #                RAP_FECLIMITE, RES_TIPO completo, DocumentoAdjunto
 # ============================================================
 
+from typing import Self
+
 from django.db import models
 from django.utils import timezone
 
@@ -118,7 +120,7 @@ class PM(models.Model):
 # ============================================================
 class ABOG(models.Model):
 
-    AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
+    AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, null=True, blank=True, verbose_name='Cédula de Identidad')
     AB_GRADO   = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
     AB_ARMA    = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
     AB_ESPEC   = models.CharField(max_length=15, null=True, blank=True, verbose_name='Especialidad')
@@ -133,8 +135,10 @@ class ABOG(models.Model):
         ordering            = ['AB_PATERNO', 'AB_NOMBRE']
 
     def __str__(self):
-        return f"{self.AB_GRADO} {self.AB_NOMBRE} {self.AB_PATERNO}"
+        return f"{self.AB_GRADO} {self.AB_ARMA} {self.AB_NOMBRE} {self.AB_PATERNO}"
     def save(self, *args, **kwargs):
+        self.AB_GRADO   = self.AB_GRADO.upper()   if self.AB_GRADO   else self.AB_GRADO
+        self.AB_ARMA    = self.AB_ARMA.upper()    if self.AB_ARMA    else self.AB_ARMA
         self.AB_NOMBRE  = self.AB_NOMBRE.upper()  if self.AB_NOMBRE  else self.AB_NOMBRE
         self.AB_PATERNO = self.AB_PATERNO.upper() if self.AB_PATERNO else self.AB_PATERNO
         self.AB_MATERNO = self.AB_MATERNO.upper() if self.AB_MATERNO else self.AB_MATERNO
@@ -200,7 +204,14 @@ class SIM(models.Model):
             'EN_APELACION_TSP': 'danger',
         }
         return colores.get(self.SIM_ESTADO, 'secondary')
-
+    
+    def save(self, *args, **kwargs):
+        # Convertir a MAYÚSCULAS
+        self.SIM_COD       = self.SIM_COD.upper()       if self.SIM_COD       else self.SIM_COD
+        self.SIM_OBJETO    = self.SIM_OBJETO.upper()    if self.SIM_OBJETO    else self.SIM_OBJETO
+        self.SIM_RESUM     = self.SIM_RESUM.upper()     if self.SIM_RESUM     else self.SIM_RESUM
+        self.SIM_AUTOFINAL = self.SIM_AUTOFINAL.upper() if self.SIM_AUTOFINAL else self.SIM_AUTOFINAL
+        super().save(*args, **kwargs)
 
 # ============================================================
 # MODELO 4: PM_SIM — Tabla puente N:M (PM ↔ SIM)
@@ -234,7 +245,7 @@ class AUTOTPE(models.Model):
         ('AUTO_CUMPLIMIENTO',          'Auto de Cumplimiento'),
         ('AUTO_EJECUTORIA',            'Auto de Ejecutoria'),
         ('AUTO_EXCUSA',                'Auto de Excusa'),
-        ('AUTO_RECHAZO_RECURSO',        'Auto de Rechazo de Recurso'),
+        ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
     ]
 
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
@@ -296,7 +307,7 @@ class RES(models.Model):
         ('SOLICITUD_ASCENSO',              'Solicitud de Ascenso'),
         ('SOLICITUD_RESTITUCION_ANTIGUEDAD','Solicitud de Restitución de Antigüedad'),
         ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
-        ('SOLICITUD_ART_114_LOFA',           'Solicitud Artículo 114 LOFA'),
+        ('SOLICITUD_ART_114_LOFA',         'Solicitud Artículo 114 LOFA'),
         ('OTRO',                           'Otro'),
     ]
 
