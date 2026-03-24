@@ -1,5 +1,8 @@
 from django.contrib import admin
+from django import forms
 from .models import PM, ABOG, SIM, PM_SIM, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP
+from .widgets import ResumenConOpcionesWidget
+
 
 # ============================================================
 #  Configuración general del panel admin
@@ -9,11 +12,68 @@ admin.site.site_title  = "TPE Sistema"
 admin.site.index_title = "Panel de Administración"
 
 
+RESUMEN_CHOICES = [
+        ('ADMINISTRACIÓN IRREGULAR DE INSTITUCIÓN PUBLICA MILITAR','ADMINISTRACIÓN IRREGULAR DE INSTITUCIÓN PUBLICA MILITAR'),
+        ('ALLANAMIENTO FALTA DE RESPETO Y AMENAZAS AL SUPERIOR','ALLANAMIENTO, FALTA DE RESPETO Y AMENAZAS AL SUPERIOR'),
+        ('COBROS IRREGULARES','COBROS IRREGULARES'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS EN INSTALACIONES ','CONSUMO DE BEBIDAS ALCOHOLICAS EN INSTALACIONES '),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS PMA.','CONSUMO DE BEBIDAS ALCOHOLICAS PMA.'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y ACCIDENTE DE TRANSITO','CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y ACCIDENTE DE TRANSITO'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y MALTRATO A SLDOS.','CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y MALTRATO A SLDOS.'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS Y HOMICIDIO','CONSUMO DE BEBIDAS ALCOHOLICAS Y HOMICIDIO'),
+        ('CONSUMO DE SUSTANCIAS CONTROLADAS EN SERVICIO','CONSUMO DE SUSTANCIAS CONTROLADAS EN SERVICIO'),
+        ('DELITOS SEXUALES','DELITOS SEXUALES'),
+        ('DESTRUCCIÓN ILEGAL DE BIENES ESTATALES','DESTRUCCIÓN ILEGAL DE BIENES ESTATALES'),
+        ('EMPLEO DE SOLDADO','EMPLEO DE SOLDADO'),
+        ('FALSIFICACIÓN Y USO DE DOCUMENTO FALSO','FALSIFICACIÓN Y USO DE DOCUMENTO FALSO'),
+        ('FALTA LISTA','FALTA LISTA'),
+        ('FAVORECIMIENTO AL CONTRABANDO','FAVORECIMIENTO AL CONTRABANDO'),
+        ('FAVORECIMIENTO AL ROBO DE MINERAL','FAVORECIMIENTO AL ROBO DE MINERAL'),
+        ('HURTO DE ARMAMENTO','HURTO DE ARMAMENTO'),
+        ('INDISCIPLINA PROFESIONAL','INDISCIPLINA PROFESIONAL'),
+        ('MALOS TRATOS AL PERSONAL','MALOS TRATOS AL PERSONAL'),
+        ('MALOS TRATOS AL PERSONAL Y COBROS','MALOS TRATOS AL PERSONAL Y COBROS'),
+        ('MALTRATO A SLDOS.','MALTRATO A SLDOS.'),
+        ('MALVERSACIÓN Y COBROS INDEBIDOS REITERADOS','MALVERSACIÓN Y COBROS INDEBIDOS REITERADOS'),
+        ('REINCORPORACION AL SERVICIO ACTIVO','REINCORPORACION AL SERVICIO ACTIVO'),
+        ('RELACION EXTRAMATRIMONIAL','RELACION EXTRAMATRIMONIAL'),
+        ('TENENCIA DE MUNICIÓN ','TENENCIA DE MUNICIÓN '),
+        ('SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR','SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR'),
+        ('SOLICITUD DE EXIMIR CURSO CONDOR','SOLICITUD DE EXIMIR CURSO CONDOR'),
+        ('SOLICITUD RESTITUCIÓN DE ANTIGÜEDAD','SOLICITUD RESTITUCIÓN DE ANTIGÜEDAD'),
+        ('SOLICITUD ASCENSO POSTUMO','SOLICITUD ASCENSO POSTUMO'),
+        ('SOLICITUD LICENCIA MAXIMA','SOLICITUD LICENCIA MAXIMA'),
+        ('SOLICITUD LETRA "D"','SOLICITUD LETRA "D"'),
+        ('SOLICITUD ART. 118 LOFA','SOLICITUD ART. 118 LOFA'),
+        ('SOLICITUD ART. 114 LOFA','SOLICITUD ART. 114 LOFA'),
+        ('OTRO','OTRO'),
+    ]
+
 # ============================================================
 #  SECCIÓN 1: SUMARIO INFORMATIVO MILITAR
 #  Color azul — agrupa PM, ABOG y SIM
 # ============================================================
+class SIMAdminForm(forms.ModelForm):
+    """
+    Formulario personalizado para SIM que usa el widget ResumenConOpcionesWidget.
+    
+    El widget permite:
+    - Seleccionar opciones predefinidas
+    - Escribir texto personalizado
+    - Sin crear nuevas columnas en la BD
+    """
+    
+    class Meta:
+        model = SIM
+        fields = '__all__'
+        widgets = {
+            'SIM_RESUM': ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
+        }
 
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Personal Militar
+# ════════════════════════════════════════════════════════════════════════════
 @admin.register(PM)
 class PMAdmin(admin.ModelAdmin):
     list_display  = ('PM_CI', 'PM_ESCALAFON', 'PM_GRADO', 'PM_NOMBRE', 'PM_PATERNO', 'PM_ARMA', 'PM_ESTADO')
@@ -27,12 +87,18 @@ class PMAdmin(admin.ModelAdmin):
     class Media:
         js = ('tpe_app/js/grado_filter.js',)
 
-
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Abogados
+# ════════════════════════════════════════════════════════════════════════════
 @admin.register(ABOG)
 class ABOGAdmin(admin.ModelAdmin):
     list_display  = ('AB_CI', 'AB_GRADO', 'AB_NOMBRE', 'AB_PATERNO', 'AB_MATERNO')
     search_fields = ('AB_CI', 'AB_NOMBRE', 'AB_PATERNO')
 
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Sumarios Informativos Militares
+# ════════════════════════════════════════════════════════════════════════════
 
 # ── Inline: militares dentro del formulario SIM ──────────────
 class PM_SIM_Inline(admin.TabularInline):
@@ -44,6 +110,7 @@ class PM_SIM_Inline(admin.TabularInline):
 
 @admin.register(SIM)
 class SIMAdmin(admin.ModelAdmin):
+    form          = SIMAdminForm
     list_display  = ('SIM_COD', 'SIM_TIPO', 'ID_ABOG', 'SIM_RESUM', 'SIM_FECREG')
     search_fields = ('SIM_COD', 'SIM_RESUM')
     list_filter   = ('SIM_TIPO',)
@@ -98,5 +165,18 @@ class AUTOTSPAdmin(admin.ModelAdmin):
     search_fields = ('TSP_NUM', 'ID_SIM__SIM_COD')
     list_filter   = ('TSP_TIPO',)
 
-
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Documentos Adjuntos
+# ════════════════════════════════════════════════════════════════════════════
+ 
+# @admin.register(DocumentoAdjunto)
+# class DocumentoAdjuntoAdmin(admin.ModelAdmin):
+    # list_display  = ('DOC_NOMBRE', 'DOC_TABLA', 'DOC_TIPO', 'DOC_FECREG')
+    # search_fields = ('DOC_NOMBRE', 'DOC_TABLA')
+    # list_filter   = ('DOC_TABLA', 'DOC_TIPO')
+ 
+ 
+# ════════════════════════════════════════════════════════════════════════════
+#  FIN DE ARCHIVO
+# ════════════════════════════════════════════════════════════════════════════
 

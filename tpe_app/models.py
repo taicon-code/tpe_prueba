@@ -151,14 +151,51 @@ class ABOG(models.Model):
 class SIM(models.Model):
 
     TIPO_CHOICES = [
-        ('DISCIPLINARIO',  'Disciplinario'),
-        ('LETRA D',        'Letra D'),
-        ('RESTITUCIÓN ANTIGUEDAD', 'Restición Antiguedad'),
-        ('ASCENSO AL GRADO INMEDIATO SUPERIOR', 'Ascenso al Grado Inmediato Superior'),
-        ('ASCENSO POSTUMO', 'Ascenso Postumo'),
-        ('Licencia Maxima', 'Licencia Máxima'),
-        ('Art. 114 LOFA', 'Artículo 114 LOFA'),
+        ('DISCIPLINARIO',  'DISCIPLINARIO'),
+        ('LETRA D',        'LETRA D'),
+        ('RESTITUCIÓN ANTIGUEDAD', 'RESTITUCIÓN ANTIGUEDAD'),
+        ('ASCENSO AL GRADO INMEDIATO SUPERIOR', 'ASCENSO AL GRADO INMEDIATO SUPERIOR'),
+        ('ASCENSO POSTUMO', 'ASCENSO POSTUMO'),
+        ('Licencia Maxima', 'LICENCIA MAXIMA'),
+        ('Art. 114 LOFA', 'ARTICULO 114 LOFA'),
     ]
+    
+    RESUMEN_CHOICES = [
+        ('ADMINISTRACIÓN IRREGULAR DE INSTITUCIÓN PUBLICA MILITAR','ADMINISTRACIÓN IRREGULAR DE INSTITUCIÓN PUBLICA MILITAR'),
+        ('ALLANAMIENTO FALTA DE RESPETO Y AMENAZAS AL SUPERIOR','ALLANAMIENTO, FALTA DE RESPETO Y AMENAZAS AL SUPERIOR'),
+        ('COBROS IRREGULARES','COBROS IRREGULARES'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS EN INSTALACIONES ','CONSUMO DE BEBIDAS ALCOHOLICAS EN INSTALACIONES '),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS PMA.','CONSUMO DE BEBIDAS ALCOHOLICAS PMA.'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y ACCIDENTE DE TRANSITO','CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y ACCIDENTE DE TRANSITO'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y MALTRATO A SLDOS.','CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y MALTRATO A SLDOS.'),
+        ('CONSUMO DE BEBIDAS ALCOHOLICAS Y HOMICIDIO','CONSUMO DE BEBIDAS ALCOHOLICAS Y HOMICIDIO'),
+        ('CONSUMO DE SUSTANCIAS CONTROLADAS EN SERVICIO','CONSUMO DE SUSTANCIAS CONTROLADAS EN SERVICIO'),
+        ('DELITOS SEXUALES','DELITOS SEXUALES'),
+        ('DESTRUCCIÓN ILEGAL DE BIENES ESTATALES','DESTRUCCIÓN ILEGAL DE BIENES ESTATALES'),
+        ('EMPLEO DE SOLDADO','EMPLEO DE SOLDADO'),
+        ('FALSIFICACIÓN Y USO DE DOCUMENTO FALSO','FALSIFICACIÓN Y USO DE DOCUMENTO FALSO'),
+        ('FALTA LISTA','FALTA LISTA'),
+        ('FAVORECIMIENTO AL CONTRABANDO','FAVORECIMIENTO AL CONTRABANDO'),
+        ('FAVORECIMIENTO AL ROBO DE MINERAL','FAVORECIMIENTO AL ROBO DE MINERAL'),
+        ('HURTO DE ARMAMENTO','HURTO DE ARMAMENTO'),
+        ('INDISCIPLINA PROFESIONAL','INDISCIPLINA PROFESIONAL'),
+        ('MALOS TRATOS AL PERSONAL','MALOS TRATOS AL PERSONAL'),
+        ('MALOS TRATOS AL PERSONAL Y COBROS','MALOS TRATOS AL PERSONAL Y COBROS'),
+        ('MALTRATO A SLDOS.','MALTRATO A SLDOS.'),
+        ('MALVERSACIÓN Y COBROS INDEBIDOS REITERADOS','MALVERSACIÓN Y COBROS INDEBIDOS REITERADOS'),
+        ('REINCORPORACION AL SERVICIO ACTIVO','REINCORPORACION AL SERVICIO ACTIVO'),
+        ('RELACION EXTRAMATRIMONIAL','RELACION EXTRAMATRIMONIAL'),
+        ('TENENCIA DE MUNICIÓN ','TENENCIA DE MUNICIÓN '),
+        ('SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR','SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR'),
+        ('SOLICITUD DE EXIMIR CURSO CONDOR','SOLICITUD DE EXIMIR CURSO CONDOR'),
+        ('SOLICITUD RESTITUCIÓN DE ANTIGÜEDAD','SOLICITUD RESTITUCIÓN DE ANTIGÜEDAD'),
+        ('SOLICITUD ASCENSO POSTUMO','SOLICITUD ASCENSO POSTUMO'),
+        ('SOLICITUD LICENCIA MAXIMA','SOLICITUD LICENCIA MAXIMA'),
+        ('SOLICITUD LETRA "D"','SOLICITUD LETRA "D"'),
+        ('SOLICITUD ART. 118 LOFA','SOLICITUD ART. 118 LOFA'),
+        ('SOLICITUD ART. 114 LOFA','SOLICITUD ART. 114 LOFA'),
+    ] 
+
 
     # ✅ CORREGIDO v1.2: estados del sumario
     ESTADO_CHOICES = [
@@ -179,10 +216,10 @@ class SIM(models.Model):
     SIM_FECING    = models.DateField(null=True, blank=True, verbose_name='Fecha de Ingreso al TPE')
     # ✅ NUEVO v1.2: estado del sumario
     SIM_ESTADO    = models.CharField(
-                        max_length=20, choices=ESTADO_CHOICES,
+                        max_length=30, choices=ESTADO_CHOICES,
                         default='PARA_AGENDA', verbose_name='Estado')
     SIM_OBJETO    = models.TextField(verbose_name='Objeto del sumario')
-    SIM_RESUM     = models.CharField(max_length=200, verbose_name='Resumen')
+    SIM_RESUM     = models.CharField(max_length=200, verbose_name='Resumen', help_text='Breve descripción del caso (máx. 20 caracteres)')
     SIM_AUTOFINAL = models.TextField(null=True, blank=True, verbose_name='Auto Final / Dictamen')
     SIM_TIPO      = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo')
     SIM_FECREG    = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Registro')
@@ -199,8 +236,8 @@ class SIM(models.Model):
     def get_estado_color(self):
         """Devuelve el color de alerta según el estado del sumario."""
         colores = {
-            'RADICADO_TPE':     'primary',
-            'PARA_AGENDA':      'warning',
+            'PARA_AGENDA':     'primary',
+            'PROCESO_EN_EL_TPE':      'warning',
             'EN_APELACION_TSP': 'danger',
         }
         return colores.get(self.SIM_ESTADO, 'secondary')
@@ -210,6 +247,7 @@ class SIM(models.Model):
         self.SIM_COD       = self.SIM_COD.upper()       if self.SIM_COD       else self.SIM_COD
         self.SIM_OBJETO    = self.SIM_OBJETO.upper()    if self.SIM_OBJETO    else self.SIM_OBJETO
         self.SIM_RESUM     = self.SIM_RESUM.upper()     if self.SIM_RESUM     else self.SIM_RESUM
+        self.SIM_TIPO      = self.SIM_TIPO.upper()      if self.SIM_TIPO      else self.SIM_TIPO    
         self.SIM_AUTOFINAL = self.SIM_AUTOFINAL.upper() if self.SIM_AUTOFINAL else self.SIM_AUTOFINAL
         super().save(*args, **kwargs)
 
