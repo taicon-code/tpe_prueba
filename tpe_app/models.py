@@ -247,6 +247,11 @@ class AUTOTPE(models.Model):
         ('AUTO_EXCUSA',                'Auto de Excusa'),
         ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
     ]
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
 
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
 
@@ -255,18 +260,11 @@ class AUTOTPE(models.Model):
     TPE_RESOL = models.TextField(verbose_name='Resolución')
     TPE_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
 
-    # Notificación por Firma
-    TPE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a')
+    # Notificación Tipo
+    TPE_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    TPE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     TPE_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     TPE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    # Notificación por Edicto
-    TPE_EDICTO_PERIOD = models.CharField(max_length=100, null=True, blank=True, verbose_name='Periódico del Edicto')
-    TPE_EDICTO_FEC    = models.DateField(null=True, blank=True, verbose_name='Fecha del Edicto')
-
-    # Auto de Ejecutoria
-    TPE_EJECU_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado Ejecutoria')
-    TPE_EJECU_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notif. Ejecutoria')
 
     # Memorándum (exclusivo TPE)
     TPE_MEMO_NUM     = models.CharField(max_length=20, null=True, blank=True, verbose_name='N° Memorándum')
@@ -285,8 +283,6 @@ class AUTOTPE(models.Model):
         self.TPE_NUM          = self.TPE_NUM.upper()          if self.TPE_NUM          else self.TPE_NUM
         self.TPE_RESOL        = self.TPE_RESOL.upper()        if self.TPE_RESOL        else self.TPE_RESOL
         self.TPE_NOT          = self.TPE_NOT.upper()          if self.TPE_NOT          else self.TPE_NOT
-        self.TPE_EDICTO_PERIOD= self.TPE_EDICTO_PERIOD.upper()if self.TPE_EDICTO_PERIOD else self.TPE_EDICTO_PERIOD
-        self.TPE_EJECU_NOT    = self.TPE_EJECU_NOT.upper()    if self.TPE_EJECU_NOT    else self.TPE_EJECU_NOT
         self.TPE_MEMO_NUM     = self.TPE_MEMO_NUM.upper()     if self.TPE_MEMO_NUM     else self.TPE_MEMO_NUM
         super().save(*args, **kwargs)
 
@@ -311,6 +307,12 @@ class RES(models.Model):
         ('OTRO',                           'Otro'),
     ]
 
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
 
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
@@ -319,14 +321,11 @@ class RES(models.Model):
     RES_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo')
     RES_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
 
-    # Notificación por Firma
-    RES_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a')
+    # Notificación Tipo
+    RES_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    RES_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     RES_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RES_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    # ✅ NUEVO v1.2: Notificación por Edicto en resoluciones
-    RES_EDICTO_PERIOD = models.CharField(max_length=100, null=True, blank=True, verbose_name='Periódico del Edicto')
-    RES_EDICTO_FEC    = models.DateField(null=True, blank=True, verbose_name='Fecha del Edicto')
 
     # Agenda
     RES_AGENDA  = models.CharField(max_length=40, null=True, blank=True, verbose_name='Agenda')
@@ -354,6 +353,12 @@ class RES(models.Model):
 # ============================================================
 class RR(models.Model):
 
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
     ID_RES = models.ForeignKey(RES, on_delete=models.CASCADE, db_column='ID_RES', verbose_name='Primera Resolución')
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
 
@@ -366,8 +371,9 @@ class RR(models.Model):
     RR_RESOL = models.TextField(verbose_name='Resolución')
     RR_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
 
-    # Notificación
-    RR_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a')
+    # Notificación Tipo
+    RR_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    RR_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     RR_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RR_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
@@ -408,7 +414,12 @@ class RR(models.Model):
 # MODELO 8: RAP — Recurso de Apelación al TSP
 # ============================================================
 class RAP(models.Model):
-
+    
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
     ID_RR  = models.ForeignKey(RR,  on_delete=models.SET_NULL, null=True, blank=True,
                                 db_column='ID_RR',  verbose_name='Segunda Resolución (RR)')
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,
@@ -426,8 +437,9 @@ class RAP(models.Model):
     RAP_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
     RAP_RESUM = models.TextField(null=True, blank=True, verbose_name='Resumen')
 
-    # Notificación
-    RAP_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a')
+    # Notificación Tipo
+    RAP_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    RAP_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     RAP_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RAP_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
@@ -466,6 +478,12 @@ class RAP(models.Model):
 # ============================================================
 class RAEE(models.Model):
 
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
     ID_RAP = models.ForeignKey(RAP, on_delete=models.SET_NULL, null=True, blank=True,
                                 db_column='ID_RAP', verbose_name='Recurso de Apelación')
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,
@@ -479,8 +497,9 @@ class RAEE(models.Model):
     RAE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
     RAE_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
 
-    # Notificación
-    RAE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a')
+    # Notificación Tipo
+    RAE_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    RAE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     RAE_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RAE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
@@ -521,6 +540,12 @@ class AUTOTSP(models.Model):
         ('AUTO_EXCUSA',       'Auto de Excusa'),
     ]
 
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
 
     TSP_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
@@ -528,14 +553,11 @@ class AUTOTSP(models.Model):
     TSP_RESOL = models.TextField(verbose_name='Resolución')
     TSP_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
 
-    # Notificación por Firma
-    TSP_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a')
+    # Notificación Tipo
+    TSP_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    TSP_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     TSP_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     TSP_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    # Notificación por Edicto
-    TSP_EDICTO_PERIOD = models.CharField(max_length=100, null=True, blank=True, verbose_name='Periódico del Edicto')
-    TSP_EDICTO_FEC    = models.DateField(null=True, blank=True, verbose_name='Fecha del Edicto')
 
     # Auto de Ejecutoria (sin memorándum en TSP)
     TSP_EJECU_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado Ejecutoria')

@@ -30,7 +30,7 @@ class PMAdmin(admin.ModelAdmin):
 
 @admin.register(ABOG)
 class ABOGAdmin(admin.ModelAdmin):
-    list_display  = ('AB_CI', 'AB_GRADO', 'AB_NOMBRE', 'AB_PATERNO', 'AB_ARMA')
+    list_display  = ('AB_CI', 'AB_GRADO', 'AB_NOMBRE', 'AB_PATERNO', 'AB_MATERNO')
     search_fields = ('AB_CI', 'AB_NOMBRE', 'AB_PATERNO')
 
 
@@ -57,20 +57,20 @@ class SIMAdmin(admin.ModelAdmin):
 
 @admin.register(RES)
 class RESAdmin(admin.ModelAdmin):
-    list_display  = ('RES_NUM', 'ID_SIM', 'RES_TIPO', 'RES_FEC', 'RES_NOT', 'RES_FECNOT')
+    list_display  = ('RES_NUM', 'ID_SIM', 'RES_TIPO', 'RES_FEC', 'RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT','RES_HORNOT')
     search_fields = ('RES_NUM', 'ID_SIM__SIM_COD')
     list_filter   = ('RES_TIPO',)
 
 
 @admin.register(RR)
 class RRAdmin(admin.ModelAdmin):
-    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'RR_FEC', 'RR_FECPRESEN', 'RR_NOT')
+    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'RR_FEC', 'RR_FECPRESEN', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
     search_fields = ('RR_NUM', 'ID_SIM__SIM_COD')
 
 
 @admin.register(AUTOTPE)
 class AUTOTPEAdmin(admin.ModelAdmin):
-    list_display  = ('TPE_NUM', 'ID_SIM', 'TPE_TIPO', 'TPE_FEC', 'TPE_NOT', 'TPE_FECNOT')
+    list_display  = ('TPE_NUM', 'ID_SIM', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
     search_fields = ('TPE_NUM', 'ID_SIM__SIM_COD')
     list_filter   = ('TPE_TIPO',)
 
@@ -82,19 +82,19 @@ class AUTOTPEAdmin(admin.ModelAdmin):
 
 @admin.register(RAP)
 class RAPAdmin(admin.ModelAdmin):
-    list_display  = ('RAP_NUM', 'ID_SIM', 'RAP_OFI', 'RAP_FECOFI', 'RAP_FEC', 'RAP_NOT')
+    list_display  = ('RAP_NUM', 'ID_SIM', 'RAP_OFI', 'RAP_FECOFI', 'RAP_FEC', 'RAP_TIPO_NOTIF', 'RAP_NOT', 'RAP_FECNOT','RAP_HORNOT')
     search_fields = ('RAP_NUM', 'ID_SIM__SIM_COD')
 
 
 @admin.register(RAEE)
 class RAEEAdmin(admin.ModelAdmin):
-    list_display  = ('RAE_NUM', 'ID_SIM', 'RAE_OFI', 'RAE_FECOFI', 'RAE_FEC', 'RAE_NOT')
+    list_display  = ('RAE_NUM', 'ID_SIM', 'RAE_OFI', 'RAE_FECOFI', 'RAE_FEC', 'RAE_TIPO_NOTIF', 'RAE_NOT', 'RAE_FECNOT','RAE_HORNOT')
     search_fields = ('RAE_NUM', 'ID_SIM__SIM_COD')
 
 
 @admin.register(AUTOTSP)
 class AUTOTSPAdmin(admin.ModelAdmin):
-    list_display  = ('TSP_NUM', 'ID_SIM', 'TSP_TIPO', 'TSP_FEC', 'TSP_NOT', 'TSP_FECNOT')
+    list_display  = ('TSP_NUM', 'ID_SIM', 'TSP_TIPO', 'TSP_FEC', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT','TSP_HORNOT')
     search_fields = ('TSP_NUM', 'ID_SIM__SIM_COD')
     list_filter   = ('TSP_TIPO',)
 
