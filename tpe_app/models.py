@@ -150,17 +150,19 @@ class ABOG(models.Model):
 # ============================================================
 class SIM(models.Model):
 
-    TIPO_CHOICES = [
+    TIPO_CHOICES =  [
         ('DISCIPLINARIO',  'DISCIPLINARIO'),
-        ('LETRA D',        'LETRA D'),
-        ('RESTITUCIÓN ANTIGUEDAD', 'RESTITUCIÓN ANTIGUEDAD'),
-        ('ASCENSO AL GRADO INMEDIATO SUPERIOR', 'ASCENSO AL GRADO INMEDIATO SUPERIOR'),
         ('ASCENSO POSTUMO', 'ASCENSO POSTUMO'),
-        ('Licencia Maxima', 'LICENCIA MAXIMA'),
-        ('Art. 114 LOFA', 'ARTICULO 114 LOFA'),
+        ('SOLICITUD_LETRA_D',        'SOLICITUD LETRA D'),
+        ('SOLICITUD_LICENCIA_MAXIMA', 'SOLICITUD LICENCIA MAXIMA'),
+        ('SOLICITUD_RESTITUCION_ANTIGUEDAD', 'SOLICITUD RESTITUCIÓN ANTIGUEDAD'),
+        ('SOLICITUD_DE_RESTITUCION_DE_DERECHOS_PROFESIONALES', 'SOLICITUD DE RESTITUCIÓN DE DERECHOS PROFESIONALES'),
+        ('SOLICITUD_ASCENSO_AL_GRADO_INMEDIATO_SUPERIOR', 'SOLICITUD ASCENSO AL GRADO INMEDIATO SUPERIOR'),
+        ('SOLICITUD_ART_114_(Invalidez Instructor)',   'SOLICITUD ARTÍCULO 114 (INVALIDEZ INSTRUCTOR)'),
+        ('SOLICITUD_ART_117_(Fallecimiento)',  'SOLICITUD ARTÍCULO 117 (FALLECIMIENTO)'),
+        ('SOLICITUD_ART_118_(Invalidez Sldo)', 'SOLICITUD ARTÍCULO 118 (INVALIDEZ SLDO)'),
     ]
-    
- 
+
     # ✅ CORREGIDO v1.2: estados del sumario
     ESTADO_CHOICES = [
         ('PARA_AGENDA',      'Para Agenda'),
@@ -295,6 +297,8 @@ class RES(models.Model):
 
     # ✅ CORREGIDO v1.2: lista completa de tipos de resolución
     TIPO_CHOICES = [
+        ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
+        ('ADMINISTRATIVO',                   'Administrativo'),
         ('SANCIONES_DISCIPLINARIAS',       'Sanciones Disciplinarias'),
         ('SANCION_ARRESTO',                'Sanción Arresto (Ejecutiva)'),
         ('SANCION_LETRA_B',                'Sanción Letra B (Pérdida de Antigüedad)'),
@@ -304,8 +308,10 @@ class RES(models.Model):
         ('SOLICITUD_LICENCIA_MAXIMA',      'Solicitud Licencia Máxima'),
         ('SOLICITUD_ASCENSO',              'Solicitud de Ascenso'),
         ('SOLICITUD_RESTITUCION_ANTIGUEDAD','Solicitud de Restitución de Antigüedad'),
-        ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
-        ('SOLICITUD_ART_114_LOFA',         'Solicitud Artículo 114 LOFA'),
+        ('SOLICITUD_RESTITUCION_DE_DERECHOS_PROFESIONALES', 'Solicitud de Restitución de Derechos Profesionales'),
+        ('SOLICITUD_ART_114_(Invalidez Instructor)',   'Solicitud Artículo 114 (Invalides Instructor)'),
+        ('SOLICITUD_ART_117_(Fallecimiento)',  'Solicitud Artículo 117 (Fallecimiento)'),
+        ('SOLICITUD_ART_118_(Invalidez Sldo)', 'Solicitud Artículo 118 (Invalidez Sldo)'),
         ('OTRO',                           'Otro'),
     ]
 
@@ -347,7 +353,6 @@ class RES(models.Model):
         self.RES_RESUM = self.RES_RESUM.upper() if self.RES_RESUM else self.RES_RESUM
         self.RES_NOT   = self.RES_NOT.upper()   if self.RES_NOT   else self.RES_NOT
         self.RES_AGENDA= self.RES_AGENDA.upper()if self.RES_AGENDA else self.RES_AGENDA
-        self.RES_EDICTO_PERIOD = self.RES_EDICTO_PERIOD.upper() if self.RES_EDICTO_PERIOD else self.RES_EDICTO_PERIOD
         super().save(*args, **kwargs)
 
 # ============================================================
