@@ -111,7 +111,7 @@ class PM_SIM_Inline(admin.TabularInline):
 @admin.register(SIM)
 class SIMAdmin(admin.ModelAdmin):
     form          = SIMAdminForm
-    list_display  = ('SIM_COD', 'SIM_TIPO', 'ID_ABOG', 'SIM_RESUM', 'SIM_FECREG')
+    list_display  = ('SIM_COD', 'SIM_TIPO', 'SIM_RESUM', 'SIM_FECREG')
     search_fields = ('SIM_COD', 'SIM_RESUM')
     list_filter   = ('SIM_TIPO',)
     inlines       = [PM_SIM_Inline]
@@ -123,9 +123,6 @@ class SIMAdmin(admin.ModelAdmin):
         ('Situación Actual', {
             'fields': ('SIM_ESTADO',)
         }),
-        ('Abogado', {
-            'fields': ('ID_ABOG',)
-        }),
     )
 
 # ============================================================
@@ -135,21 +132,33 @@ class SIMAdmin(admin.ModelAdmin):
 
 @admin.register(RES)
 class RESAdmin(admin.ModelAdmin):
-    list_display  = ('RES_NUM', 'ID_SIM', 'RES_TIPO', 'RES_FEC', 'RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT','RES_HORNOT')
-    search_fields = ('RES_NUM', 'ID_SIM__SIM_COD')
+    list_display  = ('RES_NUM', 'ID_SIM', 'ID_ABOG', 'RES_TIPO', 'RES_FEC', 'RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT','RES_HORNOT')
+    search_fields = ('RES_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
     list_filter   = ('RES_TIPO',)
 
+# ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACIÓN DENTRO DE LA RESOLUCIÓN DEL TPE
+    fieldsets = (
+        ('AGENDA', {
+            'fields': ('ID_SIM','ID_ABOG', 'RES_AGENDA','RES_FEC', 'RES_NUM',)
+        }),
+        ('DISPOSICIÒN RESOLUTIVA', {
+            'fields': ('RES_RESOL','RES_TIPO','RES_RESUM',)
+        }),
+        ('NOTIFICACIÓN', {
+            'fields': ('RES_TIPO_NOTIF','RES_NOT','RES_FECNOT','RES_HORNOT',)
+        }),
+    )
 
 @admin.register(RR)
 class RRAdmin(admin.ModelAdmin):
-    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'RR_FEC', 'RR_FECPRESEN', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
-    search_fields = ('RR_NUM', 'ID_SIM__SIM_COD')
+    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'ID_ABOG', 'RR_FEC', 'RR_FECPRESEN', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
+    search_fields = ('RR_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
 
 
 @admin.register(AUTOTPE)
 class AUTOTPEAdmin(admin.ModelAdmin):
-    list_display  = ('TPE_NUM', 'ID_SIM', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
-    search_fields = ('TPE_NUM', 'ID_SIM__SIM_COD')
+    list_display  = ('TPE_NUM', 'ID_SIM', 'ID_ABOG', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
+    search_fields = ('TPE_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
     list_filter   = ('TPE_TIPO',)
 
 

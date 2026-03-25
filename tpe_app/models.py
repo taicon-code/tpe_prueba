@@ -168,12 +168,9 @@ class SIM(models.Model):
         ('PARA_AGENDA',      'Para Agenda'),
         ('PROCESO_EN_EL_TPE', 'Proceso en el TPE'),
         ('EN_APELACION_TSP',  'En Apelación TSP'),
+        ('CONCLUIDO',          'Concluido'),
     ]
 
-    ID_ABOG   = models.ForeignKey(
-                    ABOG, on_delete=models.SET_NULL,
-                    null=True, blank=True,
-                    db_column='ID_ABOG', verbose_name='Abogado')
     militares = models.ManyToManyField(
                     PM, through='PM_SIM', verbose_name='Militares investigados')
 
@@ -258,6 +255,12 @@ class AUTOTPE(models.Model):
     ]
 
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
+   
+    # add fk de abogado para cada auto (puede ser el mismo u otro diferente al de la RES)
+    ID_ABOG = models.ForeignKey(
+        ABOG, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_ABOG', verbose_name='Abogado')
 
     TPE_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
     TPE_FEC   = models.DateField(verbose_name='Fecha del Auto')
@@ -323,6 +326,11 @@ class RES(models.Model):
 
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
 
+    ID_ABOG = models.ForeignKey(
+        ABOG, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_ABOG', verbose_name='Abogado')
+
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
     RES_FEC   = models.DateField(verbose_name='Fecha')
     RES_RESOL = models.TextField(verbose_name='Resolución')
@@ -372,6 +380,12 @@ class RR(models.Model):
     RR_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso')
     # ✅ NUEVO v1.2: fecha límite para alertas (15 días hábiles)
     RR_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite (15 días hábiles)')
+
+# estes aumente para agregar campo para abogado del RR (puede ser el mismo u otro diferente al de la RES)
+    ID_ABOG = models.ForeignKey(
+        ABOG, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_ABOG', verbose_name='Abogado')
 
     RR_NUM   = models.CharField(max_length=10,  verbose_name='Número')
     RR_FEC   = models.DateField(verbose_name='Fecha')
