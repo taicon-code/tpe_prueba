@@ -115,7 +115,18 @@ class SIMAdmin(admin.ModelAdmin):
     search_fields = ('SIM_COD', 'SIM_RESUM')
     list_filter   = ('SIM_TIPO',)
     inlines       = [PM_SIM_Inline]
-
+# ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACIÓN DENTRO DEL SUMARIO INFORMATIVO MILITAR
+    fieldsets = (
+        ('Datos principales', {
+            'fields': ('SIM_COD','SIM_FECING', 'SIM_OBJETO','SIM_RESUM', 'SIM_AUTOFINAL','SIM_TIPO')
+        }),
+        ('Situación Actual', {
+            'fields': ('SIM_ESTADO',)
+        }),
+        ('Abogado', {
+            'fields': ('ID_ABOG',)
+        }),
+    )
 
 # ============================================================
 #  SECCIÓN 2: TRIBUNAL DE PERSONAL DEL EJÉRCITO (TPE)
