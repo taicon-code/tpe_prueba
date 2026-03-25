@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import PM, ABOG, SIM, PM_SIM, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP
+from .models import PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -125,6 +125,26 @@ class SIMAdmin(admin.ModelAdmin):
         }),
     )
 
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Agenda — Reunión del Tribunal
+#  Se registra ANTES que la RES o el AUTOTPE
+# ════════════════════════════════════════════════════════════════════════════
+@admin.register(AGENDA)
+class AGENDAAdmin(admin.ModelAdmin):
+    list_display  = ('AG_NUM', 'AG_NUMDICT', 'AG_FEC', 'ID_SIM', 'ID_ABOG', 'AG_RESULTADO')
+    search_fields = ('AG_NUM', 'AG_NUMDICT', 'ID_SIM__SIM_COD')
+    list_filter   = ('AG_RESULTADO',)
+
+    fieldsets = (
+        ('Datos de la Reunión', {
+            'fields': ('ID_SIM', 'ID_ABOG', 'AG_NUM', 'AG_NUMDICT', 'AG_FEC',)
+        }),
+        ('Resultado', {
+            'fields': ('AG_RESULTADO',),
+            'description': 'Se actualiza una vez que la reunión produce un documento'
+        }),
+    )
+
 # ============================================================
 #  SECCIÓN 2: TRIBUNAL DE PERSONAL DEL EJÉRCITO (TPE)
 #  Agrupa RES, RR y AUTOTPE
@@ -139,10 +159,10 @@ class RESAdmin(admin.ModelAdmin):
 # ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACIÓN DENTRO DE LA RESOLUCIÓN DEL TPE
     fieldsets = (
         ('AGENDA', {
-            'fields': ('ID_SIM','ID_ABOG', 'RES_AGENDA','RES_FEC', 'RES_NUM',)
+            'fields': ('ID_SIM', 'ID_ABOG', 'ID_AGENDA',)
         }),
         ('DISPOSICIÒN RESOLUTIVA', {
-            'fields': ('RES_RESOL','RES_TIPO','RES_RESUM',)
+            'fields': ('RES_NUM','RES_FEC','RES_RESOL','RES_TIPO',)
         }),
         ('NOTIFICACIÓN', {
             'fields': ('RES_TIPO_NOTIF','RES_NOT','RES_FECNOT','RES_HORNOT',)
@@ -160,6 +180,22 @@ class AUTOTPEAdmin(admin.ModelAdmin):
     list_display  = ('TPE_NUM', 'ID_SIM', 'ID_ABOG', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
     search_fields = ('TPE_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
     list_filter   = ('TPE_TIPO',)
+
+    fieldsets = (
+        ('AGENDA', {
+            'fields': ('ID_SIM', 'ID_ABOG', 'ID_AGENDA',)
+        }),
+        ('DISPOSICIÓN DEL AUTO', {
+            'fields': ('TPE_NUM', 'TPE_FEC', 'TPE_RESOL', 'TPE_TIPO',)
+        }),
+        ('NOTIFICACIÓN', {
+            'fields': ('TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT', 'TPE_HORNOT',)
+        }),
+        ('MEMORÁNDUM', {
+            'fields': ('TPE_MEMO_NUM', 'TPE_MEMO_FEC', 'TPE_MEMO_ENTREGA',),
+            'classes': ('collapse',),
+        }),
+    )
 
 
 # ============================================================
@@ -199,4 +235,3 @@ class AUTOTSPAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
-

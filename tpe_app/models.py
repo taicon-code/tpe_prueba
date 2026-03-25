@@ -233,65 +233,49 @@ class PM_SIM(models.Model):
 
 
 # ============================================================
-# MODELO 5: AUTOTPE — Autos del Tribunal de Personal del Ejército
+# MODELO 5: AGENDA — Reunión del Tribunal (paso previo a RES/AUTOTPE)
+#
+# Flujo: SIM ingresa → se crea AGENDA (Persona 1)
+#        ~1 semana después: de la reunión resulta una RES o AUTOTPE (Persona 2)
+#        Ambas tablas apuntan a esta AGENDA via FK
 # ============================================================
-class AUTOTPE(models.Model):
+class AGENDA(models.Model):
 
-    TIPO_CHOICES = [
-        ('SOBRESEIDO',                 'Sobreseído'),
-        ('NULIDAD_OBRADOS',            'Nulidad de Obrados'),
-        ('SANCION_ARRESTO',            'Sanción Arresto'),
-        ('SANCION_LETRA_B',            'Sanción Letra B'),
-        ('SANCION_RETIRO_OBLIGATORIO', 'Sanción Retiro Obligatorio'),
-        ('AUTO_CUMPLIMIENTO',          'Auto de Cumplimiento'),
-        ('AUTO_EJECUTORIA',            'Auto de Ejecutoria'),
-        ('AUTO_EXCUSA',                'Auto de Excusa'),
-        ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
-    ]
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
+    RESULTADO_CHOICES = [
+        ('PENDIENTE',  'Pendiente'),
+        ('RESOLUCION', 'Resolución'),
+        ('AUTO_TPE',   'Auto TPE'),
     ]
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
-   
-    # add fk de abogado para cada auto (puede ser el mismo u otro diferente al de la RES)
-    ID_ABOG = models.ForeignKey(
-        ABOG, on_delete=models.SET_NULL,
-        null=True, blank=True,
-        db_column='ID_ABOG', verbose_name='Abogado')
+    ID_SIM  = models.ForeignKey(SIM,  on_delete=models.CASCADE,
+                                db_column='ID_SIM',  verbose_name='Sumario')
+    ID_ABOG = models.ForeignKey(ABOG, on_delete=models.SET_NULL,
+                                null=True, blank=True,
+                                db_column='ID_ABOG', verbose_name='Abogado')
 
-    TPE_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
-    TPE_FEC   = models.DateField(verbose_name='Fecha del Auto')
-    TPE_RESOL = models.TextField(verbose_name='Resolución')
-    TPE_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
-
-    # Notificación Tipo
-    TPE_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    TPE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    TPE_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    TPE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    # Memorándum (exclusivo TPE)
-    TPE_MEMO_NUM     = models.CharField(max_length=20, null=True, blank=True, verbose_name='N° Memorándum')
-    TPE_MEMO_FEC     = models.DateField(null=True, blank=True, verbose_name='Fecha Memorándum')
-    TPE_MEMO_ENTREGA = models.DateField(null=True, blank=True, verbose_name='Fecha Entrega Memorándum')
+    AG_NUM     = models.CharField(max_length=20, verbose_name='Número de Reunión',
+                                  help_text='Ej: 15/26')
+    AG_NUMDICT = models.CharField(max_length=10, null=True, blank=True,
+                                  verbose_name='N° Dictamen',
+                                  help_text='Ej: 02/26')
+    AG_FEC     = models.DateField(verbose_name='Fecha de la Reunión')
+    AG_RESULTADO = models.CharField(max_length=20, choices=RESULTADO_CHOICES,
+                                    default='PENDIENTE', verbose_name='Resultado')
 
     class Meta:
-        db_table            = 'autotpe'
-        verbose_name        = 'Auto TPE'
-        verbose_name_plural = 'Autos TPE'
-        ordering            = ['-TPE_FEC']
+        db_table            = 'agenda'
+        verbose_name        = 'Agenda'
+        verbose_name_plural = 'Agendas'
+        ordering            = ['-AG_FEC']
 
     def __str__(self):
-        return f"{self.TPE_NUM} — {self.get_TPE_TIPO_display()}"
+        return f"Agenda {self.AG_NUM} ({self.AG_FEC}) — {self.ID_SIM.SIM_COD}"
+
     def save(self, *args, **kwargs):
-        self.TPE_NUM          = self.TPE_NUM.upper()          if self.TPE_NUM          else self.TPE_NUM
-        self.TPE_RESOL        = self.TPE_RESOL.upper()        if self.TPE_RESOL        else self.TPE_RESOL
-        self.TPE_NOT          = self.TPE_NOT.upper()          if self.TPE_NOT          else self.TPE_NOT
-        self.TPE_MEMO_NUM     = self.TPE_MEMO_NUM.upper()     if self.TPE_MEMO_NUM     else self.TPE_MEMO_NUM
+        self.AG_NUM     = self.AG_NUM.upper()     if self.AG_NUM     else self.AG_NUM
+        self.AG_NUMDICT = self.AG_NUMDICT.upper() if self.AG_NUMDICT else self.AG_NUMDICT
         super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 6: RES — Primera Resolución del TPE
@@ -331,21 +315,22 @@ class RES(models.Model):
         null=True, blank=True,
         db_column='ID_ABOG', verbose_name='Abogado')
 
+    # FK a la agenda que generó esta resolución
+    ID_AGENDA = models.ForeignKey(
+        AGENDA, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_AGENDA', verbose_name='Agenda')
+
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
     RES_FEC   = models.DateField(verbose_name='Fecha')
     RES_RESOL = models.TextField(verbose_name='Resolución')
     RES_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo')
-    RES_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
 
     # Notificación Tipo
     RES_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
     RES_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     RES_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RES_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    # Agenda
-    RES_AGENDA  = models.CharField(max_length=40, null=True, blank=True, verbose_name='Agenda')
-    RES_FECAGEN = models.DateField(null=True, blank=True, verbose_name='Fecha Agenda')
 
     class Meta:
         db_table            = 'res'
@@ -358,9 +343,7 @@ class RES(models.Model):
     def save(self, *args, **kwargs):
         self.RES_NUM   = self.RES_NUM.upper()   if self.RES_NUM   else self.RES_NUM
         self.RES_RESOL = self.RES_RESOL.upper() if self.RES_RESOL else self.RES_RESOL
-        self.RES_RESUM = self.RES_RESUM.upper() if self.RES_RESUM else self.RES_RESUM
         self.RES_NOT   = self.RES_NOT.upper()   if self.RES_NOT   else self.RES_NOT
-        self.RES_AGENDA= self.RES_AGENDA.upper()if self.RES_AGENDA else self.RES_AGENDA
         super().save(*args, **kwargs)
 
 # ============================================================
@@ -430,7 +413,72 @@ class RR(models.Model):
             return 'warning'   # próximo a vencer
         return 'success'       # tiempo suficiente
 
+# ============================================================
+# MODELO 5: AUTOTPE — Autos del Tribunal de Personal del Ejército
+# ============================================================
+class AUTOTPE(models.Model):
 
+    TIPO_CHOICES = [
+        ('SOBRESEIDO',                 'Sobreseído'),
+        ('NULIDAD_OBRADOS',            'Nulidad de Obrados'),
+        ('SANCION_ARRESTO',            'Sanción Arresto'),
+        ('SANCION_LETRA_B',            'Sanción Letra B'),
+        ('SANCION_RETIRO_OBLIGATORIO', 'Sanción Retiro Obligatorio'),
+        ('AUTO_CUMPLIMIENTO',          'Auto de Cumplimiento'),
+        ('AUTO_EJECUTORIA',            'Auto de Ejecutoria'),
+        ('AUTO_EXCUSA',                'Auto de Excusa'),
+        ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
+    ]
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
+    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
+   
+    # add fk de abogado para cada auto (puede ser el mismo u otro diferente al de la RES)
+    ID_ABOG = models.ForeignKey(
+        ABOG, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_ABOG', verbose_name='Abogado')
+
+    # FK a la agenda que generó este auto
+    ID_AGENDA = models.ForeignKey(
+        AGENDA, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_AGENDA', verbose_name='Agenda')
+
+    TPE_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
+    TPE_FEC   = models.DateField(verbose_name='Fecha del Auto')
+    TPE_RESOL = models.TextField(verbose_name='Resolución')
+    TPE_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
+
+    # Notificación Tipo
+    TPE_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
+    TPE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
+    TPE_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
+    TPE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
+
+    # Memorándum (exclusivo TPE)
+    TPE_MEMO_NUM     = models.CharField(max_length=20, null=True, blank=True, verbose_name='N° Memorándum')
+    TPE_MEMO_FEC     = models.DateField(null=True, blank=True, verbose_name='Fecha Memorándum')
+    TPE_MEMO_ENTREGA = models.DateField(null=True, blank=True, verbose_name='Fecha Entrega Memorándum')
+
+    class Meta:
+        db_table            = 'autotpe'
+        verbose_name        = 'Auto TPE'
+        verbose_name_plural = 'Autos TPE'
+        ordering            = ['-TPE_FEC']
+
+    def __str__(self):
+        return f"{self.TPE_NUM} — {self.get_TPE_TIPO_display()}"
+    def save(self, *args, **kwargs):
+        self.TPE_NUM          = self.TPE_NUM.upper()          if self.TPE_NUM          else self.TPE_NUM
+        self.TPE_RESOL        = self.TPE_RESOL.upper()        if self.TPE_RESOL        else self.TPE_RESOL
+        self.TPE_NOT          = self.TPE_NOT.upper()          if self.TPE_NOT          else self.TPE_NOT
+        self.TPE_MEMO_NUM     = self.TPE_MEMO_NUM.upper()     if self.TPE_MEMO_NUM     else self.TPE_MEMO_NUM
+        super().save(*args, **kwargs)
 # ============================================================
 # MODELO 8: RAP — Recurso de Apelación al TSP
 # ============================================================
