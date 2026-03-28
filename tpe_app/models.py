@@ -5,7 +5,6 @@
 #                RAP_FECLIMITE, RES_TIPO completo, DocumentoAdjunto
 # ============================================================
 
-from typing import Self
 
 from django.db import models
 from django.utils import timezone
@@ -271,65 +270,98 @@ class ABOG_SIM(models.Model):
 
 
 # ============================================================
-# MODELO 5: AGENDA — Reunión del Tribunal (paso previo a RES/AUTOTPE)
-#
-# Flujo: SIM ingresa → se crea AGENDA (Persona 1)
-#        ~1 semana después: de la reunión resulta una RES o AUTOTPE (Persona 2)
-#        Ambas tablas apuntan a esta AGENDA via FK
+# MODELO 3.5: AGENDA — Agendas de reuniones del tribunal
 # ============================================================
 class AGENDA(models.Model):
-
-    RESULTADO_CHOICES = [
-        ('PENDIENTE',  'Pendiente'),
-        ('RESOLUCION', 'Resolución'),
-        ('AUTO_TPE',   'Auto TPE'),
+    """Agendas programadas de reuniones del tribunal TPE"""
+    
+    TIPO_AGENDA_CHOICES = [
+        ('ORDINARIA',        'Sesión Ordinaria'),
+        ('EXTRAORDINARIA',   'Sesión Extraordinaria'),
     ]
-
-    ID_SIM  = models.ForeignKey(SIM,  on_delete=models.CASCADE,
-                                db_column='ID_SIM',  verbose_name='Sumario')
-    AG_NUM     = models.CharField(max_length=20, verbose_name='Número de Reunión',
-                                help_text='Ej: VIGESIMA PRIMERA AGENDA')
-    AG_FECPROG     = models.DateField(null=True, blank=True, verbose_name='Fecha Programada')
-    AG_FECREAL     = models.DateField(null=True, blank=True, verbose_name='Fecha Realizada')
-    AG_TIPO     = models.CharField(max_length=50, null=True, blank=True, verbose_name='Tipo de Reunión')
+    
+    AG_NUM = models.CharField(
+        max_length=50,
+        unique=True,
+        db_column='AG_NUM',
+        verbose_name='Número de Agenda'
+    )
+    ID_SIM = models.ForeignKey(
+        SIM,
+        on_delete=models.CASCADE,
+        db_column='ID_SIM',
+        verbose_name='Sumario'
+    )
+    AG_FECPROG = models.DateField(
+        null=True,
+        blank=True,
+        db_column='AG_FECPROG',
+        verbose_name='Fecha Programada'
+    )
+    AG_FECREAL = models.DateField(
+        null=True,
+        blank=True,
+        db_column='AG_FECREAL',
+        verbose_name='Fecha Realizada'
+    )
+    AG_TIPO = models.CharField(
+        max_length=50,
+        choices=TIPO_AGENDA_CHOICES,
+        null=True,
+        blank=True,
+        db_column='AG_TIPO',
+        verbose_name='Tipo de Agenda'
+    )
+    
     class Meta:
-        db_table            = 'agenda'
-        verbose_name        = 'Agenda'
+        db_table = 'agenda'
+        verbose_name = 'Agenda'
         verbose_name_plural = 'Agendas'
-        ordering            = ['-AG_FECPROG']
-
+        ordering = ['-AG_FECPROG']
+    
     def __str__(self):
-        return f"Agenda {self.AG_NUM} ({self.AG_FECPROG}) — {self.ID_SIM.SIM_COD}"
-
-    def save(self, *args, **kwargs):
-        self.AG_NUM     = self.AG_NUM.upper()     if self.AG_NUM     else self.AG_NUM
-        self.AG_TIPO    = self.AG_TIPO.upper()    if self.AG_TIPO    else self.AG_TIPO
-        super().save(*args, **kwargs)
-
+        return f"{self.AG_NUM} — {self.AG_FECPROG}"
 # ============================================================
-# MODELO 5A: DICTAMEN — Reunión del Tribunal (paso previo a RES/AUTOTPE)
-#
-# Flujo: DICTAMEN ingresa → se crea RESOL Y/O AUTO (a cada Persona dentro el sumario)
-#        #
+# MODELO 3.6: DICTAMEN — Dictamen de abogado en agenda
 # ============================================================
 class DICTAMEN(models.Model):
-
-    ID_AGENDA  = models.ForeignKey(AGENDA,  on_delete=models.CASCADE,
-                                db_column='ID_AGENDA',  verbose_name='Agenda')
-    ID_ABOG = models.ForeignKey(ABOG, on_delete=models.SET_NULL,null=True, blank=True,
-                                db_column='ID_ABOG', verbose_name='Abogado')
-
-    DIC_NUM     = models.CharField(max_length=20, verbose_name='Número de Dictamen',
-                                    help_text='Ej: 25/2026')
-    DIC_CONCL     = models.CharField(max_length=100, null=True, blank=True, verbose_name='Dictamen Sugerido')
+    """Dictamen emitido por abogado en una agenda"""
+    
+    DIC_NUM = models.CharField(
+        max_length=20,
+        db_column='DIC_NUM',
+        verbose_name='Número de Dictamen'
+    )
+    DIC_CONCL = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_column='DIC_CONCL',
+        verbose_name='Conclusión'
+    )
+    ID_ABOG = models.ForeignKey(
+        ABOG,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='ID_ABOG',
+        verbose_name='Abogado'
+    )
+    ID_AGENDA = models.ForeignKey(
+        AGENDA,
+        on_delete=models.CASCADE,
+        db_column='ID_AGENDA',
+        verbose_name='Agenda'
+    )
+    
     class Meta:
-        db_table            = 'dictamen'
-        verbose_name        = 'Dictamen'
+        db_table = 'dictamen'
+        verbose_name = 'Dictamen'
         verbose_name_plural = 'Dictámenes'
-        ordering            = ['-ID_AGENDA__AG_FECPROG']
-
+    
     def __str__(self):
-        return f"Dictamen {self.DIC_NUM} — {self.ID_AGENDA.ID_SIM.SIM_COD}"
+        return f"{self.DIC_NUM} — {self.ID_ABOG}"
+    
 
 #   def save(self, *args, **kwargs):
 #       self.DIC_NUM     = self.DIC_NUM.upper()     if self.DIC_NUM     else self.DIC_NUM
@@ -573,7 +605,7 @@ class RAP(models.Model):
     RAP_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución TSP')
     RAP_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
     RAP_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
-    RAP_TIPO = models.TextField(null=True, blank=True, choices=TIPO_CHOICES, verbose_name='Tipo de Resolución TSP')
+    RAP_TIPO = models.CharField(max_length=50, null=True, blank=True, choices=TIPO_CHOICES, verbose_name='Tipo de Resolución TSP')
 
     # Notificación Tipo
     RAP_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
@@ -700,10 +732,9 @@ class AUTOTSP(models.Model):
     def __str__(self):
         return f"{self.TSP_NUM} — {self.get_TSP_TIPO_display()}"
     def save(self, *args, **kwargs):
-        self.TSP_NUM          = self.TSP_NUM.upper()          if self.TSP_NUM          else self.TSP_NUM
-        self.TSP_RESOL        = self.TSP_RESOL.upper()        if self.TSP_RESOL        else self.TSP_RESOL
-        self.TSP_NOT          = self.TSP_NOT.upper()          if self.TSP_NOT          else self.TSP_NOT
-        self.TSP_EJECU_NOT    = self.TSP_EJECU_NOT.upper()    if self.TSP_EJECU_NOT    else self.TSP_EJECU_NOT
+        self.TSP_NUM   = self.TSP_NUM.upper()   if self.TSP_NUM   else self.TSP_NUM
+        self.TSP_RESOL = self.TSP_RESOL.upper() if self.TSP_RESOL else self.TSP_RESOL
+        self.TSP_NOT   = self.TSP_NOT.upper()   if self.TSP_NOT   else self.TSP_NOT
         super().save(*args, **kwargs)
 
 # ============================================================

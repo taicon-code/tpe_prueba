@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP
+from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP, DocumentoAdjunto
 from .widgets import ResumenConOpcionesWidget
 
 

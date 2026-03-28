@@ -1,0 +1,12 @@
+<div class="resumen-con-opciones">
+    <label for="{{ widget.attrs.id }}">Seleccionar opción predefinida:</label>
+    <select id="select_{{ widget.attrs.id }}" onchange="if(this.value) document.getElementById('{{ widget.attrs.id }}').value=this.value">
+        <option value="">-- Seleccionar --</option>
+        {% for value, label in widget.opciones %}
+            <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+    
+    <label for="{{ widget.attrs.id }}">O escribir personalizado:</label>
+    {% include "django/forms/widgets/textarea.html" %}
+</div>
