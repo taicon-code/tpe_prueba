@@ -9,6 +9,21 @@ from typing import Self
 
 from django.db import models
 from django.utils import timezone
+from datetime import timedelta
+
+
+# ============================================================
+# UTILIDAD: días hábiles (lunes=0 … viernes=4)
+# ============================================================
+def add_business_days(fecha_inicio, dias):
+    """Retorna la fecha resultante de sumar 'dias' días hábiles (lun-vier) a fecha_inicio."""
+    fecha = fecha_inicio
+    contados = 0
+    while contados < dias:
+        fecha += timedelta(days=1)
+        if fecha.weekday() < 5:   # 0=lun … 4=vie
+            contados += 1
+    return fecha
 
 
 # ============================================================
@@ -152,6 +167,7 @@ class SIM(models.Model):
 
     TIPO_CHOICES =  [
         ('DISCIPLINARIO',  'DISCIPLINARIO'),
+        ('ADMINISTRATIVO', 'ADMINISTRATIVO'),
         ('ASCENSO POSTUMO', 'ASCENSO POSTUMO'),
         ('SOLICITUD_LETRA_D',        'SOLICITUD LETRA D'),
         ('SOLICITUD_LICENCIA_MAXIMA', 'SOLICITUD LICENCIA MAXIMA'),
@@ -169,10 +185,13 @@ class SIM(models.Model):
         ('PROCESO_EN_EL_TPE', 'Proceso en el TPE'),
         ('EN_APELACION_TSP',  'En Apelación TSP'),
         ('CONCLUIDO',          'Concluido'),
+        ('OBSERVADO',           'Observado'),
     ]
 
     militares = models.ManyToManyField(
                     PM, through='PM_SIM', verbose_name='Militares investigados')
+    abogados  = models.ManyToManyField(
+                    'ABOG', through='ABOG_SIM', verbose_name='Abogados asignados')
 
     SIM_COD       = models.CharField(max_length=10,  unique=True, verbose_name='Código SIM')
     # ✅ CORREGIDO v1.2: renombrado de SIM_FECTPE → SIM_FECING
@@ -233,6 +252,25 @@ class PM_SIM(models.Model):
 
 
 # ============================================================
+# MODELO 4B: ABOG_SIM — Tabla puente N:M (ABOG ↔ SIM)
+# ============================================================
+class ABOG_SIM(models.Model):
+
+
+    ID_SIM  = models.ForeignKey(SIM,  on_delete=models.CASCADE,  db_column='ID_SIM',  verbose_name='Sumario')
+    ID_ABOG = models.ForeignKey(ABOG, on_delete=models.RESTRICT, db_column='ID_ABOG', verbose_name='Abogado')
+    
+    class Meta:
+        db_table            = 'abog_sim'
+        verbose_name        = 'Abogado en Sumario'
+        verbose_name_plural = 'Abogados en Sumario'
+        unique_together     = ('ID_SIM', 'ID_ABOG')
+
+    def __str__(self):
+        return f"{self.ID_ABOG} → {self.ID_SIM.SIM_COD}"
+
+
+# ============================================================
 # MODELO 5: AGENDA — Reunión del Tribunal (paso previo a RES/AUTOTPE)
 #
 # Flujo: SIM ingresa → se crea AGENDA (Persona 1)
@@ -249,34 +287,53 @@ class AGENDA(models.Model):
 
     ID_SIM  = models.ForeignKey(SIM,  on_delete=models.CASCADE,
                                 db_column='ID_SIM',  verbose_name='Sumario')
-    ID_ABOG = models.ForeignKey(ABOG, on_delete=models.SET_NULL,
-                                null=True, blank=True,
-                                db_column='ID_ABOG', verbose_name='Abogado')
-
     AG_NUM     = models.CharField(max_length=20, verbose_name='Número de Reunión',
-                                  help_text='Ej: 15/26')
-    AG_NUMDICT = models.CharField(max_length=10, null=True, blank=True,
-                                  verbose_name='N° Dictamen',
-                                  help_text='Ej: 02/26')
-    AG_FEC     = models.DateField(verbose_name='Fecha de la Reunión')
-    AG_RESULTADO = models.CharField(max_length=20, choices=RESULTADO_CHOICES,
-                                    default='PENDIENTE', verbose_name='Resultado')
-
+                                help_text='Ej: VIGESIMA PRIMERA AGENDA')
+    AG_FECPROG     = models.DateField(null=True, blank=True, verbose_name='Fecha Programada')
+    AG_FECREAL     = models.DateField(null=True, blank=True, verbose_name='Fecha Realizada')
+    AG_TIPO     = models.CharField(max_length=50, null=True, blank=True, verbose_name='Tipo de Reunión')
     class Meta:
         db_table            = 'agenda'
         verbose_name        = 'Agenda'
         verbose_name_plural = 'Agendas'
-        ordering            = ['-AG_FEC']
+        ordering            = ['-AG_FECPROG']
 
     def __str__(self):
-        return f"Agenda {self.AG_NUM} ({self.AG_FEC}) — {self.ID_SIM.SIM_COD}"
+        return f"Agenda {self.AG_NUM} ({self.AG_FECPROG}) — {self.ID_SIM.SIM_COD}"
 
     def save(self, *args, **kwargs):
         self.AG_NUM     = self.AG_NUM.upper()     if self.AG_NUM     else self.AG_NUM
-        self.AG_NUMDICT = self.AG_NUMDICT.upper() if self.AG_NUMDICT else self.AG_NUMDICT
+        self.AG_TIPO    = self.AG_TIPO.upper()    if self.AG_TIPO    else self.AG_TIPO
         super().save(*args, **kwargs)
 
+# ============================================================
+# MODELO 5A: DICTAMEN — Reunión del Tribunal (paso previo a RES/AUTOTPE)
+#
+# Flujo: DICTAMEN ingresa → se crea RESOL Y/O AUTO (a cada Persona dentro el sumario)
+#        #
+# ============================================================
+class DICTAMEN(models.Model):
 
+    ID_AGENDA  = models.ForeignKey(AGENDA,  on_delete=models.CASCADE,
+                                db_column='ID_AGENDA',  verbose_name='Agenda')
+    ID_ABOG = models.ForeignKey(ABOG, on_delete=models.SET_NULL,null=True, blank=True,
+                                db_column='ID_ABOG', verbose_name='Abogado')
+
+    DIC_NUM     = models.CharField(max_length=20, verbose_name='Número de Dictamen',
+                                    help_text='Ej: 25/2026')
+    DIC_CONCL     = models.CharField(max_length=100, null=True, blank=True, verbose_name='Dictamen Sugerido')
+    class Meta:
+        db_table            = 'dictamen'
+        verbose_name        = 'Dictamen'
+        verbose_name_plural = 'Dictámenes'
+        ordering            = ['-ID_AGENDA__AG_FECPROG']
+
+    def __str__(self):
+        return f"Dictamen {self.DIC_NUM} — {self.ID_AGENDA.ID_SIM.SIM_COD}"
+
+#   def save(self, *args, **kwargs):
+#       self.DIC_NUM     = self.DIC_NUM.upper()     if self.DIC_NUM     else self.DIC_NUM
+#       super().save(*args, **kwargs)
 # ============================================================
 # MODELO 6: RES — Primera Resolución del TPE
 # ============================================================
@@ -359,6 +416,9 @@ class RR(models.Model):
 
     ID_RES = models.ForeignKey(RES, on_delete=models.CASCADE, db_column='ID_RES', verbose_name='Primera Resolución')
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
+    ID_AGENDA = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
+                                null=True, blank=True,
+                                db_column='ID_AGENDA', verbose_name='Agenda')
 
     RR_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso')
     # ✅ NUEVO v1.2: fecha límite para alertas (15 días hábiles)
@@ -370,9 +430,9 @@ class RR(models.Model):
         null=True, blank=True,
         db_column='ID_ABOG', verbose_name='Abogado')
 
-    RR_NUM   = models.CharField(max_length=10,  verbose_name='Número')
-    RR_FEC   = models.DateField(verbose_name='Fecha')
-    RR_RESOL = models.TextField(verbose_name='Resolución')
+    RR_NUM   = models.CharField(null=True, blank=True, max_length=10,  verbose_name='Número')
+    RR_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha')
+    RR_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
     RR_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
 
     # Notificación Tipo
@@ -380,10 +440,6 @@ class RR(models.Model):
     RR_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
     RR_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RR_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    # Agenda
-    RR_AGENDA  = models.CharField(max_length=20, null=True, blank=True, verbose_name='Agenda')
-    RR_FECAGEN = models.DateField(null=True, blank=True, verbose_name='Fecha Agenda')
 
     class Meta:
         db_table            = 'rr'
@@ -394,11 +450,13 @@ class RR(models.Model):
     def __str__(self):
         return f"{self.RR_NUM} — {self.RR_RESUM or 'Sin resumen'}"
     def save(self, *args, **kwargs):
+        # Auto-calcular fecha límite (15 días hábiles desde fecha de presentación)
+        if self.RR_FECPRESEN and not self.RR_FECLIMITE:
+            self.RR_FECLIMITE = add_business_days(self.RR_FECPRESEN, 15)
         self.RR_NUM    = self.RR_NUM.upper()    if self.RR_NUM    else self.RR_NUM
         self.RR_RESOL  = self.RR_RESOL.upper()  if self.RR_RESOL  else self.RR_RESOL
         self.RR_RESUM  = self.RR_RESUM.upper()  if self.RR_RESUM  else self.RR_RESUM
         self.RR_NOT    = self.RR_NOT.upper()    if self.RR_NOT    else self.RR_NOT
-        self.RR_AGENDA = self.RR_AGENDA.upper() if self.RR_AGENDA else self.RR_AGENDA
         super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):
@@ -412,6 +470,8 @@ class RR(models.Model):
         elif diff <= 5:
             return 'warning'   # próximo a vencer
         return 'success'       # tiempo suficiente
+
+
 
 # ============================================================
 # MODELO 5: AUTOTPE — Autos del Tribunal de Personal del Ejército
@@ -435,8 +495,7 @@ class AUTOTPE(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
-   
+    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')  
     # add fk de abogado para cada auto (puede ser el mismo u otro diferente al de la RES)
     ID_ABOG = models.ForeignKey(
         ABOG, on_delete=models.SET_NULL,
@@ -449,10 +508,10 @@ class AUTOTPE(models.Model):
         null=True, blank=True,
         db_column='ID_AGENDA', verbose_name='Agenda')
 
-    TPE_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
-    TPE_FEC   = models.DateField(verbose_name='Fecha del Auto')
-    TPE_RESOL = models.TextField(verbose_name='Resolución')
-    TPE_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
+    TPE_NUM   = models.CharField(null=True, blank=True, max_length=15,  verbose_name='Número de Auto')
+    TPE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
+    TPE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
+    TPE_TIPO  = models.CharField(null=True, blank=True, max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
 
     # Notificación Tipo
     TPE_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
@@ -489,22 +548,32 @@ class RAP(models.Model):
         ('EDICTO',  'Edicto'),
         ('CEDULON', 'Cedulón'),
     ]
+    TIPO_CHOICES = [
+        ('REVOCAR',         'REVOCAR'),
+        ('CONFIRMAR',       'CONFIRMAR'),
+        ('MODIFICAR',       'MODIFICAR'),
+        ('ANULAR HASTA EL VICIO MAS ANTIGUO','ANULAR HASTA EL VICIO MAS ANTIGUO'),
+        ('OTRO',   'OTRO'),
+    ]
+    
     ID_RR  = models.ForeignKey(RR,  on_delete=models.SET_NULL, null=True, blank=True,
                                 db_column='ID_RR',  verbose_name='Segunda Resolución (RR)')
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                 db_column='ID_SIM', verbose_name='Sumario')
+    # Fecha de ingreso al TSP (puede ser diferente a la fecha del oficio de elevación, que es el documento que se envía al TSP)
+    RAP_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso de Apelación al TSP')
+    # ✅ NUEVO v1.2: fecha límite para alertas (3 días hábiles)
+    RAP_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite remisión TSP (3 días hábiles)')
 
     # Elevación al TSP
     RAP_OFI    = models.CharField(max_length=15, null=True, blank=True, verbose_name='N° Oficio Elevación')
     RAP_FECOFI = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
-    # ✅ NUEVO v1.2: fecha límite para alertas (3 días hábiles)
-    RAP_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite remisión TSP (3 días hábiles)')
-
+    
     # Resolución del TSP
     RAP_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución TSP')
     RAP_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
     RAP_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
-    RAP_RESUM = models.TextField(null=True, blank=True, verbose_name='Resumen')
+    RAP_TIPO = models.TextField(null=True, blank=True, choices=TIPO_CHOICES, verbose_name='Tipo de Resolución TSP')
 
     # Notificación Tipo
     RAP_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
@@ -522,10 +591,13 @@ class RAP(models.Model):
         return f"{self.RAP_NUM or 'Sin número'} — {self.ID_SIM.SIM_COD}"
     
     def save(self, *args, **kwargs):
+        # Auto-calcular fecha límite (3 días hábiles desde fecha del oficio)
+        if self.RAP_FECOFI and not self.RAP_FECLIMITE:
+            self.RAP_FECLIMITE = add_business_days(self.RAP_FECOFI, 3)
         self.RAP_OFI   = self.RAP_OFI.upper()   if self.RAP_OFI   else self.RAP_OFI
         self.RAP_NUM   = self.RAP_NUM.upper()   if self.RAP_NUM   else self.RAP_NUM
         self.RAP_RESOL = self.RAP_RESOL.upper() if self.RAP_RESOL else self.RAP_RESOL
-        self.RAP_RESUM = self.RAP_RESUM.upper() if self.RAP_RESUM else self.RAP_RESUM
+        self.RAP_TIPO = self.RAP_TIPO.upper() if self.RAP_TIPO else self.RAP_TIPO
         self.RAP_NOT   = self.RAP_NOT.upper()   if self.RAP_NOT   else self.RAP_NOT
         super().save(*args, **kwargs)
 
@@ -557,10 +629,7 @@ class RAEE(models.Model):
                                 db_column='ID_RAP', verbose_name='Recurso de Apelación')
     ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                 db_column='ID_SIM', verbose_name='Sumario')
-
-    RAE_OFI    = models.CharField(max_length=15, null=True, blank=True, verbose_name='N° Oficio')
-    RAE_FECOFI = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
-
+    
     RAE_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución')
     RAE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución')
     RAE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
@@ -572,10 +641,6 @@ class RAEE(models.Model):
     RAE_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     RAE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
-    # Agenda
-    RAE_AGENDA  = models.CharField(max_length=15, null=True, blank=True, verbose_name='Agenda')
-    RAE_FECAGEN = models.DateField(null=True, blank=True, verbose_name='Fecha Agenda')
-
     class Meta:
         db_table            = 'raee'
         verbose_name        = 'RAEE — Aclaración, Explicación y Enmienda'
@@ -585,12 +650,10 @@ class RAEE(models.Model):
     def __str__(self):
         return f"{self.RAE_NUM or 'Sin número'} — {self.ID_SIM.SIM_COD}"
     def save(self, *args, **kwargs):
-        self.RAE_OFI   = self.RAE_OFI.upper()   if self.RAE_OFI   else self.RAE_OFI
         self.RAE_NUM   = self.RAE_NUM.upper()   if self.RAE_NUM   else self.RAE_NUM
         self.RAE_RESOL = self.RAE_RESOL.upper() if self.RAE_RESOL else self.RAE_RESOL
         self.RAE_RESUM = self.RAE_RESUM.upper() if self.RAE_RESUM else self.RAE_RESUM
         self.RAE_NOT   = self.RAE_NOT.upper()   if self.RAE_NOT   else self.RAE_NOT
-        self.RAE_AGENDA= self.RAE_AGENDA.upper()if self.RAE_AGENDA else self.RAE_AGENDA
         super().save(*args, **kwargs)
 
 # ============================================================
@@ -628,10 +691,6 @@ class AUTOTSP(models.Model):
     TSP_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
     TSP_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
-    # Auto de Ejecutoria (sin memorándum en TSP)
-    TSP_EJECU_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado Ejecutoria')
-    TSP_EJECU_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notif. Ejecutoria')
-
     class Meta:
         db_table            = 'autotsp'
         verbose_name        = 'Auto TSP'
@@ -644,7 +703,6 @@ class AUTOTSP(models.Model):
         self.TSP_NUM          = self.TSP_NUM.upper()          if self.TSP_NUM          else self.TSP_NUM
         self.TSP_RESOL        = self.TSP_RESOL.upper()        if self.TSP_RESOL        else self.TSP_RESOL
         self.TSP_NOT          = self.TSP_NOT.upper()          if self.TSP_NOT          else self.TSP_NOT
-        self.TSP_EDICTO_PERIOD= self.TSP_EDICTO_PERIOD.upper()if self.TSP_EDICTO_PERIOD else self.TSP_EDICTO_PERIOD
         self.TSP_EJECU_NOT    = self.TSP_EJECU_NOT.upper()    if self.TSP_EJECU_NOT    else self.TSP_EJECU_NOT
         super().save(*args, **kwargs)
 

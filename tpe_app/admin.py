@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django import forms
-from .models import PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP
+from django.utils.html import mark_safe
+from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -131,19 +132,34 @@ class SIMAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(AGENDA)
 class AGENDAAdmin(admin.ModelAdmin):
-    list_display  = ('AG_NUM', 'AG_NUMDICT', 'AG_FEC', 'ID_SIM', 'ID_ABOG', 'AG_RESULTADO')
-    search_fields = ('AG_NUM', 'AG_NUMDICT', 'ID_SIM__SIM_COD')
-    list_filter   = ('AG_RESULTADO',)
+    list_display  = ('AG_NUM', 'AG_FECPROG', 'AG_FECREAL', 'ID_SIM','AG_TIPO')
+    search_fields = ('AG_NUM', 'ID_SIM__SIM_COD')
+    list_filter   = ()
 
     fieldsets = (
         ('Datos de la Reunión', {
-            'fields': ('ID_SIM', 'ID_ABOG', 'AG_NUM', 'AG_NUMDICT', 'AG_FEC',)
+            'fields': ('ID_SIM', 'AG_NUM', 'AG_FECPROG', 'AG_FECREAL','AG_TIPO',)
         }),
-        ('Resultado', {
-            'fields': ('AG_RESULTADO',),
-            'description': 'Se actualiza una vez que la reunión produce un documento'
+
+    )
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: DICTAMEN
+#  Se registra ANTES que la RES Y/o el AUTOTPE
+# ════════════════════════════════════════════════════════════════════════════
+@admin.register(DICTAMEN)
+class DICTAMENAdmin(admin.ModelAdmin):
+
+    list_display  = ('DIC_NUM', 'DIC_CONCL', 'ID_AGENDA', 'ID_ABOG')
+    search_fields = ('DIC_NUM', 'ID_AGENDA__ID_SIM__SIM_COD')
+    list_filter   = ('ID_ABOG', 'ID_AGENDA',)
+
+    fieldsets = (
+        ('Datos de la Reunión', {
+            'fields': ('ID_AGENDA', 'ID_ABOG', 'DIC_NUM', 'DIC_CONCL')
         }),
     )
+
 
 # ============================================================
 #  SECCIÓN 2: TRIBUNAL DE PERSONAL DEL EJÉRCITO (TPE)
@@ -171,9 +187,44 @@ class RESAdmin(admin.ModelAdmin):
 
 @admin.register(RR)
 class RRAdmin(admin.ModelAdmin):
-    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'ID_ABOG', 'RR_FEC', 'RR_FECPRESEN', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
+    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'ID_ABOG', 'RR_FEC', 'RR_FECPRESEN', 'alerta_plazo', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
     search_fields = ('RR_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
+# ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACION DENTRO DE LA RESOLUCION DEL TPE
+    fieldsets = (
+        ('PLAZOS', {
+            'fields': ('ID_SIM', 'ID_RES', 'ID_ABOG', 'ID_AGENDA', 'RR_FECPRESEN', 'RR_FECLIMITE',)
+        }),
+        ('DISPOSICION RESOLUTIVA', {
+            'fields': ('RR_NUM','RR_FEC','RR_RESOL','RR_RESUM',)
+        }),
+        ('NOTIFICACION', {
+            'fields': ('RR_TIPO_NOTIF','RR_NOT','RR_FECNOT','RR_HORNOT',)
+        }),
+    )
 
+    @mark_safe
+    def alerta_plazo(self, obj):
+        color = obj.get_alerta_plazo()
+        etiquetas = {
+            'success':   ('verde',   'En plazo'),
+            'warning':   ('amarillo','Por vencer'),
+            'danger':    ('rojo',    'Vencido'),
+            'secondary': ('gris',    'Sin fecha'),
+        }
+        colores_css = {
+            'success':   '#28a745',
+            'warning':   '#e67e00',
+            'danger':    '#dc3545',
+            'secondary': '#6c757d',
+        }
+        _, label = etiquetas.get(color, ('gris', '-'))
+        css = colores_css.get(color, '#6c757d')
+        fecha = obj.RR_FECLIMITE.strftime('%d/%m/%Y') if obj.RR_FECLIMITE else '-'
+        return (
+            f'<span style="color:{css};font-weight:700;">'
+            f'{label}</span><br><small style="color:#555;">{fecha}</small>'
+        )
+    alerta_plazo.short_description = 'Limite 15 dias'
 
 @admin.register(AUTOTPE)
 class AUTOTPEAdmin(admin.ModelAdmin):
@@ -205,13 +256,52 @@ class AUTOTPEAdmin(admin.ModelAdmin):
 
 @admin.register(RAP)
 class RAPAdmin(admin.ModelAdmin):
-    list_display  = ('RAP_NUM', 'ID_SIM', 'RAP_OFI', 'RAP_FECOFI', 'RAP_FEC', 'RAP_TIPO_NOTIF', 'RAP_NOT', 'RAP_FECNOT','RAP_HORNOT')
+    list_display  = ('RAP_NUM', 'ID_SIM', 'RAP_FECPRESEN','RAP_OFI', 'RAP_FECOFI', 'alerta_plazo_rap', 'RAP_FEC', 'RAP_TIPO_NOTIF', 'RAP_NOT', 'RAP_FECNOT','RAP_HORNOT')
     search_fields = ('RAP_NUM', 'ID_SIM__SIM_COD')
 
+    @mark_safe
+    def alerta_plazo_rap(self, obj):
+        color = obj.get_alerta_plazo()
+        etiquetas = {
+            'success':   'En plazo',
+            'warning':   'Por vencer',
+            'danger':    'Vencido',
+            'secondary': 'Sin fecha',
+        }
+        colores_css = {
+            'success':   '#28a745',
+            'warning':   '#e67e00',
+            'danger':    '#dc3545',
+            'secondary': '#6c757d',
+        }
+        label = etiquetas.get(color, '-')
+        css = colores_css.get(color, '#6c757d')
+        fecha = obj.RAP_FECLIMITE.strftime('%d/%m/%Y') if obj.RAP_FECLIMITE else '-'
+        return (
+            f'<span style="color:{css};font-weight:700;">'
+            f'{label}</span><br><small style="color:#555;">{fecha}</small>'
+        )
+    alerta_plazo_rap.short_description = 'Limite 3 dias'
+# ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACION DEL RAP DENTRO DEL TSP
+
+    fieldsets = (
+        ('REGISTRO DEL RECURSO DE APELACION', {
+            'fields': ('RAP_FECPRESEN', 'RAP_FECLIMITE','ID_SIM','ID_RR',)
+        }),
+        ('REGISTRO DE ENVIO DE DOCUMENTOS AL TSP. FF. AA.', {
+            'fields': ('RAP_OFI', 'RAP_FECOFI',)
+        }),
+        ('PARTE RESOLUTIVA', {
+            'fields': ('RAP_NUM','RAP_FEC','RAP_RESOL','RAP_TIPO',)
+        }),
+        ('NOTIFICACION', {
+            'fields': ('RAP_TIPO_NOTIF','RAP_NOT','RAP_FECNOT','RAP_HORNOT',)
+        }),
+    )
 
 @admin.register(RAEE)
 class RAEEAdmin(admin.ModelAdmin):
-    list_display  = ('RAE_NUM', 'ID_SIM', 'RAE_OFI', 'RAE_FECOFI', 'RAE_FEC', 'RAE_TIPO_NOTIF', 'RAE_NOT', 'RAE_FECNOT','RAE_HORNOT')
+    list_display  = ('RAE_NUM', 'ID_SIM', 'RAE_FEC', 'RAE_TIPO_NOTIF', 'RAE_NOT', 'RAE_FECNOT','RAE_HORNOT')
     search_fields = ('RAE_NUM', 'ID_SIM__SIM_COD')
 
 
@@ -224,14 +314,11 @@ class AUTOTSPAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 #  ADMIN: Documentos Adjuntos
 # ════════════════════════════════════════════════════════════════════════════
- 
 # @admin.register(DocumentoAdjunto)
 # class DocumentoAdjuntoAdmin(admin.ModelAdmin):
     # list_display  = ('DOC_NOMBRE', 'DOC_TABLA', 'DOC_TIPO', 'DOC_FECREG')
     # search_fields = ('DOC_NOMBRE', 'DOC_TABLA')
     # list_filter   = ('DOC_TABLA', 'DOC_TIPO')
- 
- 
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
