@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='agenda',
             name='AG_FECPROG',
-            field=models.DateField(db_column='AG_FECPROG', verbose_name='Fecha Programada'),
+            field=models.DateField(blank=True, db_column='AG_FECPROG', null=True, verbose_name='Fecha Programada'),
         ),
         migrations.AlterField(
             model_name='agenda',

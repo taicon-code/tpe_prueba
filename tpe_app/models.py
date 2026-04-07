@@ -103,7 +103,8 @@ class PM(models.Model):
         ('FALLECIDO',      'Fallecido'),
     ]
 
-    PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, verbose_name='Cédula de Identidad')
+    pm_id        = models.AutoField(primary_key=True, db_column='pm_id')
+    PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, null=True, blank=True, verbose_name='Cédula de Identidad')
     PM_ESCALAFON = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
     PM_GRADO     = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado')
     PM_ARMA      = models.CharField(max_length=20, choices=ARMA_CHOICES,      null=True, blank=True, verbose_name='Arma')
@@ -134,6 +135,7 @@ class PM(models.Model):
 # ============================================================
 class ABOG(models.Model):
 
+    ab_id      = models.AutoField(primary_key=True, db_column='ab_id')
     AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, null=True, blank=True, verbose_name='Cédula de Identidad')
     AB_GRADO   = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
     AB_ARMA    = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
@@ -286,12 +288,6 @@ class AGENDA(models.Model):
         db_column='AG_NUM',
         verbose_name='Número de Agenda'
     )
-    ID_SIM = models.ForeignKey(
-        SIM,
-        on_delete=models.CASCADE,
-        db_column='ID_SIM',
-        verbose_name='Sumario'
-    )
     AG_FECPROG = models.DateField(
         null=True,
         blank=True,
@@ -327,8 +323,11 @@ class AGENDA(models.Model):
 class DICTAMEN(models.Model):
     """Dictamen emitido por abogado en una agenda"""
     
+    # Nullable: registros históricos anteriores a esta gestión pueden no tener número
     DIC_NUM = models.CharField(
         max_length=20,
+        null=True,
+        blank=True,
         db_column='DIC_NUM',
         verbose_name='Número de Dictamen'
     )
@@ -337,8 +336,23 @@ class DICTAMEN(models.Model):
         null=True,
         blank=True,
         db_column='DIC_CONCL',
-        verbose_name='Conclusión'
+        verbose_name='Conclusión / Recomendación'
     )
+    # FK a agenda: a qué reunión pertenece este dictamen
+    ID_AGENDA = models.ForeignKey(
+        AGENDA,
+        on_delete=models.CASCADE,
+        db_column='ID_AGENDA',
+        verbose_name='Agenda'
+    )
+    # FK a SIM: qué sumario estudió el abogado en esa agenda
+    ID_SIM = models.ForeignKey(
+        SIM,
+        on_delete=models.CASCADE,
+        db_column='ID_SIM',
+        verbose_name='Sumario'
+    )
+    # Nullable: registros históricos pueden no tener abogado registrado
     ID_ABOG = models.ForeignKey(
         ABOG,
         on_delete=models.SET_NULL,
@@ -347,25 +361,21 @@ class DICTAMEN(models.Model):
         db_column='ID_ABOG',
         verbose_name='Abogado'
     )
-    ID_AGENDA = models.ForeignKey(
-        AGENDA,
-        on_delete=models.CASCADE,
-        db_column='ID_AGENDA',
-        verbose_name='Agenda'
-    )
-    
+
     class Meta:
         db_table = 'dictamen'
         verbose_name = 'Dictamen'
         verbose_name_plural = 'Dictámenes'
-    
-    def __str__(self):
-        return f"{self.DIC_NUM} — {self.ID_ABOG}"
-    
+        ordering = ['-ID_AGENDA']
 
-#   def save(self, *args, **kwargs):
-#       self.DIC_NUM     = self.DIC_NUM.upper()     if self.DIC_NUM     else self.DIC_NUM
-#       super().save(*args, **kwargs)
+    def __str__(self):
+        num = self.DIC_NUM or 'S/N'
+        return f"Dictamen {num} — {self.ID_SIM.SIM_COD}"
+
+    def save(self, *args, **kwargs):
+        self.DIC_NUM   = self.DIC_NUM.upper()   if self.DIC_NUM   else self.DIC_NUM
+        self.DIC_CONCL = self.DIC_CONCL.upper() if self.DIC_CONCL else self.DIC_CONCL
+        super().save(*args, **kwargs)
 # ============================================================
 # MODELO 6: RES — Primera Resolución del TPE
 # ============================================================
@@ -409,6 +419,12 @@ class RES(models.Model):
         AGENDA, on_delete=models.SET_NULL,
         null=True, blank=True,
         db_column='ID_AGENDA', verbose_name='Agenda')
+
+    # FK al dictamen que originó esta resolución (nullable: históricos sin dictamen)
+    ID_DICTAMEN = models.ForeignKey(
+        'DICTAMEN', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        db_column='ID_DICTAMEN', verbose_name='Dictamen origen')
 
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
     RES_FEC   = models.DateField(verbose_name='Fecha')
@@ -710,7 +726,7 @@ class AUTOTSP(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
+    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario', null=True, blank=True)
 
     TSP_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
     TSP_FEC   = models.DateField(verbose_name='Fecha del Auto')

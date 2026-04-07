@@ -66,7 +66,7 @@ class ConsultasHistorialPersonal:
             >>> ConsultasHistorialPersonal.obtener_sumarios_de_personal(personal.id)
         """
         return SIM.objects.filter(
-            pm_sim__ID_PM__id=personal_id
+            pm_sim__pm__id=personal_id
         ).prefetch_related('pm_sim_set').distinct()
 
     @staticmethod
@@ -102,18 +102,18 @@ class ConsultasHistorialPersonal:
             return None
         
         # Obtener todos los SIM donde participa este personal
-        sims = SIM.objects.filter(pm_sim__ID_PM__id=personal_id).distinct()
+        sims = SIM.objects.filter(pm_sim__pm__id=personal_id).distinct()
         sim_ids = list(sims.values_list('id', flat=True))
         
         historial = {
             'personal': personal,
             'sumarios': sims,
-            'resoluciones': RES.objects.filter(ID_SIM__in=sim_ids),
-            'segundas_resoluciones': RR.objects.filter(ID_SIM__in=sim_ids),
-            'recursos_apelacion': RAP.objects.filter(ID_SIM__in=sim_ids),
-            'raees': RAEE.objects.filter(ID_SIM__in=sim_ids),
-            'autos_tpe': AUTOTPE.objects.filter(ID_SIM__in=sim_ids),
-            'autos_tsp': AUTOTSP.objects.filter(ID_SIM__in=sim_ids),
+            'resoluciones': RES.objects.filter(sim__in=sim_ids),
+            'segundas_resoluciones': RR.objects.filter(sim__in=sim_ids),
+            'recursos_apelacion': RAP.objects.filter(sim__in=sim_ids),
+            'raees': RAEE.objects.filter(sim__in=sim_ids),
+            'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
+            'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
         }
         
         return historial
@@ -159,7 +159,7 @@ SUMARIOS (SIM):  {historial['sumarios'].count()} registro(s)
             texto += f"""
   [{sim.SIM_COD}] - {sim.SIM_TIPO}
     Objeto:        {sim.SIM_RESUM}
-    Abogado:       {sim.ID_ABOG}
+    Abogado:       {sim.abogados.all().first()}
     Fecha Ingreso: {sim.SIM_FECING}
     Estado:        {sim.SIM_ESTADO}
 """
