@@ -1,6 +1,6 @@
 # ============================================================
 #  VISTAS DJANGO PARA BUSCAR HISTORIAL DE PERSONAL
-#  Archivo: tpe_app/views.py
+#  Archivo: tpe_app/views/historial_views.py
 # ============================================================
 
 from django.shortcuts import render, get_object_or_404

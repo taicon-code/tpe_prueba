@@ -348,7 +348,7 @@
 </style>
 
 <div class="resultado-container">
-  <a href="{% url 'tpe_app:buscar_historial' %}" class="boton-volver">← Volver a Búsqueda</a>
+  <a href="{% url 'buscar_historial' %}" class="boton-volver">← Volver a Búsqueda</a>
 
   {% if error %}
     <div class="mensaje-error">
@@ -371,7 +371,7 @@
           <p><strong>Escalafón:</strong> {{ personal.get_PM_ESCALAFON_display|default:"N/A" }}</p>
           <p><strong>Arma:</strong> {{ personal.get_PM_ARMA_display|default:"N/A" }}</p>
           <p><strong>Estado:</strong> {{ personal.get_PM_ESTADO_display }}</p>
-          <a href="{% url 'tpe_app:historial_detalle' personal.pm_id %}">Ver Historial Completo →</a>
+          <a href="{% url 'historial_detalle' personal.pm_id %}">Ver Historial Completo →</a>
         </div>
       {% endfor %}
     </div>
@@ -463,7 +463,13 @@
                   </div>
                   <div class="detalle">
                     <div class="detalle-etiqueta">Abogado:</div>
-                    <div class="detalle-valor">{{ sim.ID_ABOG|default:"N/A" }}</div>
+                    <div class="detalle-valor">
+                      {% for abog in sim.abogados.all %}
+                        {{ abog }}{% if not forloop.last %}, {% endif %}
+                      {% empty %}
+                        Sin asignar
+                      {% endfor %}
+                    </div>
                   </div>
                   <div class="detalle">
                     <div class="detalle-etiqueta">Fecha Ingreso:</div>

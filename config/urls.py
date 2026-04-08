@@ -19,5 +19,5 @@ from django.urls import path, include
     
 urlpatterns = [
         path('admin/', admin.site.urls),
-        path('historial/', include('tpe_app.urls')),
+        path('', include('tpe_app.urls')),  # Todas las vistas de usuarios
     ]

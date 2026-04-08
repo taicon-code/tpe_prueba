@@ -103,7 +103,7 @@ class PM(models.Model):
         ('FALLECIDO',      'Fallecido'),
     ]
 
-    pm_id        = models.AutoField(primary_key=True, db_column='id')
+    pm_id        = models.BigAutoField(primary_key=True, db_column='id')
     PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, null=True, blank=True, verbose_name='Cédula de Identidad')
     PM_ESCALAFON = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
     PM_GRADO     = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado')
@@ -135,7 +135,7 @@ class PM(models.Model):
 # ============================================================
 class ABOG(models.Model):
 
-    abog_id      = models.AutoField(primary_key=True, db_column='id')
+    abog_id      = models.BigAutoField(primary_key=True, db_column='id')
     AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, null=True, blank=True, verbose_name='Cédula de Identidad')
     AB_GRADO   = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
     AB_ARMA    = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
@@ -448,7 +448,7 @@ class RES(models.Model):
         super().save(*args, **kwargs)
 
 # ============================================================
-# MODELO 7: RR — Segunda Resolución (Recurso de Reconsideración)
+# MODELO 7: RR — Recurso de Reconsideración
 # ============================================================
 class RR(models.Model):
 
@@ -790,3 +790,34 @@ class DocumentoAdjunto(models.Model):
 
     def __str__(self):
         return f"{self.DOC_NOMBRE} ({self.get_DOC_TABLA_display()})"
+    # Agregar al FINAL de tpe_app/models.py (después de AUTOTSP)
+
+# ============================================================
+# MODELO 12: PerfilUsuario — Sistema de roles
+# ============================================================
+class PerfilUsuario(models.Model):
+    
+    ROL_CHOICES = [
+        ('ADMINISTRADOR', 'Administrador'),
+        ('ABOGADO',       'Abogado'),
+        ('BUSCADOR',      'Buscador'),
+        ('AUXILIAR',      'Auxiliar'),
+    ]
+    
+    user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, 
+                                   verbose_name='Usuario del sistema')
+    rol     = models.CharField(max_length=20, choices=ROL_CHOICES, 
+                               verbose_name='Rol/Perfil')
+    abogado = models.ForeignKey(ABOG, on_delete=models.SET_NULL, 
+                                null=True, blank=True,
+                                verbose_name='Vinculado a Abogado',
+                                help_text='Solo para usuarios con rol ABOGADO')
+    activo  = models.BooleanField(default=True, verbose_name='Usuario activo')
+    
+    class Meta:
+        db_table            = 'perfil_usuario'
+        verbose_name        = 'Perfil de Usuario'
+        verbose_name_plural = 'Perfiles de Usuario'
+    
+    def __str__(self):
+        return f"{self.user.username} ({self.get_rol_display()})"

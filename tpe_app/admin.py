@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP, DocumentoAdjunto
+from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP, DocumentoAdjunto, PerfilUsuario
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -321,3 +321,23 @@ class AUTOTSPAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
+
+# Agregar al FINAL de admin.py
+
+from .models import PerfilUsuario
+
+@admin.register(PerfilUsuario)
+class PerfilUsuarioAdmin(admin.ModelAdmin):
+    list_display  = ('user', 'rol', 'abogado', 'activo')
+    list_filter   = ('rol', 'activo')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name')
+    
+    fieldsets = (
+        ('Información de usuario', {
+            'fields': ('user', 'rol', 'activo')
+        }),
+        ('Vinculación (solo para Abogados)', {
+            'fields': ('abogado',),
+            'classes': ('collapse',)
+        }),
+    )

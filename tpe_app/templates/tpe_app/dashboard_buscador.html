@@ -1,0 +1,117 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Dashboard Buscador - TPE Sistema{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">🔍 Búsqueda de Información</h1>
+
+<div class="card">
+    <h2>Buscar Sumarios o Personal Militar</h2>
+    <form method="get" class="search-box">
+        <input 
+            type="text" 
+            name="q" 
+            placeholder="Buscar por Código DJE, CI, Nombre, Apellido..." 
+            value="{{ query }}"
+            autofocus
+        >
+        <button type="submit" class="btn">Buscar</button>
+    </form>
+</div>
+
+{% if query %}
+<div class="card">
+    <h2>Resultados de Sumarios ({{ total_sim }})</h2>
+    {% if resultados_sim %}
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Tipo</th>
+                <th>Resumen</th>
+                <th>Abogado</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in resultados_sim %}
+            <tr>
+                <td><strong>{{ sim.SIM_COD }}</strong></td>
+                <td><span class="badge badge-blue">{{ sim.get_SIM_TIPO_display }}</span></td>
+                <td>{{ sim.SIM_RESUM|truncatewords:12 }}</td>
+                <td>
+                    {% for abog in sim.abogados.all %}
+                        {{ abog }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin asignar
+                    {% endfor %}
+                </td>
+                <td>
+                    {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                        <span class="badge badge-orange">Para Agenda</span>
+                    {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                        <span class="badge badge-green">En TPE</span>
+                    {% else %}
+                        <span class="badge badge-purple">En TSP</span>
+                    {% endif %}
+                </td>
+                <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #999; text-align: center; padding: 2rem;">No se encontraron sumarios con ese criterio</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Resultados de Personal Militar ({{ total_pm }})</h2>
+    {% if resultados_pm %}
+    <table>
+        <thead>
+            <tr>
+                <th>CI</th>
+                <th>Grado</th>
+                <th>Nombre Completo</th>
+                <th>Arma</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pm in resultados_pm %}
+            <tr>
+                <td><strong>{{ pm.PM_CI }}</strong></td>
+                <td>{{ pm.get_PM_GRADO_display|default:"-" }}</td>
+                <td>{{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }} {{ pm.PM_MATERNO }}</td>
+                <td>{{ pm.get_PM_ARMA_display|default:"-" }}</td>
+                <td>
+                    {% if pm.PM_ESTADO == 'ACTIVO' %}
+                        <span class="badge badge-green">{{ pm.get_PM_ESTADO_display }}</span>
+                    {% else %}
+                        <span class="badge badge-orange">{{ pm.get_PM_ESTADO_display }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #999; text-align: center; padding: 2rem;">No se encontró personal militar con ese criterio</p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not query %}
+<div class="card" style="background: #f8f9fa; border-left: 4px solid #1e3c72;">
+    <h3 style="margin-bottom: 1rem;">💡 Consejos de búsqueda</h3>
+    <ul style="margin-left: 1.5rem; line-height: 2;">
+        <li>Busca por <strong>código DJE</strong>: Ejemplo "DJE-56/24"</li>
+        <li>Busca por <strong>CI</strong>: Ejemplo "12345678"</li>
+        <li>Busca por <strong>nombre o apellido</strong>: Ejemplo "GONZALES"</li>
+        <li>Busca por <strong>palabra clave</strong> en el resumen del sumario</li>
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

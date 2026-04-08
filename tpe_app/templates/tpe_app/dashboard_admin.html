@@ -1,0 +1,86 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Dashboard Administrador - TPE Sistema{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📊 Panel de Administración</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>{{ total_sumarios }}</h3>
+        <p>Total de Sumarios</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ sumarios_para_agenda }}</h3>
+        <p>Para Agenda</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ sumarios_en_tpe }}</h3>
+        <p>En TPE</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ sumarios_en_tsp }}</h3>
+        <p>En TSP</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ total_personal }}</h3>
+        <p>Personal Militar</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ total_abogados }}</h3>
+        <p>Abogados</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ total_usuarios }}</h3>
+        <p>Usuarios Activos</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Sumarios Recientes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Resumen</th>
+                <th>Abogado</th>
+                <th>Estado</th>
+                <th>Fecha Ingreso</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in sumarios_recientes %}
+            <tr>
+                <td><strong>{{ sim.SIM_COD }}</strong></td>
+                <td>{{ sim.SIM_RESUM|truncatewords:10 }}</td>
+                <td>
+                    {% for abog in sim.abogados.all %}
+                        {{ abog }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin asignar
+                    {% endfor %}
+                </td>
+                <td>
+                    {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                        <span class="badge badge-orange">Para Agenda</span>
+                    {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                        <span class="badge badge-green">En TPE</span>
+                    {% else %}
+                        <span class="badge badge-purple">En TSP</span>
+                    {% endif %}
+                </td>
+                <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #999;">No hay sumarios registrados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 2rem;">
+    <a href="/admin/" class="btn">Ir al Panel de Administración Completo</a>
+</div>
+{% endblock %}
