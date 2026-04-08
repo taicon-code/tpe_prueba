@@ -149,13 +149,13 @@ class AGENDAAdmin(admin.ModelAdmin):
 @admin.register(DICTAMEN)
 class DICTAMENAdmin(admin.ModelAdmin):
 
-    list_display  = ('DIC_NUM', 'ID_SIM', 'ID_AGENDA', 'ID_ABOG', 'DIC_CONCL')
-    search_fields = ('DIC_NUM', 'ID_SIM__SIM_COD', 'ID_AGENDA__AG_NUM')
-    list_filter   = ('ID_ABOG',)
+    list_display  = ('DIC_NUM', 'sim', 'agenda', 'abog', 'DIC_CONCL')
+    search_fields = ('DIC_NUM', 'sim__SIM_COD', 'agenda__AG_NUM')
+    list_filter   = ('abog',)
 
     fieldsets = (
         ('Datos del Dictamen', {
-            'fields': ('ID_AGENDA', 'ID_SIM', 'ID_ABOG', 'DIC_NUM', 'DIC_CONCL')
+            'fields': ('agenda', 'sim', 'abog', 'DIC_NUM', 'DIC_CONCL')
         }),
     )
 
@@ -167,14 +167,14 @@ class DICTAMENAdmin(admin.ModelAdmin):
 
 @admin.register(RES)
 class RESAdmin(admin.ModelAdmin):
-    list_display  = ('RES_NUM', 'ID_SIM', 'ID_ABOG', 'RES_TIPO', 'RES_FEC', 'RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT','RES_HORNOT')
-    search_fields = ('RES_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
+    list_display  = ('RES_NUM', 'sim', 'abog', 'RES_TIPO', 'RES_FEC', 'RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT','RES_HORNOT')
+    search_fields = ('RES_NUM', 'sim__SIM_COD','abog__AB_PATERNO')
     list_filter   = ('RES_TIPO',)
 
 # ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACIÓN DENTRO DE LA RESOLUCIÓN DEL TPE
     fieldsets = (
         ('AGENDA', {
-            'fields': ('ID_SIM', 'ID_ABOG', 'ID_AGENDA', 'ID_DICTAMEN',)
+            'fields': ('sim', 'abog', 'agenda', 'dictamen',)
         }),
         ('DISPOSICIÒN RESOLUTIVA', {
             'fields': ('RES_NUM','RES_FEC','RES_RESOL','RES_TIPO',)
@@ -186,12 +186,12 @@ class RESAdmin(admin.ModelAdmin):
 
 @admin.register(RR)
 class RRAdmin(admin.ModelAdmin):
-    list_display  = ('RR_NUM', 'ID_SIM', 'ID_RES', 'ID_ABOG', 'RR_FEC', 'RR_FECPRESEN', 'alerta_plazo', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
-    search_fields = ('RR_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
+    list_display  = ('RR_NUM', 'sim', 'res', 'abog', 'RR_FEC', 'RR_FECPRESEN', 'alerta_plazo', 'RR_TIPO_NOTIF', 'RR_NOT', 'RR_FECNOT','RR_HORNOT')
+    search_fields = ('RR_NUM', 'sim__SIM_COD','abog__AB_PATERNO')
 # ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACION DENTRO DE LA RESOLUCION DEL TPE
     fieldsets = (
         ('PLAZOS', {
-            'fields': ('ID_SIM', 'ID_RES', 'ID_ABOG', 'ID_AGENDA', 'RR_FECPRESEN', 'RR_FECLIMITE',)
+            'fields': ('sim', 'res', 'abog', 'agenda', 'RR_FECPRESEN', 'RR_FECLIMITE',)
         }),
         ('DISPOSICION RESOLUTIVA', {
             'fields': ('RR_NUM','RR_FEC','RR_RESOL','RR_RESUM',)
@@ -227,13 +227,13 @@ class RRAdmin(admin.ModelAdmin):
 
 @admin.register(AUTOTPE)
 class AUTOTPEAdmin(admin.ModelAdmin):
-    list_display  = ('TPE_NUM', 'ID_SIM', 'ID_ABOG', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
-    search_fields = ('TPE_NUM', 'ID_SIM__SIM_COD','ID_ABOG__AB_PATERNO')
+    list_display  = ('TPE_NUM', 'sim', 'abog', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
+    search_fields = ('TPE_NUM', 'sim__SIM_COD','abog__AB_PATERNO')
     list_filter   = ('TPE_TIPO',)
 
     fieldsets = (
         ('AGENDA', {
-            'fields': ('ID_SIM', 'ID_ABOG', 'ID_AGENDA', 'ID_DICTAMEN',)
+            'fields': ('sim', 'abog', 'agenda', 'dictamen',)
         }),
         ('DISPOSICIÓN DEL AUTO', {
             'fields': ('TPE_NUM', 'TPE_FEC', 'TPE_RESOL', 'TPE_TIPO',)
@@ -255,8 +255,8 @@ class AUTOTPEAdmin(admin.ModelAdmin):
 
 @admin.register(RAP)
 class RAPAdmin(admin.ModelAdmin):
-    list_display  = ('RAP_NUM', 'ID_SIM', 'RAP_FECPRESEN','RAP_OFI', 'RAP_FECOFI', 'alerta_plazo_rap', 'RAP_FEC', 'RAP_TIPO_NOTIF', 'RAP_NOT', 'RAP_FECNOT','RAP_HORNOT')
-    search_fields = ('RAP_NUM', 'ID_SIM__SIM_COD')
+    list_display  = ('RAP_NUM', 'sim', 'RAP_FECPRESEN','RAP_OFI', 'RAP_FECOFI', 'alerta_plazo_rap', 'RAP_FEC', 'RAP_TIPO_NOTIF', 'RAP_NOT', 'RAP_FECNOT','RAP_HORNOT')
+    search_fields = ('RAP_NUM', 'sim__SIM_COD')
 
     @mark_safe
     def alerta_plazo_rap(self, obj):
@@ -285,7 +285,7 @@ class RAPAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('REGISTRO DEL RECURSO DE APELACION', {
-            'fields': ('RAP_FECPRESEN', 'RAP_FECLIMITE','ID_SIM','ID_RR',)
+            'fields': ('RAP_FECPRESEN', 'RAP_FECLIMITE','sim','rr',)
         }),
         ('REGISTRO DE ENVIO DE DOCUMENTOS AL TSP. FF. AA.', {
             'fields': ('RAP_OFI', 'RAP_FECOFI',)
@@ -300,14 +300,14 @@ class RAPAdmin(admin.ModelAdmin):
 
 @admin.register(RAEE)
 class RAEEAdmin(admin.ModelAdmin):
-    list_display  = ('RAE_NUM', 'ID_SIM', 'RAE_FEC', 'RAE_TIPO_NOTIF', 'RAE_NOT', 'RAE_FECNOT','RAE_HORNOT')
-    search_fields = ('RAE_NUM', 'ID_SIM__SIM_COD')
+    list_display  = ('RAE_NUM', 'sim', 'RAE_FEC', 'RAE_TIPO_NOTIF', 'RAE_NOT', 'RAE_FECNOT','RAE_HORNOT')
+    search_fields = ('RAE_NUM', 'sim__SIM_COD')
 
 
 @admin.register(AUTOTSP)
 class AUTOTSPAdmin(admin.ModelAdmin):
-    list_display  = ('TSP_NUM', 'ID_SIM', 'TSP_TIPO', 'TSP_FEC', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT','TSP_HORNOT')
-    search_fields = ('TSP_NUM', 'ID_SIM__SIM_COD')
+    list_display  = ('TSP_NUM', 'sim', 'TSP_TIPO', 'TSP_FEC', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT','TSP_HORNOT')
+    search_fields = ('TSP_NUM', 'sim__SIM_COD')
     list_filter   = ('TSP_TIPO',)
 
 # ════════════════════════════════════════════════════════════════════════════

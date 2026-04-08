@@ -108,12 +108,12 @@ class ConsultasHistorialPersonal:
         historial = {
             'personal': personal,
             'sumarios': sims,
-            'resoluciones': RES.objects.filter(ID_SIM__in=sim_ids),
-            'segundas_resoluciones': RR.objects.filter(ID_SIM__in=sim_ids),
-            'recursos_apelacion': RAP.objects.filter(ID_SIM__in=sim_ids),
-            'raees': RAEE.objects.filter(ID_SIM__in=sim_ids),
-            'autos_tpe': AUTOTPE.objects.filter(ID_SIM__in=sim_ids),
-            'autos_tsp': AUTOTSP.objects.filter(ID_SIM__in=sim_ids),
+            'resoluciones': RES.objects.filter(sim__in=sim_ids),
+            'segundas_resoluciones': RR.objects.filter(sim__in=sim_ids),
+            'recursos_apelacion': RAP.objects.filter(sim__in=sim_ids),
+            'raees': RAEE.objects.filter(sim__in=sim_ids),
+            'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
+            'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
         }
         
         return historial

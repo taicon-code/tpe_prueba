@@ -34,3 +34,15 @@ EN LA TABLA RES HAY QUE HABILITAR UNA SELECT PARA SIM Y OTRO ADMINISTRATIVO (POS
 12. autotpe.csv    (Autos TPE - depende de sim, abog, agenda)
 13. raee.csv       (Recursos RAEE - depende de rap, sim)
 14. documentos_adjuntos.csv (Documentos - depende de múltiples tablas)
+
+
+Modelo	Campo Python (PK)	Columna BD
+PM	pm_id	                        id
+ABOG	abog_id	                        id
+SIM	id	                        id
+
+
+Relación	Campo Python (FK)	Columna BD	        Consulta Django
+SIM	                pm	        pm_id	                        .filter(pm_id=...)
+RES	                sim	        sim_id	                        .filter(sim_id=...)
+RES	                abog	        abog_id	                        .filter(abog_id=...)

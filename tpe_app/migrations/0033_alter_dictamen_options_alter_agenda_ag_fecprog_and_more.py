@@ -42,6 +42,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='dictamen',
             name='DIC_NUM',
-            field=models.CharField(db_column='DIC_NUM', max_length=20, verbose_name='Número de Dictamen'),
+            field=models.CharField(blank=True, db_column='DIC_NUM', max_length=20, null=True, verbose_name='Numero de Dictamen'),
         ),
     ]
+
+

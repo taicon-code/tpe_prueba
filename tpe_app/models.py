@@ -103,7 +103,7 @@ class PM(models.Model):
         ('FALLECIDO',      'Fallecido'),
     ]
 
-    pm_id        = models.AutoField(primary_key=True, db_column='pm_id')
+    pm_id        = models.AutoField(primary_key=True, db_column='id')
     PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, null=True, blank=True, verbose_name='Cédula de Identidad')
     PM_ESCALAFON = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
     PM_GRADO     = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado')
@@ -135,7 +135,7 @@ class PM(models.Model):
 # ============================================================
 class ABOG(models.Model):
 
-    ab_id      = models.AutoField(primary_key=True, db_column='ab_id')
+    abog_id      = models.AutoField(primary_key=True, db_column='id')
     AB_CI      = models.DecimalField(max_digits=13, decimal_places=0, null=True, blank=True, verbose_name='Cédula de Identidad')
     AB_GRADO   = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
     AB_ARMA    = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
@@ -239,17 +239,17 @@ class SIM(models.Model):
 # ============================================================
 class PM_SIM(models.Model):
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,  db_column='ID_SIM', verbose_name='Sumario')
-    ID_PM  = models.ForeignKey(PM,  on_delete=models.RESTRICT, db_column='ID_PM',  verbose_name='Militar')
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE,  verbose_name='Sumario')
+    pm  = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Militar')
 
     class Meta:
         db_table            = 'pm_sim'
         verbose_name        = 'Militar en Sumario'
         verbose_name_plural = 'Militares en Sumario'
-        unique_together     = ('ID_SIM', 'ID_PM')
+        unique_together     = ('sim', 'pm')
 
     def __str__(self):
-        return f"{self.ID_SIM.SIM_COD} — {self.ID_PM}"
+        return f"{self.sim.SIM_COD} — {self.pm}"
 
 
 # ============================================================
@@ -258,17 +258,17 @@ class PM_SIM(models.Model):
 class ABOG_SIM(models.Model):
 
 
-    ID_SIM  = models.ForeignKey(SIM,  on_delete=models.CASCADE,  db_column='ID_SIM',  verbose_name='Sumario')
-    ID_ABOG = models.ForeignKey(ABOG, on_delete=models.RESTRICT, db_column='ID_ABOG', verbose_name='Abogado')
+    sim  = models.ForeignKey(SIM,  on_delete=models.CASCADE,  verbose_name='Sumario')
+    abog = models.ForeignKey(ABOG, on_delete=models.RESTRICT, verbose_name='Abogado')
     
     class Meta:
         db_table            = 'abog_sim'
         verbose_name        = 'Abogado en Sumario'
         verbose_name_plural = 'Abogados en Sumario'
-        unique_together     = ('ID_SIM', 'ID_ABOG')
+        unique_together     = ('sim', 'abog')
 
     def __str__(self):
-        return f"{self.ID_ABOG} → {self.ID_SIM.SIM_COD}"
+        return f"{self.abog} → {self.sim.SIM_COD}"
 
 
 # ============================================================
@@ -339,26 +339,23 @@ class DICTAMEN(models.Model):
         verbose_name='Conclusión / Recomendación'
     )
     # FK a agenda: a qué reunión pertenece este dictamen
-    ID_AGENDA = models.ForeignKey(
+    agenda = models.ForeignKey(
         AGENDA,
         on_delete=models.CASCADE,
-        db_column='ID_AGENDA',
         verbose_name='Agenda'
     )
     # FK a SIM: qué sumario estudió el abogado en esa agenda
-    ID_SIM = models.ForeignKey(
+    sim = models.ForeignKey(
         SIM,
         on_delete=models.CASCADE,
-        db_column='ID_SIM',
         verbose_name='Sumario'
     )
     # Nullable: registros históricos pueden no tener abogado registrado
-    ID_ABOG = models.ForeignKey(
+    abog = models.ForeignKey(
         ABOG,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        db_column='ID_ABOG',
         verbose_name='Abogado'
     )
 
@@ -366,11 +363,10 @@ class DICTAMEN(models.Model):
         db_table = 'dictamen'
         verbose_name = 'Dictamen'
         verbose_name_plural = 'Dictámenes'
-        ordering = ['-ID_AGENDA']
+        ordering            = ['-id']
 
     def __str__(self):
-        num = self.DIC_NUM or 'S/N'
-        return f"Dictamen {num} — {self.ID_SIM.SIM_COD}"
+        return f"Dictamen {self.DIC_NUM or 'S/N'} — {self.sim.SIM_COD}"
 
     def save(self, *args, **kwargs):
         self.DIC_NUM   = self.DIC_NUM.upper()   if self.DIC_NUM   else self.DIC_NUM
@@ -407,24 +403,24 @@ class RES(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
 
-    ID_ABOG = models.ForeignKey(
+    abog = models.ForeignKey(
         ABOG, on_delete=models.SET_NULL,
         null=True, blank=True,
-        db_column='ID_ABOG', verbose_name='Abogado')
+        verbose_name='Abogado')
 
     # FK a la agenda que generó esta resolución
-    ID_AGENDA = models.ForeignKey(
+    agenda = models.ForeignKey(
         AGENDA, on_delete=models.SET_NULL,
         null=True, blank=True,
-        db_column='ID_AGENDA', verbose_name='Agenda')
+        verbose_name='Agenda')
 
     # FK al dictamen que originó esta resolución (nullable: históricos sin dictamen)
-    ID_DICTAMEN = models.ForeignKey(
+    dictamen = models.ForeignKey(
         'DICTAMEN', on_delete=models.SET_NULL,
         null=True, blank=True,
-        db_column='ID_DICTAMEN', verbose_name='Dictamen origen')
+        verbose_name='Dictamen origen')
 
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
     RES_FEC   = models.DateField(verbose_name='Fecha')
@@ -462,21 +458,21 @@ class RR(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_RES = models.ForeignKey(RES, on_delete=models.CASCADE, db_column='ID_RES', verbose_name='Primera Resolución')
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')
-    ID_AGENDA = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
-                                null=True, blank=True,
-                                db_column='ID_AGENDA', verbose_name='Agenda')
+    res = models.ForeignKey(RES, on_delete=models.CASCADE, verbose_name='Primera Resolución')
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    agenda = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
+                                 null=True, blank=True,
+                                 verbose_name='Agenda')
 
     RR_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso')
     # ✅ NUEVO v1.2: fecha límite para alertas (15 días hábiles)
     RR_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite (15 días hábiles)')
 
 # estes aumente para agregar campo para abogado del RR (puede ser el mismo u otro diferente al de la RES)
-    ID_ABOG = models.ForeignKey(
+    abog = models.ForeignKey(
         ABOG, on_delete=models.SET_NULL,
         null=True, blank=True,
-        db_column='ID_ABOG', verbose_name='Abogado')
+        verbose_name='Abogado')
 
     RR_NUM   = models.CharField(null=True, blank=True, max_length=10,  verbose_name='Número')
     RR_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha')
@@ -543,18 +539,18 @@ class AUTOTPE(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario')  
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')  
     # add fk de abogado para cada auto (puede ser el mismo u otro diferente al de la RES)
-    ID_ABOG = models.ForeignKey(
+    abog = models.ForeignKey(
         ABOG, on_delete=models.SET_NULL,
         null=True, blank=True,
-        db_column='ID_ABOG', verbose_name='Abogado')
+        verbose_name='Abogado')
 
-    # FK a la agenda que generó este auto
-    ID_AGENDA = models.ForeignKey(
+    # FK a la agenda que generó esta resolución
+    agenda = models.ForeignKey(
         AGENDA, on_delete=models.SET_NULL,
         null=True, blank=True,
-        db_column='ID_AGENDA', verbose_name='Agenda')
+        verbose_name='Agenda')
 
     TPE_NUM   = models.CharField(null=True, blank=True, max_length=15,  verbose_name='Número de Auto')
     TPE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
@@ -604,10 +600,10 @@ class RAP(models.Model):
         ('OTRO',   'OTRO'),
     ]
     
-    ID_RR  = models.ForeignKey(RR,  on_delete=models.SET_NULL, null=True, blank=True,
-                                db_column='ID_RR',  verbose_name='Segunda Resolución (RR)')
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,
-                                db_column='ID_SIM', verbose_name='Sumario')
+    rr  = models.ForeignKey(RR,  on_delete=models.SET_NULL, null=True, blank=True,
+                                 verbose_name='Segunda Resolución (RR)')
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
+                                 verbose_name='Sumario')
     # Fecha de ingreso al TSP (puede ser diferente a la fecha del oficio de elevación, que es el documento que se envía al TSP)
     RAP_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso de Apelación al TSP')
     # ✅ NUEVO v1.2: fecha límite para alertas (3 días hábiles)
@@ -636,7 +632,7 @@ class RAP(models.Model):
         ordering            = ['-RAP_FEC']
 
     def __str__(self):
-        return f"{self.RAP_NUM or 'Sin número'} — {self.ID_SIM.SIM_COD}"
+        return f"{self.RAP_NUM or 'Sin número'} — {self.sim.SIM_COD}"
     
     def save(self, *args, **kwargs):
         # Auto-calcular fecha límite (3 días hábiles desde fecha del oficio)
@@ -673,10 +669,10 @@ class RAEE(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_RAP = models.ForeignKey(RAP, on_delete=models.SET_NULL, null=True, blank=True,
-                                db_column='ID_RAP', verbose_name='Recurso de Apelación')
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE,
-                                db_column='ID_SIM', verbose_name='Sumario')
+    rap = models.ForeignKey(RAP, on_delete=models.SET_NULL, null=True, blank=True,
+                                 verbose_name='Recurso de Apelación')
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
+                                 verbose_name='Sumario')
     
     RAE_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución')
     RAE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución')
@@ -696,7 +692,7 @@ class RAEE(models.Model):
         ordering            = ['-RAE_FEC']
 
     def __str__(self):
-        return f"{self.RAE_NUM or 'Sin número'} — {self.ID_SIM.SIM_COD}"
+        return f"{self.RAE_NUM or 'Sin número'} — {self.sim.SIM_COD}"
     def save(self, *args, **kwargs):
         self.RAE_NUM   = self.RAE_NUM.upper()   if self.RAE_NUM   else self.RAE_NUM
         self.RAE_RESOL = self.RAE_RESOL.upper() if self.RAE_RESOL else self.RAE_RESOL
@@ -726,7 +722,7 @@ class AUTOTSP(models.Model):
         ('CEDULON', 'Cedulón'),
     ]
 
-    ID_SIM = models.ForeignKey(SIM, on_delete=models.CASCADE, db_column='ID_SIM', verbose_name='Sumario', null=True, blank=True)
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario', null=True, blank=True)
 
     TSP_NUM   = models.CharField(max_length=15,  verbose_name='Número de Auto')
     TSP_FEC   = models.DateField(verbose_name='Fecha del Auto')
