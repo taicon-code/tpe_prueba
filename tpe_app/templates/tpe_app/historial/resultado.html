@@ -371,7 +371,7 @@
           <p><strong>Escalafón:</strong> {{ personal.get_PM_ESCALAFON_display|default:"N/A" }}</p>
           <p><strong>Arma:</strong> {{ personal.get_PM_ARMA_display|default:"N/A" }}</p>
           <p><strong>Estado:</strong> {{ personal.get_PM_ESTADO_display }}</p>
-          <a href="{% url 'tpe_app:historial_detalle' personal.id %}">Ver Historial Completo →</a>
+          <a href="{% url 'tpe_app:historial_detalle' personal.pm_id %}">Ver Historial Completo →</a>
         </div>
       {% endfor %}
     </div>

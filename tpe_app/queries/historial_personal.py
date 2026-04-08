@@ -66,7 +66,7 @@ class ConsultasHistorialPersonal:
             >>> ConsultasHistorialPersonal.obtener_sumarios_de_personal(personal.id)
         """
         return SIM.objects.filter(
-            pm_sim__pm__id=personal_id
+            militares__pm_id=personal_id
         ).prefetch_related('pm_sim_set').distinct()
 
     @staticmethod
@@ -97,23 +97,23 @@ class ConsultasHistorialPersonal:
         """
         # Obtener el personal
         try:
-            personal = PM.objects.get(id=personal_id)
+            personal = PM.objects.get(pm_id=personal_id)
         except PM.DoesNotExist:
             return None
         
         # Obtener todos los SIM donde participa este personal
-        sims = SIM.objects.filter(pm_sim__pm__id=personal_id).distinct()
+        sims = SIM.objects.filter(militares__pm_id=personal_id).distinct()
         sim_ids = list(sims.values_list('id', flat=True))
         
         historial = {
             'personal': personal,
             'sumarios': sims,
-            'resoluciones': RES.objects.filter(sim__in=sim_ids),
-            'segundas_resoluciones': RR.objects.filter(sim__in=sim_ids),
-            'recursos_apelacion': RAP.objects.filter(sim__in=sim_ids),
-            'raees': RAEE.objects.filter(sim__in=sim_ids),
-            'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
-            'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
+            'resoluciones': RES.objects.filter(ID_SIM__in=sim_ids),
+            'segundas_resoluciones': RR.objects.filter(ID_SIM__in=sim_ids),
+            'recursos_apelacion': RAP.objects.filter(ID_SIM__in=sim_ids),
+            'raees': RAEE.objects.filter(ID_SIM__in=sim_ids),
+            'autos_tpe': AUTOTPE.objects.filter(ID_SIM__in=sim_ids),
+            'autos_tsp': AUTOTSP.objects.filter(ID_SIM__in=sim_ids),
         }
         
         return historial

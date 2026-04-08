@@ -61,8 +61,8 @@ def buscar_historial_view(request):
             # Si hay un solo resultado
             if personales.count() == 1:
                 personal = personales.first()
-                historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.id)
-                estado = ConsultasHistorialPersonal.obtener_estado_actual(personal.id)
+                historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.pm_id)
+                estado = ConsultasHistorialPersonal.obtener_estado_actual(personal.pm_id)
                 
                 context['personales'] = [personal]
                 context['personal_seleccionado'] = personal
@@ -93,7 +93,7 @@ def historial_personal_detalle(request, personal_id):
     Vista para ver el historial detallado de un personal específico.
     """
     try:
-        personal = PM.objects.get(id=personal_id)
+        personal = PM.objects.get(pm_id=personal_id)
     except PM.DoesNotExist:
         context = {
             'error': '❌ Personal no encontrado.',
@@ -101,8 +101,8 @@ def historial_personal_detalle(request, personal_id):
         }
         return render(request, 'tpe_app/historial/resultado.html', context)
     
-    historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.id)
-    estado = ConsultasHistorialPersonal.obtener_estado_actual(personal.id)
+    historial = ConsultasHistorialPersonal.obtener_historial_completo(personal.pm_id)
+    estado = ConsultasHistorialPersonal.obtener_estado_actual(personal.pm_id)
     
     context = {
         'titulo': f'Historial: {personal.PM_NOMBRE} {personal.PM_PATERNO}',
