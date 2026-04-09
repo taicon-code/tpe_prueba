@@ -2,6 +2,13 @@
 from .auth_views import login_view, logout_view
 from .admin_views import admin_dashboard
 from .abogado_views import abogado_dashboard
+from .abogado_documentos_views import (
+    abogado_autotpe_crear,
+    abogado_dictamen_crear,
+    abogado_res_crear,
+    abogado_rr_crear,
+    abogado_sumario_detalle,
+)
 from .buscador_views import buscador_dashboard
-from .auxiliar_views import auxiliar_dashboard
+from .auxiliar_views import auxiliar_dashboard, registrar_sumario, agendar_sumario, registrar_rr, agendar_rr
 from .historial_views import buscar_historial_view, historial_personal_detalle

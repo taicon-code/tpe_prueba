@@ -1,0 +1,57 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Registrar Nuevo RR - TPE Sistema{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'auxiliar_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">➕ Registrar Recurso de Reconsideración (RR)</h1>
+
+<form method="post" style="max-width: 800px;">
+    {% csrf_token %}
+    
+    <div class="card">
+        <h2>📄 Datos del Recurso</h2>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.res.label }}
+            </label>
+            {{ form.res }}
+            {% if form.res.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.res.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem;">Seleccione la primera resolución apelada.</small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.RR_FECPRESEN.label }}
+            </label>
+            {{ form.RR_FECPRESEN }}
+            {% if form.RR_FECPRESEN.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.RR_FECPRESEN.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+        
+    </div>
+    
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn" style="background: #1e3c72;">
+            ✅ Registrar RR
+        </button>
+        <a href="{% url 'auxiliar_dashboard' %}" class="btn" style="background: #6c757d;">
+            Cancelar
+        </a>
+    </div>
+</form>
+
+{% endblock %}

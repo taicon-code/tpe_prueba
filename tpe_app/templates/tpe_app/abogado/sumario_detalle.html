@@ -1,0 +1,112 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Sumario {{ sim.SIM_COD }} - Abogado{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'abogado_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 1rem; color: #1e3c72;">📁 Sumario {{ sim.SIM_COD }}</h1>
+<div class="card">
+    <p style="margin: 0 0 0.5rem 0;"><strong>Resumen:</strong> {{ sim.SIM_RESUM }}</p>
+    <p style="margin: 0;"><strong>Estado:</strong> {{ sim.get_SIM_ESTADO_display }}</p>
+</div>
+
+<div style="display:flex; gap: 0.75rem; margin: 1rem 0 1.5rem 0;">
+    <a class="btn" href="{% url 'abogado_dictamen_crear' sim.pk %}">➕ Crear Dictamen</a>
+</div>
+
+<div class="card">
+    <h2>Dictámenes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Agenda</th>
+                <th>Abogado</th>
+                <th>Conclusión</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in dictamenes %}
+            <tr>
+                <td><strong>{{ d.DIC_NUM|default:"S/N" }}</strong></td>
+                <td>{{ d.agenda }}</td>
+                <td>{{ d.abog|default:"-" }}</td>
+                <td>{{ d.DIC_CONCL|default:"-" }}</td>
+                <td style="white-space:nowrap;">
+                    <a class="btn" style="font-size:0.8rem; padding:0.3rem 0.6rem;" href="{% url 'abogado_res_crear' sim.pk d.pk %}">Crear RES</a>
+                    <a class="btn" style="font-size:0.8rem; padding:0.3rem 0.6rem; background:#6c757d;" href="{% url 'abogado_autotpe_crear' sim.pk d.pk %}">Crear Auto</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center; color:#999;">Sin dictámenes</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Resoluciones (RES)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Dictamen</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in resoluciones %}
+            <tr>
+                <td><strong>{{ r.RES_NUM }}</strong></td>
+                <td>{{ r.RES_FEC|date:"d/m/Y" }}</td>
+                <td>{{ r.get_RES_TIPO_display }}</td>
+                <td>{{ r.dictamen.DIC_NUM|default:"-" }}</td>
+                <td>
+                    <a class="btn" style="font-size:0.8rem; padding:0.3rem 0.6rem;" href="{% url 'abogado_rr_crear' sim.pk r.pk %}">Crear RR</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center; color:#999;">Sin RES</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Autos TPE</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in autos_tpe %}
+            <tr>
+                <td><strong>{{ a.TPE_NUM|default:"S/N" }}</strong></td>
+                <td>{{ a.TPE_FEC|date:"d/m/Y"|default:"-" }}</td>
+                <td>{{ a.get_TPE_TIPO_display|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" style="text-align:center; color:#999;">Sin Autos</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

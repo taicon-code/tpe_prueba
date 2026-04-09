@@ -12,6 +12,8 @@ def rol_requerido(*roles_permitidos):
         @wraps(view_func)
         @login_required
         def wrapper(request, *args, **kwargs):
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
             try:
                 perfil = request.user.perfilusuario
                 if perfil.rol not in roles_permitidos:

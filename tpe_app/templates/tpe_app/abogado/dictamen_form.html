@@ -1,0 +1,42 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Crear Dictamen - {{ sim.SIM_COD }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'abogado_sumario_detalle' sim.pk %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Sumario
+    </a>
+</div>
+
+<h1 style="margin-bottom: 1rem; color: #1e3c72;">🧾 Crear Dictamen</h1>
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+    <p style="margin: 0 0 1rem 0;"><strong>Sumario:</strong> {{ sim.SIM_COD }} — {{ sim.SIM_RESUM|truncatewords:12 }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Agenda</label>
+            <select class="form-control" name="agenda" required>
+                <option value="">---------</option>
+                {% for a in agendas %}
+                    <option value="{{ a.pk }}">{{ a }}</option>
+                {% endfor %}
+            </select>
+            <small style="color:#666;">Debe existir una agenda creada (puede ser vía admin).</small>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Conclusión / Recomendación (opcional)</label>
+            <input class="form-control" type="text" name="DIC_CONCL" maxlength="255" placeholder="Ej: ARCHIVO OBRADOS / SANCION..." />
+        </div>
+
+        <div style="display:flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button class="btn" type="submit" name="autogenerar_numero" value="1">⚙️ Crear y generar N°</button>
+            <button class="btn" type="submit" style="background:#6c757d;">Crear sin N°</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

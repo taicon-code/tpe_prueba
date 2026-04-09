@@ -1,0 +1,213 @@
+from datetime import date
+
+from django.contrib import messages
+from django.db import transaction
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
+
+from ..decorators import rol_requerido
+from ..models import AGENDA, AUTOTPE, DICTAMEN, RES, RR, SIM
+from ..utils.numeracion import next_num_yy
+
+
+def _get_abogado_or_403(request):
+    perfil = getattr(request.user, "perfilusuario", None)
+    if not perfil or not getattr(perfil, "abogado", None):
+        raise Http404
+    return perfil.abogado
+
+
+@rol_requerido("ABOGADO")
+def abogado_sumario_detalle(request, sim_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    dictamenes = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-id")
+    resoluciones = RES.objects.filter(sim=sim).select_related("agenda", "abog", "dictamen").order_by("-RES_FEC")
+    reconsideraciones = RR.objects.filter(sim=sim).select_related("res", "agenda", "abog").order_by("-RR_FEC")
+    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-TPE_FEC", "-id")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "dictamenes": dictamenes,
+        "resoluciones": resoluciones,
+        "reconsideraciones": reconsideraciones,
+        "autos_tpe": autos_tpe,
+    }
+    return render(request, "tpe_app/abogado/sumario_detalle.html", context)
+
+
+@rol_requerido("ABOGADO")
+def abogado_dictamen_crear(request, sim_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
+
+    if request.method == "POST":
+        agenda_id = request.POST.get("agenda") or ""
+        conclusion = (request.POST.get("DIC_CONCL") or "").strip()
+
+        if not agenda_id:
+            messages.error(request, "Seleccione una agenda.")
+        else:
+            agenda = get_object_or_404(AGENDA, pk=agenda_id)
+
+            try:
+                with transaction.atomic():
+                    dic_num = None
+
+                    if request.POST.get("autogenerar_numero") == "1":
+                        existentes = list(
+                            DICTAMEN.objects.filter(DIC_NUM__isnull=False)
+                            .values_list("DIC_NUM", flat=True)
+                        )
+                        dic_num = next_num_yy(existentes, today=date.today())
+
+                    dictamen = DICTAMEN.objects.create(
+                        agenda=agenda,
+                        sim=sim,
+                        abog=abogado,
+                        DIC_NUM=dic_num,
+                        DIC_CONCL=conclusion or None,
+                    )
+
+                messages.success(request, f"✅ Dictamen creado ({dictamen.DIC_NUM or 'S/N'}).")
+                return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+            except Exception as exc:
+                messages.error(request, f"❌ Error al crear dictamen: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "agendas": agendas,
+    }
+    return render(request, "tpe_app/abogado/dictamen_form.html", context)
+
+
+@rol_requerido("ABOGADO")
+def abogado_res_crear(request, sim_id: int, dictamen_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+    dictamen = get_object_or_404(DICTAMEN, pk=dictamen_id, sim=sim)
+
+    if request.method == "POST":
+        res_fec = request.POST.get("RES_FEC") or ""
+        res_tipo = request.POST.get("RES_TIPO") or ""
+        res_resol = (request.POST.get("RES_RESOL") or "").strip()
+
+        if not res_fec or not res_tipo or not res_resol:
+            messages.error(request, "Complete Fecha, Tipo y Resolución.")
+        else:
+            try:
+                with transaction.atomic():
+                    existentes = list(RES.objects.values_list("RES_NUM", flat=True))
+                    res_num = next_num_yy(existentes, today=date.today())
+
+                    RES.objects.create(
+                        sim=sim,
+                        abog=abogado,
+                        agenda=dictamen.agenda if dictamen.agenda_id else None,
+                        dictamen=dictamen,
+                        RES_NUM=res_num,
+                        RES_FEC=res_fec,
+                        RES_TIPO=res_tipo,
+                        RES_RESOL=res_resol,
+                    )
+                messages.success(request, f"✅ RES creada ({res_num}).")
+                return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+            except Exception as exc:
+                messages.error(request, f"❌ Error al crear RES: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "dictamen": dictamen,
+        "tipos": RES.TIPO_CHOICES,
+    }
+    return render(request, "tpe_app/abogado/res_form.html", context)
+
+
+@rol_requerido("ABOGADO")
+def abogado_rr_crear(request, sim_id: int, res_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+    res = get_object_or_404(RES, pk=res_id, sim=sim)
+
+    if request.method == "POST":
+        rr_fec = request.POST.get("RR_FEC") or ""
+        rr_resum = (request.POST.get("RR_RESUM") or "").strip()
+        rr_resol = (request.POST.get("RR_RESOL") or "").strip()
+        autogen = request.POST.get("autogenerar_numero") == "1"
+
+        try:
+            with transaction.atomic():
+                rr_num = None
+                if autogen:
+                    existentes = list(RR.objects.values_list("RR_NUM", flat=True))
+                    rr_num = next_num_yy(existentes, today=date.today())
+
+                RR.objects.create(
+                    sim=sim,
+                    res=res,
+                    agenda=res.agenda,
+                    abog=abogado,
+                    RR_NUM=rr_num,
+                    RR_FEC=rr_fec or None,
+                    RR_RESUM=rr_resum or None,
+                    RR_RESOL=rr_resol or None,
+                )
+            messages.success(request, f"✅ RR creada ({rr_num or 'S/N'}).")
+            return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+        except Exception as exc:
+            messages.error(request, f"❌ Error al crear RR: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "res": res,
+    }
+    return render(request, "tpe_app/abogado/rr_form.html", context)
+
+
+@rol_requerido("ABOGADO")
+def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+    dictamen = get_object_or_404(DICTAMEN, pk=dictamen_id, sim=sim)
+
+    if request.method == "POST":
+        tpe_fec = request.POST.get("TPE_FEC") or ""
+        tpe_tipo = request.POST.get("TPE_TIPO") or ""
+        tpe_resol = (request.POST.get("TPE_RESOL") or "").strip()
+        autogen = request.POST.get("autogenerar_numero") == "1"
+
+        try:
+            with transaction.atomic():
+                tpe_num = None
+                if autogen:
+                    existentes = list(AUTOTPE.objects.values_list("TPE_NUM", flat=True))
+                    tpe_num = next_num_yy(existentes, today=date.today())
+
+                AUTOTPE.objects.create(
+                    sim=sim,
+                    abog=abogado,
+                    agenda=dictamen.agenda if dictamen.agenda_id else None,
+                    TPE_NUM=tpe_num,
+                    TPE_FEC=tpe_fec or None,
+                    TPE_TIPO=tpe_tipo or None,
+                    TPE_RESOL=tpe_resol or None,
+                )
+            messages.success(request, f"✅ Auto TPE creado ({tpe_num or 'S/N'}).")
+            return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+        except Exception as exc:
+            messages.error(request, f"❌ Error al crear Auto TPE: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "dictamen": dictamen,
+        "tipos": AUTOTPE.TIPO_CHOICES,
+    }
+    return render(request, "tpe_app/abogado/autotpe_form.html", context)

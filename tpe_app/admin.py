@@ -233,7 +233,7 @@ class AUTOTPEAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('AGENDA', {
-            'fields': ('sim', 'abog', 'agenda', 'dictamen',)
+            'fields': ('sim', 'abog', 'agenda',)
         }),
         ('DISPOSICIÓN DEL AUTO', {
             'fields': ('TPE_NUM', 'TPE_FEC', 'TPE_RESOL', 'TPE_TIPO',)

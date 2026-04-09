@@ -9,6 +9,7 @@
 # ════════════════════════════════════════════════════════════════════════════
 
 from django import forms
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 
@@ -47,6 +48,11 @@ class ResumenConOpcionesWidget(forms.Widget):
             renderer: Renderer de Django (ignorado, para compatibilidad)
         """
         
+        attrs = attrs or {}
+        final_attrs = self.build_attrs(self.attrs, attrs)
+        textarea_id = final_attrs.get('id') or f'id_{name}'
+        select_id = f'{textarea_id}_predefinido'
+
         # Generar HTML del widget
         html = f'''
         <!-- WIDGET: Resumen con Opciones Predefinidas -->
@@ -58,14 +64,15 @@ class ResumenConOpcionesWidget(forms.Widget):
                     📋 Opciones predefinidas:
                 </label>
                 
-                <select id="id_{name}_predefinido" 
+                <select id="{select_id}" 
                         style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 10.5px; background: white; cursor: pointer;">
                     <option value="" style="font-size: 10.5px;">-- Selecciona una opción --</option>
         '''
         
         # Añadir cada opción al SELECT
         for valor, etiqueta in self.opciones:
-            html += f'        <option value="{etiqueta}" style="font-size: 10.5px;">{etiqueta}</option>\n'
+            etiqueta_escaped = escape(etiqueta)
+            html += f'        <option value="{etiqueta_escaped}" style="font-size: 10.5px;">{etiqueta_escaped}</option>\n'
         
         html += f'''
                 </select>
@@ -81,11 +88,11 @@ class ResumenConOpcionesWidget(forms.Widget):
                     ✏️ Tu resumen:
                 </label>
                 
-                <textarea id="id_{name}" 
+                <textarea id="{textarea_id}" 
                           name="{name}" 
                           style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-family: Arial, sans-serif; resize: vertical; box-sizing: border-box;"
                           rows="6"
-                          placeholder="Escribe aquí tu resumen o selecciona una opción predefinida">{value or ''}</textarea>
+                          placeholder="Escribe aquí tu resumen o selecciona una opción predefinida">{escape(value or '')}</textarea>
                 
                 <p style="font-size: 11px; color: #666; margin-top: 8px; margin-bottom: 0; line-height: 1.4;">
                     💡 Puedes escribir cualquier texto personalizado. Si seleccionas una opción, aparecerá aquí.
@@ -97,8 +104,8 @@ class ResumenConOpcionesWidget(forms.Widget):
         <script type="text/javascript">
         (function() {{
             // Esperar a que el DOM esté listo
-            var selectElement = document.getElementById('id_{name}_predefinido');
-            var textareaElement = document.getElementById('id_{name}');
+            var selectElement = document.getElementById('{select_id}');
+            var textareaElement = document.getElementById('{textarea_id}');
             
             if (selectElement && textareaElement) {{
                 // Escuchar cambios en el SELECT

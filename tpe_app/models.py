@@ -14,13 +14,26 @@ from datetime import timedelta
 # ============================================================
 # UTILIDAD: días hábiles (lunes=0 … viernes=4)
 # ============================================================
+from datetime import date, timedelta
+
+FERIADOS_2026 = [
+    date(2026, 5, 1),
+    date(2026, 6, 4),
+    date(2026, 6, 5),
+    date(2026, 6, 22),
+    date(2026, 8, 6),
+    date(2026, 8, 7),
+    date(2026, 11, 2),
+    date(2026, 12, 25),
+]
+
 def add_business_days(fecha_inicio, dias):
-    """Retorna la fecha resultante de sumar 'dias' días hábiles (lun-vier) a fecha_inicio."""
+    """Retorna la fecha resultante de sumar 'dias' días hábiles (lun-vier) a fecha_inicio, excluyendo los feriados de 2026."""
     fecha = fecha_inicio
     contados = 0
     while contados < dias:
         fecha += timedelta(days=1)
-        if fecha.weekday() < 5:   # 0=lun … 4=vie
+        if fecha.weekday() < 5 and fecha not in FERIADOS_2026:
             contados += 1
     return fecha
 

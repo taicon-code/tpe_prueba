@@ -1,0 +1,42 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Crear RR - {{ sim.SIM_COD }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'abogado_sumario_detalle' sim.pk %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Sumario
+    </a>
+</div>
+
+<h1 style="margin-bottom: 1rem; color: #1e3c72;">🧩 Crear Segunda Resolución (RR)</h1>
+<div class="card" style="max-width: 1000px; margin: 0 auto;">
+    <p style="margin: 0 0 1rem 0;"><strong>RES origen:</strong> {{ res.RES_NUM }} — {{ res.get_RES_TIPO_display }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Fecha (opcional)</label>
+                <input class="form-control" type="date" name="RR_FEC" />
+            </div>
+            <div>
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Resumen (opcional)</label>
+                <input class="form-control" type="text" name="RR_RESUM" maxlength="200" />
+            </div>
+        </div>
+
+        <div style="margin-top: 1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Resolución (opcional)</label>
+            <textarea class="form-control" name="RR_RESOL" rows="8" placeholder="Texto RR..."></textarea>
+        </div>
+
+        <div style="display:flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button class="btn" type="submit" name="autogenerar_numero" value="1">⚙️ Crear y generar N°</button>
+            <button class="btn" type="submit" style="background:#6c757d;">Crear sin N°</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

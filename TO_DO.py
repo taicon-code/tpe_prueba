@@ -8,15 +8,8 @@
 
 
 
-ADD NUMERO CORRELATIVO DEL NUMERO DE RESOLUCION EN AUTOMATICO
 
   
-BD FIX EN LA TABLA AUTOTPE NO TODOS LOS AUTOS SON ANEXADOS AL SIM DE REPENTE SERIA AUMENTAR EN SIM UN SELECT 
-        DE INGRESO DE UN SIM U OTRO Y AL LADO COLOCAR LA MOTIVACION PARA QUE SEA TRATADO EN EL TPE. 
-        EJ. AMADO OSWALDO QUISPE MAMANI SU AUTO (AUTO DE VISTA 42/18 DE FECHA 19-NOV-18)
-    
-EN LA TABLA RES HAY QUE HABILITAR UNA SELECT PARA SIM Y OTRO ADMINISTRATIVO (POSESION TPE, ASCENSO DE GRALES)ETC.
-
 
 
 
@@ -46,3 +39,15 @@ Relación	Campo Python (FK)	Columna BD	        Consulta Django
 SIM	                pm	        pm_id	                        .filter(pm_id=...)
 RES	                sim	        sim_id	                        .filter(sim_id=...)
 RES	                abog	        abog_id	                        .filter(abog_id=...)
+
+
+
+
+me encanta todo ahora pasemos al siguiente nivel para el abogado. 
+formulario completo de asignacion de sumario (debe aparecerle sus sumarios que le fueron asignados) 
+generar un numero de dictamen (apretando solo un boton y el sistema que le otorgue un numero ej: 05/26)
+a la conclusion del dictamen se debe dos opciones es decir el autope y res nace del dictamne. tomando en cuenta que para archivos pasados no requiera estos datos (como debe estar en la estructura de la base de datos) 
+posterior a la agenda el abogado debe generar una resolucion o/y auto que tambien debe ser generado aprentando un boton y el sistema se encarga de guardar el numero de resolucion ej 52/26. Crear Primera Resolución (RES) - ABOGADO
+Crear Segunda Resolución (RR) - ABOGADO
+Crear Auto TPE (AUTOTPE) - ABOGADO
+se me ocurre una idea que cuando ingrese
