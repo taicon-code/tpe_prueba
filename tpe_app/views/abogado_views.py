@@ -22,16 +22,22 @@ def abogado_dashboard(request):
     # Solicitudes asignadas
     mis_solicitudes = SIM.objects.filter(abogados=perfil.abogado, SIM_TIPO__startswith='SOLICITUD').order_by('-SIM_FECREG')
     
-    # Recursos asignados
-    mis_recursos = RR.objects.filter(abog=perfil.abogado).select_related('sim', 'res').order_by('-RR_FEC')
+    # Recursos asignados — con investigados para mostrar en el panel
+    mis_recursos = list(
+        RR.objects.filter(abog=perfil.abogado)
+        .select_related('sim', 'res')
+        .prefetch_related('sim__militares')
+        .order_by('-RR_FEC')
+    )
     for rr in mis_recursos:
         doc = DocumentoAdjunto.objects.filter(DOC_TABLA='res', DOC_ID_REG=rr.res.pk).first()
         rr.pdf_primera_res = doc.DOC_RUTA.url if doc else None
+        rr.investigado = rr.sim.militares.first()
     
     # Todos los sumarios (para consulta opcional)
     todos_sumarios = SIM.objects.all().order_by('-SIM_FECREG')
     
-    total_asignados = mis_sumarios.count() + mis_solicitudes.count() + mis_recursos.count()
+    total_asignados = mis_sumarios.count() + mis_solicitudes.count() + len(mis_recursos)
     
     context = {
         'abogado': perfil.abogado,

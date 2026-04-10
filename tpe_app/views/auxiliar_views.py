@@ -6,7 +6,7 @@ from django.db.models import Q
 from ..decorators import rol_requerido
 from ..models import SIM, PM, ABOG, PM_SIM, RR
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm
-from datetime import date
+from datetime import date, timedelta
 
 @rol_requerido('AUXILIAR')
 def auxiliar_dashboard(request):
@@ -33,23 +33,41 @@ def auxiliar_dashboard(request):
     sumarios_sin_asignar = (
         SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True)
         .exclude(SIM_TIPO__startswith='SOLICITUD')
+        .prefetch_related('militares')
         .filter(filtros_q)
         .order_by('-SIM_FECING')
     )
-    
+
     # Solicitudes para agendar
     solicitudes_sin_asignar = (
         SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True, SIM_TIPO__startswith='SOLICITUD')
+        .prefetch_related('militares')
         .filter(filtros_q)
         .order_by('-SIM_FECING')
     )
-    
-    # RR por agendar (usar abog_isnull=True para ser consistente con la lógica de sumarios)
-    rr_sin_asignar = (
+
+    # RR por agendar — calcular fecha límite 25 días y color de alerta
+    rr_sin_asignar = list(
         RR.objects.filter(abog__isnull=True)
         .select_related('sim', 'res')
         .order_by('-RR_FECPRESEN')
     )
+    hoy = date.today()
+    for rr in rr_sin_asignar:
+        if rr.RR_FECPRESEN:
+            rr.fecha_limite_25 = rr.RR_FECPRESEN + timedelta(days=25)
+            dias = (rr.fecha_limite_25 - hoy).days
+            if dias < 0:
+                rr.alerta_25 = 'danger'
+            elif dias <= 5:
+                rr.alerta_25 = 'warning'
+            elif dias <= 10:
+                rr.alerta_25 = 'info'
+            else:
+                rr.alerta_25 = 'success'
+        else:
+            rr.fecha_limite_25 = None
+            rr.alerta_25 = 'secondary'
     
     context = {
         'query': query,
@@ -59,7 +77,7 @@ def auxiliar_dashboard(request):
         'solicitudes_sin_asignar': solicitudes_sin_asignar,
         'total_solicitudes_sin_asignar': solicitudes_sin_asignar.count(),
         'rr_sin_asignar': rr_sin_asignar,
-        'total_rr_sin_asignar': rr_sin_asignar.count(),
+        'total_rr_sin_asignar': len(rr_sin_asignar),
     }
     
     return render(request, 'tpe_app/dashboard_auxiliar.html', context)

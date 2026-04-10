@@ -23,6 +23,9 @@ urlpatterns = [
     path('auxiliar/rr/registrar/', views.registrar_rr, name='registrar_rr'),
     path('auxiliar/rr/agendar/', views.agendar_rr, name='agendar_rr'),
     
+    # Buscador - subir foto de PM
+    path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),
+
     # Historial y Búsqueda
     path('historial/buscar/', views.buscar_historial_view, name='buscar_historial'),
     path('historial/<int:personal_id>/', views.historial_personal_detalle, name='historial_detalle'),

@@ -6,7 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..decorators import rol_requerido
-from ..models import AGENDA, AUTOTPE, DICTAMEN, RES, RR, SIM
+from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, RES, RR, SIM
 from ..utils.numeracion import next_num_yy
 
 
@@ -20,16 +20,25 @@ def _get_abogado_or_403(request):
 @rol_requerido("ABOGADO")
 def abogado_sumario_detalle(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
-    sim = get_object_or_404(SIM, pk=sim_id)
+    sim = get_object_or_404(
+        SIM.objects.prefetch_related('militares'),
+        pk=sim_id,
+    )
 
-    dictamenes = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-id")
-    resoluciones = RES.objects.filter(sim=sim).select_related("agenda", "abog", "dictamen").order_by("-RES_FEC")
+    dictamenes       = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-id")
+    resoluciones     = list(RES.objects.filter(sim=sim).select_related("agenda", "abog", "dictamen").order_by("-RES_FEC"))
     reconsideraciones = RR.objects.filter(sim=sim).select_related("res", "agenda", "abog").order_by("-RR_FEC")
-    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-TPE_FEC", "-id")
+    autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-TPE_FEC", "-id")
+
+    # Adjuntar PDF a cada RES
+    for res in resoluciones:
+        doc = DocumentoAdjunto.objects.filter(DOC_TABLA='res', DOC_ID_REG=res.pk).first()
+        res.pdf_url = doc.DOC_RUTA.url if doc else None
 
     context = {
         "sim": sim,
         "abogado": abogado,
+        "investigados": sim.militares.all(),
         "dictamenes": dictamenes,
         "resoluciones": resoluciones,
         "reconsideraciones": reconsideraciones,

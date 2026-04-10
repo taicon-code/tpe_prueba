@@ -1,35 +1,326 @@
 {% extends 'tpe_app/base.html' %}
 
 {% block title %}Dashboard Buscador - TPE Sistema{% endblock %}
+{% block navbar_title %}🔍 Panel de Búsqueda{% endblock %}
 
 {% block content %}
-<h1 style="margin-bottom: 2rem; color: #1e3c72;">🔍 Búsqueda de Información</h1>
+<style>
+/* ── Buscador-specific styles ─────────────────── */
+.search-hero {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.75rem;
+    color: #fff;
+}
+.search-hero h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .35rem; }
+.search-hero p  { font-size: .9rem; opacity: .8; margin-bottom: 1.25rem; }
 
-<div class="card">
-    <h2>Buscar Sumarios o Personal Militar</h2>
-    <form method="get" class="search-box">
-        <input 
-            type="text" 
-            name="q" 
-            placeholder="Buscar por Código DJE, CI, Nombre, Apellido..." 
-            value="{{ query }}"
-            autofocus
-        >
-        <button type="submit" class="btn">Buscar</button>
+.search-hero .search-row {
+    display: flex;
+    gap: .75rem;
+}
+.search-hero input {
+    flex: 1;
+    padding: .75rem 1.1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    box-shadow: 0 2px 8px rgba(0,0,0,.2);
+}
+.search-hero input:focus { outline: 2px solid #7ba7f0; }
+.search-hero .btn-search {
+    background: #f59e0b;
+    color: #1a1a1a;
+    border: none;
+    padding: .75rem 1.5rem;
+    border-radius: 8px;
+    font-size: .95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s;
+}
+.search-hero .btn-search:hover { background: #d97706; }
+.search-hero .clear-link {
+    color: rgba(255,255,255,.7);
+    font-size: .8rem;
+    text-decoration: none;
+    align-self: center;
+    white-space: nowrap;
+}
+.search-hero .clear-link:hover { color: #fff; }
+
+/* Resultados contador */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+.section-header h2 { color: #1e3c72; font-size: 1.1rem; }
+.result-count {
+    background: #e8f0fe;
+    color: #1e40af;
+    padding: .2rem .65rem;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+/* ── PM Cards ─────────────────────────────────── */
+.pm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.1rem;
+    margin-bottom: 1.75rem;
+}
+
+.pm-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    overflow: hidden;
+    transition: transform .15s, box-shadow .15s;
+    border: 1px solid #f0f0f0;
+}
+.pm-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+}
+
+.pm-card-photo {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #e8f0fe 0%, #dbeafe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+.pm-card-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.pm-card-photo .avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .05em;
+}
+
+/* Botón de foto superpuesto */
+.photo-upload-btn {
+    position: absolute;
+    bottom: .6rem;
+    right: .6rem;
+    background: rgba(0,0,0,.6);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: .3rem .55rem;
+    font-size: .72rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    transition: background .15s;
+    backdrop-filter: blur(4px);
+}
+.photo-upload-btn:hover { background: rgba(0,0,0,.85); }
+
+/* Hidden file input overlay */
+.photo-form { display: none; }
+
+.pm-card-body { padding: 1rem 1.1rem; }
+.pm-card-body .pm-grado {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    margin-bottom: .2rem;
+}
+.pm-card-body .pm-nombre {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: .5rem;
+    line-height: 1.3;
+}
+.pm-card-body .pm-detail {
+    font-size: .8rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin-bottom: .25rem;
+}
+.pm-card-body .pm-detail span { font-size: .85rem; }
+
+.pm-estado-badge {
+    display: inline-block;
+    padding: .2rem .65rem;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    margin-top: .5rem;
+}
+.pm-estado-ACTIVO          { background: #d1fae5; color: #065f46; }
+.pm-estado-RETIRO          { background: #fef3c7; color: #92400e; }
+.pm-estado-BAJA            { background: #fee2e2; color: #991b1b; }
+.pm-estado-FALLECIDO       { background: #f3f4f6; color: #374151; }
+.pm-estado-RESERVA_ACTIVA  { background: #eff6ff; color: #1e40af; }
+
+/* ── SIM Table ────────────────────────────────── */
+.sim-table-wrap { overflow-x: auto; }
+.sim-table td, .sim-table th { vertical-align: middle; }
+.sim-table .sim-cod { font-weight: 700; white-space: nowrap; color: #1e3c72; }
+
+/* ── Tips card ────────────────────────────────── */
+.tips-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid #0ea5e9;
+    border-radius: 10px;
+    padding: 1.4rem 1.75rem;
+}
+.tips-card h3 { color: #0369a1; margin-bottom: .75rem; }
+.tips-card ul { margin-left: 1.25rem; line-height: 2.1; color: #374151; font-size: .9rem; }
+</style>
+
+<!-- ── HERO SEARCH ────────────────────────────── -->
+<div class="search-hero">
+    <h1>🔍 Búsqueda de Información Militar</h1>
+    <p>Busca sumarios, personal por CI, nombre o apellido</p>
+    <form method="get">
+        <div class="search-row">
+            <input
+                type="text"
+                name="q"
+                placeholder="CI, nombre, apellido, código DJE, resumen..."
+                value="{{ query }}"
+                autofocus
+            >
+            <button type="submit" class="btn-search">Buscar</button>
+            {% if query %}
+                <a href="{% url 'buscador_dashboard' %}" class="clear-link">✕ Limpiar</a>
+            {% endif %}
+        </div>
     </form>
 </div>
 
 {% if query %}
+
+<!-- ── RESULTADOS: PERSONAL MILITAR ───────────── -->
 <div class="card">
-    <h2>Resultados de Sumarios ({{ total_sim }})</h2>
+    <div class="section-header">
+        <h2>👤 Personal Militar</h2>
+        <span class="result-count">{{ total_pm }} resultado{{ total_pm|pluralize:"s" }}</span>
+    </div>
+
+    {% if resultados_pm %}
+    <div class="pm-grid">
+        {% for pm in resultados_pm %}
+        <div class="pm-card">
+
+            <!-- FOTO -->
+            <div class="pm-card-photo">
+                {% if pm.PM_FOTO %}
+                    <img src="{{ pm.PM_FOTO.url }}" alt="Foto {{ pm.PM_NOMBRE }}">
+                {% else %}
+                    <div class="avatar-placeholder">
+                        {{ pm.PM_NOMBRE|first }}{{ pm.PM_PATERNO|first }}
+                    </div>
+                {% endif %}
+
+                <!-- Botón subir/cambiar foto -->
+                <button
+                    class="photo-upload-btn"
+                    onclick="openPhotoUpload({{ pm.pk }})"
+                    title="{% if pm.PM_FOTO %}Cambiar foto{% else %}Subir foto{% endif %}"
+                >
+                    📷 {% if pm.PM_FOTO %}Cambiar{% else %}Subir foto{% endif %}
+                </button>
+
+                <!-- Form oculto para upload -->
+                <form
+                    id="photo-form-{{ pm.pk }}"
+                    class="photo-form"
+                    method="post"
+                    action="{% url 'upload_foto_pm' pm.pk %}"
+                    enctype="multipart/form-data"
+                >
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <input
+                        type="file"
+                        name="foto"
+                        id="photo-input-{{ pm.pk }}"
+                        accept="image/*"
+                        onchange="document.getElementById('photo-form-{{ pm.pk }}').submit()"
+                    >
+                </form>
+            </div>
+
+            <!-- DATOS -->
+            <div class="pm-card-body">
+                <div class="pm-grado">{{ pm.get_PM_GRADO_display|default:"Sin grado" }}</div>
+                <div class="pm-nombre">
+                    {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}{% if pm.PM_MATERNO %} {{ pm.PM_MATERNO }}{% endif %}
+                </div>
+
+                {% if pm.PM_CI %}
+                <div class="pm-detail"><span>🪪</span> CI: {{ pm.PM_CI }}</div>
+                {% endif %}
+                {% if pm.PM_ARMA %}
+                <div class="pm-detail"><span>⚔️</span> {{ pm.get_PM_ARMA_display }}</div>
+                {% endif %}
+                {% if pm.PM_ESPEC %}
+                <div class="pm-detail"><span>🎓</span> {{ pm.PM_ESPEC }}</div>
+                {% endif %}
+
+                <div>
+                    <span class="pm-estado-badge pm-estado-{{ pm.PM_ESTADO|cut:' ' }}">
+                        {{ pm.get_PM_ESTADO_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#9ca3af; text-align:center; padding:2rem 0;">
+        No se encontró personal militar con ese criterio
+    </p>
+    {% endif %}
+</div>
+
+<!-- ── RESULTADOS: SUMARIOS ────────────────────── -->
+<div class="card">
+    <div class="section-header">
+        <h2>📄 Sumarios Informativos</h2>
+        <span class="result-count">{{ total_sim }} resultado{{ total_sim|pluralize:"s" }}</span>
+    </div>
+
     {% if resultados_sim %}
-    <table>
+    <div class="sim-table-wrap">
+    <table class="sim-table">
         <thead>
             <tr>
                 <th>Código</th>
                 <th>Tipo</th>
-                <th>Resumen</th>
+                <th>Investigados</th>
                 <th>Abogado</th>
+                <th>Resumen</th>
                 <th>Estado</th>
                 <th>Fecha</th>
             </tr>
@@ -37,16 +328,21 @@
         <tbody>
             {% for sim in resultados_sim %}
             <tr>
-                <td><strong>{{ sim.SIM_COD }}</strong></td>
+                <td class="sim-cod">{{ sim.SIM_COD }}</td>
                 <td><span class="badge badge-blue">{{ sim.get_SIM_TIPO_display }}</span></td>
-                <td>{{ sim.SIM_RESUM|truncatewords:12 }}</td>
+                <td>
+                    {% for pm in sim.militares.all %}
+                        {{ pm.PM_PATERNO }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}-{% endfor %}
+                </td>
                 <td>
                     {% for abog in sim.abogados.all %}
-                        {{ abog }}{% if not forloop.last %}, {% endif %}
+                        {{ abog.AB_PATERNO }}{% if not forloop.last %}, {% endif %}
                     {% empty %}
-                        Sin asignar
+                        <span style="color:#9ca3af;">Sin asignar</span>
                     {% endfor %}
                 </td>
+                <td style="max-width:220px;">{{ sim.SIM_RESUM|truncatewords:12 }}</td>
                 <td>
                     {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
                         <span class="badge badge-orange">Para Agenda</span>
@@ -56,62 +352,39 @@
                         <span class="badge badge-purple">En TSP</span>
                     {% endif %}
                 </td>
-                <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space:nowrap;">{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
-    <p style="color: #999; text-align: center; padding: 2rem;">No se encontraron sumarios con ese criterio</p>
+    <p style="color:#9ca3af; text-align:center; padding:2rem 0;">
+        No se encontraron sumarios con ese criterio
+    </p>
     {% endif %}
 </div>
 
-<div class="card">
-    <h2>Resultados de Personal Militar ({{ total_pm }})</h2>
-    {% if resultados_pm %}
-    <table>
-        <thead>
-            <tr>
-                <th>CI</th>
-                <th>Grado</th>
-                <th>Nombre Completo</th>
-                <th>Arma</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pm in resultados_pm %}
-            <tr>
-                <td><strong>{{ pm.PM_CI }}</strong></td>
-                <td>{{ pm.get_PM_GRADO_display|default:"-" }}</td>
-                <td>{{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }} {{ pm.PM_MATERNO }}</td>
-                <td>{{ pm.get_PM_ARMA_display|default:"-" }}</td>
-                <td>
-                    {% if pm.PM_ESTADO == 'ACTIVO' %}
-                        <span class="badge badge-green">{{ pm.get_PM_ESTADO_display }}</span>
-                    {% else %}
-                        <span class="badge badge-orange">{{ pm.get_PM_ESTADO_display }}</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="color: #999; text-align: center; padding: 2rem;">No se encontró personal militar con ese criterio</p>
-    {% endif %}
-</div>
-{% endif %}
+{% else %}
 
-{% if not query %}
-<div class="card" style="background: #f8f9fa; border-left: 4px solid #1e3c72;">
-    <h3 style="margin-bottom: 1rem;">💡 Consejos de búsqueda</h3>
-    <ul style="margin-left: 1.5rem; line-height: 2;">
-        <li>Busca por <strong>código DJE</strong>: Ejemplo "DJE-56/24"</li>
-        <li>Busca por <strong>CI</strong>: Ejemplo "12345678"</li>
-        <li>Busca por <strong>nombre o apellido</strong>: Ejemplo "GONZALES"</li>
-        <li>Busca por <strong>palabra clave</strong> en el resumen del sumario</li>
+<!-- ── TIPS (sin búsqueda) ──────────────────────── -->
+<div class="tips-card">
+    <h3>💡 Consejos de búsqueda</h3>
+    <ul>
+        <li>Busca por <strong>Código DJE</strong>: Ejemplo <code>DJE-56/24</code></li>
+        <li>Busca por <strong>CI</strong>: Ejemplo <code>12345678</code></li>
+        <li>Busca por <strong>nombre o apellido</strong>: Ejemplo <code>GONZALES</code></li>
+        <li>Busca por <strong>palabra clave</strong> del resumen del sumario</li>
     </ul>
 </div>
+
 {% endif %}
+
+<!-- ── JS para upload de foto ─────────────────── -->
+<script>
+function openPhotoUpload(pmId) {
+    document.getElementById('photo-input-' + pmId).click();
+}
+</script>
+
 {% endblock %}

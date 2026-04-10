@@ -127,6 +127,7 @@ class PM(models.Model):
     PM_MATERNO   = models.CharField(max_length=25, null=True, blank=True, verbose_name='Apellido Materno')
     PM_ESTADO    = models.CharField(max_length=25, choices=ESTADO_CHOICES, default='ACTIVO', verbose_name='Estado')
     PM_PROMOCION = models.DateField(null=True, blank=True, verbose_name='Fecha de Promoción')
+    PM_FOTO      = models.ImageField(upload_to='fotos_pm/', null=True, blank=True, verbose_name='Foto')
 
     class Meta:
         db_table            = 'pm'

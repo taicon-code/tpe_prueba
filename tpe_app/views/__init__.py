@@ -9,6 +9,6 @@ from .abogado_documentos_views import (
     abogado_rr_crear,
     abogado_sumario_detalle,
 )
-from .buscador_views import buscador_dashboard
+from .buscador_views import buscador_dashboard, upload_foto_pm
 from .auxiliar_views import auxiliar_dashboard, registrar_sumario, agendar_sumario, registrar_rr, agendar_rr
 from .historial_views import buscar_historial_view, historial_personal_detalle

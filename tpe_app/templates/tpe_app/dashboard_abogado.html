@@ -1,6 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
 {% block title %}Dashboard Abogado - TPE Sistema{% endblock %}
+{% block navbar_title %}⚖️ Panel de Abogado{% endblock %}
 
 {% block content %}
 {% if error %}
@@ -104,39 +105,47 @@
     <table>
         <thead>
             <tr>
-                <th>Fec. Presentación</th>
-                <th>Fec. Límite</th>
-                <th>Sumario</th>
-                <th>Primera Resolución</th>
-                <th>Historial</th>
+                <th>Fec. Ingreso Sumario</th>
+                <th>En contra de RES</th>
+                <th>Grado</th>
+                <th>Especialidad</th>
+                <th>Nombre Completo</th>
                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for rr in mis_recursos %}
             <tr>
-                <td style="white-space: nowrap;">{{ rr.RR_FECPRESEN|date:"d/m/Y"|default:"-" }}</td>
-                <td style="white-space: nowrap;">{{ rr.RR_FECLIMITE|date:"d/m/Y"|default:"-" }}</td>
-                <td style="white-space: nowrap;"><strong>{{ rr.sim.SIM_COD }}</strong></td>
-                <td>{{ rr.res.RES_NUM }} - {{ rr.res.RES_RESOL|truncatewords:8 }}</td>
+                <td style="white-space: nowrap;">{{ rr.sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space: nowrap;">
+                    {% if rr.pdf_primera_res %}
+                        <a href="{{ rr.pdf_primera_res }}" target="_blank"
+                           style="font-weight:700; color:#1e3c72; text-decoration:none;"
+                           title="Descargar PDF RES {{ rr.res.RES_NUM }}">
+                            📄 {{ rr.res.RES_NUM }}
+                        </a>
+                    {% else %}
+                        <strong>{{ rr.res.RES_NUM }}</strong>
+                        <span style="color:#9ca3af; font-size:.75rem; display:block;">Sin PDF</span>
+                    {% endif %}
+                </td>
+                <td>{{ rr.investigado.get_PM_GRADO_display|default:"-" }}</td>
+                <td>{{ rr.investigado.PM_ESPEC|default:"-" }}</td>
                 <td>
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        {% if rr.pdf_primera_res %}
-                            <a href="{{ rr.pdf_primera_res }}" target="_blank" class="btn" style="background: #dc3545; font-size: 0.8rem; padding: 0.2rem 0.5rem;">📄 Ver RES</a>
-                        {% else %}
-                            <span style="color: #666; font-size: 0.8rem;">(Sin PDF adjunto)</span>
-                        {% endif %}
-                        <a href="{% url 'abogado_sumario_detalle' rr.sim.pk %}" class="btn" style="background: #6c757d; font-size: 0.8rem; padding: 0.2rem 0.5rem;">📁 Historial Sumario</a>
-                    </div>
+                    {{ rr.investigado.PM_NOMBRE|default:"" }}
+                    {{ rr.investigado.PM_PATERNO|default:"" }}
+                    {% if rr.investigado.PM_MATERNO %}{{ rr.investigado.PM_MATERNO }}{% endif %}
                 </td>
                 <td>
-                    <!-- Acciones para resolver el RR (ej. crear RES/Auto) -->
-                    <a href="/admin/tpe_app/rr/{{ rr.pk }}/change/" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #28a745;">Resolver RR</a>
+                    <a href="{% url 'abogado_sumario_detalle' rr.sim.pk %}"
+                       class="btn" style="font-size:0.8rem; padding:0.3rem 0.7rem;">
+                        Ver
+                    </a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align: center; color: #999;">No tienes recursos asignados</td>
+                <td colspan="6" style="text-align:center; color:#999;">No tienes recursos asignados</td>
             </tr>
             {% endfor %}
         </tbody>
