@@ -399,12 +399,12 @@
     {% if user.is_authenticated %}
     {% with rol=user.perfilusuario.rol %}
 
-        <!-- ── AUXILIAR ─────────────────────────── -->
-        {% if rol == 'AUXILIAR' %}
+        <!-- ── ADMINISTRATIVO ──────────────────── -->
+        {% if rol == 'ADMINISTRATIVO' %}
 
         <span class="sb-group-label">Panel Principal</span>
-        <a href="{% url 'auxiliar_dashboard' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'auxiliar_dashboard' %}active{% endif %}">
+        <a href="{% url 'administrativo_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'administrativo_dashboard' %}active{% endif %}">
             <span class="lk-icon">🏠</span>
             <span class="lk-text">Inicio</span>
         </a>

@@ -15,13 +15,13 @@ urlpatterns = [
     path('abogado/sumarios/<int:sim_id>/res/<int:res_id>/rr/nueva/', views.abogado_rr_crear, name='abogado_rr_crear'),
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/autotpe/nuevo/', views.abogado_autotpe_crear, name='abogado_autotpe_crear'),
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
-    path('auxiliar/dashboard/', views.auxiliar_dashboard, name='auxiliar_dashboard'),
+    path('administrativo/dashboard/', views.administrativo_dashboard, name='administrativo_dashboard'),
 
-    # Auxiliar - Sumarios
-    path('auxiliar/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
-    path('auxiliar/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
-    path('auxiliar/rr/registrar/', views.registrar_rr, name='registrar_rr'),
-    path('auxiliar/rr/agendar/', views.agendar_rr, name='agendar_rr'),
+    # Administrativo - Sumarios
+    path('administrativo/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
+    path('administrativo/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
+    path('administrativo/rr/registrar/', views.registrar_rr, name='registrar_rr'),
+    path('administrativo/rr/agendar/', views.agendar_rr, name='agendar_rr'),
     
     # Buscador - subir foto de PM
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),

@@ -1,8 +1,8 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Dashboard Auxiliar - TPE Sistema{% endblock %}
+{% block title %}Dashboard Administrativo - TPE Sistema{% endblock %}
 
-{% block navbar_title %}🎖️ Panel de Auxiliar{% endblock %}
+{% block navbar_title %}🎖️ Panel de Administrativo{% endblock %}
 
 {% block content %}
 
@@ -35,7 +35,7 @@
         <button type="submit" class="btn" style="background:#5c7cfa;">Buscar</button>
     </form>
     {% if query %}
-        <a href="{% url 'auxiliar_dashboard' %}" style="color: #666; text-decoration: none; font-size: 0.9rem;">Limpiar búsqueda</a>
+        <a href="{% url 'administrativo_dashboard' %}" style="color: #666; text-decoration: none; font-size: 0.9rem;">Limpiar búsqueda</a>
     {% endif %}
 </div>
 

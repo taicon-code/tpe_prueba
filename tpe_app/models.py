@@ -815,7 +815,7 @@ class PerfilUsuario(models.Model):
         ('ADMINISTRADOR', 'Administrador'),
         ('ABOGADO',       'Abogado'),
         ('BUSCADOR',      'Buscador'),
-        ('AUXILIAR',      'Auxiliar'),
+        ('ADMINISTRATIVO', 'Administrativo'),
     ]
     
     user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, 
