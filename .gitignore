@@ -107,3 +107,6 @@ Thumbs.db
 
 # docs/
 docs/
+
+# Claude Code (worktrees, configuración local)
+.claude/
