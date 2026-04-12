@@ -66,26 +66,26 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('✅ Usuario BUSCADOR creado'))
             self.stdout.write(f'   Usuario: buscador1 | Contraseña: buscador123')
         
-        # 4. Crear AUXILIAR
-        if not User.objects.filter(username='auxiliar1').exists():
-            auxiliar = User.objects.create_user(
-                username='auxiliar1',
-                email='auxiliar@tpe.bo',
-                password='auxiliar123',
+        # 4. Crear ADMINISTRATIVO
+        if not User.objects.filter(username='administrativo1').exists():
+            administrativo = User.objects.create_user(
+                username='administrativo1',
+                email='administrativo@tpe.bo',
+                password='admin123',
                 first_name='Carlos',
                 last_name='Mamani'
             )
             PerfilUsuario.objects.create(
-                user=auxiliar,
-                rol='AUXILIAR',
+                user=administrativo,
+                rol='ADMINISTRATIVO',
                 activo=True
             )
-            self.stdout.write(self.style.SUCCESS('✅ Usuario AUXILIAR creado'))
-            self.stdout.write(f'   Usuario: auxiliar1 | Contraseña: auxiliar123')
-        
+            self.stdout.write(self.style.SUCCESS('✅ Usuario ADMINISTRATIVO creado'))
+            self.stdout.write(f'   Usuario: administrativo1 | Contraseña: admin123')
+
         self.stdout.write(self.style.SUCCESS('\n🎉 ¡Usuarios de prueba creados exitosamente!'))
         self.stdout.write('\n📋 Resumen de usuarios:')
-        self.stdout.write('   ADMINISTRADOR → admin / admin123')
-        self.stdout.write('   ABOGADO       → abogado1 / abogado123')
-        self.stdout.write('   BUSCADOR      → buscador1 / buscador123')
-        self.stdout.write('   AUXILIAR      → auxiliar1 / auxiliar123')
+        self.stdout.write('   ADMINISTRADOR  → admin / admin123')
+        self.stdout.write('   ABOGADO        → abogado1 / abogado123')
+        self.stdout.write('   BUSCADOR       → buscador1 / buscador123')
+        self.stdout.write('   ADMINISTRATIVO → administrativo1 / admin123')

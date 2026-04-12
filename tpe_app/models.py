@@ -624,7 +624,7 @@ class RAP(models.Model):
     RAP_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite remisión TSP (3 días hábiles)')
 
     # Elevación al TSP
-    RAP_OFI    = models.CharField(max_length=15, null=True, blank=True, verbose_name='N° Oficio Elevación')
+    RAP_OFI    = models.CharField(max_length=25, null=True, blank=True, verbose_name='N° Oficio Elevación')
     RAP_FECOFI = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
     
     # Resolución del TSP
@@ -815,7 +815,7 @@ class PerfilUsuario(models.Model):
         ('ADMINISTRADOR', 'Administrador'),
         ('ABOGADO',       'Abogado'),
         ('BUSCADOR',      'Buscador'),
-        ('AUXILIAR',      'Auxiliar'),
+        ('ADMINISTRATIVO', 'Administrativo'),
     ]
     
     user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, 

@@ -395,12 +395,13 @@
 
     <!-- Navigation (role-aware) -->
     <nav class="sb-nav">
+    {% block sidebar_nav %}
 
     {% if user.is_authenticated %}
     {% with rol=user.perfilusuario.rol %}
 
-        <!-- ── AUXILIAR ─────────────────────────── -->
-        {% if rol == 'AUXILIAR' %}
+        <!-- ── ADMINISTRATIVO ───────────────────── -->
+        {% if rol == 'ADMINISTRATIVO' %}
 
         <span class="sb-group-label">Panel Principal</span>
         <a href="{% url 'auxiliar_dashboard' %}"
@@ -436,8 +437,8 @@
         <hr class="sb-divider">
         <span class="sb-group-label">Sistema</span>
 
-        <a href="{% url 'buscar_historial' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'buscar_historial' %}active{% endif %}">
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
             <span class="lk-icon">🔍</span>
             <span class="lk-text">Buscar Historial</span>
         </a>
@@ -455,8 +456,8 @@
         <hr class="sb-divider">
         <span class="sb-group-label">Sistema</span>
 
-        <a href="{% url 'buscar_historial' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'buscar_historial' %}active{% endif %}">
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
             <span class="lk-icon">🔍</span>
             <span class="lk-text">Buscar Historial</span>
         </a>
@@ -474,8 +475,8 @@
         <hr class="sb-divider">
         <span class="sb-group-label">Sistema</span>
 
-        <a href="{% url 'buscar_historial' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'buscar_historial' %}active{% endif %}">
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
             <span class="lk-icon">🔍</span>
             <span class="lk-text">Buscar Historial</span>
         </a>
@@ -497,8 +498,8 @@
         <hr class="sb-divider">
         <span class="sb-group-label">Búsqueda</span>
 
-        <a href="{% url 'buscar_historial' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'buscar_historial' %}active{% endif %}">
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
             <span class="lk-icon">🔍</span>
             <span class="lk-text">Buscar Historial</span>
         </a>
@@ -515,6 +516,7 @@
     {% endwith %}
     {% endif %}
 
+    {% endblock sidebar_nav %}
     </nav>
 
     <!-- Mini Calendar -->

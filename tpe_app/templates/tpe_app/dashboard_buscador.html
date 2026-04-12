@@ -1,390 +1,595 @@
 {% extends 'tpe_app/base.html' %}
+{% load static %}
 
-{% block title %}Dashboard Buscador - TPE Sistema{% endblock %}
-{% block navbar_title %}🔍 Panel de Búsqueda{% endblock %}
+{% block title %}Panel de Búsqueda - TPE Sistema{% endblock %}
+{% block navbar_title %}🔍 Búsqueda de Personas y Sumarios{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link active">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Buscar</span>
+    </a>
+    <hr class="sb-divider">
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
 
 {% block content %}
 <style>
-/* ── Buscador-specific styles ─────────────────── */
-.search-hero {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  .search-container {
+    background: linear-gradient(135deg, #185FA5 0%, #1a3a52 100%);
     border-radius: 12px;
     padding: 2rem;
-    margin-bottom: 1.75rem;
+    margin-bottom: 2rem;
     color: #fff;
-}
-.search-hero h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .35rem; }
-.search-hero p  { font-size: .9rem; opacity: .8; margin-bottom: 1.25rem; }
+  }
 
-.search-hero .search-row {
+  .search-container h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .search-container p {
+    font-size: 0.95rem;
+    opacity: 0.85;
+    margin-bottom: 1.5rem;
+  }
+
+  .search-box {
     display: flex;
-    gap: .75rem;
-}
-.search-hero input {
+    gap: 10px;
+  }
+
+  .search-box input {
     flex: 1;
-    padding: .75rem 1.1rem;
+    padding: 12px 16px;
     border: none;
     border-radius: 8px;
     font-size: 1rem;
     font-family: inherit;
-    box-shadow: 0 2px 8px rgba(0,0,0,.2);
-}
-.search-hero input:focus { outline: 2px solid #7ba7f0; }
-.search-hero .btn-search {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .search-box input:focus {
+    outline: 2px solid #7ba7f0;
+  }
+
+  .search-box button {
     background: #f59e0b;
     color: #1a1a1a;
     border: none;
-    padding: .75rem 1.5rem;
+    padding: 12px 24px;
     border-radius: 8px;
-    font-size: .95rem;
+    font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background .15s;
-}
-.search-hero .btn-search:hover { background: #d97706; }
-.search-hero .clear-link {
-    color: rgba(255,255,255,.7);
-    font-size: .8rem;
-    text-decoration: none;
-    align-self: center;
-    white-space: nowrap;
-}
-.search-hero .clear-link:hover { color: #fff; }
+    transition: background 0.15s;
+  }
 
-/* Resultados contador */
-.section-header {
+  .search-box button:hover {
+    background: #d97706;
+  }
+
+  .search-info {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 0.75rem;
+  }
+
+  /* Resultados */
+  .results-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #185FA5;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
-}
-.section-header h2 { color: #1e3c72; font-size: 1.1rem; }
-.result-count {
+    gap: 10px;
+  }
+
+  .result-badge {
     background: #e8f0fe;
-    color: #1e40af;
-    padding: .2rem .65rem;
+    color: #185FA5;
+    padding: 4px 12px;
     border-radius: 20px;
-    font-size: .78rem;
+    font-size: 0.8rem;
     font-weight: 700;
-}
+  }
 
-/* ── PM Cards ─────────────────────────────────── */
-.pm-grid {
+  /* PM Cards */
+  .pm-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1.1rem;
-    margin-bottom: 1.75rem;
-}
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+  }
 
-.pm-card {
+  .pm-card {
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
-    overflow: hidden;
-    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     border: 1px solid #f0f0f0;
-}
-.pm-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,.12);
-}
-
-.pm-card-photo {
-    width: 100%;
-    height: 180px;
-    background: linear-gradient(135deg, #e8f0fe 0%, #dbeafe 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
     overflow: hidden;
-}
-.pm-card-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.pm-card-photo .avatar-placeholder {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: .05em;
-}
-
-/* Botón de foto superpuesto */
-.photo-upload-btn {
-    position: absolute;
-    bottom: .6rem;
-    right: .6rem;
-    background: rgba(0,0,0,.6);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: .3rem .55rem;
-    font-size: .72rem;
+    transition: all 0.2s;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: .3rem;
-    transition: background .15s;
-    backdrop-filter: blur(4px);
-}
-.photo-upload-btn:hover { background: rgba(0,0,0,.85); }
+  }
 
-/* Hidden file input overlay */
-.photo-form { display: none; }
+  .pm-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    border-color: #185FA5;
+  }
 
-.pm-card-body { padding: 1rem 1.1rem; }
-.pm-card-body .pm-grado {
-    font-size: .72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: #6b7280;
-    margin-bottom: .2rem;
-}
-.pm-card-body .pm-nombre {
+  .pm-card-header {
+    background: linear-gradient(135deg, #e8f0fe 0%, #dbeafe 100%);
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 2px solid #f0f0f0;
+  }
+
+  .pm-card-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: #185FA5;
     font-size: 1rem;
     font-weight: 700;
-    color: #111827;
-    margin-bottom: .5rem;
-    line-height: 1.3;
-}
-.pm-card-body .pm-detail {
-    font-size: .8rem;
-    color: #6b7280;
+  }
+
+  .pm-card-header p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 0.85rem;
+  }
+
+  .pm-card-body {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .pm-card-body .info-row {
     display: flex;
-    align-items: center;
-    gap: .35rem;
-    margin-bottom: .25rem;
-}
-.pm-card-body .pm-detail span { font-size: .85rem; }
+    justify-content: space-between;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #f5f5f5;
+    padding-bottom: 8px;
+  }
 
-.pm-estado-badge {
-    display: inline-block;
-    padding: .2rem .65rem;
-    border-radius: 20px;
-    font-size: .72rem;
+  .pm-card-body .label {
+    font-weight: 600;
+    color: #185FA5;
+  }
+
+  .pm-card-body .value {
+    color: #666;
+  }
+
+  /* SIM Table */
+  .sim-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .sim-table thead {
+    background: #185FA5;
+    color: #fff;
+  }
+
+  .sim-table thead th {
+    padding: 12px;
+    text-align: left;
     font-weight: 700;
-    margin-top: .5rem;
-}
-.pm-estado-ACTIVO          { background: #d1fae5; color: #065f46; }
-.pm-estado-RETIRO          { background: #fef3c7; color: #92400e; }
-.pm-estado-BAJA            { background: #fee2e2; color: #991b1b; }
-.pm-estado-FALLECIDO       { background: #f3f4f6; color: #374151; }
-.pm-estado-RESERVA_ACTIVA  { background: #eff6ff; color: #1e40af; }
+    font-size: 0.95rem;
+  }
 
-/* ── SIM Table ────────────────────────────────── */
-.sim-table-wrap { overflow-x: auto; }
-.sim-table td, .sim-table th { vertical-align: middle; }
-.sim-table .sim-cod { font-weight: 700; white-space: nowrap; color: #1e3c72; }
+  .sim-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+  }
 
-/* ── Tips card ────────────────────────────────── */
-.tips-card {
+  .sim-table tbody tr:hover {
+    background: #f9fafb;
+  }
+
+  .sim-table tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  .sim-codigo {
+    font-weight: 700;
+    color: #185FA5;
+  }
+
+  /* Historial Completo */
+  .historial-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .historial-header {
+    border-bottom: 2px solid #185FA5;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .historial-header h2 {
+    margin: 0 0 0.5rem 0;
+    color: #185FA5;
+    font-size: 1.3rem;
+  }
+
+  .historial-datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .dato-item {
+    font-size: 0.9rem;
+  }
+
+  .dato-label {
+    font-weight: 700;
+    color: #185FA5;
+  }
+
+  .dato-valor {
+    color: #666;
+  }
+
+  /* Export Buttons */
+  .export-buttons {
+    display: flex;
+    gap: 12px;
+    margin: 1.5rem 0;
+  }
+
+  .btn-export {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+  }
+
+  .btn-export-pdf {
+    background: #3b82f6;
+    color: #fff;
+  }
+
+  .btn-export-pdf:hover {
+    background: #2563eb;
+  }
+
+  .btn-export-excel {
+    background: #10b981;
+    color: #fff;
+  }
+
+  .btn-export-excel:hover {
+    background: #059669;
+  }
+
+  /* Sumarios Panel */
+  .sumarios-panel {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #185FA5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .sumarios-panel h3 {
+    margin: 0 0 1rem 0;
+    color: #185FA5;
+    font-size: 1.05rem;
+  }
+
+  .sumario-item {
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+  }
+
+  .sumario-codigo {
+    font-weight: 700;
+    color: #185FA5;
+    font-size: 0.95rem;
+  }
+
+  .sumario-info {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+  }
+
+  .empty-state p {
+    font-size: 1rem;
+    margin: 0.5rem 0;
+  }
+
+  .error-message {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .success-message {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .stat-box {
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border-left: 4px solid #0ea5e9;
-    border-radius: 10px;
-    padding: 1.4rem 1.75rem;
-}
-.tips-card h3 { color: #0369a1; margin-bottom: .75rem; }
-.tips-card ul { margin-left: 1.25rem; line-height: 2.1; color: #374151; font-size: .9rem; }
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #bae6fd;
+  }
+
+  .stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #185FA5;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 600;
+  }
 </style>
 
-<!-- ── HERO SEARCH ────────────────────────────── -->
-<div class="search-hero">
-    <h1>🔍 Búsqueda de Información Militar</h1>
-    <p>Busca sumarios, personal por CI, nombre o apellido</p>
-    <form method="get">
-        <div class="search-row">
-            <input
-                type="text"
-                name="q"
-                placeholder="CI, nombre, apellido, código DJE, resumen..."
-                value="{{ query }}"
-                autofocus
-            >
-            <button type="submit" class="btn-search">Buscar</button>
-            {% if query %}
-                <a href="{% url 'buscador_dashboard' %}" class="clear-link">✕ Limpiar</a>
-            {% endif %}
+<div class="search-container">
+  <h1>Buscar Personas y Sumarios</h1>
+  <p>Busca por CI, nombre, apellido o código DJE</p>
+
+  <form method="GET" action="" class="search-box">
+    <input type="text" name="q" value="{{ query }}" placeholder="Ej: 7309870 | DANIELA | DJE-001/24">
+    <button type="submit">Buscar</button>
+  </form>
+
+  <div class="search-info">
+    💡 Búsqueda rápida: CI exacto, nombre, apellido, o código DJE
+  </div>
+</div>
+
+<!-- HISTORIAL COMPLETO (si hay UN solo resultado de persona) -->
+{% if personal_seleccionado and historial %}
+<div class="historial-container">
+  <div class="historial-header">
+    <h2>{{ personal_seleccionado.PM_NOMBRE }} {{ personal_seleccionado.PM_PATERNO }} {{ personal_seleccionado.PM_MATERNO }}</h2>
+
+    <div class="historial-datos">
+      <div class="dato-item">
+        <span class="dato-label">CI:</span>
+        <span class="dato-valor">{{ personal_seleccionado.PM_CI }}</span>
+      </div>
+      <div class="dato-item">
+        <span class="dato-label">Grado:</span>
+        <span class="dato-valor">{{ personal_seleccionado.get_PM_GRADO_display|default:"N/A" }}</span>
+      </div>
+      <div class="dato-item">
+        <span class="dato-label">Arma:</span>
+        <span class="dato-valor">{{ personal_seleccionado.get_PM_ARMA_display|default:"N/A" }}</span>
+      </div>
+      <div class="dato-item">
+        <span class="dato-label">Estado:</span>
+        <span class="dato-valor">{{ personal_seleccionado.get_PM_ESTADO_display }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT BUTTONS -->
+  <div class="export-buttons">
+    <a href="{% url 'export_pdfs_zip' personal_seleccionado.pm_id %}" class="btn-export btn-export-pdf" style="background: #3b82f6; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      📥 Descargar PDFs (.zip)
+    </a>
+    <a href="{% url 'export_excel' personal_seleccionado.pm_id %}" class="btn-export btn-export-excel" style="background: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      📊 Descargar Excel
+    </a>
+  </div>
+
+  <!-- STATS -->
+  {% if estado %}
+  <div class="stats-grid">
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_sumarios }}</div>
+      <div class="stat-label">Sumarios</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_resoluciones }}</div>
+      <div class="stat-label">Resoluciones</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_apelaciones }}</div>
+      <div class="stat-label">Apelaciones</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_raees }}</div>
+      <div class="stat-label">RAEE</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SUMARIOS PANEL -->
+  {% if historial.sumarios %}
+  <div class="sumarios-panel">
+    <h3>Sumarios ({{ historial.sumarios.count }})</h3>
+    {% for sim in historial.sumarios %}
+    <div class="sumario-item">
+      <div class="sumario-codigo">{{ sim.SIM_COD }} - {{ sim.get_SIM_TIPO_display }}</div>
+      <div class="sumario-info">
+        <strong>Objeto:</strong> {{ sim.SIM_OBJETO|truncatewords:10 }}<br>
+        <strong>Resumen:</strong> {{ sim.SIM_RESUM|truncatewords:10 }}<br>
+        <strong>Fecha Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }} |
+        <strong>Estado:</strong> {{ sim.SIM_ESTADO }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- RESOLUCIONES TABLE -->
+  {% if historial.resoluciones %}
+  <table class="sim-table">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>Número</th>
+        <th>Fecha</th>
+        <th>Notificación</th>
+        <th>Fecha Notif.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for res in historial.resoluciones %}
+      <tr>
+        <td>{{ res.get_RES_TIPO_display|truncatewords:3 }}</td>
+        <td><strong>{{ res.RES_NUM }}</strong></td>
+        <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+        <td>{{ res.RES_TIPO_NOTIF|default:"N/A" }}</td>
+        <td>{{ res.RES_FECNOT|date:"d/m/Y"|default:"N/A" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+</div>
+
+{% elif query and resultados_pm %}
+<!-- MÚLTIPLES RESULTADOS DE PM -->
+<div class="results-section">
+  <div class="section-title">
+    👥 Personas encontradas
+    <span class="result-badge">{{ total_pm }}</span>
+  </div>
+
+  <div class="pm-cards">
+    {% for pm in resultados_pm %}
+    <div class="pm-card" onclick="window.location.href='?q={{ pm.PM_CI }}'">
+      <div class="pm-card-header">
+        <h3>{{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}</h3>
+        <p><strong>{{ pm.get_PM_GRADO_display|default:"N/A" }}</strong></p>
+      </div>
+      <div class="pm-card-body">
+        <div class="info-row">
+          <span class="label">CI:</span>
+          <span class="value">{{ pm.PM_CI }}</span>
         </div>
-    </form>
-</div>
-
-{% if query %}
-
-<!-- ── RESULTADOS: PERSONAL MILITAR ───────────── -->
-<div class="card">
-    <div class="section-header">
-        <h2>👤 Personal Militar</h2>
-        <span class="result-count">{{ total_pm }} resultado{{ total_pm|pluralize:"s" }}</span>
-    </div>
-
-    {% if resultados_pm %}
-    <div class="pm-grid">
-        {% for pm in resultados_pm %}
-        <div class="pm-card">
-
-            <!-- FOTO -->
-            <div class="pm-card-photo">
-                {% if pm.PM_FOTO %}
-                    <img src="{{ pm.PM_FOTO.url }}" alt="Foto {{ pm.PM_NOMBRE }}">
-                {% else %}
-                    <div class="avatar-placeholder">
-                        {{ pm.PM_NOMBRE|first }}{{ pm.PM_PATERNO|first }}
-                    </div>
-                {% endif %}
-
-                <!-- Botón subir/cambiar foto -->
-                <button
-                    class="photo-upload-btn"
-                    onclick="openPhotoUpload({{ pm.pk }})"
-                    title="{% if pm.PM_FOTO %}Cambiar foto{% else %}Subir foto{% endif %}"
-                >
-                    📷 {% if pm.PM_FOTO %}Cambiar{% else %}Subir foto{% endif %}
-                </button>
-
-                <!-- Form oculto para upload -->
-                <form
-                    id="photo-form-{{ pm.pk }}"
-                    class="photo-form"
-                    method="post"
-                    action="{% url 'upload_foto_pm' pm.pk %}"
-                    enctype="multipart/form-data"
-                >
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <input
-                        type="file"
-                        name="foto"
-                        id="photo-input-{{ pm.pk }}"
-                        accept="image/*"
-                        onchange="document.getElementById('photo-form-{{ pm.pk }}').submit()"
-                    >
-                </form>
-            </div>
-
-            <!-- DATOS -->
-            <div class="pm-card-body">
-                <div class="pm-grado">{{ pm.get_PM_GRADO_display|default:"Sin grado" }}</div>
-                <div class="pm-nombre">
-                    {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}{% if pm.PM_MATERNO %} {{ pm.PM_MATERNO }}{% endif %}
-                </div>
-
-                {% if pm.PM_CI %}
-                <div class="pm-detail"><span>🪪</span> CI: {{ pm.PM_CI }}</div>
-                {% endif %}
-                {% if pm.PM_ARMA %}
-                <div class="pm-detail"><span>⚔️</span> {{ pm.get_PM_ARMA_display }}</div>
-                {% endif %}
-                {% if pm.PM_ESPEC %}
-                <div class="pm-detail"><span>🎓</span> {{ pm.PM_ESPEC }}</div>
-                {% endif %}
-
-                <div>
-                    <span class="pm-estado-badge pm-estado-{{ pm.PM_ESTADO|cut:' ' }}">
-                        {{ pm.get_PM_ESTADO_display }}
-                    </span>
-                </div>
-            </div>
+        <div class="info-row">
+          <span class="label">Arma:</span>
+          <span class="value">{{ pm.get_PM_ARMA_display|default:"N/A" }}</span>
         </div>
-        {% endfor %}
+        <div class="info-row">
+          <span class="label">Escalafón:</span>
+          <span class="value">{{ pm.get_PM_ESCALAFON_display|default:"N/A" }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Estado:</span>
+          <span class="value">{{ pm.get_PM_ESTADO_display }}</span>
+        </div>
+      </div>
     </div>
-    {% else %}
-    <p style="color:#9ca3af; text-align:center; padding:2rem 0;">
-        No se encontró personal militar con ese criterio
-    </p>
-    {% endif %}
+    {% endfor %}
+  </div>
 </div>
-
-<!-- ── RESULTADOS: SUMARIOS ────────────────────── -->
-<div class="card">
-    <div class="section-header">
-        <h2>📄 Sumarios Informativos</h2>
-        <span class="result-count">{{ total_sim }} resultado{{ total_sim|pluralize:"s" }}</span>
-    </div>
-
-    {% if resultados_sim %}
-    <div class="sim-table-wrap">
-    <table class="sim-table">
-        <thead>
-            <tr>
-                <th>Código</th>
-                <th>Tipo</th>
-                <th>Investigados</th>
-                <th>Abogado</th>
-                <th>Resumen</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for sim in resultados_sim %}
-            <tr>
-                <td class="sim-cod">{{ sim.SIM_COD }}</td>
-                <td><span class="badge badge-blue">{{ sim.get_SIM_TIPO_display }}</span></td>
-                <td>
-                    {% for pm in sim.militares.all %}
-                        {{ pm.PM_PATERNO }}{% if not forloop.last %}, {% endif %}
-                    {% empty %}-{% endfor %}
-                </td>
-                <td>
-                    {% for abog in sim.abogados.all %}
-                        {{ abog.AB_PATERNO }}{% if not forloop.last %}, {% endif %}
-                    {% empty %}
-                        <span style="color:#9ca3af;">Sin asignar</span>
-                    {% endfor %}
-                </td>
-                <td style="max-width:220px;">{{ sim.SIM_RESUM|truncatewords:12 }}</td>
-                <td>
-                    {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
-                        <span class="badge badge-orange">Para Agenda</span>
-                    {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
-                        <span class="badge badge-green">En TPE</span>
-                    {% else %}
-                        <span class="badge badge-purple">En TSP</span>
-                    {% endif %}
-                </td>
-                <td style="white-space:nowrap;">{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-    {% else %}
-    <p style="color:#9ca3af; text-align:center; padding:2rem 0;">
-        No se encontraron sumarios con ese criterio
-    </p>
-    {% endif %}
-</div>
-
-{% else %}
-
-<!-- ── TIPS (sin búsqueda) ──────────────────────── -->
-<div class="tips-card">
-    <h3>💡 Consejos de búsqueda</h3>
-    <ul>
-        <li>Busca por <strong>Código DJE</strong>: Ejemplo <code>DJE-56/24</code></li>
-        <li>Busca por <strong>CI</strong>: Ejemplo <code>12345678</code></li>
-        <li>Busca por <strong>nombre o apellido</strong>: Ejemplo <code>GONZALES</code></li>
-        <li>Busca por <strong>palabra clave</strong> del resumen del sumario</li>
-    </ul>
-</div>
-
 {% endif %}
 
-<!-- ── JS para upload de foto ─────────────────── -->
-<script>
-function openPhotoUpload(pmId) {
-    document.getElementById('photo-input-' + pmId).click();
-}
-</script>
+<!-- SUMARIOS RESULTADOS -->
+{% if query and resultados_sim %}
+<div class="results-section">
+  <div class="section-title">
+    📋 Sumarios encontrados
+    <span class="result-badge">{{ total_sim }}</span>
+  </div>
+
+  <table class="sim-table">
+    <thead>
+      <tr>
+        <th>Código DJE</th>
+        <th>Tipo</th>
+        <th>Resumen</th>
+        <th>Fecha Ingreso</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sim in resultados_sim %}
+      <tr>
+        <td class="sim-codigo">{{ sim.SIM_COD }}</td>
+        <td>{{ sim.get_SIM_TIPO_display|truncatewords:2 }}</td>
+        <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
+        <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</td>
+        <td>{{ sim.SIM_ESTADO }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- NO RESULTADOS -->
+{% if query and not personal_seleccionado and not resultados_pm and not resultados_sim %}
+<div class="empty-state">
+  <p>🔍 No se encontraron resultados para "{{ query }}"</p>
+  <p style="color: #ccc; font-size: 0.9rem;">Intenta buscar con otro término</p>
+</div>
+{% endif %}
+
+<!-- INICIAL -->
+{% if not query %}
+<div class="empty-state">
+  <p>Ingresa un CI, nombre, apellido o código DJE para comenzar</p>
+  <p style="color: #ccc; font-size: 0.9rem;">Ejemplos: 7309870 | DANIELA | DJE-001/24</p>
+</div>
+{% endif %}
 
 {% endblock %}

@@ -26,9 +26,9 @@ urlpatterns = [
     # Buscador - subir foto de PM
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),
 
-    # Historial y Búsqueda
-    path('historial/buscar/', views.buscar_historial_view, name='buscar_historial'),
-    path('historial/<int:personal_id>/', views.historial_personal_detalle, name='historial_detalle'),
+    # Exportación de historial (desde buscador_dashboard)
+    path('buscador/dashboard/<int:personal_id>/exportar/pdfs/', views.export_person_pdfs_zip, name='export_pdfs_zip'),
+    path('buscador/dashboard/<int:personal_id>/exportar/excel/', views.export_person_excel, name='export_excel'),
     
     # Redirección por defecto (opcional)
     path('', views.login_view, name='index'),

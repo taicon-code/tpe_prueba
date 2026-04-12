@@ -8,9 +8,9 @@ from ..models import SIM, PM, ABOG, PM_SIM, RR
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm
 from datetime import date, timedelta
 
-@rol_requerido('AUXILIAR')
+@rol_requerido('ADMINISTRATIVO')
 def auxiliar_dashboard(request):
-    """Dashboard para auxiliares - registrar sumarios y notificaciones"""
+    """Dashboard para administrativos - registrar sumarios y notificaciones"""
 
     query = (request.GET.get('q') or '').strip()
 
@@ -83,7 +83,7 @@ def auxiliar_dashboard(request):
     return render(request, 'tpe_app/dashboard_auxiliar.html', context)
 
 
-@rol_requerido('AUXILIAR')
+@rol_requerido('ADMINISTRATIVO')
 def registrar_sumario(request):
     """Formulario para registrar un nuevo sumario con militares"""
     
@@ -153,7 +153,7 @@ def registrar_sumario(request):
     return render(request, 'tpe_app/registrar_sumario.html', context)
 
 
-@rol_requerido('AUXILIAR')
+@rol_requerido('ADMINISTRATIVO')
 def agendar_sumario(request):
     """Formulario para agendar un sumario (asignar abogado)"""
     
@@ -190,7 +190,7 @@ def agendar_sumario(request):
     
     return render(request, 'tpe_app/agendar_sumario.html', context)
 
-@rol_requerido('AUXILIAR')
+@rol_requerido('ADMINISTRATIVO')
 def registrar_rr(request):
     """Formulario para registrar un Recurso de Reconsideración (RR)"""
     if request.method == 'POST':
@@ -208,7 +208,7 @@ def registrar_rr(request):
     
     return render(request, 'tpe_app/registrar_rr.html', {'form': form})
 
-@rol_requerido('AUXILIAR')
+@rol_requerido('ADMINISTRATIVO')
 def agendar_rr(request):
     """Formulario para agendar un Recurso de Reconsideración (RR)"""
     if request.method == 'POST':
