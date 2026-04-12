@@ -23,7 +23,7 @@ def login_view(request):
                 elif perfil.rol == 'BUSCADOR':
                     return redirect('buscador_dashboard')
                 elif perfil.rol == 'ADMINISTRATIVO':
-                    return redirect('auxiliar_dashboard')
+                    return redirect('administrativo_dashboard')
             except:
                 messages.error(request, 'Tu usuario no tiene un perfil asignado')
                 logout(request)

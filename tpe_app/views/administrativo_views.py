@@ -1,4 +1,4 @@
-# tpe_app/views/auxiliar_views.py
+# tpe_app/views/administrativo_views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
@@ -9,7 +9,7 @@ from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, 
 from datetime import date, timedelta
 
 @rol_requerido('ADMINISTRATIVO')
-def auxiliar_dashboard(request):
+def administrativo_dashboard(request):
     """Dashboard para administrativos - registrar sumarios y notificaciones"""
 
     query = (request.GET.get('q') or '').strip()
@@ -80,7 +80,7 @@ def auxiliar_dashboard(request):
         'total_rr_sin_asignar': len(rr_sin_asignar),
     }
     
-    return render(request, 'tpe_app/dashboard_auxiliar.html', context)
+    return render(request, 'tpe_app/dashboard_administrativo.html', context)
 
 
 @rol_requerido('ADMINISTRATIVO')
@@ -131,7 +131,7 @@ def registrar_sumario(request):
                         request, 
                         f'✅ Sumario {sumario.SIM_COD} registrado exitosamente'
                     )
-                    return redirect('auxiliar_dashboard')
+                    return redirect('administrativo_dashboard')
                     
             except Exception as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
@@ -175,7 +175,7 @@ def agendar_sumario(request):
                 f'✅ Sumario {sumario.SIM_COD} agendado para {abogado} '
                 f'el {fecha_agenda.strftime("%d/%m/%Y")}'
             )
-            return redirect('auxiliar_dashboard')
+            return redirect('administrativo_dashboard')
     else:
         initial = {}
         sim_id = request.GET.get('sim')
@@ -200,7 +200,7 @@ def registrar_rr(request):
             rr.sim = rr.res.sim
             rr.save()
             messages.success(request, '✅ Recurso de Reconsideración registrado exitosamente')
-            return redirect('auxiliar_dashboard')
+            return redirect('administrativo_dashboard')
         else:
             messages.error(request, '❌ Por favor corrija los errores en el formulario')
     else:
@@ -225,7 +225,7 @@ def agendar_rr(request):
                 request,
                 f'✅ RR asignado para el abogado {abogado} el {fecha_agenda.strftime("%d/%m/%Y")}'
             )
-            return redirect('auxiliar_dashboard')
+            return redirect('administrativo_dashboard')
     else:
         initial = {}
         rr_id = request.GET.get('rr')
