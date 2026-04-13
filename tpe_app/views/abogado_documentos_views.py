@@ -6,7 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..decorators import rol_requerido
-from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, RES, RR, SIM
+from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, RES, RR, SIM, VOCAL_TPE
 from ..utils.numeracion import next_num_yy
 
 
@@ -250,3 +250,60 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
         "tipos": AUTOTPE.TIPO_CHOICES,
     }
     return render(request, "tpe_app/abogado/autotpe_form.html", context)
+
+
+@rol_requerido("ABOGADO")
+def abogado_auto_excusa_crear(request, sim_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    # Cargar vocales activos
+    vocales = VOCAL_TPE.objects.filter(activo=True).select_related("pm")
+    agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
+
+    if request.method == "POST":
+        vocal_id = request.POST.get("vocal_id") or ""
+        agenda_id = request.POST.get("agenda") or ""
+        fecha_str = request.POST.get("TPE_FEC") or ""
+        resolucion = (request.POST.get("TPE_RESOL") or "").strip()
+
+        if not vocal_id or not agenda_id or not fecha_str:
+            messages.error(request, "Complete Vocal, Agenda y Fecha.")
+        else:
+            try:
+                vocal = get_object_or_404(VOCAL_TPE, pk=vocal_id, activo=True)
+                agenda = get_object_or_404(AGENDA, pk=agenda_id)
+
+                with transaction.atomic():
+                    tpe_num = None
+
+                    if request.POST.get("autogenerar_numero") == "1":
+                        existentes = list(
+                            AUTOTPE.objects.filter(TPE_NUM__isnull=False)
+                            .values_list("TPE_NUM", flat=True)
+                        )
+                        tpe_num = next_num_yy(existentes, today=date.today())
+
+                    auto = AUTOTPE.objects.create(
+                        sim=sim,
+                        abog=abogado,
+                        agenda=agenda,
+                        vocal_excusado=vocal,
+                        TPE_NUM=tpe_num,
+                        TPE_FEC=fecha_str,
+                        TPE_TIPO="AUTO_EXCUSA",
+                        TPE_RESOL=resolucion or None,
+                    )
+
+                messages.success(request, f"✅ Auto de Excusa creado ({tpe_num or 'S/N'}).")
+                return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+            except Exception as exc:
+                messages.error(request, f"❌ Error al crear Auto de Excusa: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "vocales": vocales,
+        "agendas": agendas,
+    }
+    return render(request, "tpe_app/abogado/auto_excusa_form.html", context)

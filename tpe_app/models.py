@@ -178,6 +178,31 @@ class ABOG(models.Model):
         super().save(*args, **kwargs)
 
 # ============================================================
+# MODELO 2B: VOCAL_TPE — Vocales del Tribunal
+# ============================================================
+class VOCAL_TPE(models.Model):
+
+    CARGO_CHOICES = [
+        ('PRESIDENTE',     'Presidente'),
+        ('VICEPRESIDENTE', 'Vicepresidente'),
+        ('VOCAL',          'Vocal'),
+    ]
+
+    pm     = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
+    cargo  = models.CharField(max_length=20, choices=CARGO_CHOICES, verbose_name='Cargo')
+    activo = models.BooleanField(default=True, verbose_name='Activo')
+
+    class Meta:
+        db_table            = 'vocal_tpe'
+        verbose_name        = 'Vocal del Tribunal'
+        verbose_name_plural = 'Vocales del Tribunal'
+        ordering            = ['cargo', 'pm__PM_PATERNO']
+
+    def __str__(self):
+        estado = '' if self.activo else ' (inactivo)'
+        return f"{self.get_cargo_display()} — {self.pm}{estado}"
+
+# ============================================================
 # MODELO 3: SIM — Sumario Informativo Militar (tabla central)
 # ============================================================
 class SIM(models.Model):
@@ -574,6 +599,12 @@ class AUTOTPE(models.Model):
         AGENDA, on_delete=models.SET_NULL,
         null=True, blank=True,
         verbose_name='Agenda')
+
+    # FK al vocal que se excusa (solo para autos de excusa)
+    vocal_excusado = models.ForeignKey(
+        'VOCAL_TPE', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Vocal Excusado')
 
     TPE_NUM   = models.CharField(null=True, blank=True, max_length=15,  verbose_name='Número de Auto')
     TPE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')

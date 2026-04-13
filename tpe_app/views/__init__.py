@@ -1,8 +1,9 @@
 # tpe_app/views/__init__.py
 from .auth_views import login_view, logout_view
-from .admin_views import admin_dashboard
+from .admin_views import admin_dashboard, crear_usuario_con_rol
 from .abogado_views import abogado_dashboard
 from .abogado_documentos_views import (
+    abogado_auto_excusa_crear,
     abogado_autotpe_crear,
     abogado_dictamen_crear,
     abogado_res_crear,

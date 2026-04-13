@@ -215,7 +215,6 @@
                 <th>Número</th>
                 <th>Agenda</th>
                 <th>Militar</th>
-                <th>Abogado</th>
                 <th>Conclusión</th>
                 <th>Acciones</th>
             </tr>
@@ -226,7 +225,6 @@
                 <td><strong>{{ d.DIC_NUM|default:"S/N" }}</strong></td>
                 <td>{{ d.agenda|default:"-" }}</td>
                 <td>{{ d.pm|default:"-" }}</td>
-                <td>{{ d.abog|default:"-" }}</td>
                 <td>{{ d.DIC_CONCL|default:"-" }}</td>
                 <td style="white-space:nowrap;">
                     <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
@@ -237,7 +235,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align:center; color:#9ca3af;">Sin dictámenes</td>
+                <td colspan="5" style="text-align:center; color:#9ca3af;">Sin dictámenes</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -252,7 +250,6 @@
             <tr>
                 <th>N° RES</th>
                 <th>Fecha</th>
-                <th>Tipo</th>
                 <th>Resolución</th>
                 <th>Notificación</th>
                 <th>PDF</th>
@@ -273,9 +270,8 @@
                     {% endif %}
                 </td>
                 <td style="white-space:nowrap;">{{ r.RES_FEC|date:"d/m/Y"|default:"-" }}</td>
-                <td>{{ r.get_RES_TIPO_display }}</td>
-                <td style="max-width:240px; word-break:break-word;">{{ r.RES_RESOL|truncatewords:15 }}</td>
-                <td style="white-space:nowrap;">
+                <td style="max-width:320px; word-break:break-word;">{{ r.RES_RESOL|default:"-" }}</td>
+                <td style="white-space:nowrap; max-width:200px;">
                     {% if r.RES_FECNOT %}
                         {{ r.RES_FECNOT|date:"d/m/Y" }}
                         {% if r.RES_HORNOT %} {{ r.RES_HORNOT|time:"H:i" }}{% endif %}<br>
@@ -302,7 +298,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" style="text-align:center; color:#9ca3af;">Sin resoluciones</td>
+                <td colspan="6" style="text-align:center; color:#9ca3af;">Sin resoluciones</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -340,27 +336,45 @@
 
 <!-- ── AUTOS TPE ───────────────────────────────── -->
 <div class="card section-card">
-    <div class="card-title">🏛️ Autos TPE</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div class="card-title">🏛️ Autos TPE</div>
+        <a href="{% url 'abogado_auto_excusa_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #ffc107; color: #000;">
+            ⚠️ Crear Auto de Excusa
+        </a>
+    </div>
     <table>
         <thead>
             <tr>
                 <th>Número</th>
                 <th>Fecha</th>
-                <th>Tipo</th>
                 <th>Resolución</th>
+                <th>Notificación</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for a in autos_tpe %}
             <tr>
-                <td><strong>{{ a.TPE_NUM|default:"S/N" }}</strong></td>
+                <td style="white-space:nowrap;"><strong>{{ a.TPE_NUM|default:"S/N" }}</strong></td>
                 <td style="white-space:nowrap;">{{ a.TPE_FEC|date:"d/m/Y"|default:"-" }}</td>
-                <td>{{ a.get_TPE_TIPO_display|default:"-" }}</td>
-                <td style="max-width:240px; word-break:break-word;">{{ a.TPE_RESOL|truncatewords:12|default:"-" }}</td>
+                <td style="max-width:320px; word-break:break-word;">{{ a.TPE_RESOL|default:"-" }}</td>
+                <td style="white-space:nowrap; max-width:200px;">
+                    {% if a.TPE_FECNOT %}
+                        {{ a.TPE_FECNOT|date:"d/m/Y" }}
+                        {% if a.TPE_HORNOT %} {{ a.TPE_HORNOT|time:"H:i" }}{% endif %}<br>
+                        <span style="font-size:.75rem; color:#6b7280;">
+                            {{ a.get_TPE_TIPO_NOTIF_display|default:"" }}
+                            {% if a.TPE_NOT %}— {{ a.TPE_NOT }}{% endif %}
+                        </span>
+                    {% else %}-{% endif %}
+                </td>
+                <td style="white-space:nowrap;">
+                    <small style="font-size:.75rem;">{{ a.get_TPE_TIPO_display|default:"-" }}</small>
+                </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4" style="text-align:center; color:#9ca3af;">Sin Autos TPE</td>
+                <td colspan="5" style="text-align:center; color:#9ca3af;">Sin Autos TPE</td>
             </tr>
             {% endfor %}
         </tbody>

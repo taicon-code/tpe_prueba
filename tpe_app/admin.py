@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP, DocumentoAdjunto, PerfilUsuario
+from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, RES, RR, RAP, RAEE, AUTOTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -95,6 +95,16 @@ class PMAdmin(admin.ModelAdmin):
 class ABOGAdmin(admin.ModelAdmin):
     list_display  = ('AB_CI', 'AB_GRADO', 'AB_NOMBRE', 'AB_PATERNO', 'AB_MATERNO')
     search_fields = ('AB_CI', 'AB_NOMBRE', 'AB_PATERNO')
+
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Vocales del Tribunal
+# ════════════════════════════════════════════════════════════════════════════
+@admin.register(VOCAL_TPE)
+class VocalTPEAdmin(admin.ModelAdmin):
+    list_display  = ('pm', 'cargo', 'activo')
+    list_filter   = ('cargo', 'activo')
+    search_fields = ('pm__PM_NOMBRE', 'pm__PM_PATERNO')
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -325,19 +335,106 @@ class AUTOTSPAdmin(admin.ModelAdmin):
 # Agregar al FINAL de admin.py
 
 from .models import PerfilUsuario
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Gestión de Usuarios y Roles
+# ════════════════════════════════════════════════════════════════════════════
+
+# Anular el UserAdmin por defecto para agregar PerfilUsuario inline
+class PerfilUsuarioInline(admin.StackedInline):
+    model = PerfilUsuario
+    verbose_name = "Asignación de Rol"
+    verbose_name_plural = "Asignación de Rol"
+    fields = ('rol', 'abogado', 'activo')
+    extra = 0
+    can_delete = True
+
+
+# Registrar un UserAdmin mejorado
+admin.site.unregister(User)
+
+@admin.register(User)
+class UsuarioTPEAdmin(UserAdmin):
+    inlines = (PerfilUsuarioInline,)
+    list_display = ('username', 'email', 'first_name', 'last_name', 'rol_display', 'is_active')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    list_filter = ('is_active', 'is_staff', 'date_joined')
+
+    def rol_display(self, obj):
+        """Muestra el rol del usuario si existe"""
+        try:
+            perfil = PerfilUsuario.objects.get(user=obj)
+            return f"{perfil.get_rol_display()}" + (" ✓" if perfil.activo else " ✗")
+        except PerfilUsuario.DoesNotExist:
+            return "Sin asignar"
+    rol_display.short_description = "Rol/Estado"
+
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display  = ('user', 'rol', 'abogado', 'activo')
-    list_filter   = ('rol', 'activo')
-    search_fields = ('user__username', 'user__first_name', 'user__last_name')
-    
+    list_display  = ('usuario_completo', 'rol_badge', 'abogado_asignado', 'activo', 'acciones')
+    list_filter   = ('rol', 'activo', 'user__date_joined')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'abogado__AB_PATERNO')
+    readonly_fields = ('user_info',)
+
     fieldsets = (
         ('Información de usuario', {
-            'fields': ('user', 'rol', 'activo')
+            'fields': ('user', 'user_info', 'rol', 'activo')
         }),
-        ('Vinculación (solo para Abogados)', {
+        ('Vinculación (solo para rol ABOGADO)', {
             'fields': ('abogado',),
-            'classes': ('collapse',)
+            'description': '⚠️ Complete este campo SOLO si asignó el rol "Abogado" arriba'
         }),
     )
+
+    def usuario_completo(self, obj):
+        """Muestra username y email del usuario"""
+        return f"{obj.user.username} ({obj.user.email})"
+    usuario_completo.short_description = "Usuario"
+
+    def rol_badge(self, obj):
+        """Muestra el rol con color"""
+        colores = {
+            'ADMINISTRADOR': '#dc3545',  # Rojo
+            'ABOGADO': '#0066cc',         # Azul
+            'ADMINISTRATIVO': '#28a745',  # Verde
+            'BUSCADOR': '#ffc107',        # Amarillo
+        }
+        color = colores.get(obj.rol, '#6c757d')
+        return f'<span style="background-color:{color};color:white;padding:3px 8px;border-radius:3px;font-weight:bold;">{obj.get_rol_display()}</span>'
+    rol_badge.allow_tags = True
+    rol_badge.short_description = "Rol"
+
+    def abogado_asignado(self, obj):
+        """Muestra si hay abogado asignado"""
+        if obj.abogado:
+            return f"✓ {obj.abogado.AB_PATERNO} {obj.abogado.AB_MATERNO}"
+        return "—"
+    abogado_asignado.short_description = "Abogado Vinculado"
+
+    def acciones(self, obj):
+        """Muestra estado visual"""
+        if obj.activo:
+            return '<span style="color:green;font-weight:bold;">✓ Activo</span>'
+        return '<span style="color:red;font-weight:bold;">✗ Inactivo</span>'
+    acciones.allow_tags = True
+    acciones.short_description = "Estado"
+
+    def user_info(self, obj):
+        """Información de referencia del usuario"""
+        return f"""
+            <strong>Username:</strong> {obj.user.username}<br>
+            <strong>Email:</strong> {obj.user.email}<br>
+            <strong>Nombre:</strong> {obj.user.first_name} {obj.user.last_name}<br>
+            <strong>Miembro desde:</strong> {obj.user.date_joined.strftime('%d/%m/%Y')}
+        """
+    user_info.allow_tags = True
+    user_info.short_description = "Información del Usuario"
+
+    def save_model(self, request, obj, form, change):
+        """Validar que abogados tengan un abogado asignado"""
+        if obj.rol == 'ABOGADO' and not obj.abogado:
+            raise ValueError('⚠️ Los usuarios con rol ABOGADO deben tener un abogado vinculado')
+        super().save_model(request, obj, form, change)

@@ -8,12 +8,14 @@ urlpatterns = [
     
     # Dashboards por rol
     path('panel-admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('panel-admin/usuarios/crear/', views.crear_usuario_con_rol, name='crear_usuario'),
     path('abogado/dashboard/', views.abogado_dashboard, name='abogado_dashboard'),
     path('abogado/sumarios/<int:sim_id>/', views.abogado_sumario_detalle, name='abogado_sumario_detalle'),
     path('abogado/sumarios/<int:sim_id>/dictamen/nuevo/', views.abogado_dictamen_crear, name='abogado_dictamen_crear'),
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/res/nueva/', views.abogado_res_crear, name='abogado_res_crear'),
     path('abogado/sumarios/<int:sim_id>/res/<int:res_id>/rr/nueva/', views.abogado_rr_crear, name='abogado_rr_crear'),
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/autotpe/nuevo/', views.abogado_autotpe_crear, name='abogado_autotpe_crear'),
+    path('abogado/sumarios/<int:sim_id>/auto-excusa/crear/', views.abogado_auto_excusa_crear, name='abogado_auto_excusa_crear'),
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
     path('administrativo/dashboard/', views.administrativo_dashboard, name='administrativo_dashboard'),
 
