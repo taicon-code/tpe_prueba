@@ -6,7 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..decorators import rol_requerido
-from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, RES, RR, SIM
+from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, RES, RR, SIM
 from ..utils.numeracion import next_num_yy
 
 
@@ -50,39 +50,68 @@ def abogado_sumario_detalle(request, sim_id: int):
 @rol_requerido("ABOGADO")
 def abogado_dictamen_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
-    sim = get_object_or_404(SIM, pk=sim_id)
+    sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
 
+    militares = list(sim.militares.all())
     agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
 
     if request.method == "POST":
         agenda_id = request.POST.get("agenda") or ""
-        conclusion = (request.POST.get("DIC_CONCL") or "").strip()
 
         if not agenda_id:
             messages.error(request, "Seleccione una agenda.")
         else:
             agenda = get_object_or_404(AGENDA, pk=agenda_id)
+            autogenerar = request.POST.get("autogenerar_numero") == "1"
 
             try:
                 with transaction.atomic():
-                    dic_num = None
+                    dictamenes_creados = 0
 
-                    if request.POST.get("autogenerar_numero") == "1":
-                        existentes = list(
-                            DICTAMEN.objects.filter(DIC_NUM__isnull=False)
-                            .values_list("DIC_NUM", flat=True)
+                    if militares:
+                        # Crear un dictamen por cada militar del sumario
+                        for pm in militares:
+                            conclusion = (request.POST.get(f"DIC_CONCL_{pm.pk}") or "").strip()
+                            dic_num = None
+
+                            if autogenerar:
+                                existentes = list(
+                                    DICTAMEN.objects.filter(DIC_NUM__isnull=False)
+                                    .values_list("DIC_NUM", flat=True)
+                                )
+                                dic_num = next_num_yy(existentes, today=date.today())
+
+                            DICTAMEN.objects.create(
+                                agenda=agenda,
+                                sim=sim,
+                                abog=abogado,
+                                pm=pm,
+                                DIC_NUM=dic_num,
+                                DIC_CONCL=conclusion or None,
+                            )
+                            dictamenes_creados += 1
+                    else:
+                        # Fallback: si no hay militares, crear un dictamen sin PM
+                        conclusion = (request.POST.get("DIC_CONCL") or "").strip()
+                        dic_num = None
+
+                        if autogenerar:
+                            existentes = list(
+                                DICTAMEN.objects.filter(DIC_NUM__isnull=False)
+                                .values_list("DIC_NUM", flat=True)
+                            )
+                            dic_num = next_num_yy(existentes, today=date.today())
+
+                        DICTAMEN.objects.create(
+                            agenda=agenda,
+                            sim=sim,
+                            abog=abogado,
+                            DIC_NUM=dic_num,
+                            DIC_CONCL=conclusion or None,
                         )
-                        dic_num = next_num_yy(existentes, today=date.today())
+                        dictamenes_creados = 1
 
-                    dictamen = DICTAMEN.objects.create(
-                        agenda=agenda,
-                        sim=sim,
-                        abog=abogado,
-                        DIC_NUM=dic_num,
-                        DIC_CONCL=conclusion or None,
-                    )
-
-                messages.success(request, f"✅ Dictamen creado ({dictamen.DIC_NUM or 'S/N'}).")
+                messages.success(request, f"✅ {dictamenes_creados} dictamen(es) creado(s).")
                 return redirect("abogado_sumario_detalle", sim_id=sim.pk)
             except Exception as exc:
                 messages.error(request, f"❌ Error al crear dictamen: {exc}")
@@ -91,6 +120,7 @@ def abogado_dictamen_crear(request, sim_id: int):
         "sim": sim,
         "abogado": abogado,
         "agendas": agendas,
+        "militares": militares,
     }
     return render(request, "tpe_app/abogado/dictamen_form.html", context)
 

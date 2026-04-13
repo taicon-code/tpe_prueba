@@ -374,6 +374,13 @@ class DICTAMEN(models.Model):
         blank=True,
         verbose_name='Abogado'
     )
+    pm = models.ForeignKey(
+        PM,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Militar'
+    )
 
     class Meta:
         db_table = 'dictamen'

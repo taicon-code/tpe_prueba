@@ -127,9 +127,6 @@
     </div>
     <div class="sim-banner-right">
         <span class="estado-pill">{{ sim.get_SIM_ESTADO_display }}</span>
-        <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.4); color:#fff;">
-            ➕ Crear Dictamen
-        </a>
     </div>
 </div>
 
@@ -206,12 +203,18 @@
 
 <!-- ── DICTÁMENES ──────────────────────────────── -->
 <div class="card section-card">
-    <div class="card-title">📋 Dictámenes</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div class="card-title">📋 Dictámenes</div>
+        <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem;">
+            ➕ Crear Dictamen
+        </a>
+    </div>
     <table>
         <thead>
             <tr>
                 <th>Número</th>
                 <th>Agenda</th>
+                <th>Militar</th>
                 <th>Abogado</th>
                 <th>Conclusión</th>
                 <th>Acciones</th>
@@ -222,6 +225,7 @@
             <tr>
                 <td><strong>{{ d.DIC_NUM|default:"S/N" }}</strong></td>
                 <td>{{ d.agenda|default:"-" }}</td>
+                <td>{{ d.pm|default:"-" }}</td>
                 <td>{{ d.abog|default:"-" }}</td>
                 <td>{{ d.DIC_CONCL|default:"-" }}</td>
                 <td style="white-space:nowrap;">
@@ -233,7 +237,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align:center; color:#9ca3af;">Sin dictámenes</td>
+                <td colspan="6" style="text-align:center; color:#9ca3af;">Sin dictámenes</td>
             </tr>
             {% endfor %}
         </tbody>
