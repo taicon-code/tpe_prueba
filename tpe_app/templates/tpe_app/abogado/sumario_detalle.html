@@ -119,6 +119,26 @@
 <!-- Volver -->
 <a href="{% url 'abogado_dashboard' %}" class="back-link">← Volver al Dashboard</a>
 
+{% if not es_via_sim and rrs_asignados %}
+<!-- Banner informativo: Abogado de Etapa 2 (RR) -->
+<div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; gap: .75rem; align-items: flex-start;">
+    <span style="font-size:1.3rem; flex-shrink:0;">🔄</span>
+    <div>
+        <div style="font-weight:700; color:#92400e; font-size:.95rem;">Acceso via Recurso de Reconsideración</div>
+        <div style="font-size:.85rem; color:#78350f; margin-top:.25rem;">
+            Estás revisando este caso como abogado asignado al RR.
+            Puedes ver todo el historial como antecedentes, pero <strong>solo puedes crear documentos propios</strong> (Dictamen, RES y Auto desde tus propios dictámenes).
+        </div>
+        <div style="margin-top:.5rem; font-size:.82rem; color:#6b7280;">
+            RR asignado{% if rrs_asignados|length > 1 %}s{% endif %}:
+            {% for rr in rrs_asignados %}
+                <strong>{{ rr.RR_NUM|default:"S/N" }}</strong> (contra RES {{ rr.res.RES_NUM }}){% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- ── BANNER SUMARIO ──────────────────────────── -->
 <div class="sim-banner">
     <div class="sim-banner-left">
@@ -205,9 +225,15 @@
 <div class="card section-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <div class="card-title">📋 Dictámenes</div>
-        <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem;">
-            ➕ Crear Dictamen
-        </a>
+        {% if es_via_sim %}
+            <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem;">
+                ➕ Crear Dictamen
+            </a>
+        {% elif rrs_asignados %}
+            <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #d97706;">
+                ➕ Crear Dictamen (RR)
+            </a>
+        {% endif %}
     </div>
     <table>
         <thead>
@@ -254,10 +280,14 @@
                     {% endif %}
                 </td>
                 <td style="white-space:nowrap;">
-                    <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
-                       href="{% url 'abogado_res_crear' sim.pk d.pk %}">Crear RES</a>
-                    <a class="btn" style="font-size:.8rem; padding:.3rem .6rem; background:#6c757d;"
-                       href="{% url 'abogado_autotpe_crear' sim.pk d.pk %}">Crear Auto</a>
+                    {% if es_via_sim or d.abog == abogado %}
+                        <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
+                           href="{% url 'abogado_res_crear' sim.pk d.pk %}">Crear RES</a>
+                        <a class="btn" style="font-size:.8rem; padding:.3rem .6rem; background:#6c757d;"
+                           href="{% url 'abogado_autotpe_crear' sim.pk d.pk %}">Crear Auto</a>
+                    {% else %}
+                        <span style="color:#9ca3af; font-size:.78rem;">Solo lectura</span>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
@@ -328,8 +358,12 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
-                       href="{% url 'abogado_rr_crear' sim.pk r.pk %}">Crear RR</a>
+                    {% if es_via_sim %}
+                        <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
+                           href="{% url 'abogado_rr_crear' sim.pk r.pk %}">Crear RR</a>
+                    {% else %}
+                        <span style="color:#9ca3af; font-size:.78rem;">—</span>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
@@ -374,9 +408,11 @@
 <div class="card section-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <div class="card-title">🏛️ Autos TPE</div>
-        <a href="{% url 'abogado_auto_excusa_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #ffc107; color: #000;">
-            ⚠️ Crear Auto de Excusa
-        </a>
+        {% if es_via_sim %}
+            <a href="{% url 'abogado_auto_excusa_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #ffc107; color: #000;">
+                ⚠️ Crear Auto de Excusa
+            </a>
+        {% endif %}
     </div>
     <table>
         <thead>

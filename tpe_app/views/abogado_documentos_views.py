@@ -40,6 +40,12 @@ def abogado_sumario_detalle(request, sim_id: int):
         doc = DocumentoAdjunto.objects.filter(DOC_TABLA='autotpe', DOC_ID_REG=auto.pk).first()
         auto.pdf_url = doc.DOC_RUTA.url if doc else None
 
+    # Determinar el rol del abogado en este SIM:
+    # es_via_sim → asignado directamente al SIM (Etapa 1, acceso completo)
+    # rrs_asignados → asignado por RR (Etapa 2, solo puede operar sobre sus propios documentos)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    rrs_asignados = list(RR.objects.filter(sim=sim, abog=abogado).select_related("res").order_by("-RR_FEC"))
+
     context = {
         "sim": sim,
         "abogado": abogado,
@@ -48,6 +54,8 @@ def abogado_sumario_detalle(request, sim_id: int):
         "resoluciones": resoluciones,
         "reconsideraciones": reconsideraciones,
         "autos_tpe": autos_tpe,
+        "es_via_sim": es_via_sim,
+        "rrs_asignados": rrs_asignados,
     }
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
 
@@ -136,6 +144,12 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
     dictamen = get_object_or_404(DICTAMEN, pk=dictamen_id, sim=sim)
 
+    # Seguridad: solo puede crear RES desde un dictamen propio si accede via RR (Etapa 2)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    if not es_via_sim and dictamen.abog != abogado:
+        messages.error(request, "No tiene autorización para crear una RES desde este dictamen.")
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
     if request.method == "POST":
         res_fec = request.POST.get("RES_FEC") or ""
         res_tipo = request.POST.get("RES_TIPO") or ""
@@ -220,6 +234,12 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
     dictamen = get_object_or_404(DICTAMEN, pk=dictamen_id, sim=sim)
+
+    # Seguridad: solo puede crear Auto desde un dictamen propio si accede via RR (Etapa 2)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    if not es_via_sim and dictamen.abog != abogado:
+        messages.error(request, "No tiene autorización para crear un Auto desde este dictamen.")
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     if request.method == "POST":
         tpe_fec = request.POST.get("TPE_FEC") or ""
