@@ -183,9 +183,10 @@ class ABOG(models.Model):
 class VOCAL_TPE(models.Model):
 
     CARGO_CHOICES = [
-        ('PRESIDENTE',     'Presidente'),
-        ('VICEPRESIDENTE', 'Vicepresidente'),
-        ('VOCAL',          'Vocal'),
+        ('PRESIDENTE',       'Presidente'),
+        ('VICEPRESIDENTE',   'Vicepresidente'),
+        ('VOCAL',            'Vocal'),
+        ('SECRETARIO_ACTAS', 'Secretario de Actas'),
     ]
 
     pm     = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
@@ -407,6 +408,36 @@ class DICTAMEN(models.Model):
         verbose_name='Militar'
     )
 
+    # ✅ NUEVO: Confirmación del Secretario de Actas
+    secretario = models.ForeignKey(
+        VOCAL_TPE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Secretario de Actas que confirma',
+        related_name='dictamenes_confirmados'
+    )
+    DIC_CONCL_SEC = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='Conclusión confirmada/modificada por Secretario'
+    )
+    DIC_ESTADO = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDIENTE', 'Pendiente de confirmar'),
+            ('CONFIRMADO', 'Confirmado sin cambios'),
+            ('MODIFICADO', 'Modificado por secretario'),
+        ],
+        default='PENDIENTE',
+        verbose_name='Estado de confirmación'
+    )
+    DIC_CONFIR_FEC = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Fecha de confirmación'
+    )
+
     class Meta:
         db_table = 'dictamen'
         verbose_name = 'Dictamen'
@@ -470,6 +501,12 @@ class RES(models.Model):
         null=True, blank=True,
         verbose_name='Dictamen origen')
 
+    # ✅ NUEVO: FK al militar al que aplica la resolución
+    pm = models.ForeignKey(
+        PM, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Militar')
+
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
     RES_FEC   = models.DateField(verbose_name='Fecha')
     RES_RESOL = models.TextField(verbose_name='Resolución')
@@ -511,6 +548,11 @@ class RR(models.Model):
     agenda = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
                                  null=True, blank=True,
                                  verbose_name='Agenda')
+
+    # ✅ NUEVO: FK al militar al que aplica el recurso
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True,
+                           verbose_name='Militar')
 
     RR_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso')
     # ✅ NUEVO v1.2: fecha límite para alertas (15 días hábiles)
@@ -606,6 +648,33 @@ class AUTOTPE(models.Model):
         null=True, blank=True,
         verbose_name='Vocal Excusado')
 
+    # ✅ NUEVO: FK al militar al que aplica el auto
+    pm = models.ForeignKey(
+        PM, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Militar')
+
+    # ✅ NUEVO: Relaciones al documento origen que genera el auto (ejecutoria)
+    res = models.ForeignKey(
+        'RES', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Resolución origen')
+
+    rr = models.ForeignKey(
+        'RR', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Recurso Reconsideración origen')
+
+    rap = models.ForeignKey(
+        'RAP', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Recurso Apelación origen')
+
+    raee = models.ForeignKey(
+        'RAEE', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='RAEE origen')
+
     TPE_NUM   = models.CharField(null=True, blank=True, max_length=15,  verbose_name='Número de Auto')
     TPE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
     TPE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
@@ -658,6 +727,12 @@ class RAP(models.Model):
                                  verbose_name='Segunda Resolución (RR)')
     sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                  verbose_name='Sumario')
+
+    # ✅ NUEVO: FK al militar al que aplica el recurso
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True,
+                           verbose_name='Militar')
+
     # Fecha de ingreso al TSP (puede ser diferente a la fecha del oficio de elevación, que es el documento que se envía al TSP)
     RAP_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso de Apelación al TSP')
     # ✅ NUEVO v1.2: fecha límite para alertas (3 días hábiles)
@@ -727,7 +802,12 @@ class RAEE(models.Model):
                                  verbose_name='Recurso de Apelación')
     sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                  verbose_name='Sumario')
-    
+
+    # ✅ NUEVO: FK al militar al que aplica el recurso
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True,
+                           verbose_name='Militar')
+
     RAE_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución')
     RAE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución')
     RAE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
@@ -856,16 +936,25 @@ class PerfilUsuario(models.Model):
         ('ABOGADO',       'Abogado'),
         ('BUSCADOR',      'Buscador'),
         ('ADMINISTRATIVO', 'Administrativo'),
+        ('VOCAL_TPE',     'Vocal TPE'),
     ]
-    
-    user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, 
+
+    user    = models.OneToOneField('auth.User', on_delete=models.CASCADE,
                                    verbose_name='Usuario del sistema')
-    rol     = models.CharField(max_length=20, choices=ROL_CHOICES, 
+    rol     = models.CharField(max_length=20, choices=ROL_CHOICES,
                                verbose_name='Rol/Perfil')
-    abogado = models.ForeignKey(ABOG, on_delete=models.SET_NULL, 
+    abogado = models.ForeignKey(ABOG, on_delete=models.SET_NULL,
                                 null=True, blank=True,
                                 verbose_name='Vinculado a Abogado',
                                 help_text='Solo para usuarios con rol ABOGADO')
+
+    # ✅ NUEVO: Vinculación a VOCAL_TPE para usuarios con rol VOCAL_TPE
+    vocal = models.ForeignKey(
+        VOCAL_TPE, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Vinculado a Vocal TPE',
+        help_text='Solo para usuarios con rol VOCAL_TPE')
+
     activo  = models.BooleanField(default=True, verbose_name='Usuario activo')
     
     class Meta:

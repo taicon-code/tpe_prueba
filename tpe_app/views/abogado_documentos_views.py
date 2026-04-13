@@ -30,10 +30,15 @@ def abogado_sumario_detalle(request, sim_id: int):
     reconsideraciones = RR.objects.filter(sim=sim).select_related("res", "agenda", "abog").order_by("-RR_FEC")
     autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-TPE_FEC", "-id")
 
-    # Adjuntar PDF a cada RES
+    # Adjuntar PDF a cada RES y AUTOTPE
     for res in resoluciones:
         doc = DocumentoAdjunto.objects.filter(DOC_TABLA='res', DOC_ID_REG=res.pk).first()
         res.pdf_url = doc.DOC_RUTA.url if doc else None
+
+    autos_tpe = list(autos_tpe)
+    for auto in autos_tpe:
+        doc = DocumentoAdjunto.objects.filter(DOC_TABLA='autotpe', DOC_ID_REG=auto.pk).first()
+        auto.pdf_url = doc.DOC_RUTA.url if doc else None
 
     context = {
         "sim": sim,

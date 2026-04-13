@@ -1,0 +1,288 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Agenda {{ agenda.AG_FECPROG|date:"d/m/Y" }} - Secretario{% endblock %}
+{% block navbar_title %}📋 Agenda {{ agenda.AG_FECPROG|date:"d/m/Y" }}{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: .875rem;
+        margin-bottom: 1.25rem;
+    }
+    .back-link:hover { color: #1e3c72; }
+
+    .agenda-banner {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #fff;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .agenda-banner h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: .25rem; }
+    .agenda-banner p  { font-size: .875rem; opacity: .8; }
+
+    .section-card { margin-bottom: 1.75rem; }
+    .section-card .card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: .85rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .dic-grupo {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .dic-grupo-header {
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .dic-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 0.75rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+    }
+
+    .dic-item:last-child { margin-bottom: 0; }
+
+    .dic-estado {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .dic-estado.pendiente {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .dic-estado.confirmado {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .dic-estado.modificado {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .dic-info {
+        display: grid;
+        gap: 0.25rem;
+    }
+
+    .dic-info-header {
+        font-weight: 600;
+        color: #111827;
+        font-size: 0.9rem;
+    }
+
+    .dic-info-sub {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+
+    .dic-concl {
+        font-size: 0.8rem;
+        color: #374151;
+        line-height: 1.3;
+        max-width: 300px;
+    }
+
+    .btn-confirmar {
+        padding: 0.4rem 0.9rem;
+        background: #1e3c72;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        transition: background 0.2s;
+    }
+
+    .btn-confirmar:hover {
+        background: #2a5298;
+    }
+
+    .empty-msg {
+        color: #9ca3af;
+        text-align: center;
+        padding: 1.5rem 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+
+    table th {
+        background: #f3f4f6;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 700;
+        border-bottom: 2px solid #e5e7eb;
+        color: #1e3c72;
+    }
+
+    table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    table tr:hover {
+        background: #f8fafc;
+    }
+</style>
+
+<!-- Volver -->
+<a href="{% url 'vocal_dashboard' %}" class="back-link">← Volver al Dashboard</a>
+
+<!-- ── BANNER AGENDA ──────────────────────────── -->
+<div class="agenda-banner">
+    <h1>📋 {{ agenda.AG_FECPROG|date:"d/m/Y" }}</h1>
+    <p>{{ agenda.AG_DESC|default:"Agenda del tribunal" }}</p>
+</div>
+
+<!-- ── DICTÁMENES A CONFIRMAR ──────────────────────────── -->
+<div class="card section-card">
+    <div class="card-title">✓ Dictámenes a Confirmar</div>
+
+    {% if dictamenes_por_sim %}
+        {% for sim_pk, grupo in dictamenes_por_sim.items %}
+        <div class="dic-grupo">
+            <div class="dic-grupo-header">
+                📁 {{ grupo.sim.SIM_COD }} — {{ grupo.sim.get_SIM_TIPO_display }}
+            </div>
+
+            {% for dic in grupo.dictamenes %}
+            <div class="dic-item">
+                <div class="dic-estado {% if dic.DIC_ESTADO == 'PENDIENTE' %}pendiente{% elif dic.DIC_ESTADO == 'CONFIRMADO' %}confirmado{% else %}modificado{% endif %}">
+                    {% if dic.DIC_ESTADO == 'PENDIENTE' %}🔔{% elif dic.DIC_ESTADO == 'CONFIRMADO' %}✓{% else %}◐{% endif %}
+                </div>
+
+                <div class="dic-info">
+                    <div class="dic-info-header">
+                        {{ dic.pm.PM_GRADO|default:"" }} {{ dic.pm.PM_NOMBRE }} {{ dic.pm.PM_PATERNO }}{% if dic.pm.PM_MATERNO %} {{ dic.pm.PM_MATERNO }}{% endif %}
+                    </div>
+                    <div class="dic-info-sub">
+                        Abogado: {{ dic.abog.ABOG_NOMBRE|default:"—" }}
+                        | Conclusión: <span class="dic-concl">{{ dic.DIC_CONCL|default:"—" }}</span>
+                    </div>
+                    {% if dic.DIC_ESTADO != 'PENDIENTE' %}
+                    <div class="dic-info-sub" style="color: #059669;">
+                        ✓ Confirmado por {{ dic.secretario.get_cargo_display }} — {{ dic.DIC_CONFIR_FEC|date:"d/m/Y" }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if dic.DIC_ESTADO == 'PENDIENTE' %}
+                <a href="{% url 'vocal_confirmar_dictamen' dic.pk %}" class="btn-confirmar">
+                    Confirmar
+                </a>
+                {% else %}
+                <span style="font-size: 0.8rem; color: #6b7280;">
+                    {{ dic.get_DIC_ESTADO_display }}
+                </span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="empty-msg">Sin dictámenes registrados para esta agenda</div>
+    {% endif %}
+</div>
+
+<!-- ── RECURSOS DE RECONSIDERACIÓN ──────────────────────────── -->
+{% if rr_en_agenda %}
+<div class="card section-card">
+    <div class="card-title">🔄 Recursos de Reconsideración (RR)</div>
+    <table>
+        <thead>
+            <tr>
+                <th>N° RR</th>
+                <th>Sumario</th>
+                <th>Militar</th>
+                <th>Fecha</th>
+                <th>Resumen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rr in rr_en_agenda %}
+            <tr>
+                <td><strong>{{ rr.RR_NUM|default:"S/N" }}</strong></td>
+                <td>{{ rr.sim.SIM_COD }}</td>
+                <td>{{ rr.pm.PM_GRADO|default:"—" }} {{ rr.pm.PM_NOMBRE|default:"—" }} {{ rr.pm.PM_PATERNO|default:"" }}</td>
+                <td>{{ rr.RR_FEC|date:"d/m/Y"|default:"—" }}</td>
+                <td style="max-width: 200px;">{{ rr.RR_RESUM|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ── AUTOS TPE ──────────────────────────────── -->
+{% if autos_en_agenda %}
+<div class="card section-card">
+    <div class="card-title">🏛️ Autos TPE</div>
+    <table>
+        <thead>
+            <tr>
+                <th>N° Auto</th>
+                <th>Sumario</th>
+                <th>Militar</th>
+                <th>Tipo</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for auto in autos_en_agenda %}
+            <tr>
+                <td><strong>{{ auto.TPE_NUM|default:"S/N" }}</strong></td>
+                <td>{{ auto.sim.SIM_COD }}</td>
+                <td>{{ auto.pm.PM_GRADO|default:"—" }} {{ auto.pm.PM_NOMBRE|default:"—" }} {{ auto.pm.PM_PATERNO|default:"" }}</td>
+                <td>{{ auto.get_TPE_TIPO_display|default:"—" }}</td>
+                <td>{{ auto.TPE_FEC|date:"d/m/Y"|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endblock %}

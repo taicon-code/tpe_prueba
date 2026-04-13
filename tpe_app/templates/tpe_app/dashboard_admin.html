@@ -81,7 +81,111 @@
     </table>
 </div>
 
-<div style="margin-top: 2rem;">
-    <a href="/admin/" class="btn">Ir al Panel de Administración Completo</a>
+<!-- Sección: Gestión de Usuarios -->
+<div class="card" style="margin-top: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>👥 Gestión de Usuarios y Roles</h2>
+        <a href="{% url 'crear_usuario' %}" class="btn">
+            ➕ Crear nuevo usuario
+        </a>
+    </div>
+
+    <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 6px;">
+        <p style="color: #166534; font-weight: 600; margin-bottom: 0.5rem;">ℹ️ Información:</p>
+        <p style="color: #15803d; font-size: 0.9rem; margin: 0;">
+            Desde aquí puedes crear usuarios y asignarles roles. También puedes gestionar usuarios en
+            <a href="/admin/" style="color: #0066cc; text-decoration: underline;">Panel de Administración Completo</a>.
+        </p>
+    </div>
+
+    <!-- Usuarios Activos -->
+    <h3 style="color: #1e3c72; margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1rem;">✓ Usuarios Activos</h3>
+    {% if usuarios_activos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Vinculación</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for perfil in usuarios_activos %}
+            <tr>
+                <td>
+                    <strong>{{ perfil.user.username }}</strong><br>
+                    <small style="color: #6b7280;">{{ perfil.user.first_name }} {{ perfil.user.last_name }}</small>
+                </td>
+                <td>{{ perfil.user.email }}</td>
+                <td>
+                    {% if perfil.rol == 'ADMINISTRADOR' %}
+                        <span style="background: #dc3545; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 0.8rem;">{{ perfil.get_rol_display }}</span>
+                    {% elif perfil.rol == 'ABOGADO' %}
+                        <span style="background: #0066cc; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 0.8rem;">{{ perfil.get_rol_display }}</span>
+                    {% elif perfil.rol == 'ADMINISTRATIVO' %}
+                        <span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 0.8rem;">{{ perfil.get_rol_display }}</span>
+                    {% else %}
+                        <span style="background: #ffc107; color: black; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 0.8rem;">{{ perfil.get_rol_display }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if perfil.abogado %}
+                        ✓ {{ perfil.abogado.AB_PATERNO }} {{ perfil.abogado.AB_MATERNO }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/admin/tpe_app/perfilusuario/{{ perfil.id }}/change/" style="color: #0066cc; text-decoration: none; font-size: 0.85rem;">
+                        Editar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6b7280; text-align: center; padding: 1rem;">No hay usuarios activos</p>
+    {% endif %}
+
+    <!-- Usuarios Inactivos -->
+    {% if usuarios_inactivos %}
+    <h3 style="color: #1e3c72; margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1rem;">✗ Usuarios Inactivos</h3>
+    <table style="opacity: 0.7;">
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for perfil in usuarios_inactivos %}
+            <tr>
+                <td>
+                    <strong>{{ perfil.user.username }}</strong><br>
+                    <small style="color: #6b7280;">{{ perfil.user.first_name }} {{ perfil.user.last_name }}</small>
+                </td>
+                <td>{{ perfil.user.email }}</td>
+                <td>{{ perfil.get_rol_display }}</td>
+                <td>
+                    <a href="/admin/tpe_app/perfilusuario/{{ perfil.id }}/change/" style="color: #0066cc; text-decoration: none; font-size: 0.85rem;">
+                        Editar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+    <a href="/admin/" class="btn" style="background: #6b7280;">
+        ⚙️ Panel de Administración Completo de Django
+    </a>
 </div>
 {% endblock %}

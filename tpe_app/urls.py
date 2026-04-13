@@ -19,6 +19,11 @@ urlpatterns = [
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
     path('administrativo/dashboard/', views.administrativo_dashboard, name='administrativo_dashboard'),
 
+    # Vocal TPE - Secretario de Actas
+    path('vocal/dashboard/', views.vocal_dashboard, name='vocal_dashboard'),
+    path('vocal/agenda/<int:ag_id>/', views.vocal_agenda_detalle, name='vocal_agenda_detalle'),
+    path('vocal/dictamen/<int:dic_id>/confirmar/', views.vocal_confirmar_dictamen, name='vocal_confirmar_dictamen'),
+
     # Administrativo - Sumarios
     path('administrativo/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
     path('administrativo/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),

@@ -215,7 +215,9 @@
                 <th>Número</th>
                 <th>Agenda</th>
                 <th>Militar</th>
-                <th>Conclusión</th>
+                <th>Conclusión Abogado</th>
+                <th>Estado</th>
+                <th>Conclusión Tribunal</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -223,9 +225,34 @@
             {% for d in dictamenes %}
             <tr>
                 <td><strong>{{ d.DIC_NUM|default:"S/N" }}</strong></td>
-                <td>{{ d.agenda|default:"-" }}</td>
-                <td>{{ d.pm|default:"-" }}</td>
-                <td>{{ d.DIC_CONCL|default:"-" }}</td>
+                <td style="white-space:nowrap; font-size:.85rem;">{{ d.agenda.AG_FECPROG|date:"d/m/Y"|default:"-" }}</td>
+                <td style="max-width:150px; font-size:.85rem;">
+                    {% if d.pm %}
+                        {{ d.pm.PM_GRADO|default:"" }} {{ d.pm.PM_NOMBRE|default:"" }} {{ d.pm.PM_PATERNO|default:"" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="max-width:220px; word-break:break-word; font-size:.85rem;">{{ d.DIC_CONCL|default:"-" }}</td>
+                <td style="white-space:nowrap; font-size:.8rem;">
+                    {% if d.DIC_ESTADO == 'PENDIENTE' %}
+                        <span style="background: #fee2e2; color: #dc2626; padding: .2rem .5rem; border-radius: 4px;">🔔 Pendiente</span>
+                    {% elif d.DIC_ESTADO == 'CONFIRMADO' %}
+                        <span style="background: #dcfce7; color: #16a34a; padding: .2rem .5rem; border-radius: 4px;">✓ Confirmado</span>
+                    {% elif d.DIC_ESTADO == 'MODIFICADO' %}
+                        <span style="background: #fef3c7; color: #d97706; padding: .2rem .5rem; border-radius: 4px;">◐ Modificado</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="max-width:220px; word-break:break-word; font-size:.85rem;">
+                    {% if d.DIC_CONCL_SEC %}
+                        {{ d.DIC_CONCL_SEC|default:"-" }}
+                        {% if d.secretario %}<br><small style="color:#6b7280;">({{ d.secretario.get_cargo_display|default:"" }})</small>{% endif %}
+                    {% else %}
+                        <span style="color:#9ca3af;">—</span>
+                    {% endif %}
+                </td>
                 <td style="white-space:nowrap;">
                     <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
                        href="{% url 'abogado_res_crear' sim.pk d.pk %}">Crear RES</a>
@@ -235,7 +262,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align:center; color:#9ca3af;">Sin dictámenes</td>
+                <td colspan="7" style="text-align:center; color:#9ca3af;">Sin dictámenes</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -250,6 +277,7 @@
             <tr>
                 <th>N° RES</th>
                 <th>Fecha</th>
+                <th>Militar</th>
                 <th>Resolución</th>
                 <th>Notificación</th>
                 <th>PDF</th>
@@ -270,6 +298,14 @@
                     {% endif %}
                 </td>
                 <td style="white-space:nowrap;">{{ r.RES_FEC|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space:nowrap; max-width:200px;">
+                    {% if r.dictamen and r.dictamen.pm %}
+                        <div style="font-weight:700; font-size:.9rem;">{{ r.dictamen.pm.PM_GRADO|default:"" }}</div>
+                        <div style="font-size:.85rem; color:#374151;">{{ r.dictamen.pm.PM_NOMBRE|default:"-" }} {{ r.dictamen.pm.PM_PATERNO|default:"" }}{% if r.dictamen.pm.PM_MATERNO %} {{ r.dictamen.pm.PM_MATERNO }}{% endif %}</div>
+                    {% else %}
+                        <span style="color:#9ca3af;">—</span>
+                    {% endif %}
+                </td>
                 <td style="max-width:320px; word-break:break-word;">{{ r.RES_RESOL|default:"-" }}</td>
                 <td style="white-space:nowrap; max-width:200px;">
                     {% if r.RES_FECNOT %}
@@ -298,7 +334,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align:center; color:#9ca3af;">Sin resoluciones</td>
+                <td colspan="7" style="text-align:center; color:#9ca3af;">Sin resoluciones</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -345,11 +381,13 @@
     <table>
         <thead>
             <tr>
-                <th>Número</th>
+                <th>N° Auto</th>
                 <th>Fecha</th>
+                <th>Militar</th>
                 <th>Resolución</th>
                 <th>Notificación</th>
-                <th>Acciones</th>
+                <th>PDF</th>
+                <th>Tipo</th>
             </tr>
         </thead>
         <tbody>
@@ -357,6 +395,14 @@
             <tr>
                 <td style="white-space:nowrap;"><strong>{{ a.TPE_NUM|default:"S/N" }}</strong></td>
                 <td style="white-space:nowrap;">{{ a.TPE_FEC|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space:nowrap; max-width:200px;">
+                    {% if a.pm %}
+                        <div style="font-weight:700; font-size:.9rem;">{{ a.pm.PM_GRADO|default:"" }}</div>
+                        <div style="font-size:.85rem; color:#374151;">{{ a.pm.PM_NOMBRE|default:"-" }} {{ a.pm.PM_PATERNO|default:"" }}{% if a.pm.PM_MATERNO %} {{ a.pm.PM_MATERNO }}{% endif %}</div>
+                    {% else %}
+                        <span style="color:#9ca3af;">—</span>
+                    {% endif %}
+                </td>
                 <td style="max-width:320px; word-break:break-word;">{{ a.TPE_RESOL|default:"-" }}</td>
                 <td style="white-space:nowrap; max-width:200px;">
                     {% if a.TPE_FECNOT %}
@@ -368,13 +414,23 @@
                         </span>
                     {% else %}-{% endif %}
                 </td>
+                <td>
+                    {% if a.pdf_url %}
+                        <a href="{{ a.pdf_url }}" target="_blank"
+                           class="btn" style="font-size:.75rem; padding:.25rem .55rem; background:#dc3545;">
+                            ⬇ PDF
+                        </a>
+                    {% else %}
+                        <span class="no-pdf">Sin PDF</span>
+                    {% endif %}
+                </td>
                 <td style="white-space:nowrap;">
                     <small style="font-size:.75rem;">{{ a.get_TPE_TIPO_display|default:"-" }}</small>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align:center; color:#9ca3af;">Sin Autos TPE</td>
+                <td colspan="7" style="text-align:center; color:#9ca3af;">Sin Autos TPE</td>
             </tr>
             {% endfor %}
         </tbody>
