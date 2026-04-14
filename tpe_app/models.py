@@ -44,76 +44,78 @@ def add_business_days(fecha_inicio, dias):
 class PM(models.Model):
 
     ESCALAFON_CHOICES = [
-        ('GENERAL',            'General'),
-        ('OFICIAL_SUPERIOR',   'Oficial Superior'),
-        ('OFICIAL_SUBALTERNO', 'Oficial Subalterno'),
-        ('SUBOFICIAL',         'Suboficial'),
-        ('SARGENTO',           'Sargento'),
-        ('TROPA',              'Tropa'),
-        ('EMPLEADO_CIVIL',     'Empleado Civil'),
+        ('GENERAL',            'GENERAL'),
+        ('OFICIAL SUPERIOR',   'OFICIAL SUPERIOR'),
+        ('OFICIAL SUBALTERNO', 'OFICIAL SUBALTERNO'),
+        ('SUBOFICIAL',         'SUBOFICIAL'),
+        ('SARGENTO',           'SARGENTO'),
+        ('TROPA',              'TROPA'),
+        ('EMPLEADO CIVIL',     'EMPLEADO CIVIL'),
     ]
     GRADO_CHOICES = [
         # Generales
-        ('GENERAL_EJERCITO',   'General de Ejército'),
-        ('GENERAL_DIVISION',   'General de División'),
-        ('GENERAL_BRIGADA',    'General de Brigada'),
+        ('GRAL. EJTO.', 'GRAL. EJTO.'),
+        ('GRAL. DIV.',  'GRAL. DIV.'),
+        ('GRAL. BRIG.', 'GRAL. BRIG.'),
         # Oficiales Superiores
-        ('CORONEL',            'Coronel'),
-        ('TCNEL',              'Teniente Coronel'),
-        ('MAYOR',              'Mayor'),
+        ('CNL.',  'CNL.'),
+        ('TCNL.', 'TCNL.'),
+        ('MY.',   'MY.'),
         # Oficiales Subalternos
-        ('CAPITAN',            'Capitán'),
-        ('TENIENTE',           'Teniente'),
-        ('SUBTENIENTE',        'Subteniente'),
+        ('CAP.',   'CAP.'),
+        ('TTE.',   'TTE.'),
+        ('SBTTE.', 'SBTTE.'),
         # Suboficiales
-        ('SUBOFICIAL_MAESTRE', 'Suboficial Maestre'),
-        ('SUBOFICIAL_MAYOR',   'Suboficial Mayor'),      
-        ('SUBOFICIAL_1RO',     'Suboficial Primero'),
-        ('SUBOFICIAL_2DO',     'Suboficial Segundo'),
-        ('SUBOFICIAL_INICIAL', 'Suboficial Inicial'),
+        ('SOF. MTRE.', 'SOF. MTRE.'),
+        ('SOF. MY.',   'SOF. MY.'),
+        ('SOF. 1RO.',  'SOF. 1RO.'),
+        ('SOF. 2DO.',  'SOF. 2DO.'),
+        ('SOF. INCL.', 'SOF. INCL.'),
         # Sargentos
-        ('SARGENTO_1RO',       'Sargento Primero'),
-        ('SARGENTO_2DO',       'Sargento Segundo'),
-        ('SARGENTO_INICIAL',   'Sargento Inicial'),
+        ('SGTO. 1RO.',  'SGTO. 1RO.'),
+        ('SGTO. 2DO.',  'SGTO. 2DO.'),
+        ('SGTO. INCL.', 'SGTO. INCL.'),
         # Tropa
-        ('CABO',               'Cabo'),
-        ('DRAGONEANTE',        'Dragoneante'),
-        ('SOLDADO',            'Soldado'),
+        ('CABO',  'CABO'),
+        ('DGTE.', 'DGTE.'),
+        ('SLDO.', 'SLDO.'),
         # Empleados Civiles — Profesionales
-        ('PROF_V',   'Prof. V'),   ('PROF_IV',  'Prof. IV'),
-        ('PROF_III', 'Prof. III'), ('PROF_II',  'Prof. II'),
-        ('PROF_I',   'Prof. I'),
+        ('PROF. V',   'PROF. V'),   ('PROF. IV',  'PROF. IV'),
+        ('PROF. III', 'PROF. III'), ('PROF. II',  'PROF. II'),
+        ('PROF. I',   'PROF. I'),
         # Empleados Civiles — Técnicos
-        ('TEC_V',   'Tec. V'),   ('TEC_IV',  'Tec. IV'),
-        ('TEC_III', 'Tec. III'), ('TEC_II',  'Tec. II'),
-        ('TEC_I',   'Tec. I'),
+        ('TEC. V',   'TEC. V'),   ('TEC. IV',  'TEC. IV'),
+        ('TEC. III', 'TEC. III'), ('TEC. II',  'TEC. II'),
+        ('TEC. I',   'TEC. I'),
         # Empleados Civiles — Administrativos
-        ('ADM_V',   'Adm. V'),   ('ADM_IV',  'Adm. IV'),
-        ('ADM_III', 'Adm. III'), ('ADM_II',  'Adm. II'),
-        ('ADM_I',   'Adm. I'),
+        ('ADM. V',   'ADM. V'),   ('ADM. IV',  'ADM. IV'),
+        ('ADM. III', 'ADM. III'), ('ADM. II',  'ADM. II'),
+        ('ADM. I',   'ADM. I'),
         # Empleados Civiles — Apoyo Administrativo
-        ('APAD_V',   'Apad. V'),   ('APAD_IV',  'Apad. IV'),
-        ('APAD_III', 'Apad. III'), ('APAD_II',  'Apad. II'),
-        ('APAD_I',   'Apad. I'),
+        ('APAD. V',   'APAD. V'),   ('APAD. IV',  'APAD. IV'),
+        ('APAD. III', 'APAD. III'), ('APAD. II',  'APAD. II'),
+        ('APAD. I',   'APAD. I'),
     ]
     ARMA_CHOICES = [
-        ('INFANTERIA',      'Infantería'),
-        ('CABALLERIA',      'Caballería'),
-        ('ARTILLERIA',      'Artillería'),
-        ('INGENIERIA',      'Ingeniería'),
-        ('COMUNICACIONES',  'Comunicaciones'),
-        ('INTENDENCIA',     'Intendencia'),
-        ('SANIDAD',         'Sanidad'),
-        ('TOPOGRAFIA',       'Topografía'),
-        ('AVIACION',        'Aviación del Ejército'),
-        ('MÚSICA',          'Música'),
+        ('INF.',      'INF.'),
+        ('CAB.',      'CAB.'),
+        ('ART.',      'ART.'),
+        ('ING.',      'ING.'),
+        ('COM.',  'COM.'),
+        ('INT.',     'INT.'),
+        ('SAN.',         'SAN.'),
+        ('TGRAFO.',       'TGRAFO.'),
+        ('AV.',        'AV.'),
+        ('MÚS.',          'MÚS.'),
     ]
     ESTADO_CHOICES = [
-        ('ACTIVO',         'Activo'),
-        ('RETIRO OBLIGATORIO', 'Retiro Obligatorio'),
-        ('RESERVA_ACTIVA', 'Reserva Activa'),
-        ('BAJA',           'Baja'),
-        ('FALLECIDO',      'Fallecido'),
+        ('ACTIVO',         'ACTIVO'),
+        ('RETIRO OBLIGATORIO', 'RETIRO OBLIGATORIO'),
+        ('RESERVA ACTIVA', 'RESERVA ACTIVA'),
+        ('BAJA',           'BAJA'),
+        ('FALLECIDO',      'FALLECIDO'),
+        ('NO HABIDO',      'NO HABIDO'),
+        ('OTRO',           'OTRO'),
     ]
 
     pm_id        = models.BigAutoField(primary_key=True, db_column='id')
@@ -174,6 +176,32 @@ class ABOG(models.Model):
         self.AB_MATERNO = self.AB_MATERNO.upper() if self.AB_MATERNO else self.AB_MATERNO
         self.AB_ESPEC   = self.AB_ESPEC.upper()   if self.AB_ESPEC   else self.AB_ESPEC
         super().save(*args, **kwargs)
+
+# ============================================================
+# MODELO 2B: VOCAL_TPE — Vocales del Tribunal
+# ============================================================
+class VOCAL_TPE(models.Model):
+
+    CARGO_CHOICES = [
+        ('PRESIDENTE',       'Presidente'),
+        ('VICEPRESIDENTE',   'Vicepresidente'),
+        ('VOCAL',            'Vocal'),
+        ('SECRETARIO_ACTAS', 'Secretario de Actas'),
+    ]
+
+    pm     = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
+    cargo  = models.CharField(max_length=20, choices=CARGO_CHOICES, verbose_name='Cargo')
+    activo = models.BooleanField(default=True, verbose_name='Activo')
+
+    class Meta:
+        db_table            = 'vocal_tpe'
+        verbose_name        = 'Vocal del Tribunal'
+        verbose_name_plural = 'Vocales del Tribunal'
+        ordering            = ['cargo', 'pm__PM_PATERNO']
+
+    def __str__(self):
+        estado = '' if self.activo else ' (inactivo)'
+        return f"{self.get_cargo_display()} — {self.pm}{estado}"
 
 # ============================================================
 # MODELO 3: SIM — Sumario Informativo Militar (tabla central)
@@ -372,6 +400,43 @@ class DICTAMEN(models.Model):
         blank=True,
         verbose_name='Abogado'
     )
+    pm = models.ForeignKey(
+        PM,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Militar'
+    )
+
+    # ✅ NUEVO: Confirmación del Secretario de Actas
+    secretario = models.ForeignKey(
+        VOCAL_TPE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Secretario de Actas que confirma',
+        related_name='dictamenes_confirmados'
+    )
+    DIC_CONCL_SEC = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name='Conclusión confirmada/modificada por Secretario'
+    )
+    DIC_ESTADO = models.CharField(
+        max_length=20,
+        choices=[
+            ('PENDIENTE', 'Pendiente de confirmar'),
+            ('CONFIRMADO', 'Confirmado sin cambios'),
+            ('MODIFICADO', 'Modificado por secretario'),
+        ],
+        default='PENDIENTE',
+        verbose_name='Estado de confirmación'
+    )
+    DIC_CONFIR_FEC = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Fecha de confirmación'
+    )
 
     class Meta:
         db_table = 'dictamen'
@@ -436,6 +501,12 @@ class RES(models.Model):
         null=True, blank=True,
         verbose_name='Dictamen origen')
 
+    # ✅ NUEVO: FK al militar al que aplica la resolución
+    pm = models.ForeignKey(
+        PM, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Militar')
+
     RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
     RES_FEC   = models.DateField(verbose_name='Fecha')
     RES_RESOL = models.TextField(verbose_name='Resolución')
@@ -477,6 +548,11 @@ class RR(models.Model):
     agenda = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
                                  null=True, blank=True,
                                  verbose_name='Agenda')
+
+    # ✅ NUEVO: FK al militar al que aplica el recurso
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True,
+                           verbose_name='Militar')
 
     RR_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso')
     # ✅ NUEVO v1.2: fecha límite para alertas (15 días hábiles)
@@ -566,6 +642,39 @@ class AUTOTPE(models.Model):
         null=True, blank=True,
         verbose_name='Agenda')
 
+    # FK al vocal que se excusa (solo para autos de excusa)
+    vocal_excusado = models.ForeignKey(
+        'VOCAL_TPE', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Vocal Excusado')
+
+    # ✅ NUEVO: FK al militar al que aplica el auto
+    pm = models.ForeignKey(
+        PM, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Militar')
+
+    # ✅ NUEVO: Relaciones al documento origen que genera el auto (ejecutoria)
+    res = models.ForeignKey(
+        'RES', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Resolución origen')
+
+    rr = models.ForeignKey(
+        'RR', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Recurso Reconsideración origen')
+
+    rap = models.ForeignKey(
+        'RAP', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Recurso Apelación origen')
+
+    raee = models.ForeignKey(
+        'RAEE', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='RAEE origen')
+
     TPE_NUM   = models.CharField(null=True, blank=True, max_length=15,  verbose_name='Número de Auto')
     TPE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
     TPE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
@@ -618,13 +727,19 @@ class RAP(models.Model):
                                  verbose_name='Segunda Resolución (RR)')
     sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                  verbose_name='Sumario')
+
+    # ✅ NUEVO: FK al militar al que aplica el recurso
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True,
+                           verbose_name='Militar')
+
     # Fecha de ingreso al TSP (puede ser diferente a la fecha del oficio de elevación, que es el documento que se envía al TSP)
     RAP_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso de Apelación al TSP')
     # ✅ NUEVO v1.2: fecha límite para alertas (3 días hábiles)
     RAP_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite remisión TSP (3 días hábiles)')
 
     # Elevación al TSP
-    RAP_OFI    = models.CharField(max_length=15, null=True, blank=True, verbose_name='N° Oficio Elevación')
+    RAP_OFI    = models.CharField(max_length=25, null=True, blank=True, verbose_name='N° Oficio Elevación')
     RAP_FECOFI = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
     
     # Resolución del TSP
@@ -687,7 +802,12 @@ class RAEE(models.Model):
                                  verbose_name='Recurso de Apelación')
     sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                  verbose_name='Sumario')
-    
+
+    # ✅ NUEVO: FK al militar al que aplica el recurso
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True,
+                           verbose_name='Militar')
+
     RAE_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución')
     RAE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución')
     RAE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
@@ -815,17 +935,26 @@ class PerfilUsuario(models.Model):
         ('ADMINISTRADOR', 'Administrador'),
         ('ABOGADO',       'Abogado'),
         ('BUSCADOR',      'Buscador'),
-        ('AUXILIAR',      'Auxiliar'),
+        ('ADMINISTRATIVO', 'Administrativo'),
+        ('VOCAL_TPE',     'Vocal TPE'),
     ]
-    
-    user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, 
+
+    user    = models.OneToOneField('auth.User', on_delete=models.CASCADE,
                                    verbose_name='Usuario del sistema')
-    rol     = models.CharField(max_length=20, choices=ROL_CHOICES, 
+    rol     = models.CharField(max_length=20, choices=ROL_CHOICES,
                                verbose_name='Rol/Perfil')
-    abogado = models.ForeignKey(ABOG, on_delete=models.SET_NULL, 
+    abogado = models.ForeignKey(ABOG, on_delete=models.SET_NULL,
                                 null=True, blank=True,
                                 verbose_name='Vinculado a Abogado',
                                 help_text='Solo para usuarios con rol ABOGADO')
+
+    # ✅ NUEVO: Vinculación a VOCAL_TPE para usuarios con rol VOCAL_TPE
+    vocal = models.ForeignKey(
+        VOCAL_TPE, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Vinculado a Vocal TPE',
+        help_text='Solo para usuarios con rol VOCAL_TPE')
+
     activo  = models.BooleanField(default=True, verbose_name='Usuario activo')
     
     class Meta:

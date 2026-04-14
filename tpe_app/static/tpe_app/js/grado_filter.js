@@ -5,29 +5,29 @@
 
 const GRADOS_POR_ESCALAFON = {
     'GENERAL': [
-        'GENERAL_EJERCITO', 'GENERAL_DIVISION', 'GENERAL_BRIGADA'
+        'GRAL. EJTO.', 'GRAL. DIV.', 'GRAL. BRIG.'
     ],
-    'OFICIAL_SUPERIOR': [
-        'CORONEL', 'TCNEL', 'MAYOR'
+    'OFICIAL SUPERIOR': [
+        'CNL.', 'TCNL.', 'MY.'
     ],
-    'OFICIAL_SUBALTERNO': [
-        'CAPITAN', 'TENIENTE', 'SUBTENIENTE'
+    'OFICIAL SUBALTERNO': [
+        'CAP.', 'TTE.', 'SBTTE.'
     ],
     'SUBOFICIAL': [
-        'SUBOFICIAL_MAYOR', 'SUBOFICIAL_MAESTRE',
-        'SUBOFICIAL_1RO', 'SUBOFICIAL_2DO', 'SUBOFICIAL_INICIAL'
+        'SOF. MTRE.', 'SOF. MY.',
+        'SOF. 1RO.', 'SOF. 2DO.', 'SOF. INCL.'
     ],
     'SARGENTO': [
-        'SARGENTO_1RO', 'SARGENTO_2DO', 'SARGENTO_INICIAL'
+        'SGTO. 1RO.', 'SGTO. 2DO.', 'SGTO. INCL.'
     ],
     'TROPA': [
-        'CABO', 'DRAGONEANTE', 'SOLDADO'
+        'CABO', 'DGTE.', 'SLDO.'
     ],
-    'EMPLEADO_CIVIL': [
-        'PROF_V','PROF_IV','PROF_III','PROF_II','PROF_I',
-        'TEC_V','TEC_IV','TEC_III','TEC_II','TEC_I',
-        'ADM_V','ADM_IV','ADM_III','ADM_II','ADM_I',
-        'APAD_V','APAD_IV','APAD_III','APAD_II','APAD_I'
+    'EMPLEADO CIVIL': [
+        'PROF. V','PROF. IV','PROF. III','PROF. II','PROF. I',
+        'TEC. V','TEC. IV','TEC. III','TEC. II','TEC. I',
+        'ADM. V','ADM. IV','ADM. III','ADM. II','ADM. I',
+        'APAD. V','APAD. IV','APAD. III','APAD. II','APAD. I'
     ]
 };
 

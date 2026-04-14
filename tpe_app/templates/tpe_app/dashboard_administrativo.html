@@ -1,0 +1,190 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Dashboard Administrativo - TPE Sistema{% endblock %}
+
+{% block navbar_title %}🎖️ Panel de Administrativo{% endblock %}
+
+{% block content %}
+
+<!-- 1. Stats Grid at the top -->
+<div class="stats-grid">
+    <div class="stat-card" style="border-left-color: #5c7cfa;">
+        <h3 style="color: #1e3c72;">{{ total_sin_asignar }}</h3>
+        <p>Total de Sumarios no Agendados</p>
+    </div>
+    <div class="stat-card" style="border-left-color: #fcc419;">
+        <h3 style="color: #1e3c72;">{{ total_rr_sin_asignar }}</h3>
+        <p>Total RR por Agendar</p>
+    </div>
+    <div class="stat-card" style="border-left-color: #51cf66;">
+        <h3 style="color: #1e3c72;">{{ total_solicitudes_sin_asignar }}</h3>
+        <p>Total Solicitudes por Agendar</p>
+    </div>
+</div>
+
+<!-- 2. Search Box below stats -->
+<div class="card">
+    <h2>🔍 Buscar Sumarios</h2>
+    <form method="get" class="search-box">
+        <input
+            type="text"
+            name="q"
+            placeholder="Buscar por Apellido Paterno, Apellido Materno, Código SIM, Resumen u Objeto..."
+            value="{{ query }}"
+        >
+        <button type="submit" class="btn" style="background:#5c7cfa;">Buscar</button>
+    </form>
+    {% if query %}
+        <a href="{% url 'administrativo_dashboard' %}" style="color: #666; text-decoration: none; font-size: 0.9rem;">Limpiar búsqueda</a>
+    {% endif %}
+</div>
+
+<!-- 3. Soft Buttons -->
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+    <a href="{% url 'registrar_sumario' %}" class="btn" style="background: #4caf50;">
+        ➕ Registrar Nuevo Sumario
+    </a>
+    <a href="{% url 'registrar_rr' %}" class="btn" style="background: #4dd0e1; color: #111;">
+        ➕ Registrar Recurso de Reconsideración (RR)
+    </a>
+    <a href="{% url 'agendar_sumario' %}" class="btn" style="background: #ffb74d; color: #111;">
+        📅 Agendar Sumario
+    </a>
+    <a href="#" class="btn" style="background: #78909c;">
+        📋 Registrar Notificación
+    </a>
+</div>
+
+<!-- 4. Tables -->
+<div class="card">
+    <h2>⚠️ Sumarios sin Abogado Asignado (Para Agenda)</h2>
+    {% if sumarios_sin_asignar %}
+    <table>
+        <thead>
+            <tr>
+                <th>Fec. Ingreso</th>
+                <th>Código</th>
+                <th>Grado</th>
+                <th>Nombre Completo</th>
+                <th>Resumen</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in sumarios_sin_asignar %}
+            <tr>
+                <td style="white-space: nowrap;">{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space: nowrap;"><strong>{{ sim.SIM_COD }}</strong></td>
+                <td>{{ sim.militares.first.PM_GRADO|default:"-" }}</td>
+                <td>{{ sim.militares.first.PM_NOMBRE|default:"" }} {{ sim.militares.first.PM_PATERNO|default:"" }} {{ sim.militares.first.PM_MATERNO|default:"" }}</td>
+                <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
+                <td>
+                    <a href="{% url 'agendar_sumario' %}?sim={{ sim.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#ffb74d; color:#111;">
+                        Agendar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #4caf50; text-align: center; padding: 2rem;">
+        ✅ Todos los sumarios tienen abogado asignado
+    </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>🔄 Recursos de Reconsideración (RR) por Agendar</h2>
+    {% if rr_sin_asignar %}
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>Primera Resolución</th>
+                <th>Fecha Ingreso TPE</th>
+                <th>Fecha Límite (25 Días)</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rr in rr_sin_asignar %}
+            {% with alerta=rr.alerta_25 %}
+            <tr>
+                <td style="white-space: nowrap;"><strong>{{ rr.sim.SIM_COD }}</strong></td>
+                <td>{{ rr.res.RES_NUM|default:"-" }} - {{ rr.res.RES_RESOL|truncatewords:8|default:"-" }}</td>
+                <td style="white-space: nowrap;">{{ rr.RR_FECPRESEN|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space: nowrap;">
+                    {% if rr.fecha_limite_25 %}
+                    <span style="
+                        font-weight: bold;
+                        padding: 0.2rem 0.5rem;
+                        border-radius: 4px;
+                        {% if alerta == 'danger' %}background:#f8d7da; color:#842029;
+                        {% elif alerta == 'warning' %}background:#fff3cd; color:#664d03;
+                        {% elif alerta == 'info' %}background:#cff4fc; color:#055160;
+                        {% else %}background:#d1e7dd; color:#0a3622;{% endif %}
+                    ">
+                        {{ rr.fecha_limite_25|date:"d/m/Y" }}
+                        {% if alerta == 'danger' %} ⚠️ Vencido
+                        {% elif alerta == 'warning' %} ⚠️ Próximo
+                        {% elif alerta == 'info' %} 🔔 En plazo
+                        {% else %} ✅{% endif %}
+                    </span>
+                    {% else %}-{% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'agendar_rr' %}?rr={{ rr.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#ffb74d; color:#111;">
+                        Agendar
+                    </a>
+                </td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #4caf50; text-align: center; padding: 2rem;">
+        ✅ No hay Recursos de Reconsideración pendientes de agendar
+    </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>📄 Solicitudes para ser Agendadas</h2>
+    {% if solicitudes_sin_asignar %}
+    <table>
+        <thead>
+            <tr>
+                <th>Fec. Ingreso</th>
+                <th>Código</th>
+                <th>Tipo de Solicitud</th>
+                <th>Nombre Completo</th>
+                <th>Resumen</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in solicitudes_sin_asignar %}
+            <tr>
+                <td style="white-space: nowrap;">{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space: nowrap;"><strong>{{ sim.SIM_COD }}</strong></td>
+                <td><span class="badge badge-blue">{{ sim.get_SIM_TIPO_display }}</span></td>
+                <td>{{ sim.militares.first.PM_NOMBRE|default:"" }} {{ sim.militares.first.PM_PATERNO|default:"" }} {{ sim.militares.first.PM_MATERNO|default:"" }}</td>
+                <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
+                <td>
+                    <a href="{% url 'agendar_sumario' %}?sim={{ sim.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#ffb74d; color:#111;">
+                        Agendar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #4caf50; text-align: center; padding: 2rem;">
+        ✅ No hay solicitudes pendientes de agendar
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

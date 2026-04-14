@@ -3,46 +3,95 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
 from ..decorators import rol_requerido
-from ..models import SIM, PM, RES, RR, RAP, RAEE
+from ..models import SIM, PM, RES, RR, RAP, RAEE, AUTOTPE, AUTOTSP
 
 
-@rol_requerido('BUSCADOR')
+def _obtener_historial_completo(personal_id):
+    """Obtiene el historial completo de un personal"""
+    try:
+        personal = PM.objects.get(pm_id=personal_id)
+    except PM.DoesNotExist:
+        return None
+
+    # Obtener todos los SIM donde participa este personal
+    sims = SIM.objects.filter(militares__pm_id=personal_id).distinct()
+    sim_ids = list(sims.values_list('id', flat=True))
+
+    historial = {
+        'personal': personal,
+        'sumarios': sims,
+        'resoluciones': RES.objects.filter(sim__in=sim_ids),
+        'segundas_resoluciones': RR.objects.filter(sim__in=sim_ids),
+        'recursos_apelacion': RAP.objects.filter(sim__in=sim_ids),
+        'raees': RAEE.objects.filter(sim__in=sim_ids),
+        'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
+        'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
+    }
+
+    return historial
+
+
+def _obtener_estado_actual(personal_id):
+    """Obtiene el estado actual del personal"""
+    historial = _obtener_historial_completo(personal_id)
+    if not historial:
+        return None
+
+    return {
+        'total_sumarios': historial['sumarios'].count(),
+        'total_resoluciones': historial['resoluciones'].count(),
+        'total_apelaciones': historial['recursos_apelacion'].count(),
+        'total_raees': historial['raees'].count(),
+        'estado_actual': 'Historial disponible'
+    }
+
+
 def buscador_dashboard(request):
-    """Dashboard para buscadores - búsqueda y consulta"""
+    """Dashboard para búsqueda unificada - búsqueda por código SIM, nombre, apellido paterno, materno"""
 
     query = request.GET.get('q', '').strip()
+    personal_seleccionado = None
+    historial = None
+    estado = None
+    resultados_pm = []
     resultados_sim = []
-    resultados_pm  = []
 
     if query:
-        resultados_sim = list(
-            SIM.objects.filter(
-                Q(SIM_COD__icontains=query)   |
-                Q(SIM_RESUM__icontains=query)  |
-                Q(SIM_OBJETO__icontains=query)
-            ).prefetch_related('abogados', 'militares')[:20]
-        )
-
         resultados_pm = list(
             PM.objects.filter(
-                Q(PM_CI__icontains=query)      |
-                Q(PM_NOMBRE__icontains=query)  |
+                Q(PM_NOMBRE__icontains=query) |
                 Q(PM_PATERNO__icontains=query) |
                 Q(PM_MATERNO__icontains=query)
-            )[:20]
+            ).distinct()[:20]
         )
 
+        resultados_sim = list(
+            SIM.objects.filter(
+                Q(SIM_COD__icontains=query) |
+                Q(SIM_RESUM__icontains=query) |
+                Q(SIM_OBJETO__icontains=query)
+            ).prefetch_related('abogados', 'militares').distinct()[:20]
+        )
+
+        # Si hay exactamente 1 PM, mostrar su historial completo
+        if len(resultados_pm) == 1:
+            personal_seleccionado = resultados_pm[0]
+            historial = _obtener_historial_completo(personal_seleccionado.pm_id)
+            estado = _obtener_estado_actual(personal_seleccionado.pm_id)
+
     context = {
-        'query':        query,
+        'query': query,
+        'resultados_pm': resultados_pm,
         'resultados_sim': resultados_sim,
-        'resultados_pm':  resultados_pm,
-        'total_sim':    len(resultados_sim),
-        'total_pm':     len(resultados_pm),
+        'total_pm': len(resultados_pm),
+        'total_sim': len(resultados_sim),
+        'personal_seleccionado': personal_seleccionado,
+        'historial': historial,
+        'estado': estado,
     }
     return render(request, 'tpe_app/dashboard_buscador.html', context)
 
 
-@rol_requerido('BUSCADOR')
 def upload_foto_pm(request, pm_id):
     """Subir o reemplazar la foto de un Personal Militar"""
     pm = get_object_or_404(PM, pk=pm_id)

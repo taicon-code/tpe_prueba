@@ -51,3 +51,14 @@ posterior a la agenda el abogado debe generar una resolucion o/y auto que tambie
 Crear Segunda Resolución (RR) - ABOGADO
 Crear Auto TPE (AUTOTPE) - ABOGADO
 se me ocurre una idea que cuando ingrese
+
+
+aumentar especialidad en el ingreso de Personal militar
+aumentar el arma de logistica en armas
+borrar el botin dictamen de la parte superior de abogado
+al crear dictamen no debe aparecer el nombre del abogado sino 
+el nombre a quien se le esta sancionando entonces 
+en la parte de crear dictamen debe aparecer el nombre de los implicados
+
+en el abogado dashboard en el panel de sumarios asignados
+que se vea todos lo militares empleados

@@ -1,8 +1,9 @@
 # tpe_app/views/__init__.py
 from .auth_views import login_view, logout_view
-from .admin_views import admin_dashboard
+from .admin_views import admin_dashboard, crear_usuario_con_rol
 from .abogado_views import abogado_dashboard
 from .abogado_documentos_views import (
+    abogado_auto_excusa_crear,
     abogado_autotpe_crear,
     abogado_dictamen_crear,
     abogado_res_crear,
@@ -10,5 +11,6 @@ from .abogado_documentos_views import (
     abogado_sumario_detalle,
 )
 from .buscador_views import buscador_dashboard, upload_foto_pm
-from .auxiliar_views import auxiliar_dashboard, registrar_sumario, agendar_sumario, registrar_rr, agendar_rr
-from .historial_views import buscar_historial_view, historial_personal_detalle
+from .administrativo_views import administrativo_dashboard, registrar_sumario, agendar_sumario, registrar_rr, agendar_rr
+from .export_views import export_person_pdfs_zip, export_person_excel
+from .vocal_views import vocal_dashboard, vocal_agenda_detalle, vocal_confirmar_dictamen

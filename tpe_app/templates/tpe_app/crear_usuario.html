@@ -1,0 +1,162 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Crear Usuario - TPE Sistema{% endblock %}
+{% block navbar_title %}👤 Crear nuevo usuario{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2>🔐 Crear nuevo usuario y asignar rol</h2>
+
+    {% if errores %}
+    <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+        <p style="color: #991b1b; font-weight: 600; margin-bottom: 0.5rem;">❌ Errores encontrados:</p>
+        <ul style="margin: 0; padding-left: 1.5rem; color: #b91c1c;">
+            {% for error in errores %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="POST" style="display: grid; gap: 1.2rem;">
+        {% csrf_token %}
+
+        <!-- Datos básicos -->
+        <fieldset style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 7px; background: #fafbfc;">
+            <legend style="padding: 0 .5rem; color: var(--primary); font-weight: 600;">Datos del usuario</legend>
+
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <label for="username" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Nombre de usuario <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" id="username" name="username" class="form-control"
+                           placeholder="ej: juan.doe" required value="{{ username }}">
+                    <small style="color: #6b7280; display: block; margin-top: .3rem;">
+                        Será usado para iniciar sesión. Sin espacios.
+                    </small>
+                </div>
+
+                <div>
+                    <label for="email" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Email <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="email" id="email" name="email" class="form-control"
+                           placeholder="juan@ejemplo.com" required value="{{ email }}">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="first_name" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                            Nombre(s)
+                        </label>
+                        <input type="text" id="first_name" name="first_name" class="form-control"
+                               placeholder="Juan" value="{{ first_name }}">
+                    </div>
+                    <div>
+                        <label for="last_name" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                            Apellido(s)
+                        </label>
+                        <input type="text" id="last_name" name="last_name" class="form-control"
+                               placeholder="Doe" value="{{ last_name }}">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Contraseña <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="password" id="password" name="password" class="form-control"
+                           placeholder="Mínimo 8 caracteres" required>
+                    <small style="color: #6b7280; display: block; margin-top: .3rem;">
+                        ⚠️ Use contraseña segura (mayúsculas, números, símbolos)
+                    </small>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Rol y asignación -->
+        <fieldset style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 7px; background: #fafbfc;">
+            <legend style="padding: 0 .5rem; color: var(--primary); font-weight: 600;">Rol y asignación</legend>
+
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <label for="rol" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Rol/Perfil <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select id="rol" name="rol" class="form-control" required onchange="mostrarAbogados()">
+                        <option value="">-- Seleccionar rol --</option>
+                        {% for valor, etiqueta in rol_choices %}
+                        <option value="{{ valor }}" {% if rol == valor %}selected{% endif %}>
+                            {{ etiqueta }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: #6b7280; display: block; margin-top: .3rem;">
+                        📋 Asigna nivel de acceso y funcionalidades
+                    </small>
+                </div>
+
+                <!-- Campo de abogado (solo se muestra para rol ABOGADO) -->
+                <div id="abogado-field" style="display: none;">
+                    <label for="abogado" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Vinculación a abogado <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select id="abogado" name="abogado" class="form-control">
+                        <option value="">-- Seleccionar abogado --</option>
+                        {% for abog in abogados %}
+                        <option value="{{ abog.id }}">
+                            {{ abog.AB_PATERNO }} {{ abog.AB_MATERNO }} (CI: {{ abog.AB_CI }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: #6b7280; display: block; margin-top: .3rem;">
+                        ⚠️ Requerido para rol ABOGADO
+                    </small>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Información de roles -->
+        <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 1rem; border-radius: 6px;">
+            <p style="color: #1e40af; font-weight: 600; margin-bottom: 0.5rem;">ℹ️ Descripción de roles:</p>
+            <ul style="margin: 0; padding-left: 1.5rem; color: #1e40af; font-size: .9rem;">
+                <li><strong>Administrador:</strong> Acceso total al sistema y gestión de usuarios</li>
+                <li><strong>Abogado:</strong> Acceso a casos, dictámenes y resoluciones asignadas</li>
+                <li><strong>Administrativo:</strong> Gestión de agenda, notificaciones y trámites</li>
+                <li><strong>Buscador:</strong> Búsqueda y consulta de información del sistema</li>
+            </ul>
+        </div>
+
+        <!-- Botones -->
+        <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem;">
+            <a href="{% url 'admin_dashboard' %}" class="btn" style="background: #6b7280;">
+                ← Cancelar
+            </a>
+            <button type="submit" class="btn">
+                ✓ Crear usuario
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function mostrarAbogados() {
+    const rolSelect = document.getElementById('rol');
+    const abogadoField = document.getElementById('abogado-field');
+    const abogadoSelect = document.getElementById('abogado');
+
+    if (rolSelect.value === 'ABOGADO') {
+        abogadoField.style.display = 'block';
+        abogadoSelect.required = true;
+    } else {
+        abogadoField.style.display = 'none';
+        abogadoSelect.required = false;
+        abogadoSelect.value = '';
+    }
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', mostrarAbogados);
+</script>
+{% endblock %}

@@ -6,7 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..decorators import rol_requerido
-from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, RES, RR, SIM
+from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, RES, RR, SIM, VOCAL_TPE
 from ..utils.numeracion import next_num_yy
 
 
@@ -30,10 +30,21 @@ def abogado_sumario_detalle(request, sim_id: int):
     reconsideraciones = RR.objects.filter(sim=sim).select_related("res", "agenda", "abog").order_by("-RR_FEC")
     autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-TPE_FEC", "-id")
 
-    # Adjuntar PDF a cada RES
+    # Adjuntar PDF a cada RES y AUTOTPE
     for res in resoluciones:
         doc = DocumentoAdjunto.objects.filter(DOC_TABLA='res', DOC_ID_REG=res.pk).first()
         res.pdf_url = doc.DOC_RUTA.url if doc else None
+
+    autos_tpe = list(autos_tpe)
+    for auto in autos_tpe:
+        doc = DocumentoAdjunto.objects.filter(DOC_TABLA='autotpe', DOC_ID_REG=auto.pk).first()
+        auto.pdf_url = doc.DOC_RUTA.url if doc else None
+
+    # Determinar el rol del abogado en este SIM:
+    # es_via_sim → asignado directamente al SIM (Etapa 1, acceso completo)
+    # rrs_asignados → asignado por RR (Etapa 2, solo puede operar sobre sus propios documentos)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    rrs_asignados = list(RR.objects.filter(sim=sim, abog=abogado).select_related("res").order_by("-RR_FEC"))
 
     context = {
         "sim": sim,
@@ -43,6 +54,8 @@ def abogado_sumario_detalle(request, sim_id: int):
         "resoluciones": resoluciones,
         "reconsideraciones": reconsideraciones,
         "autos_tpe": autos_tpe,
+        "es_via_sim": es_via_sim,
+        "rrs_asignados": rrs_asignados,
     }
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
 
@@ -50,39 +63,68 @@ def abogado_sumario_detalle(request, sim_id: int):
 @rol_requerido("ABOGADO")
 def abogado_dictamen_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
-    sim = get_object_or_404(SIM, pk=sim_id)
+    sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
 
+    militares = list(sim.militares.all())
     agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
 
     if request.method == "POST":
         agenda_id = request.POST.get("agenda") or ""
-        conclusion = (request.POST.get("DIC_CONCL") or "").strip()
 
         if not agenda_id:
             messages.error(request, "Seleccione una agenda.")
         else:
             agenda = get_object_or_404(AGENDA, pk=agenda_id)
+            autogenerar = request.POST.get("autogenerar_numero") == "1"
 
             try:
                 with transaction.atomic():
-                    dic_num = None
+                    dictamenes_creados = 0
 
-                    if request.POST.get("autogenerar_numero") == "1":
-                        existentes = list(
-                            DICTAMEN.objects.filter(DIC_NUM__isnull=False)
-                            .values_list("DIC_NUM", flat=True)
+                    if militares:
+                        # Crear un dictamen por cada militar del sumario
+                        for pm in militares:
+                            conclusion = (request.POST.get(f"DIC_CONCL_{pm.pk}") or "").strip()
+                            dic_num = None
+
+                            if autogenerar:
+                                existentes = list(
+                                    DICTAMEN.objects.filter(DIC_NUM__isnull=False)
+                                    .values_list("DIC_NUM", flat=True)
+                                )
+                                dic_num = next_num_yy(existentes, today=date.today())
+
+                            DICTAMEN.objects.create(
+                                agenda=agenda,
+                                sim=sim,
+                                abog=abogado,
+                                pm=pm,
+                                DIC_NUM=dic_num,
+                                DIC_CONCL=conclusion or None,
+                            )
+                            dictamenes_creados += 1
+                    else:
+                        # Fallback: si no hay militares, crear un dictamen sin PM
+                        conclusion = (request.POST.get("DIC_CONCL") or "").strip()
+                        dic_num = None
+
+                        if autogenerar:
+                            existentes = list(
+                                DICTAMEN.objects.filter(DIC_NUM__isnull=False)
+                                .values_list("DIC_NUM", flat=True)
+                            )
+                            dic_num = next_num_yy(existentes, today=date.today())
+
+                        DICTAMEN.objects.create(
+                            agenda=agenda,
+                            sim=sim,
+                            abog=abogado,
+                            DIC_NUM=dic_num,
+                            DIC_CONCL=conclusion or None,
                         )
-                        dic_num = next_num_yy(existentes, today=date.today())
+                        dictamenes_creados = 1
 
-                    dictamen = DICTAMEN.objects.create(
-                        agenda=agenda,
-                        sim=sim,
-                        abog=abogado,
-                        DIC_NUM=dic_num,
-                        DIC_CONCL=conclusion or None,
-                    )
-
-                messages.success(request, f"✅ Dictamen creado ({dictamen.DIC_NUM or 'S/N'}).")
+                messages.success(request, f"✅ {dictamenes_creados} dictamen(es) creado(s).")
                 return redirect("abogado_sumario_detalle", sim_id=sim.pk)
             except Exception as exc:
                 messages.error(request, f"❌ Error al crear dictamen: {exc}")
@@ -91,6 +133,7 @@ def abogado_dictamen_crear(request, sim_id: int):
         "sim": sim,
         "abogado": abogado,
         "agendas": agendas,
+        "militares": militares,
     }
     return render(request, "tpe_app/abogado/dictamen_form.html", context)
 
@@ -100,6 +143,12 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
     dictamen = get_object_or_404(DICTAMEN, pk=dictamen_id, sim=sim)
+
+    # Seguridad: solo puede crear RES desde un dictamen propio si accede via RR (Etapa 2)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    if not es_via_sim and dictamen.abog != abogado:
+        messages.error(request, "No tiene autorización para crear una RES desde este dictamen.")
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     if request.method == "POST":
         res_fec = request.POST.get("RES_FEC") or ""
@@ -186,6 +235,12 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
     dictamen = get_object_or_404(DICTAMEN, pk=dictamen_id, sim=sim)
 
+    # Seguridad: solo puede crear Auto desde un dictamen propio si accede via RR (Etapa 2)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    if not es_via_sim and dictamen.abog != abogado:
+        messages.error(request, "No tiene autorización para crear un Auto desde este dictamen.")
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
     if request.method == "POST":
         tpe_fec = request.POST.get("TPE_FEC") or ""
         tpe_tipo = request.POST.get("TPE_TIPO") or ""
@@ -220,3 +275,60 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
         "tipos": AUTOTPE.TIPO_CHOICES,
     }
     return render(request, "tpe_app/abogado/autotpe_form.html", context)
+
+
+@rol_requerido("ABOGADO")
+def abogado_auto_excusa_crear(request, sim_id: int):
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    # Cargar vocales activos
+    vocales = VOCAL_TPE.objects.filter(activo=True).select_related("pm")
+    agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
+
+    if request.method == "POST":
+        vocal_id = request.POST.get("vocal_id") or ""
+        agenda_id = request.POST.get("agenda") or ""
+        fecha_str = request.POST.get("TPE_FEC") or ""
+        resolucion = (request.POST.get("TPE_RESOL") or "").strip()
+
+        if not vocal_id or not agenda_id or not fecha_str:
+            messages.error(request, "Complete Vocal, Agenda y Fecha.")
+        else:
+            try:
+                vocal = get_object_or_404(VOCAL_TPE, pk=vocal_id, activo=True)
+                agenda = get_object_or_404(AGENDA, pk=agenda_id)
+
+                with transaction.atomic():
+                    tpe_num = None
+
+                    if request.POST.get("autogenerar_numero") == "1":
+                        existentes = list(
+                            AUTOTPE.objects.filter(TPE_NUM__isnull=False)
+                            .values_list("TPE_NUM", flat=True)
+                        )
+                        tpe_num = next_num_yy(existentes, today=date.today())
+
+                    auto = AUTOTPE.objects.create(
+                        sim=sim,
+                        abog=abogado,
+                        agenda=agenda,
+                        vocal_excusado=vocal,
+                        TPE_NUM=tpe_num,
+                        TPE_FEC=fecha_str,
+                        TPE_TIPO="AUTO_EXCUSA",
+                        TPE_RESOL=resolucion or None,
+                    )
+
+                messages.success(request, f"✅ Auto de Excusa creado ({tpe_num or 'S/N'}).")
+                return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+            except Exception as exc:
+                messages.error(request, f"❌ Error al crear Auto de Excusa: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "vocales": vocales,
+        "agendas": agendas,
+    }
+    return render(request, "tpe_app/abogado/auto_excusa_form.html", context)

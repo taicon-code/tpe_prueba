@@ -1,0 +1,152 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Secretario de Actas - Dashboard{% endblock %}
+{% block navbar_title %}🏛️ Secretario de Actas{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .agenda-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .agenda-card:hover {
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.1);
+        border-color: #1e3c72;
+    }
+
+    .agenda-card .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .agenda-card .fecha {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #111827;
+    }
+
+    .agenda-card .pendiente-badge {
+        background: #fca5a5;
+        color: #7f1d1d;
+        padding: 0.3rem 0.7rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .agenda-card .desc {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+
+    .agenda-card .link-btn {
+        display: inline-block;
+        background: #1e3c72;
+        color: #fff;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: background 0.2s;
+    }
+
+    .agenda-card .link-btn:hover {
+        background: #2a5298;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-top: 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #9ca3af;
+    }
+</style>
+
+<!-- Header info -->
+<div style="margin-bottom: 2rem;">
+    <h1>📋 Panel de Secretario de Actas</h1>
+    <p style="color: #6b7280; font-size: 0.95rem;">
+        Confirma o modifica los dictámenes emitidos por los abogados en las agendas del tribunal
+    </p>
+</div>
+
+<!-- Agendas Próximas -->
+{% if agendas_proximas %}
+<div class="section-title">📅 Próximas Agendas</div>
+<div class="dashboard-grid">
+    {% for agenda in agendas_proximas %}
+    <a href="{% url 'vocal_agenda_detalle' agenda.pk %}" class="agenda-card" style="text-decoration: none;">
+        <div class="header">
+            <span class="fecha">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</span>
+            {% if pendientes_por_agenda|key:agenda.pk > 0 %}
+            <span class="pendiente-badge">
+                🔔 {{ pendientes_por_agenda|key:agenda.pk }} pendiente{{ pendientes_por_agenda|key:agenda.pk|pluralize }}
+            </span>
+            {% endif %}
+        </div>
+        <div class="desc">
+            {{ agenda.AG_DESC|default:"Sin descripción" }}
+        </div>
+        <span class="link-btn">Ver Agenda →</span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="section-title">📅 Próximas Agendas</div>
+<div class="empty-state">
+    <p>No hay agendas programadas para próximas fechas</p>
+</div>
+{% endif %}
+
+<!-- Agendas Pasadas (últimas 10) -->
+{% if agendas_pasadas %}
+<div class="section-title">📜 Agendas Anteriores</div>
+<div style="display: grid; gap: 0.75rem;">
+    {% for agenda in agendas_pasadas %}
+    <a href="{% url 'vocal_agenda_detalle' agenda.pk %}" style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #374151;
+        transition: all 0.2s;
+    " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
+        <span style="font-weight: 500;">{{ agenda.AG_FECPROG|date:"d/m/Y" }} — {{ agenda.AG_DESC|truncatewords:5 }}</span>
+        <span style="font-size: 0.8rem; color: #6b7280;">Ver →</span>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

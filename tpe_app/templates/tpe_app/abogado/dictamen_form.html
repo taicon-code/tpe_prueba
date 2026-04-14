@@ -28,10 +28,26 @@
             <small style="color:#666;">Debe existir una agenda creada (puede ser vía admin).</small>
         </div>
 
-        <div style="margin-bottom: 1rem;">
-            <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Conclusión / Recomendación (opcional)</label>
-            <input class="form-control" type="text" name="DIC_CONCL" maxlength="255" placeholder="Ej: ARCHIVO OBRADOS / SANCION..." />
-        </div>
+        {% if militares %}
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-weight:600; margin-bottom:0.75rem;">Conclusión por Militar (opcional)</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                    {% for pm in militares %}
+                    <div style="background:#f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem;">
+                        <div style="font-weight:600; margin-bottom:0.5rem; color:#1e3c72;">
+                            {% if pm.PM_GRADO %}{{ pm.get_PM_GRADO_display }} {% endif %}{{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}
+                        </div>
+                        <input class="form-control" type="text" name="DIC_CONCL_{{ pm.pk }}" maxlength="255" placeholder="Conclusión..." />
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Conclusión / Recomendación (opcional)</label>
+                <input class="form-control" type="text" name="DIC_CONCL" maxlength="255" placeholder="Ej: ARCHIVO OBRADOS / SANCION..." />
+            </div>
+        {% endif %}
 
         <div style="display:flex; gap: 0.75rem; margin-top: 1.25rem;">
             <button class="btn" type="submit" name="autogenerar_numero" value="1">⚙️ Crear y generar N°</button>

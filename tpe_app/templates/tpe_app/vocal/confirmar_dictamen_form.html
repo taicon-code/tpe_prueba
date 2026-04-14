@@ -1,0 +1,304 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Confirmar Dictamen - Secretario{% endblock %}
+{% block navbar_title %}✓ Confirmar Dictamen{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: .875rem;
+        margin-bottom: 1.25rem;
+    }
+    .back-link:hover { color: #1e3c72; }
+
+    .banner {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #fff;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: .75rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-item { display: flex; flex-direction: column; gap: .15rem; }
+    .info-item .lbl { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #9ca3af; }
+    .info-item .val { font-size: .9rem; color: #111827; font-weight: 500; }
+
+    .section-card { margin-bottom: 1.75rem; }
+    .section-card .card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: .85rem;
+    }
+
+    .concl-box {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .concl-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .concl-text {
+        font-size: 0.95rem;
+        color: #111827;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: #1e3c72;
+        font-size: 0.9rem;
+    }
+
+    .form-group textarea {
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #1e3c72;
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #1e3c72;
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background: #2a5298;
+    }
+
+    .btn-secondary {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+    .btn-secondary:hover {
+        background: #d1d5db;
+    }
+
+    .btn-success {
+        background: #059669;
+        color: #fff;
+    }
+
+    .btn-success:hover {
+        background: #047857;
+    }
+
+    .option-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .option-card input[type="radio"] {
+        margin-right: 0.75rem;
+    }
+
+    .option-card input[type="radio"]:checked + .option-label {
+        color: #1e3c72;
+        font-weight: 700;
+    }
+
+    .option-card:has(input:checked) {
+        border-color: #1e3c72;
+        background: #f0f7ff;
+    }
+
+    .option-label {
+        font-weight: 600;
+        color: #111827;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .option-desc {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+        margin-left: 1.75rem;
+    }
+</style>
+
+<!-- Volver -->
+<a href="{% url 'vocal_agenda_detalle' dictamen.agenda.pk %}" class="back-link">← Volver a la Agenda</a>
+
+<!-- ── BANNER ──────────────────────────── -->
+<div class="banner">
+    <h1>✓ Confirmar Dictamen</h1>
+    <p>Revisa la conclusión del abogado y confirma o modifica según la decisión del tribunal</p>
+</div>
+
+<!-- ── INFORMACIÓN DEL DICTAMEN ──────────────────────────── -->
+<div class="card section-card">
+    <div class="card-title">📋 Información del Dictamen</div>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <span class="lbl">Sumario</span>
+            <span class="val">{{ dictamen.sim.SIM_COD }}</span>
+        </div>
+        <div class="info-item">
+            <span class="lbl">Militar</span>
+            <span class="val">{{ dictamen.pm.PM_GRADO|default:"" }} {{ dictamen.pm.PM_NOMBRE }} {{ dictamen.pm.PM_PATERNO }}{% if dictamen.pm.PM_MATERNO %} {{ dictamen.pm.PM_MATERNO }}{% endif %}</span>
+        </div>
+        <div class="info-item">
+            <span class="lbl">Abogado Asesor</span>
+            <span class="val">{{ dictamen.abog.ABOG_NOMBRE|default:"—" }}</span>
+        </div>
+        <div class="info-item">
+            <span class="lbl">Número de Dictamen</span>
+            <span class="val">{{ dictamen.DIC_NUM|default:"S/N" }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- ── CONCLUSIÓN DEL ABOGADO ──────────────────────────── -->
+<div class="card section-card">
+    <div class="card-title">📝 Conclusión del Abogado</div>
+
+    <div class="concl-box">
+        <div class="concl-label">Veredicto / Recomendación</div>
+        <div class="concl-text">
+            {{ dictamen.DIC_CONCL|default:"Sin conclusión registrada" }}
+        </div>
+    </div>
+</div>
+
+<!-- ── ACCIONES DEL SECRETARIO ──────────────────────────── -->
+<form method="POST" class="card section-card">
+    {% csrf_token %}
+
+    <div class="card-title">✓ Tu Decisión como Secretario de Actas</div>
+
+    <!-- Opción 1: Confirmar sin cambios -->
+    <div class="option-card">
+        <label class="option-label">
+            <input type="radio" name="accion" value="confirmar" checked>
+            <span>✓ Confirmar sin cambios</span>
+        </label>
+        <div class="option-desc">
+            El tribunal confirma la conclusión del abogado tal como está
+        </div>
+    </div>
+
+    <!-- Opción 2: Modificar conclusión -->
+    <div class="option-card">
+        <label class="option-label">
+            <input type="radio" name="accion" value="modificar">
+            <span>◐ Modificar conclusión</span>
+        </label>
+        <div class="option-desc">
+            El tribunal modifica o cambia el veredicto recomendado
+        </div>
+    </div>
+
+    <!-- Campo de texto para modificación -->
+    <div id="modify-section" style="display: none; margin-top: 1.5rem;">
+        <div class="form-group">
+            <label for="DIC_CONCL_SEC">Conclusión modificada por el tribunal</label>
+            <textarea
+                id="DIC_CONCL_SEC"
+                name="DIC_CONCL_SEC"
+                placeholder="Ingresa la nueva conclusión del tribunal...">{{ dictamen.DIC_CONCL_SEC|default:"" }}</textarea>
+        </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="action-buttons">
+        <a href="{% url 'vocal_agenda_detalle' dictamen.agenda.pk %}" class="btn btn-secondary">
+            ← Cancelar
+        </a>
+        <button type="submit" class="btn btn-success">
+            ✓ Guardar Decisión
+        </button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radioButtons = document.querySelectorAll('input[name="accion"]');
+    const modifySection = document.getElementById('modify-section');
+    const textareaField = document.getElementById('DIC_CONCL_SEC');
+
+    function updateUI() {
+        const selectedValue = document.querySelector('input[name="accion"]:checked').value;
+        modifySection.style.display = selectedValue === 'modificar' ? 'block' : 'none';
+
+        if (selectedValue === 'modificar') {
+            textareaField.focus();
+        }
+    }
+
+    radioButtons.forEach(radio => {
+        radio.addEventListener('change', updateUI);
+    });
+
+    updateUI();
+});
+</script>
+
+{% endblock %}

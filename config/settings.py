@@ -12,20 +12,29 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+import environ
+import os
+import pymysql
+pymysql.version_info = (2, 2, 1, "final", 0)
+pymysql.install_as_MySQLdb()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-s9zcz$62r#do88q5x)s$!d-t^yiq*t0218prw*t!6v6#_=)1w$'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 
 # Application definition
@@ -73,23 +82,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-import environ
-import os
-
-env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': env('DB_NAME'),
         'USER': env('DB_USER'),
         'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+        'HOST': env('DB_HOST', default='127.0.0.1'),
+        'PORT': env('DB_PORT', default='3306'),
     }
 }
 
