@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
 from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, PM_SIM, RR, CustodiaSIM
-from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm
+from ..models import SIM, PM, ABOG, PM_SIM, RR, CustodiaSIM, AGENDA
+from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm
 from datetime import date, timedelta
 
 @rol_requerido('ADMINISTRATIVO')
@@ -155,21 +155,21 @@ def registrar_sumario(request):
 
 @rol_requerido('ADMINISTRATIVO')
 def agendar_sumario(request):
-    """Formulario para agendar un sumario (asignar abogado)"""
+    """Formulario para agendar un sumario a una agenda existente"""
 
     if request.method == 'POST':
         form = AgendarSumarioForm(request.POST)
 
         if form.is_valid():
+            agenda = form.cleaned_data['agenda']
             sumario = form.cleaned_data['sumario']
             abogado = form.cleaned_data['abogado']
-            fecha_agenda = form.cleaned_data['fecha_agenda']
 
             try:
                 with transaction.atomic():
                     # Actualizar el sumario
                     sumario.SIM_ESTADO = 'PROCESO_EN_EL_TPE'
-                    sumario.SIM_FASE = 'EN_DICTAMEN_1RA'  # ✅ NUEVO: fase detallada
+                    sumario.SIM_FASE = 'EN_DICTAMEN_1RA'
                     sumario.save()
                     sumario.abogados.set([abogado])
 
@@ -184,8 +184,8 @@ def agendar_sumario(request):
 
                     messages.success(
                         request,
-                        f'✅ Sumario {sumario.SIM_COD} agendado para {abogado} '
-                        f'el {fecha_agenda.strftime("%d/%m/%Y")}'
+                        f'✅ Sumario {sumario.SIM_COD} agendado en agenda {agenda.AG_NUM} '
+                        f'para {abogado} el {agenda.AG_FECPROG.strftime("%d/%m/%Y")}'
                     )
             except Exception as exc:
                 messages.error(request, f'❌ Error al agendar: {exc}')
@@ -198,12 +198,13 @@ def agendar_sumario(request):
         if sim_id:
             initial['sumario'] = sim_id
         form = AgendarSumarioForm(initial=initial)
-    
+
     context = {
         'form': form,
         'sumarios_pendientes': SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True).count(),
+        'agendas_programadas': AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').count(),
     }
-    
+
     return render(request, 'tpe_app/agendar_sumario.html', context)
 
 @rol_requerido('ADMINISTRATIVO')
@@ -254,4 +255,85 @@ def agendar_rr(request):
         'rr_pendientes': RR.objects.filter(abog__isnull=True).count(),
     }
     return render(request, 'tpe_app/agendar_rr.html', context)
+
+
+# ============================================================
+# ✅ NUEVO v3.2: Gestión de Agendas (Admin1)
+# ============================================================
+
+@rol_requerido('ADMINISTRATIVO')
+def crear_agenda(request):
+    """Admin1 crea una nueva agenda"""
+
+    if request.method == 'POST':
+        form = AgendaForm(request.POST)
+
+        if form.is_valid():
+            try:
+                agenda = form.save()
+                messages.success(
+                    request,
+                    f'✅ Agenda {agenda.AG_NUM} creada para {agenda.AG_FECPROG.strftime("%d/%m/%Y")}'
+                )
+                return redirect('lista_agendas')
+            except Exception as exc:
+                messages.error(request, f'❌ Error al crear agenda: {exc}')
+    else:
+        form = AgendaForm()
+
+    context = {'form': form}
+    return render(request, 'tpe_app/crear_agenda.html', context)
+
+
+@rol_requerido('ADMINISTRATIVO')
+def lista_agendas(request):
+    """Lista todas las agendas con su estado y opciones de edición"""
+
+    agendas = AGENDA.objects.all().order_by('-AG_FECPROG')
+
+    context = {
+        'agendas': agendas,
+        'total_programadas': AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').count(),
+        'total_realizadas': AGENDA.objects.filter(AG_ESTADO='REALIZADA').count(),
+        'total_suspendidas': AGENDA.objects.filter(AG_ESTADO='SUSPENDIDA').count(),
+    }
+
+    return render(request, 'tpe_app/lista_agendas.html', context)
+
+
+@rol_requerido('ADMINISTRATIVO')
+def editar_agenda_resultado(request, ag_id):
+    """Admin1 registra el resultado de una agenda (realizada/suspendida/reprogramada)"""
+
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+
+    if request.method == 'POST':
+        form = AgendaResultadoForm(request.POST, instance=agenda)
+
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    agenda = form.save()
+
+                    # Determinar mensaje según estado
+                    if agenda.AG_ESTADO == 'REALIZADA':
+                        msg = f'✅ Agenda {agenda.AG_NUM} registrada como REALIZADA el {agenda.AG_FECREAL.strftime("%d/%m/%Y")}'
+                    elif agenda.AG_ESTADO == 'SUSPENDIDA':
+                        msg = f'⚠️ Agenda {agenda.AG_NUM} registrada como SUSPENDIDA'
+                    else:
+                        msg = f'📅 Agenda {agenda.AG_NUM} REPROGRAMADA'
+
+                    messages.success(request, msg)
+                    return redirect('lista_agendas')
+            except Exception as exc:
+                messages.error(request, f'❌ Error: {exc}')
+    else:
+        form = AgendaResultadoForm(instance=agenda)
+
+    context = {
+        'form': form,
+        'agenda': agenda,
+    }
+
+    return render(request, 'tpe_app/agenda_resultado.html', context)
 

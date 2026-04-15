@@ -30,6 +30,11 @@ urlpatterns = [
     path('administrativo/rr/registrar/', views.registrar_rr, name='registrar_rr'),
     path('administrativo/rr/agendar/', views.agendar_rr, name='agendar_rr'),
 
+    # ✅ NUEVO v3.2: Gestión de Agendas (Admin1)
+    path('administrativo/agendas/crear/', views.crear_agenda, name='crear_agenda'),
+    path('administrativo/agendas/', views.lista_agendas, name='lista_agendas'),
+    path('administrativo/agendas/<int:ag_id>/resultado/', views.editar_agenda_resultado, name='agenda_resultado'),
+
     # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
     # path('administrativo/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='entregar_carpeta'),
     # path('administrativo/custodia/<int:sim_id>/devolucion/', views.admin2_recibir_carpeta, name='devolucion_carpeta'),

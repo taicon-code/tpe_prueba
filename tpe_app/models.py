@@ -443,12 +443,20 @@ class CustodiaSIM(models.Model):
 # ============================================================
 class AGENDA(models.Model):
     """Agendas programadas de reuniones del tribunal TPE"""
-    
+
     TIPO_AGENDA_CHOICES = [
         ('ORDINARIA',        'Sesión Ordinaria'),
         ('EXTRAORDINARIA',   'Sesión Extraordinaria'),
     ]
-    
+
+    # ✅ NUEVO v3.2: Estados de la agenda
+    ESTADO_CHOICES = [
+        ('PROGRAMADA',    'Programada'),
+        ('REALIZADA',     'Realizada'),
+        ('SUSPENDIDA',    'Suspendida'),
+        ('REPROGRAMADA',  'Reprogramada'),
+    ]
+
     AG_NUM = models.CharField(
         max_length=50,
         unique=True,
@@ -474,6 +482,15 @@ class AGENDA(models.Model):
         blank=True,
         db_column='AG_TIPO',
         verbose_name='Tipo de Agenda'
+    )
+
+    # ✅ NUEVO v3.2: Estado de la agenda (programada, realizada, suspendida, reprogramada)
+    AG_ESTADO = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default='PROGRAMADA',
+        db_column='AG_ESTADO',
+        verbose_name='Estado de la Agenda'
     )
     
     class Meta:

@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, RES, RR, CustodiaSIM
+from .models import SIM, PM, PM_SIM, ABOG, RES, RR, CustodiaSIM, AGENDA
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -204,35 +204,102 @@ PMSIMFormSet = inlineformset_factory(
 
 
 class AgendarSumarioForm(forms.Form):
-    """Formulario para agendar un sumario (asignar abogado)"""
-    
+    """Formulario para agendar un sumario a una agenda existente"""
+
+    # ✅ NUEVO v3.2: Seleccionar agenda existente (en lugar de fecha suelta)
+    agenda = forms.ModelChoiceField(
+        queryset=AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').order_by('AG_FECPROG'),
+        label='Agenda',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label='Seleccione una agenda...'
+    )
+
     sumario = forms.ModelChoiceField(
         queryset=SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True),
         label='Sumario a Agendar',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un sumario...'
     )
-    
+
     abogado = forms.ModelChoiceField(
         queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
         label='Abogado Asignado',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un abogado...'
     )
-    
-    fecha_agenda = forms.DateField(
-        label='Fecha de Agenda/Reunión',
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
-        })
-    )
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Personalizar el label del queryset de sumarios
+        # Personalizar displays
         self.fields['sumario'].label_from_instance = lambda obj: f"{obj.SIM_COD} - {obj.SIM_RESUM[:50]}"
         self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+        # ✅ NUEVO v3.2: Mostrar número, tipo y fecha en el dropdown de agendas
+        self.fields['agenda'].label_from_instance = lambda obj: f"[{obj.AG_NUM}] {obj.get_AG_TIPO_display()} — {obj.AG_FECPROG.strftime('%d/%m/%Y') if obj.AG_FECPROG else '—'}"
+
+
+# ✅ NUEVO v3.2: Formularios para gestionar agendas
+class AgendaForm(forms.ModelForm):
+    """Crear o editar una agenda"""
+
+    class Meta:
+        model = AGENDA
+        fields = ['AG_NUM', 'AG_TIPO', 'AG_FECPROG']
+        widgets = {
+            'AG_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: AG-001/26',
+                'help_text': 'Número único de la agenda'
+            }),
+            'AG_TIPO': forms.Select(attrs={'class': 'form-control'}),
+            'AG_FECPROG': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+        }
+        labels = {
+            'AG_NUM': 'Número de Agenda',
+            'AG_TIPO': 'Tipo de Agenda',
+            'AG_FECPROG': 'Fecha Programada',
+        }
+
+
+class AgendaResultadoForm(forms.ModelForm):
+    """Registrar resultado de una agenda (realizada/suspendida/reprogramada)"""
+
+    # Opciones limitadas: no se puede volver a PROGRAMADA
+    AG_ESTADO = forms.ChoiceField(
+        choices=[
+            ('REALIZADA', 'Realizada (sesión se realizó)'),
+            ('SUSPENDIDA', 'Suspendida (sin nueva fecha aún)'),
+            ('REPROGRAMADA', 'Reprogramada (nueva fecha)'),
+        ],
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        label='¿Qué pasó con esta agenda?'
+    )
+
+    class Meta:
+        model = AGENDA
+        fields = ['AG_ESTADO', 'AG_FECREAL']
+        widgets = {
+            'AG_FECREAL': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+        }
+        labels = {
+            'AG_FECREAL': 'Fecha Realizada (si aplica)',
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        estado = cleaned_data.get('AG_ESTADO')
+        fecreal = cleaned_data.get('AG_FECREAL')
+
+        # Si es REALIZADA, AG_FECREAL es obligatoria
+        if estado == 'REALIZADA' and not fecreal:
+            raise forms.ValidationError('La fecha realizada es obligatoria si la sesión fue realizada.')
+
+        return cleaned_data
 
 class RegistrarRRForm(forms.ModelForm):
     """Formulario para registrar un nuevo Recurso de Reconsideración"""
