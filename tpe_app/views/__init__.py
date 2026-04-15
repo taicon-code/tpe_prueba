@@ -11,6 +11,15 @@ from .abogado_documentos_views import (
     abogado_sumario_detalle,
 )
 from .buscador_views import buscador_dashboard, upload_foto_pm
-from .administrativo_views import administrativo_dashboard, registrar_sumario, agendar_sumario, registrar_rr, agendar_rr
+from .administrativo_views import (
+    administrativo_dashboard,
+    registrar_sumario,
+    agendar_sumario,
+    registrar_rr,
+    agendar_rr,
+    crear_agenda,
+    lista_agendas,
+    editar_agenda_resultado,
+)
 from .export_views import export_person_pdfs_zip, export_person_excel
 from .vocal_views import vocal_dashboard, vocal_agenda_detalle, vocal_confirmar_dictamen
