@@ -29,6 +29,15 @@ urlpatterns = [
     path('administrativo/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
     path('administrativo/rr/registrar/', views.registrar_rr, name='registrar_rr'),
     path('administrativo/rr/agendar/', views.agendar_rr, name='agendar_rr'),
+
+    # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
+    # path('administrativo/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='entregar_carpeta'),
+    # path('administrativo/custodia/<int:sim_id>/devolucion/', views.admin2_recibir_carpeta, name='devolucion_carpeta'),
+    # path('administrativo/custodia/<int:sim_id>/historial/', views.historial_custodia, name='historial_custodia'),
+
+    # ✅ NUEVO v3.1: Historial de sumarios (interno y externo)
+    # path('sim/<int:sim_id>/historial/', views.historial_externo_sim, name='historial_externo_sim'),
+    # path('admin/sim/<int:sim_id>/auditoria/', views.historial_auditoria_sim, name='historial_auditoria_sim'),
     
     # Buscador - subir foto de PM
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),

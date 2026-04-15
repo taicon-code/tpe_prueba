@@ -42,6 +42,7 @@
                 <th>Grado</th>
                 <th>Nombre Completo</th>
                 <th>Resumen</th>
+                <th>Custodia</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -53,6 +54,18 @@
                 <td>{{ sim.militares.first.PM_GRADO|default:"-" }}</td>
                 <td>{{ sim.militares.first.PM_NOMBRE|default:"" }} {{ sim.militares.first.PM_PATERNO|default:"" }} {{ sim.militares.first.PM_MATERNO|default:"" }}</td>
                 <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
+                {# ✅ NUEVO v3.1: Mostrar si tiene custodia activa #}
+                <td style="font-size: 0.85rem;">
+                    {% with c=sim.custodio_actual %}
+                        {% if c and c.abog.abog_id == abogado.abog_id %}
+                            <span class="badge" style="background: #10b981; color: #fff; font-size: 0.75rem;">📂 Conmigo</span>
+                        {% elif c %}
+                            <span class="badge" style="background: #f97316; color: #fff; font-size: 0.75rem;">📭 Con otro</span>
+                        {% else %}
+                            <span class="badge" style="background: #6b7280; color: #fff; font-size: 0.75rem;">❓ Sin registrar</span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
                 <td>
                     <a href="{% url 'abogado_sumario_detalle' sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">Ver</a>
                 </td>
