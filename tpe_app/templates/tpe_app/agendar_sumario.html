@@ -52,7 +52,7 @@
                 </div>
             {% endif %}
             <small style="color: #666; font-size: 0.85rem;">
-                Seleccione una agenda que esté programada (aparecen: [Número] Tipo — dd/mm/yyyy)
+                📅 Formato: [AG-001/26] Sesión Ordinaria — 15/04/2026
             </small>
         </div>
 
@@ -67,7 +67,7 @@
                 </div>
             {% endif %}
             <small style="color: #666; font-size: 0.85rem;">
-                Solo se muestran sumarios en estado "Para Agenda"
+                📄 Formato: [SIM-COD] — Grado Apellido — Resumen del caso
             </small>
         </div>
 
@@ -82,8 +82,25 @@
                 </div>
             {% endif %}
             <small style="color: #666; font-size: 0.85rem;">
-                Abogado que manejará el sumario en el dictamen
+                ⚖️ Abogado que realizará el dictamen y la 1ra resolución
             </small>
+        </div>
+    </div>
+
+    {# ✅ NUEVO v3.2: Resumen visual de lo seleccionado #}
+    <div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: #1565c0;">📌 Resumen de lo que va a agendar:</h3>
+        <div id="resumen-agenda" style="font-size: 0.95rem; line-height: 1.8; color: #333;">
+            <p style="margin: 0.5rem 0;">
+                <strong>Agenda:</strong> <span style="color: #d32f2f;" id="ag-num">—</span>
+            </p>
+            <p style="margin: 0.5rem 0;">
+                <strong>Sumario:</strong> <span style="color: #d32f2f;" id="sim-cod">—</span>
+                <br><small style="color: #666; margin-left: 1rem;">Militares: <span id="militares">—</span></small>
+            </p>
+            <p style="margin: 0.5rem 0;">
+                <strong>Abogado:</strong> <span style="color: #d32f2f;" id="abogado-nombre">—</span>
+            </p>
         </div>
     </div>
     
@@ -113,4 +130,59 @@
         cursor: pointer;
     }
 </style>
+
+{# ✅ NUEVO v3.2: JavaScript para actualizar resumen en tiempo real #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const agendaSelect = document.querySelector('[name="agenda"]');
+    const sumarioSelect = document.querySelector('[name="sumario"]');
+    const abogadoSelect = document.querySelector('[name="abogado"]');
+
+    const agNumSpan = document.getElementById('ag-num');
+    const simCodSpan = document.getElementById('sim-cod');
+    const militaresSpan = document.getElementById('militares');
+    const abogadoNombreSpan = document.getElementById('abogado-nombre');
+
+    function actualizarResumen() {
+        // Actualizar agenda
+        if (agendaSelect && agendaSelect.value) {
+            const agendaOption = agendaSelect.options[agendaSelect.selectedIndex];
+            agNumSpan.textContent = agendaOption.text;
+        } else {
+            agNumSpan.textContent = '—';
+        }
+
+        // Actualizar sumario (simplificado, no mostramos militares aquí por limitaciones)
+        if (sumarioSelect && sumarioSelect.value) {
+            const sumarioOption = sumarioSelect.options[sumarioSelect.selectedIndex];
+            const sumarioText = sumarioOption.text;
+            // Extraer SIM-COD (primera parte antes del " — ")
+            const parts = sumarioText.split(' — ');
+            simCodSpan.textContent = parts[0];
+            if (parts.length > 1) {
+                militaresSpan.textContent = parts[1];
+            }
+        } else {
+            simCodSpan.textContent = '—';
+            militaresSpan.textContent = '—';
+        }
+
+        // Actualizar abogado
+        if (abogadoSelect && abogadoSelect.value) {
+            const abogadoOption = abogadoSelect.options[abogadoSelect.selectedIndex];
+            abogadoNombreSpan.textContent = abogadoOption.text;
+        } else {
+            abogadoNombreSpan.textContent = '—';
+        }
+    }
+
+    // Actualizar cuando cambie cualquier select
+    if (agendaSelect) agendaSelect.addEventListener('change', actualizarResumen);
+    if (sumarioSelect) sumarioSelect.addEventListener('change', actualizarResumen);
+    if (abogadoSelect) abogadoSelect.addEventListener('change', actualizarResumen);
+
+    // Actualizar al cargar la página
+    actualizarResumen();
+});
+</script>
 {% endblock %}

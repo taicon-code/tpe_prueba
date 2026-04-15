@@ -231,9 +231,14 @@ class AgendarSumarioForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Personalizar displays
-        self.fields['sumario'].label_from_instance = lambda obj: f"{obj.SIM_COD} - {obj.SIM_RESUM[:50]}"
+        # ✅ Mostrar sumario con código, militares involucrados y resumen
+        def sumario_display(obj):
+            militares = ", ".join([f"{pm.PM_GRADO} {pm.PM_PATERNO}" for pm in obj.militares.all()[:2]])
+            return f"{obj.SIM_COD} — {militares} — {obj.SIM_RESUM[:40]}"
+
+        self.fields['sumario'].label_from_instance = sumario_display
         self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
-        # ✅ NUEVO v3.2: Mostrar número, tipo y fecha en el dropdown de agendas
+        # ✅ Mostrar número, tipo y fecha en el dropdown de agendas
         self.fields['agenda'].label_from_instance = lambda obj: f"[{obj.AG_NUM}] {obj.get_AG_TIPO_display()} — {obj.AG_FECPROG.strftime('%d/%m/%Y') if obj.AG_FECPROG else '—'}"
 
 
