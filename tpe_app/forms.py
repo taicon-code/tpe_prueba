@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, RES, RR
+from .models import SIM, PM, PM_SIM, ABOG, RES, RR, CustodiaSIM
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -288,4 +288,88 @@ class AgendarRRForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['rr'].label_from_instance = lambda obj: f"Sumario {obj.sim.SIM_COD} - RES {obj.res.RES_NUM} ({obj.RR_RESUM or 'Sin resumen'})"
         self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+
+
+# ============================================================
+# FORMULARIOS DE CUSTODIA
+# ============================================================
+
+class CustodiaSIMForm(forms.ModelForm):
+    """Formulario para registrar custodia de una carpeta SIM"""
+
+    class Meta:
+        model = CustodiaSIM
+        fields = ['tipo_custodio', 'abog', 'observacion']
+        widgets = {
+            'tipo_custodio': forms.Select(attrs={'class': 'form-control'}),
+            'abog': forms.Select(attrs={'class': 'form-control'}),
+            'observacion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Notas sobre la entrega (opcional)'
+            }),
+        }
+        labels = {
+            'tipo_custodio': 'Tipo de Custodio',
+            'abog': 'Abogado (si aplica)',
+            'observacion': 'Observación',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Listar todos los abogados disponibles
+        self.fields['abog'].queryset = ABOG.objects.all()
+        self.fields['abog'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+        # Campo opcional
+        self.fields['abog'].required = False
+
+
+class EntregarCarpetaForm(forms.Form):
+    """Formulario para entregar carpeta a un abogado (Admin2)"""
+
+    tipo_custodio = forms.ChoiceField(
+        choices=[
+            ('ABOG_ASESOR', 'Abogado Asesor (1ra. Resolución)'),
+            ('ABOG_RR', 'Abogado (Recurso de Reconsideración)'),
+            ('ABOG_AUTOS', 'Abogado Autos (Ejecutoria)'),
+            ('ABOG_RAP', 'Abogado 3 (RAP/Búsqueda)'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Tipo de Custodia'
+    )
+
+    abogado = forms.ModelChoiceField(
+        queryset=ABOG.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Abogado que recibe'
+    )
+
+    observacion = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Notas sobre la entrega (opcional)'
+        }),
+        label='Observación'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+
+
+class RecibirCarpetaForm(forms.Form):
+    """Formulario para recibir carpeta de vuelta de un abogado (Admin2)"""
+
+    observacion = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Estado de la carpeta, notas (opcional)'
+        }),
+        label='Observación',
+        help_text='Ej: carpeta completa, falta documento, etc.'
+    )
 

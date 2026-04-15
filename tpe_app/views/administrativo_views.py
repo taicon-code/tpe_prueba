@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
 from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, PM_SIM, RR
+from ..models import SIM, PM, ABOG, PM_SIM, RR, CustodiaSIM
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm
 from datetime import date, timedelta
 
@@ -156,25 +156,41 @@ def registrar_sumario(request):
 @rol_requerido('ADMINISTRATIVO')
 def agendar_sumario(request):
     """Formulario para agendar un sumario (asignar abogado)"""
-    
+
     if request.method == 'POST':
         form = AgendarSumarioForm(request.POST)
-        
+
         if form.is_valid():
             sumario = form.cleaned_data['sumario']
             abogado = form.cleaned_data['abogado']
             fecha_agenda = form.cleaned_data['fecha_agenda']
-            
-            # Actualizar el sumario
-            sumario.SIM_ESTADO = 'PROCESO_EN_EL_TPE'
-            sumario.save()
-            sumario.abogados.set([abogado])
-            
-            messages.success(
-                request,
-                f'✅ Sumario {sumario.SIM_COD} agendado para {abogado} '
-                f'el {fecha_agenda.strftime("%d/%m/%Y")}'
-            )
+
+            try:
+                with transaction.atomic():
+                    # Actualizar el sumario
+                    sumario.SIM_ESTADO = 'PROCESO_EN_EL_TPE'
+                    sumario.SIM_FASE = 'EN_DICTAMEN_1RA'  # ✅ NUEVO: fase detallada
+                    sumario.save()
+                    sumario.abogados.set([abogado])
+
+                    # ✅ NUEVO v3.1: Registrar custodia automática (Admin1 entrega al abogado)
+                    CustodiaSIM.objects.create(
+                        sim=sumario,
+                        tipo_custodio='ABOG_ASESOR',
+                        abog=abogado,
+                        usuario=request.user,
+                        observacion='Entregado al agendar sumario (Admin1)'
+                    )
+
+                    messages.success(
+                        request,
+                        f'✅ Sumario {sumario.SIM_COD} agendado para {abogado} '
+                        f'el {fecha_agenda.strftime("%d/%m/%Y")}'
+                    )
+            except Exception as exc:
+                messages.error(request, f'❌ Error al agendar: {exc}')
+                return redirect('administrativo_dashboard')
+
             return redirect('administrativo_dashboard')
     else:
         initial = {}

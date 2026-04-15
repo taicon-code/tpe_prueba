@@ -231,6 +231,48 @@ class SIM(models.Model):
         ('OBSERVADO',           'Observado'),
     ]
 
+    # ✅ NUEVO: estados detallados del flujo (fase dentro del TPE)
+    FASE_CHOICES = [
+        # Fase 1: Primera Resolución
+        ('PARA_AGENDA',              'Para Agenda'),
+        ('EN_DICTAMEN_1RA',          'En Dictamen (1ra. Resolución)'),
+        ('1RA_RESOLUCION',           'Emitida 1ra. Resolución'),
+        ('NOTIFICACION_1RA',         'En Proceso de Notificación (1ra.)'),
+        ('NOTIFICADO_1RA',           'Notificado (1ra. Resolución)'),
+        # Fase 2: RR
+        ('EN_ESPERA_RR',             'En Espera de RR (plazo 15 días)'),
+        ('PARA_AGENDA_RR',           'Para Agenda (RR)'),
+        ('EN_DICTAMEN_RR',           'En Dictamen (2da. Resolución / RR)'),
+        ('2DA_RESOLUCION',           'Emitida 2da. Resolución (RR)'),
+        ('NOTIFICACION_RR',          'En Proceso de Notificación (RR)'),
+        ('NOTIFICADO_RR',            'Notificado (RR)'),
+        # Fase 3: RAP / TSP
+        ('EN_ESPERA_RAP',            'En Espera de RAP (plazo 3 días)'),
+        ('ELEVADO_TSP',              'Elevado al TSP'),
+        ('EN_AGENDA_EJECUTORIA',     'En Agenda (Auto de Ejecutoria)'),
+        # Fin
+        ('CONCLUIDO',                'Concluido'),
+    ]
+
+    # Mapeo automático de FASE → ESTADO general
+    FASE_A_ESTADO = {
+        'PARA_AGENDA': 'PARA_AGENDA',
+        'EN_DICTAMEN_1RA': 'PROCESO_EN_EL_TPE',
+        '1RA_RESOLUCION': 'PROCESO_EN_EL_TPE',
+        'NOTIFICACION_1RA': 'PROCESO_EN_EL_TPE',
+        'NOTIFICADO_1RA': 'PROCESO_EN_EL_TPE',
+        'EN_ESPERA_RR': 'PROCESO_EN_EL_TPE',
+        'PARA_AGENDA_RR': 'PROCESO_EN_EL_TPE',
+        'EN_DICTAMEN_RR': 'PROCESO_EN_EL_TPE',
+        '2DA_RESOLUCION': 'PROCESO_EN_EL_TPE',
+        'NOTIFICACION_RR': 'PROCESO_EN_EL_TPE',
+        'NOTIFICADO_RR': 'PROCESO_EN_EL_TPE',
+        'EN_ESPERA_RAP': 'PROCESO_EN_EL_TPE',
+        'ELEVADO_TSP': 'EN_APELACION_TSP',
+        'EN_AGENDA_EJECUTORIA': 'EN_APELACION_TSP',
+        'CONCLUIDO': 'CONCLUIDO',
+    }
+
     militares = models.ManyToManyField(
                     PM, through='PM_SIM', verbose_name='Militares investigados')
     abogados  = models.ManyToManyField(
@@ -243,6 +285,11 @@ class SIM(models.Model):
     SIM_ESTADO    = models.CharField(
                         max_length=30, choices=ESTADO_CHOICES,
                         default='PARA_AGENDA', verbose_name='Estado')
+    # ✅ NUEVO v3.1: fase detallada del flujo (1ra res, en espera RR, 2da res, etc.)
+    SIM_FASE      = models.CharField(
+                        max_length=30, choices=FASE_CHOICES,
+                        default='PARA_AGENDA', null=True, blank=True,
+                        verbose_name='Fase detallada del flujo')
     SIM_OBJETO    = models.TextField(verbose_name='Objeto del sumario')
     SIM_RESUM     = models.CharField(max_length=200, verbose_name='Resumen', help_text='Breve descripción del caso (máx. 20 caracteres)')
     SIM_AUTOFINAL = models.TextField(null=True, blank=True, verbose_name='Auto Final / Dictamen')
@@ -266,14 +313,38 @@ class SIM(models.Model):
             'EN_APELACION_TSP': 'danger',
         }
         return colores.get(self.SIM_ESTADO, 'secondary')
-    
+
+    def get_fase_color(self):
+        """Devuelve el color de badge según la fase detallada del sumario."""
+        if not self.SIM_FASE:
+            return 'secondary'
+        colores = {
+            'PARA_AGENDA': 'primary', 'PARA_AGENDA_RR': 'primary',
+            'EN_DICTAMEN_1RA': 'warning', 'EN_DICTAMEN_RR': 'warning',
+            '1RA_RESOLUCION': 'success', '2DA_RESOLUCION': 'success',
+            'NOTIFICACION_1RA': 'info', 'NOTIFICACION_RR': 'info',
+            'EN_ESPERA_RR': 'danger', 'EN_ESPERA_RAP': 'danger',
+            'ELEVADO_TSP': 'danger',
+            'CONCLUIDO': 'success',
+        }
+        return colores.get(self.SIM_FASE, 'secondary')
+
+    def custodio_actual(self):
+        """Retorna la CustodiaSIM activa (fecha_entrega=None), o None."""
+        return self.custodias.filter(fecha_entrega__isnull=True).first()
+
     def save(self, *args, **kwargs):
         # Convertir a MAYÚSCULAS
         self.SIM_COD       = self.SIM_COD.upper()       if self.SIM_COD       else self.SIM_COD
         self.SIM_OBJETO    = self.SIM_OBJETO.upper()    if self.SIM_OBJETO    else self.SIM_OBJETO
         self.SIM_RESUM     = self.SIM_RESUM.upper()     if self.SIM_RESUM     else self.SIM_RESUM
-        self.SIM_TIPO      = self.SIM_TIPO.upper()      if self.SIM_TIPO      else self.SIM_TIPO    
+        self.SIM_TIPO      = self.SIM_TIPO.upper()      if self.SIM_TIPO      else self.SIM_TIPO
         self.SIM_AUTOFINAL = self.SIM_AUTOFINAL.upper() if self.SIM_AUTOFINAL else self.SIM_AUTOFINAL
+
+        # ✅ NUEVO v3.1: Mapear SIM_FASE → SIM_ESTADO automáticamente
+        if self.SIM_FASE and self.SIM_FASE in self.FASE_A_ESTADO:
+            self.SIM_ESTADO = self.FASE_A_ESTADO[self.SIM_FASE]
+
         super().save(*args, **kwargs)
 
 # ============================================================
@@ -311,6 +382,60 @@ class ABOG_SIM(models.Model):
 
     def __str__(self):
         return f"{self.abog} → {self.sim.SIM_COD}"
+
+
+# ============================================================
+# MODELO 4C: CustodiaSIM — Trazabilidad de quién tiene la carpeta física
+# ============================================================
+class CustodiaSIM(models.Model):
+    """Registra quién tiene la carpeta física de cada sumario en cada momento."""
+
+    TIPO_CHOICES = [
+        ('ADMIN1',      'Administrativo 1 (Agendador)'),
+        ('ADMIN2',      'Administrativo 2 (Archivo SIM)'),
+        ('ADMIN3',      'Administrativo 3 (Notificador)'),
+        ('ABOG_ASESOR', 'Abogado Asesor (1ra. Resolución)'),
+        ('ABOG_RR',     'Abogado (Recurso de Reconsideración)'),
+        ('ABOG_AUTOS',  'Abogado Autos (Ejecutoria/Cumplimiento)'),
+        ('ABOG_RAP',    'Abogado 3 (Búsqueda/RAP)'),
+        ('TSP',         'Elevado al TSP (externo)'),
+        ('ARCHIVO',     'Archivado / Concluido'),
+    ]
+
+    sim           = models.ForeignKey(SIM, on_delete=models.CASCADE,
+                                      related_name='custodias', verbose_name='Sumario')
+    tipo_custodio = models.CharField(max_length=20, choices=TIPO_CHOICES,
+                                     verbose_name='Tipo de Custodio')
+    abog          = models.ForeignKey('ABOG', on_delete=models.SET_NULL,
+                                      null=True, blank=True, verbose_name='Abogado',
+                                      help_text="Si el custodio es un abogado")
+    usuario       = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
+                                      null=True, blank=True,
+                                      related_name='custodias_registradas',
+                                      verbose_name='Usuario que registró',
+                                      help_text="Usuario que registró la entrega")
+    observacion   = models.TextField(null=True, blank=True,
+                                     verbose_name='Observación')
+    fecha_recepcion = models.DateTimeField(auto_now_add=True,
+                                           verbose_name='Fecha de Recepción')
+    fecha_entrega   = models.DateTimeField(null=True, blank=True,
+                                           verbose_name='Fecha de Entrega',
+                                           help_text="Null = aún en su poder")
+
+    class Meta:
+        db_table            = 'custodia_sim'
+        verbose_name        = 'Custodia SIM'
+        verbose_name_plural = 'Custodias SIM'
+        ordering            = ['-fecha_recepcion']
+
+    def __str__(self):
+        estado = "en poder" if not self.fecha_entrega else "entregada"
+        return f"[{self.sim.SIM_COD}] → {self.get_tipo_custodio_display()} ({estado})"
+
+    @property
+    def activa(self):
+        """Indica si esta custodia está vigente (no entregada aún)."""
+        return self.fecha_entrega is None
 
 
 # ============================================================
