@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, RES, RR, CustodiaSIM, AGENDA
+from .models import SIM, PM, PM_SIM, ABOG, RES, RR, CustodiaSIM, AGENDA, RAP, RAEE, AUTOTPE
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -121,11 +121,27 @@ class PMSIMForm(forms.ModelForm):
         choices=[('', '---------')] + list(PM.ARMA_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-    
+
+    PM_ESPEC = forms.CharField(
+        label='Especialidad',
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: INFANTERÍA, BLINDADOS...'
+        })
+    )
+
+    PM_FOTO = forms.ImageField(
+        label='Foto',
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
+    )
+
     class Meta:
         model = PM_SIM
-        fields = []  # Solo usamos el campo personalizado PM_CI
-    
+        fields = []  # Solo usamos los campos personalizados
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Si ya tiene PM asignado, precargar datos (para edición/errores)
@@ -138,6 +154,7 @@ class PMSIMForm(forms.ModelForm):
             self.fields['PM_ESCALAFON'].initial = pm.PM_ESCALAFON
             self.fields['PM_GRADO'].initial = pm.PM_GRADO
             self.fields['PM_ARMA'].initial = pm.PM_ARMA
+            self.fields['PM_ESPEC'].initial = pm.PM_ESPEC
     
     def clean(self):
         cleaned_data = super().clean()
@@ -153,6 +170,7 @@ class PMSIMForm(forms.ModelForm):
         escalafon = cleaned_data.get('PM_ESCALAFON') or None
         grado = cleaned_data.get('PM_GRADO') or None
         arma = cleaned_data.get('PM_ARMA') or None
+        espec = (cleaned_data.get('PM_ESPEC') or '').strip() or None
 
         # Form vacío: permitirlo (útil cuando agregas/quitas filas dinámicamente)
         if not any([ci, nombre, paterno, materno, escalafon, grado, arma]):
@@ -184,6 +202,7 @@ class PMSIMForm(forms.ModelForm):
             'PM_ESCALAFON': escalafon,
             'PM_GRADO': grado,
             'PM_ARMA': arma,
+            'PM_ESPEC': espec,
             'PM_NOMBRE': nombre,
             'PM_PATERNO': paterno,
             'PM_MATERNO': materno or None,
@@ -221,11 +240,10 @@ class AgendarSumarioForm(forms.Form):
         empty_label='Seleccione un sumario...'
     )
 
-    abogado = forms.ModelChoiceField(
+    abogados = forms.ModelMultipleChoiceField(
         queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
-        label='Abogado Asignado',
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        empty_label='Seleccione un abogado...'
+        label='Abogado(s) Asignado(s)',
+        widget=forms.CheckboxSelectMultiple(),
     )
 
     def __init__(self, *args, **kwargs):
@@ -237,24 +255,43 @@ class AgendarSumarioForm(forms.Form):
             return f"{obj.SIM_COD} — {militares} — {obj.SIM_RESUM[:40]}"
 
         self.fields['sumario'].label_from_instance = sumario_display
-        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+        self.fields['abogados'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
         # ✅ Mostrar número, tipo y fecha en el dropdown de agendas
         self.fields['agenda'].label_from_instance = lambda obj: f"[{obj.AG_NUM}] {obj.get_AG_TIPO_display()} — {obj.AG_FECPROG.strftime('%d/%m/%Y') if obj.AG_FECPROG else '—'}"
+
+
+class GestionarAbogadosSIMForm(forms.Form):
+    """Agregar o quitar abogados de un sumario ya agendado"""
+
+    abogados = forms.ModelMultipleChoiceField(
+        queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
+        label='Abogados asignados',
+        widget=forms.CheckboxSelectMultiple(),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['abogados'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
 
 
 # ✅ NUEVO v3.2: Formularios para gestionar agendas
 class AgendaForm(forms.ModelForm):
     """Crear o editar una agenda"""
 
+    AG_NUM = forms.CharField(
+        max_length=50,
+        label='Número de Agenda',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: 1ra. Reunión/26 o AG-001/26',
+        }),
+        help_text='Número único de la agenda (ej: "1ra. Reunión/26")'
+    )
+
     class Meta:
         model = AGENDA
         fields = ['AG_NUM', 'AG_TIPO', 'AG_FECPROG']
         widgets = {
-            'AG_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: AG-001/26',
-                'help_text': 'Número único de la agenda'
-            }),
             'AG_TIPO': forms.Select(attrs={'class': 'form-control'}),
             'AG_FECPROG': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -262,7 +299,6 @@ class AgendaForm(forms.ModelForm):
             }),
         }
         labels = {
-            'AG_NUM': 'Número de Agenda',
             'AG_TIPO': 'Tipo de Agenda',
             'AG_FECPROG': 'Fecha Programada',
         }
@@ -396,8 +432,22 @@ class CustodiaSIMForm(forms.ModelForm):
         self.fields['abog'].required = False
 
 
+class EntregarCarpetaAbogadoForm(forms.Form):
+    """Formulario para que el ABOGADO entregue carpeta a Archivo SIM"""
+
+    observacion = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Ej: "Carpeta completa con dictamen y resolución", "Documentos en buen estado", etc.'
+        }),
+        label='Observaciones al entregar'
+    )
+
+
 class EntregarCarpetaForm(forms.Form):
-    """Formulario para entregar carpeta a un abogado (Admin2)"""
+    """Formulario para que ADMIN2 entregue carpeta a un abogado"""
 
     tipo_custodio = forms.ChoiceField(
         choices=[
@@ -444,4 +494,258 @@ class RecibirCarpetaForm(forms.Form):
         label='Observación',
         help_text='Ej: carpeta completa, falta documento, etc.'
     )
+
+
+# ============================================================
+# FORMULARIOS PARA AYUDANTE — Registro de datos históricos
+# ============================================================
+
+class RESForm(forms.ModelForm):
+    """Formulario para registrar una Resolución histórica sin dictamen previo"""
+
+    class Meta:
+        model = RES
+        fields = [
+            'sim', 'pm', 'RES_NUM', 'RES_FEC', 'RES_TIPO', 'RES_RESOL'
+        ]
+        widgets = {
+            'sim': forms.Select(attrs={'class': 'form-control'}),
+            'pm': forms.Select(attrs={'class': 'form-control'}),
+            'RES_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 05/26',
+                'pattern': '[0-9]{1,4}/[0-9]{2}'
+            }),
+            'RES_FEC': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'RES_TIPO': forms.Select(attrs={'class': 'form-control'}),
+            'RES_RESOL': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Texto de la resolución'
+            }),
+        }
+        labels = {
+            'sim': 'Sumario',
+            'pm': 'Personal Militar Implicado',
+            'RES_NUM': 'Número de Resolución',
+            'RES_FEC': 'Fecha de Resolución',
+            'RES_TIPO': 'Tipo de Resolución',
+            'RES_RESOL': 'Texto de la Resolución',
+        }
+
+
+class RESNotificacionForm(forms.ModelForm):
+    """Formulario para registrar notificación de una Resolución existente"""
+
+    class Meta:
+        model = RES
+        fields = [
+            'RES_FECNOT', 'RES_HORNOT', 'RES_NOT', 'RES_TIPO_NOTIF'
+        ]
+        widgets = {
+            'RES_FECNOT': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'RES_HORNOT': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'RES_NOT': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Quién notificó'
+            }),
+            'RES_TIPO_NOTIF': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'RES_FECNOT': 'Fecha de Notificación',
+            'RES_HORNOT': 'Hora de Notificación',
+            'RES_NOT': 'Notificado a (persona)',
+            'RES_TIPO_NOTIF': 'Tipo de Notificación',
+        }
+
+
+class RAPForm(forms.ModelForm):
+    """Formulario para registrar un Recurso de Apelación al TSP histórico"""
+
+    class Meta:
+        model = RAP
+        fields = [
+            'sim', 'pm', 'rr', 'RAP_FECPRESEN', 'RAP_OFI', 'RAP_FECOFI',
+            'RAP_NUM', 'RAP_FEC', 'RAP_RESOL', 'RAP_TIPO'
+        ]
+        widgets = {
+            'sim': forms.Select(attrs={'class': 'form-control'}),
+            'pm': forms.Select(attrs={'class': 'form-control'}),
+            'rr': forms.Select(attrs={'class': 'form-control'}),
+            'RAP_FECPRESEN': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+                'label': 'Fecha de Presentación'
+            }),
+            'RAP_OFI': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de oficio'
+            }),
+            'RAP_FECOFI': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'RAP_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 03/26',
+                'pattern': '[0-9]{1,4}/[0-9]{2}'
+            }),
+            'RAP_FEC': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'RAP_RESOL': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Texto del recurso'
+            }),
+            'RAP_TIPO': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'sim': 'Sumario',
+            'pm': 'Personal Militar',
+            'rr': 'Recurso de Reconsideración (RR) - Opcional',
+            'RAP_FECPRESEN': 'Fecha de Presentación',
+            'RAP_OFI': 'Número de Oficio',
+            'RAP_FECOFI': 'Fecha de Oficio',
+            'RAP_NUM': 'Número del RAP',
+            'RAP_FEC': 'Fecha del RAP',
+            'RAP_RESOL': 'Texto del RAP',
+            'RAP_TIPO': 'Tipo de RAP',
+        }
+
+
+class RAEEForm(forms.ModelForm):
+    """Formulario para registrar un RAEE (Aclaración, Explicación y Enmienda) histórico"""
+
+    class Meta:
+        model = RAEE
+        fields = [
+            'sim', 'pm', 'rap', 'RAE_NUM', 'RAE_FEC', 'RAE_RESOL', 'RAE_RESUM'
+        ]
+        widgets = {
+            'sim': forms.Select(attrs={'class': 'form-control'}),
+            'pm': forms.Select(attrs={'class': 'form-control'}),
+            'rap': forms.Select(attrs={'class': 'form-control'}),
+            'RAE_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 02/26',
+                'pattern': '[0-9]{1,4}/[0-9]{2}'
+            }),
+            'RAE_FEC': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'RAE_RESOL': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Texto de la aclaración/enmienda'
+            }),
+            'RAE_RESUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Resumen breve'
+            }),
+        }
+        labels = {
+            'sim': 'Sumario',
+            'pm': 'Personal Militar',
+            'rap': 'Recurso de Apelación (RAP)',
+            'RAE_NUM': 'Número del RAEE',
+            'RAE_FEC': 'Fecha del RAEE',
+            'RAE_RESOL': 'Texto del RAEE',
+            'RAE_RESUM': 'Resumen',
+        }
+
+
+class AUTOTPEHistoricoForm(forms.ModelForm):
+    """Formulario para registrar un Auto del TPE histórico (incluyendo memorándum)"""
+
+    class Meta:
+        model = AUTOTPE
+        fields = [
+            'sim', 'pm', 'TPE_NUM', 'TPE_FEC', 'TPE_TIPO', 'TPE_RESOL',
+            'TPE_MEMO_NUM', 'TPE_MEMO_FEC', 'TPE_MEMO_ENTREGA'
+        ]
+        widgets = {
+            'sim': forms.Select(attrs={'class': 'form-control'}),
+            'pm': forms.Select(attrs={'class': 'form-control'}),
+            'TPE_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 04/26',
+                'pattern': '[0-9]{1,4}/[0-9]{2}'
+            }),
+            'TPE_FEC': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'TPE_TIPO': forms.Select(attrs={'class': 'form-control'}),
+            'TPE_RESOL': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Texto del auto'
+            }),
+            'TPE_MEMO_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de memorándum (opcional)'
+            }),
+            'TPE_MEMO_FEC': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'TPE_MEMO_ENTREGA': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+        }
+        labels = {
+            'sim': 'Sumario',
+            'pm': 'Personal Militar',
+            'TPE_NUM': 'Número del Auto',
+            'TPE_FEC': 'Fecha del Auto',
+            'TPE_TIPO': 'Tipo de Auto',
+            'TPE_RESOL': 'Texto del Auto',
+            'TPE_MEMO_NUM': 'Número de Memorándum',
+            'TPE_MEMO_FEC': 'Fecha del Memorándum',
+            'TPE_MEMO_ENTREGA': 'Fecha de Entrega del Memorándum',
+        }
+
+
+class AutoEjecutoriaForm(forms.ModelForm):
+    """Formulario para crear Auto de Ejecutoria desde caso pendiente (RES sin RR o RR sin RAP)"""
+
+    class Meta:
+        model = AUTOTPE
+        fields = ['TPE_NUM', 'TPE_FEC', 'TPE_RESOL', 'abog']
+        widgets = {
+            'TPE_NUM': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 07/26',
+                'pattern': '[0-9]{1,4}/[0-9]{2}',
+            }),
+            'TPE_FEC': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'TPE_RESOL': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Texto del Auto de Ejecutoria...',
+            }),
+            'abog': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'TPE_NUM': 'Número del Auto',
+            'TPE_FEC': 'Fecha del Auto',
+            'TPE_RESOL': 'Texto del Auto de Ejecutoria',
+            'abog': 'Abogado',
+        }
 

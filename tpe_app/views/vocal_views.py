@@ -31,19 +31,17 @@ def vocal_dashboard(request):
         AG_FECPROG__lt=date.today()
     ).order_by("-AG_FECPROG")[:10]  # Últimas 10
 
-    # Contar dictámenes pendientes de confirmar
-    pendientes_por_agenda = {}
+    # Contar dictámenes pendientes de confirmar y agregar al objeto
     for agenda in agendas_proximas:
         count = DICTAMEN.objects.filter(
             agenda=agenda, DIC_ESTADO='PENDIENTE'
         ).count()
-        pendientes_por_agenda[agenda.pk] = count
+        agenda.pending_count = count
 
     context = {
         "vocal": vocal,
         "agendas_proximas": agendas_proximas,
         "agendas_pasadas": agendas_pasadas,
-        "pendientes_por_agenda": pendientes_por_agenda,
     }
 
     return render(request, "tpe_app/vocal/dashboard_vocal.html", context)

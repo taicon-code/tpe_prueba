@@ -105,14 +105,15 @@
     <a href="{% url 'vocal_agenda_detalle' agenda.pk %}" class="agenda-card" style="text-decoration: none;">
         <div class="header">
             <span class="fecha">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</span>
-            {% if pendientes_por_agenda|key:agenda.pk > 0 %}
+            {% if agenda.pending_count > 0 %}
             <span class="pendiente-badge">
-                🔔 {{ pendientes_por_agenda|key:agenda.pk }} pendiente{{ pendientes_por_agenda|key:agenda.pk|pluralize }}
+                🔔 {{ agenda.pending_count }} pendiente{{ agenda.pending_count|pluralize }}
             </span>
             {% endif %}
         </div>
         <div class="desc">
-            {{ agenda.AG_DESC|default:"Sin descripción" }}
+            <strong>{{ agenda.AG_NUM }}</strong><br>
+            Tipo: {{ agenda.get_AG_TIPO_display|default:"Ordinaria" }}
         </div>
         <span class="link-btn">Ver Agenda →</span>
     </a>
@@ -142,7 +143,7 @@
         color: #374151;
         transition: all 0.2s;
     " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
-        <span style="font-weight: 500;">{{ agenda.AG_FECPROG|date:"d/m/Y" }} — {{ agenda.AG_DESC|truncatewords:5 }}</span>
+        <span style="font-weight: 500;">{{ agenda.AG_FECPROG|date:"d/m/Y" }} — {{ agenda.AG_NUM }}</span>
         <span style="font-size: 0.8rem; color: #6b7280;">Ver →</span>
     </a>
     {% endfor %}

@@ -8,17 +8,17 @@
 
 <!-- 1. Stats Grid at the top -->
 <div class="stats-grid">
-    <div class="stat-card" style="border-left-color: #5c7cfa;">
+    <div class="stat-card" style="border-left-color: #3b82f6;">
         <h3 style="color: #1e3c72;">{{ total_sin_asignar }}</h3>
-        <p>Total de Sumarios no Agendados</p>
+        <p>Sumarios sin Agendar</p>
     </div>
-    <div class="stat-card" style="border-left-color: #fcc419;">
+    <div class="stat-card" style="border-left-color: #8b5cf6;">
         <h3 style="color: #1e3c72;">{{ total_rr_sin_asignar }}</h3>
-        <p>Total RR por Agendar</p>
+        <p>RR por Agendar</p>
     </div>
-    <div class="stat-card" style="border-left-color: #51cf66;">
+    <div class="stat-card" style="border-left-color: #6b7280;">
         <h3 style="color: #1e3c72;">{{ total_solicitudes_sin_asignar }}</h3>
-        <p>Total Solicitudes por Agendar</p>
+        <p>Solicitudes sin Agendar</p>
     </div>
 </div>
 
@@ -32,7 +32,7 @@
             placeholder="Buscar por Apellido Paterno, Apellido Materno, Código SIM, Resumen u Objeto..."
             value="{{ query }}"
         >
-        <button type="submit" class="btn" style="background:#5c7cfa;">Buscar</button>
+        <button type="submit" class="btn" style="background:#6b7280;">Buscar</button>
     </form>
     {% if query %}
         <a href="{% url 'administrativo_dashboard' %}" style="color: #666; text-decoration: none; font-size: 0.9rem;">Limpiar búsqueda</a>
@@ -40,20 +40,36 @@
 </div>
 
 <!-- 3. Soft Buttons -->
-<div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
-    <a href="{% url 'registrar_sumario' %}" class="btn" style="background: #4caf50;">
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+    <a href="{% url 'registrar_sumario' %}" class="btn" style="background: #6b7280; color: #fff;">
         ➕ Registrar Nuevo Sumario
     </a>
-    <a href="{% url 'registrar_rr' %}" class="btn" style="background: #4dd0e1; color: #111;">
-        ➕ Registrar Recurso de Reconsideración (RR)
+    <a href="{% url 'crear_agenda' %}" class="btn" style="background: #8b5cf6; color: #fff;">
+        📅 Crear Agenda
     </a>
-    <a href="{% url 'agendar_sumario' %}" class="btn" style="background: #ffb74d; color: #111;">
+    <a href="{% url 'registrar_rr' %}" class="btn" style="background: #64748b; color: #fff;">
+        ➕ Registrar RR
+    </a>
+    <a href="{% url 'agendar_sumario' %}" class="btn" style="background: #3b82f6; color: #fff;">
         📅 Agendar Sumario
     </a>
-    <a href="#" class="btn" style="background: #78909c;">
-        📋 Registrar Notificación
+    <a href="{% url 'admin3_dashboard' %}" class="btn" style="background: #10b981; color: #fff;">
+        📬 Gestión de Notificaciones
     </a>
 </div>
+
+<!-- 3b. Alerta de Ejecutorias Pendientes -->
+{% if total_pendientes_ejecutoria %}
+<div style="background: #fef3c7; border: 1px solid #fbbf24; border-left: 4px solid #d97706; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+        <strong style="color: #92400e;">⚖️ {{ total_pendientes_ejecutoria }} caso{{ total_pendientes_ejecutoria|pluralize }} pendiente{{ total_pendientes_ejecutoria|pluralize }} de Auto de Ejecutoria</strong>
+        <p style="color: #78350f; font-size: 0.85rem; margin: 0.25rem 0 0;">Plazos vencidos — revisar y emitir los autos correspondientes.</p>
+    </div>
+    <a href="{% url 'pendientes_ejecutoria' %}" class="btn" style="background: #d97706; color: #fff; font-size: 0.85rem; white-space: nowrap;">
+        Ver pendientes →
+    </a>
+</div>
+{% endif %}
 
 <!-- 4. Tables -->
 <div class="card">
@@ -106,7 +122,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'agendar_sumario' %}?sim={{ sim.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#ffb74d; color:#111;">
+                    <a href="{% url 'agendar_sumario' %}?sim={{ sim.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#3b82f6; color:#fff;">
                         Agendar
                     </a>
                 </td>
@@ -115,7 +131,7 @@
         </tbody>
     </table>
     {% else %}
-    <p style="color: #4caf50; text-align: center; padding: 2rem;">
+    <p style="color: #6b7280; text-align: center; padding: 2rem;">
         ✅ Todos los sumarios tienen abogado asignado
     </p>
     {% endif %}
@@ -161,7 +177,7 @@
                     {% else %}-{% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'agendar_rr' %}?rr={{ rr.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#ffb74d; color:#111;">
+                    <a href="{% url 'agendar_rr' %}?rr={{ rr.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#3b82f6; color:#fff;">
                         Agendar
                     </a>
                 </td>
@@ -171,7 +187,7 @@
         </tbody>
     </table>
     {% else %}
-    <p style="color: #4caf50; text-align: center; padding: 2rem;">
+    <p style="color: #6b7280; text-align: center; padding: 2rem;">
         ✅ No hay Recursos de Reconsideración pendientes de agendar
     </p>
     {% endif %}
@@ -200,7 +216,7 @@
                 <td>{{ sim.militares.first.PM_NOMBRE|default:"" }} {{ sim.militares.first.PM_PATERNO|default:"" }} {{ sim.militares.first.PM_MATERNO|default:"" }}</td>
                 <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
                 <td>
-                    <a href="{% url 'agendar_sumario' %}?sim={{ sim.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#ffb74d; color:#111;">
+                    <a href="{% url 'agendar_sumario' %}?sim={{ sim.pk }}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background:#3b82f6; color:#fff;">
                         Agendar
                     </a>
                 </td>
@@ -209,9 +225,65 @@
         </tbody>
     </table>
     {% else %}
-    <p style="color: #4caf50; text-align: center; padding: 2rem;">
+    <p style="color: #6b7280; text-align: center; padding: 2rem;">
         ✅ No hay solicitudes pendientes de agendar
     </p>
     {% endif %}
 </div>
+
+<!-- Sumarios en Proceso (con abogados asignados) -->
+<div class="card">
+    <h2>⚖️ Sumarios en Proceso — Gestión de Abogados</h2>
+    {% if sumarios_en_proceso %}
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Militares</th>
+                <th>Abogados Asignados</th>
+                <th>Fase</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in sumarios_en_proceso %}
+            <tr>
+                <td style="white-space: nowrap;"><strong>{{ sim.SIM_COD }}</strong></td>
+                <td style="max-width: 200px; font-size: 0.85rem;">
+                    {% for pm in sim.militares.all %}
+                        {{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        <span style="color: #9ca3af;">—</span>
+                    {% endfor %}
+                </td>
+                <td style="max-width: 250px;">
+                    {% for abog in sim.abogados.all %}
+                        <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.78rem; font-weight: 600; display: inline-block; margin: 0.1rem;">
+                            {{ abog.AB_GRADO }} {{ abog.AB_PATERNO }}
+                        </span>
+                    {% empty %}
+                        <span style="color: #dc2626; font-size: 0.85rem;">Sin abogado</span>
+                    {% endfor %}
+                </td>
+                <td style="font-size: 0.85rem;">
+                    {% if sim.SIM_FASE %}
+                        <span class="badge" style="background: #6b7280; color: #fff; font-size: 0.7rem;">{{ sim.get_SIM_FASE_display|truncatewords:3 }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'gestionar_abogados_sim' sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #8b5cf6; color: #fff;">
+                        ⚖️ Gestionar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6b7280; text-align: center; padding: 2rem;">
+        No hay sumarios en proceso actualmente
+    </p>
+    {% endif %}
+</div>
+
 {% endblock %}

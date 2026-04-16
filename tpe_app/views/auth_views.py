@@ -16,14 +16,24 @@ def login_view(request):
             # Redirigir según el rol
             try:
                 perfil = user.perfilusuario
-                if perfil.rol == 'ADMINISTRADOR':
+                if perfil.rol in ('MASTER', 'ADMINISTRADOR'):
                     return redirect('admin_dashboard')
-                elif perfil.rol == 'ABOGADO':
+                elif perfil.rol == 'AYUDANTE':
+                    return redirect('ayudante_dashboard')
+                elif perfil.rol in ('ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR', 'ABOGADO'):
                     return redirect('abogado_dashboard')
-                elif perfil.rol == 'BUSCADOR':
+                elif perfil.rol in ('BUSCADOR', 'ABOG3_BUSCADOR'):
                     return redirect('buscador_dashboard')
-                elif perfil.rol == 'ADMINISTRATIVO':
+                elif perfil.rol in ('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO'):
                     return redirect('administrativo_dashboard')
+                elif perfil.rol == 'VOCAL_TPE':
+                    return redirect('vocal_dashboard')
+                elif perfil.rol == 'ASESOR_JURIDICO':
+                    return redirect('buscador_dashboard')
+                else:
+                    messages.error(request, f'Rol no reconocido: {perfil.rol}')
+                    logout(request)
+                    return redirect('login')
             except:
                 messages.error(request, 'Tu usuario no tiene un perfil asignado')
                 logout(request)

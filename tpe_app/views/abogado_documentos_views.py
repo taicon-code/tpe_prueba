@@ -6,7 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..decorators import rol_requerido
-from ..models import AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, RES, RR, SIM, VOCAL_TPE, CustodiaSIM
+from ..models import ABOG_SIM, AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, RES, RR, SIM, VOCAL_TPE, CustodiaSIM
 from ..utils.numeracion import next_num_yy
 
 
@@ -46,8 +46,13 @@ def abogado_sumario_detalle(request, sim_id: int):
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
     rrs_asignados = list(RR.objects.filter(sim=sim, abog=abogado).select_related("res").order_by("-RR_FEC"))
 
-    # ✅ NUEVO v3.1: Verificar custodia activa del sumario
-    custodia_activa = CustodiaSIM.objects.filter(
+    # Verificar si este abogado es el responsable de la carpeta
+    es_responsable = ABOG_SIM.objects.filter(
+        sim=sim, abog=abogado, es_responsable=True
+    ).exists()
+
+    # Custodia activa (solo relevante para el responsable — botón entregar)
+    tiene_custodia = CustodiaSIM.objects.filter(
         sim=sim,
         fecha_entrega__isnull=True,
         abog=abogado
@@ -57,6 +62,7 @@ def abogado_sumario_detalle(request, sim_id: int):
     context = {
         "sim": sim,
         "abogado": abogado,
+        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim).select_related('abog'),
         "investigados": sim.militares.all(),
         "dictamenes": dictamenes,
         "resoluciones": resoluciones,
@@ -64,8 +70,9 @@ def abogado_sumario_detalle(request, sim_id: int):
         "autos_tpe": autos_tpe,
         "es_via_sim": es_via_sim,
         "rrs_asignados": rrs_asignados,
-        "tiene_custodia": custodia_activa,  # ✅ NUEVO
-        "custodio_actual": custodio_actual,  # ✅ NUEVO
+        "es_responsable": es_responsable,
+        "tiene_custodia": tiene_custodia,
+        "custodio_actual": custodio_actual,
     }
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
 
@@ -75,16 +82,12 @@ def abogado_dictamen_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
 
-    # ✅ NUEVO v3.1: Verificar custodia activa antes de permitir crear dictamen
-    custodia_activa = CustodiaSIM.objects.filter(
-        sim=sim,
-        fecha_entrega__isnull=True,
-        abog=abogado
-    ).exists()
-
-    if not custodia_activa:
-        messages.error(request, "❌ No puede crear un dictamen: la carpeta no está registrada en su poder.")
-        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+    # Verificar que el abogado esté asignado al SIM (no requiere custodia)
+    if not sim.abogados.filter(pk=abogado.pk).exists():
+        rr_asignado = RR.objects.filter(sim=sim, abog=abogado).exists()
+        if not rr_asignado:
+            messages.error(request, "❌ No está asignado a este sumario.")
+            return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     militares = list(sim.militares.all())
     agendas = AGENDA.objects.all().order_by("-AG_FECPROG")

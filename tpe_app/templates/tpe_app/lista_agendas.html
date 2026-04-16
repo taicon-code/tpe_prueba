@@ -1,0 +1,123 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Agendas - TPE Sistema{% endblock %}
+{% block navbar_title %}📅 Gestión de Agendas{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'administrativo_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="margin: 0; color: #1e3c72;">📅 Agendas Programadas</h1>
+    <a href="{% url 'crear_agenda' %}" class="btn" style="background: #28a745;">
+        ➕ Nueva Agenda
+    </a>
+</div>
+
+{# Estadísticas de agendas #}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="card" style="background: #eff6ff; border-left: 4px solid #2196f3; margin: 0;">
+        <p style="margin: 0; color: #1565c0;">
+            📋 <strong>{{ total_programadas }}</strong> Programada(s)
+        </p>
+    </div>
+    <div class="card" style="background: #f0fdf4; border-left: 4px solid #22c55e; margin: 0;">
+        <p style="margin: 0; color: #15803d;">
+            ✅ <strong>{{ total_realizadas }}</strong> Realizada(s)
+        </p>
+    </div>
+    <div class="card" style="background: #fef2f2; border-left: 4px solid #dc2626; margin: 0;">
+        <p style="margin: 0; color: #991b1b;">
+            ⚠️ <strong>{{ total_suspendidas }}</strong> Suspendida(s)
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Todas las Agendas</h2>
+
+    {% if agendas %}
+    <table>
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Fecha Programada</th>
+                <th>Fecha Realizada</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for agenda in agendas %}
+            <tr>
+                <td style="font-weight: 600; color: #1e3c72;">
+                    {{ agenda.AG_NUM }}
+                </td>
+                <td>
+                    {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                        <span class="badge badge-blue">Ordinaria</span>
+                    {% elif agenda.AG_TIPO == 'EXTRAORDINARIA' %}
+                        <span class="badge badge-purple">Extraordinaria</span>
+                    {% else %}
+                        {{ agenda.AG_TIPO }}
+                    {% endif %}
+                </td>
+                <td>
+                    {{ agenda.AG_FECPROG|date:"d/m/Y" }}
+                </td>
+                <td>
+                    {% if agenda.AG_FECREAL %}
+                        {{ agenda.AG_FECREAL|date:"d/m/Y" }}
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
+                        <span class="badge badge-blue">Programada</span>
+                    {% elif agenda.AG_ESTADO == 'REALIZADA' %}
+                        <span class="badge badge-green">Realizada</span>
+                    {% elif agenda.AG_ESTADO == 'SUSPENDIDA' %}
+                        <span class="badge badge-red">Suspendida</span>
+                    {% elif agenda.AG_ESTADO == 'REPROGRAMADA' %}
+                        <span class="badge badge-orange">Reprogramada</span>
+                    {% else %}
+                        {{ agenda.AG_ESTADO }}
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'agenda_resultado' agenda.id %}"
+                       class="btn" style="background: #1e3c72; font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                        ✏️ Registrar Resultado
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 2rem 0;">
+        No hay agendas registradas. <a href="{% url 'crear_agenda' %}">Crear una nueva</a>
+    </p>
+    {% endif %}
+</div>
+
+<style>
+    .badge {
+        display: inline-block;
+        padding: .3rem .7rem;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .badge-blue   { background: #eff6ff; color: #1d4ed8; }
+    .badge-green  { background: #f0fdf4; color: #16a34a; }
+    .badge-purple { background: #faf5ff; color: #7e22ce; }
+    .badge-orange { background: #fff7ed; color: #c2410c; }
+    .badge-red    { background: #fef2f2; color: #b91c1c; }
+</style>
+{% endblock %}

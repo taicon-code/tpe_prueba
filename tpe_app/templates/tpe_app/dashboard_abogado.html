@@ -32,6 +32,18 @@
     </div>
 </div>
 
+{% if total_pendientes_ejecutoria %}
+<div style="background: #fef3c7; border: 1px solid #fbbf24; border-left: 4px solid #d97706; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+        <strong style="color: #92400e;">⚖️ {{ total_pendientes_ejecutoria }} caso{{ total_pendientes_ejecutoria|pluralize }} pendiente{{ total_pendientes_ejecutoria|pluralize }} de Auto de Ejecutoria</strong>
+        <p style="color: #78350f; font-size: 0.85rem; margin: 0.25rem 0 0;">Plazos vencidos — revisar y emitir los autos correspondientes.</p>
+    </div>
+    <a href="{% url 'pendientes_ejecutoria' %}" class="btn" style="background: #d97706; color: #fff; font-size: 0.85rem; white-space: nowrap;">
+        Ver pendientes →
+    </a>
+</div>
+{% endif %}
+
 <div class="card">
     <h2>📄 Sumarios Asignados</h2>
     <table>

@@ -1,0 +1,105 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Crear Auto de Ejecutoria - TPE Sistema{% endblock %}
+{% block navbar_title %}⚖️ Crear Auto de Ejecutoria{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+
+            <div class="mb-4">
+                <h1 class="h3 mb-1">⚖️ Crear Auto de Ejecutoria</h1>
+                <p class="text-muted">Complete los datos del Auto de Ejecutoria</p>
+            </div>
+
+            <!-- Información del origen -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body" style="background: #f8fafc; border-radius: 8px;">
+                    <h6 style="color: #1e3c72; font-weight: 700; margin-bottom: 0.75rem;">
+                        📄 Documento Origen
+                    </h6>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem;">
+                        <div><strong>Sumario:</strong> {{ sim.SIM_COD }}</div>
+                        <div><strong>Tipo:</strong>
+                            <span style="background: #7c3aed; color: #fff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+                                {% if origen == 'res' %}1ra Resolución sin RR{% else %}RR sin RAP{% endif %}
+                            </span>
+                        </div>
+                        <div><strong>Referencia:</strong> {{ origen_label }}</div>
+                        <div><strong>Militar:</strong>
+                            {% if pm %}{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }} {{ pm.PM_MATERNO }}{% else %}—{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="id_TPE_NUM" class="form-label">
+                                    Número del Auto <span class="text-danger">*</span>
+                                </label>
+                                {{ form.TPE_NUM }}
+                                {% if form.TPE_NUM.errors %}
+                                    <div class="text-danger small mt-1">{{ form.TPE_NUM.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_TPE_FEC" class="form-label">
+                                    Fecha del Auto <span class="text-danger">*</span>
+                                </label>
+                                {{ form.TPE_FEC }}
+                                {% if form.TPE_FEC.errors %}
+                                    <div class="text-danger small mt-1">{{ form.TPE_FEC.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_abog" class="form-label">Abogado</label>
+                                {{ form.abog }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_TPE_RESOL" class="form-label">Texto del Auto de Ejecutoria</label>
+                            {{ form.TPE_RESOL }}
+                            {% if form.TPE_RESOL.errors %}
+                                <div class="text-danger small mt-1">{{ form.TPE_RESOL.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-warning" style="font-size: 0.85rem;">
+                            ⚠️ Al guardar, el Sumario <strong>{{ sim.SIM_COD }}</strong> será marcado como
+                            <strong>CONCLUIDO</strong>.
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end pt-2">
+                            <a href="{% url 'pendientes_ejecutoria' %}" class="btn btn-secondary">
+                                ← Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary" style="background: #7c3aed; border-color: #7c3aed;">
+                                ⚖️ Guardar Auto de Ejecutoria
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

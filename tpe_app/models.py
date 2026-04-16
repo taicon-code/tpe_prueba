@@ -38,6 +38,59 @@ def add_business_days(fecha_inicio, dias):
     return fecha
 
 
+def get_pendientes_ejecutoria():
+    """
+    Retorna dos listas de casos pendientes de Auto de Ejecutoria:
+    - por_res: RES notificadas sin RR presentado, con plazo de 15 días hábiles vencido
+    - por_rr:  RR notificados sin RAP presentado, con plazo de 3 días hábiles vencido
+    No incluye casos que ya tienen un AUTOTPE de tipo AUTO_EJECUTORIA.
+    """
+    from django.utils import timezone
+    hoy = timezone.now().date()
+
+    # ── Caso 1: RES notificada, sin RR, plazo 15 días hábiles vencido ──
+    por_res = []
+    res_notificadas = (
+        RES.objects
+        .filter(RES_FECNOT__isnull=False)
+        .select_related('sim', 'pm', 'abog')
+    )
+    for res in res_notificadas:
+        # ¿Ya tiene RR?
+        if res.rr_set.exists():
+            continue
+        # ¿Ya tiene Auto de Ejecutoria?
+        if AUTOTPE.objects.filter(res=res, TPE_TIPO='AUTO_EJECUTORIA').exists():
+            continue
+        fecha_limite = add_business_days(res.RES_FECNOT, 15)
+        if fecha_limite <= hoy:
+            res._fecha_limite = fecha_limite
+            res._dias_vencido = (hoy - fecha_limite).days
+            por_res.append(res)
+
+    # ── Caso 2: RR notificado, sin RAP, plazo 3 días hábiles vencido ──
+    por_rr = []
+    rr_notificados = (
+        RR.objects
+        .filter(RR_FECNOT__isnull=False)
+        .select_related('sim', 'pm', 'abog', 'res')
+    )
+    for rr in rr_notificados:
+        # ¿Ya tiene RAP?
+        if rr.rap_set.exists():
+            continue
+        # ¿Ya tiene Auto de Ejecutoria?
+        if AUTOTPE.objects.filter(rr=rr, TPE_TIPO='AUTO_EJECUTORIA').exists():
+            continue
+        fecha_limite = add_business_days(rr.RR_FECNOT, 3)
+        if fecha_limite <= hoy:
+            rr._fecha_limite = fecha_limite
+            rr._dias_vencido = (hoy - fecha_limite).days
+            por_rr.append(rr)
+
+    return por_res, por_rr
+
+
 # ============================================================
 # MODELO 1: PM — Personal Militar
 # ============================================================
@@ -370,10 +423,14 @@ class PM_SIM(models.Model):
 # ============================================================
 class ABOG_SIM(models.Model):
 
-
     sim  = models.ForeignKey(SIM,  on_delete=models.CASCADE,  verbose_name='Sumario')
     abog = models.ForeignKey(ABOG, on_delete=models.RESTRICT, verbose_name='Abogado')
-    
+    es_responsable = models.BooleanField(
+        default=False,
+        verbose_name='Responsable de carpeta',
+        help_text='El responsable custodia la carpeta física y puede entregarla'
+    )
+
     class Meta:
         db_table            = 'abog_sim'
         verbose_name        = 'Abogado en Sumario'
@@ -381,7 +438,8 @@ class ABOG_SIM(models.Model):
         unique_together     = ('sim', 'abog')
 
     def __str__(self):
-        return f"{self.abog} → {self.sim.SIM_COD}"
+        marca = ' [RESP]' if self.es_responsable else ''
+        return f"{self.abog} → {self.sim.SIM_COD}{marca}"
 
 
 # ============================================================
@@ -603,6 +661,7 @@ class RES(models.Model):
         ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
         ('ADMINISTRATIVO',                   'Administrativo'),
         ('SANCIONES_DISCIPLINARIAS',       'Sanciones Disciplinarias'),
+        ('NO_HA_LUGAR_SANCION_DISCIPLINARIA', 'No ha Lugar a la Sanción Disciplinaria'),
         ('SANCION_ARRESTO',                'Sanción Arresto (Ejecutiva)'),
         ('SANCION_LETRA_B',                'Sanción Letra B (Pérdida de Antigüedad)'),
         ('SANCION_RETIRO_OBLIGATORIO',     'Sanción Retiro Obligatorio'),
@@ -1074,11 +1133,29 @@ class DocumentoAdjunto(models.Model):
 class PerfilUsuario(models.Model):
     
     ROL_CHOICES = [
-        ('ADMINISTRADOR', 'Administrador'),
-        ('ABOGADO',       'Abogado'),
-        ('BUSCADOR',      'Buscador'),
-        ('ADMINISTRATIVO', 'Administrativo'),
-        ('VOCAL_TPE',     'Vocal TPE'),
+        # Sistema
+        ('MASTER',                    'Master (Control Total)'),
+        ('ADMINISTRADOR',             'Administrador de Sistemas'),
+        ('AYUDANTE',                  'Ayudante (Registro Histórico)'),
+
+        # Administrativo
+        ('ADMIN1_AGENDADOR',          'Administrativo 1 (Agendador)'),
+        ('ADMIN2_ARCHIVO',            'Administrativo 2 (Archivo SIM)'),
+        ('ADMIN3_NOTIFICADOR',        'Administrativo 3 (Notificador)'),
+
+        # Abogados
+        ('ABOG1_ASESOR',              'Abogado 1 (Asesor/1ra Resolución)'),
+        ('ABOG2_AUTOS',               'Abogado 2 (Autos de Ejecución)'),
+        ('ABOG3_BUSCADOR',            'Abogado 3 (Búsqueda de Antecedentes)'),
+
+        # Tribunal
+        ('VOCAL_TPE',                 'Vocal TPE (Secretario de Actas)'),
+        ('ASESOR_JURIDICO',           'Asesor Jurídico del DPTO-I'),
+
+        # Legado (mantener compatibilidad)
+        ('ABOGADO',                   'Abogado (General)'),
+        ('BUSCADOR',                  'Buscador (General)'),
+        ('ADMINISTRATIVO',            'Administrativo (General)'),
     ]
 
     user    = models.OneToOneField('auth.User', on_delete=models.CASCADE,

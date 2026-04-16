@@ -400,8 +400,8 @@
     {% if user.is_authenticated %}
     {% with rol=user.perfilusuario.rol %}
 
-        <!-- ── ADMINISTRATIVO ───────────────────── -->
-        {% if rol == 'ADMINISTRATIVO' %}
+        <!-- ── ADMINISTRATIVO 1 (Agendador) ───────────────────── -->
+        {% if rol == 'ADMIN1_AGENDADOR' or rol == 'ADMINISTRATIVO' %}
 
         <span class="sb-group-label">Panel Principal</span>
         <a href="{% url 'administrativo_dashboard' %}"
@@ -413,15 +413,15 @@
         <hr class="sb-divider">
         <span class="sb-group-label">Agenda</span>
 
-        <a href="{% url 'registrar_sumario' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'registrar_sumario' %}active{% endif %}">
+        <a href="{% url 'crear_agenda' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'crear_agenda' %}active{% endif %}">
             <span class="lk-icon">➕</span>
-            <span class="lk-text">Registrar Sumario</span>
+            <span class="lk-text">Crear Agenda</span>
         </a>
-        <a href="{% url 'registrar_rr' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'registrar_rr' %}active{% endif %}">
-            <span class="lk-icon">📝</span>
-            <span class="lk-text">Registrar RR</span>
+        <a href="{% url 'lista_agendas' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'lista_agendas' %}active{% endif %}">
+            <span class="lk-icon">📋</span>
+            <span class="lk-text">Ver Agendas</span>
         </a>
         <a href="{% url 'agendar_sumario' %}"
            class="sb-link {% if request.resolver_match.url_name == 'agendar_sumario' %}active{% endif %}">
@@ -435,6 +435,30 @@
         </a>
 
         <hr class="sb-divider">
+        <span class="sb-group-label">Registros</span>
+
+        <a href="{% url 'registrar_sumario' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'registrar_sumario' %}active{% endif %}">
+            <span class="lk-icon">➕</span>
+            <span class="lk-text">Registrar Sumario</span>
+        </a>
+        <a href="{% url 'registrar_rr' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'registrar_rr' %}active{% endif %}">
+            <span class="lk-icon">📝</span>
+            <span class="lk-text">Registrar RR</span>
+        </a>
+
+        <!-- ── ADMINISTRATIVO 2 (Archivo SIM) ───────────────────── -->
+        {% elif rol == 'ADMIN2_ARCHIVO' %}
+
+        <span class="sb-group-label">Panel Principal</span>
+        <a href="{% url 'admin2_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin2_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🏠</span>
+            <span class="lk-text">Carpetas en Poder</span>
+        </a>
+
+        <hr class="sb-divider">
         <span class="sb-group-label">Sistema</span>
 
         <a href="{% url 'buscador_dashboard' %}"
@@ -443,8 +467,27 @@
             <span class="lk-text">Buscar Historial</span>
         </a>
 
-        <!-- ── ABOGADO ─────────────────────────── -->
-        {% elif rol == 'ABOGADO' %}
+        <!-- ── ADMINISTRATIVO 3 (Notificador) ───────────────────── -->
+        {% elif rol == 'ADMIN3_NOTIFICADOR' %}
+
+        <span class="sb-group-label">Panel Principal</span>
+        <a href="{% url 'admin3_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin3_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🏠</span>
+            <span class="lk-text">Notificaciones</span>
+        </a>
+
+        <hr class="sb-divider">
+        <span class="sb-group-label">Sistema</span>
+
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🔍</span>
+            <span class="lk-text">Buscar Historial</span>
+        </a>
+
+        <!-- ── ABOGADOS (Asesor, Autos, Buscador) ─────────────────────────── -->
+        {% elif rol == 'ABOG1_ASESOR' or rol == 'ABOG2_AUTOS' or rol == 'ABOG3_BUSCADOR' or rol == 'ABOGADO' %}
 
         <span class="sb-group-label">Panel Principal</span>
         <a href="{% url 'abogado_dashboard' %}"
@@ -462,8 +505,8 @@
             <span class="lk-text">Buscar Historial</span>
         </a>
 
-        <!-- ── ADMINISTRADOR ───────────────────── -->
-        {% elif rol == 'ADMINISTRADOR' %}
+        <!-- ── MASTER / ADMINISTRADOR DE SISTEMAS ───────────────────── -->
+        {% elif rol == 'MASTER' or rol == 'ADMINISTRADOR' %}
 
         <span class="sb-group-label">Panel Principal</span>
         <a href="{% url 'admin_dashboard' %}"
@@ -485,8 +528,27 @@
             <span class="lk-text">Panel Django Admin</span>
         </a>
 
-        <!-- ── BUSCADOR ────────────────────────── -->
-        {% elif rol == 'BUSCADOR' %}
+        <!-- ── ASESOR JURÍDICO ────────────────────────── -->
+        {% elif rol == 'ASESOR_JURIDICO' %}
+
+        <span class="sb-group-label">Panel Principal</span>
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
+            <span class="lk-icon">📊</span>
+            <span class="lk-text">Estadísticas</span>
+        </a>
+
+        <hr class="sb-divider">
+        <span class="sb-group-label">Búsqueda</span>
+
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🔍</span>
+            <span class="lk-text">Antecedentes</span>
+        </a>
+
+        <!-- ── BUSCADOR (GENERAL) ────────────────────────── -->
+        {% elif rol == 'BUSCADOR' or rol == 'ABOG3_BUSCADOR' %}
 
         <span class="sb-group-label">Panel Principal</span>
         <a href="{% url 'buscador_dashboard' %}"

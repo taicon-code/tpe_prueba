@@ -61,4 +61,26 @@ el nombre a quien se le esta sancionando entonces
 en la parte de crear dictamen debe aparecer el nombre de los implicados
 
 en el abogado dashboard en el panel de sumarios asignados
-que se vea todos lo militares empleados
+que se vea todos lo militares 
+
+
+
+Roles Implementados (15 en total):
+🔐 SISTEMA
+MASTER - Control total del sistema
+ADMINISTRADOR - Administrador de sistemas
+📋 ADMINISTRATIVO
+ADMIN1_AGENDADOR - Registra sumarios, crea agendas, agenda casos
+ADMIN2_ARCHIVO - Gestiona custodia de carpetas físicas
+ADMIN3_NOTIFICADOR - Notifica documentos (RES, RR, autos, etc.)
+⚖️ ABOGADOS
+ABOG1_ASESOR - Emite dictámenes y 1ras resoluciones
+ABOG2_AUTOS - Emite autos de ejecución y cumplimiento
+ABOG3_BUSCADOR - Busca antecedentes y emite RAP
+🏛️ TRIBUNAL
+VOCAL_TPE - Secretario de Actas, confirma/modifica dictámenes ✓
+ASESOR_JURIDICO - Asesor jurídico del DPTO-I, visualiza estadísticas
+📌 GENERALES (compatibilidad)
+ABOGADO - Abogado genérico
+BUSCADOR - Buscador genérico
+ADMINISTRATIVO - Administrativo genérico

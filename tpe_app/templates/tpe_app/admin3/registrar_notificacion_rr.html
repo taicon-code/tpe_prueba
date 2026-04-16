@@ -1,0 +1,70 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Registrar Notificación de RR - TPE Sistema{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="mb-4">
+                <h1 class="h3 mb-1"><i class="bi bi-bell me-2"></i>{{ titulo }}</h1>
+                <p class="text-muted">Registre los datos de notificación del Recurso de Reconsideración</p>
+                <div class="alert alert-light border">
+                    <strong>Recurso RR:</strong> {{ rr.RR_NUM }}<br>
+                    <strong>Sumario:</strong> {{ rr.sim.SIM_COD }}<br>
+                    <strong>Fecha de Presentación:</strong> {{ rr.RR_FECPRESEN|date:"d/m/Y" }}
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="RR_FECNOT" class="form-label">
+                                    Fecha de Notificación <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="RR_FECNOT" name="RR_FECNOT" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="RR_HORNOT" class="form-label">
+                                    Hora de Notificación
+                                </label>
+                                <input type="time" class="form-control" id="RR_HORNOT" name="RR_HORNOT">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="RR_NOT" class="form-label">
+                                Notificado a (persona)
+                            </label>
+                            <input type="text" class="form-control" id="RR_NOT" name="RR_NOT" placeholder="Nombre de la persona que recibió la notificación">
+                            <small class="text-muted d-block mt-1">Ej: Juan Pérez García</small>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end pt-3">
+                            <a href="{% url 'admin3_dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Guardar Notificación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

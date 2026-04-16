@@ -130,6 +130,43 @@
     </div>
 </div>
 
+<!-- ── CUSTODIA DE CARPETA ───────────────────────────── -->
+{% if es_responsable %}
+{# El responsable ve el estado de custodia completo y el botón de entregar #}
+<div class="card section-card" style="border-left: 4px solid {% if tiene_custodia %}#10b981{% else %}#f97316{% endif %}; background: {% if tiene_custodia %}#f0fdf4{% else %}#fffbeb{% endif %};">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <div class="card-title" style="margin-bottom: 0.5rem;">📂 Custodia de Carpeta (Ud. es el responsable)</div>
+            {% if tiene_custodia %}
+                <p style="margin: 0; color: #15803d; font-size: 0.95rem;">
+                    <strong>✅ Carpeta en su poder</strong><br>
+                    <small style="color: #6b7280; font-size: 0.85rem;">Cuando termine, entregue la carpeta a Archivo SIM</small>
+                </p>
+            {% else %}
+                <p style="margin: 0; color: #b45309; font-size: 0.95rem;">
+                    <strong>⚠️ Carpeta no está en su poder</strong><br>
+                    <small style="color: #6b7280; font-size: 0.85rem;">Solicite la carpeta a Archivo SIM para poder entregarla</small>
+                </p>
+            {% endif %}
+        </div>
+        {% if tiene_custodia %}
+            <a href="{% url 'abogado_entregar_carpeta' sim.pk %}" class="btn" style="background: #28a745; color: #fff; padding: 0.6rem 1.2rem; white-space: nowrap; text-decoration: none;">
+                📤 Entregar a Archivo SIM
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+{# Los demas abogados asignados ven un mensaje informativo, sin botón de entregar #}
+<div class="card section-card" style="border-left: 4px solid #3b82f6; background: #eff6ff;">
+    <div class="card-title" style="margin-bottom: 0.5rem;">📂 Custodia de Carpeta</div>
+    <p style="margin: 0; color: #1e40af; font-size: 0.95rem;">
+        <strong>ℹ️ Ud. no es el responsable de la carpeta fisica.</strong><br>
+        <small style="color: #6b7280; font-size: 0.85rem;">Puede crear dictamenes y resoluciones normalmente. La entrega de la carpeta la realiza el abogado responsable.</small>
+    </p>
+</div>
+{% endif %}
+
 <!-- ── DATOS DEL SUMARIO ───────────────────────── -->
 <div class="card section-card">
     <div class="card-title">📄 Datos del Sumario</div>
@@ -165,6 +202,25 @@
         </div>
         {% endif %}
     </div>
+</div>
+
+<!-- ── ABOGADOS ASIGNADOS ──────────────────────── -->
+<div class="card section-card">
+    <div class="card-title">⚖️ Abogados Asignados</div>
+    {% if abogados_asignados %}
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        {% for asig in abogados_asignados %}
+        <span style="background: {% if asig.abog.pk == abogado.pk %}#dbeafe; color: #1e40af; border: 1px solid #93c5fd;{% else %}#f3f4f6; color: #374151; border: 1px solid #e5e7eb;{% endif %} padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+            {{ asig.abog.AB_GRADO }} {{ asig.abog.AB_NOMBRE }} {{ asig.abog.AB_PATERNO }}
+            {% if asig.es_responsable %} 📂{% endif %}
+            {% if asig.abog.pk == abogado.pk %} (Ud.){% endif %}
+        </span>
+        {% endfor %}
+    </div>
+    <small style="color: #6b7280; font-size: 0.78rem; margin-top: 0.5rem; display: block;">📂 = Responsable de la carpeta fisica</small>
+    {% else %}
+    <p style="color:#9ca3af; text-align:center; padding:1rem 0;">Sin abogados asignados</p>
+    {% endif %}
 </div>
 
 <!-- ── INVESTIGADOS ────────────────────────────── -->
@@ -205,23 +261,15 @@
 <div class="card section-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <div class="card-title">📋 Dictámenes</div>
-        {# ✅ NUEVO v3.1: Botón habilitado solo si tiene custodia #}
-        {% if es_via_sim and tiene_custodia %}
+        {# Todos los abogados asignados pueden crear dictámenes (sin restricción de custodia) #}
+        {% if es_via_sim %}
             <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem;">
                 ➕ Crear Dictamen
             </a>
-        {% elif es_via_sim and not tiene_custodia %}
-            <button class="btn" disabled style="padding: .4rem .8rem; font-size: .85rem; opacity: 0.5; cursor: not-allowed;" title="La carpeta no está en su poder">
-                🔒 Crear Dictamen (sin custodia)
-            </button>
-        {% elif rrs_asignados and tiene_custodia %}
+        {% elif rrs_asignados %}
             <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #d97706;">
                 ➕ Crear Dictamen (RR)
             </a>
-        {% elif rrs_asignados and not tiene_custodia %}
-            <button class="btn" disabled style="padding: .4rem .8rem; font-size: .85rem; background: #9ca3af; opacity: 0.5; cursor: not-allowed;" title="La carpeta no está en su poder">
-                🔒 Crear Dictamen RR (sin custodia)
-            </button>
         {% endif %}
     </div>
     <table>

@@ -1,0 +1,238 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Registrar Resultado - TPE Sistema{% endblock %}
+{% block navbar_title %}📅 Registrar Resultado de Agenda{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'lista_agendas' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver a Agendas
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📅 Registrar Resultado de Agenda</h1>
+
+{# Información de la agenda actual #}
+<div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 2rem;">
+    <h3 style="margin-top: 0; margin-bottom: 1rem; color: #1565c0;">📌 Información de la Agenda</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div>
+            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                <strong>Número:</strong>
+            </p>
+            <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
+                {{ agenda.AG_NUM }}
+            </p>
+        </div>
+        <div>
+            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                <strong>Tipo:</strong>
+            </p>
+            <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
+                {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                    <span class="badge badge-blue">Ordinaria</span>
+                {% elif agenda.AG_TIPO == 'EXTRAORDINARIA' %}
+                    <span class="badge badge-purple">Extraordinaria</span>
+                {% else %}
+                    {{ agenda.AG_TIPO }}
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                <strong>Fecha Programada:</strong>
+            </p>
+            <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
+                {{ agenda.AG_FECPROG|date:"d/m/Y" }}
+            </p>
+        </div>
+        <div>
+            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                <strong>Estado Actual:</strong>
+            </p>
+            <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
+                {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
+                    <span class="badge badge-blue">Programada</span>
+                {% elif agenda.AG_ESTADO == 'REALIZADA' %}
+                    <span class="badge badge-green">Realizada</span>
+                {% elif agenda.AG_ESTADO == 'SUSPENDIDA' %}
+                    <span class="badge badge-red">Suspendida</span>
+                {% elif agenda.AG_ESTADO == 'REPROGRAMADA' %}
+                    <span class="badge badge-orange">Reprogramada</span>
+                {% else %}
+                    {{ agenda.AG_ESTADO }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<form method="post" style="max-width: 600px;">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2>📋 Actualizar Resultado</h2>
+
+        <div style="margin-bottom: 2rem;">
+            <div style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
+                {{ form.AG_ESTADO.label }}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {{ form.AG_ESTADO }}
+            </div>
+            {% if form.AG_ESTADO.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.5rem;">
+                    {{ form.AG_ESTADO.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;" id="fecreal-field">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.AG_FECREAL.label }}
+            </label>
+            {{ form.AG_FECREAL }}
+            {% if form.AG_FECREAL.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.AG_FECREAL.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem;">
+                Fecha en la que se realizó la sesión (obligatoria si seleccionas "Realizada")
+            </small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #fef3cd; border-left: 4px solid #ffc107; border-radius: 4px; display: none;" id="info-suspendida">
+            <p style="margin: 0; color: #856404; font-size: 0.9rem;">
+                <strong>ℹ️ Suspensión:</strong> La sesión ha sido suspendida. Si deseas crear una nueva sesión con otra fecha, usa el botón "Nueva Agenda" para agendar una nueva sesión.
+            </p>
+        </div>
+
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #e7f3ff; border-left: 4px solid #0d6efd; border-radius: 4px; display: none;" id="info-reprogramada">
+            <p style="margin: 0; color: #0d47a1; font-size: 0.9rem;">
+                <strong>ℹ️ Reprogramación:</strong> Marca esta agenda como "Reprogramada" si será sesionada en otra fecha. Crea una nueva agenda con la nueva fecha.
+            </p>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn" style="background: #28a745;">
+            ✅ Guardar Resultado
+        </button>
+        <a href="{% url 'lista_agendas' %}" class="btn" style="background: #6c757d;">
+            Cancelar
+        </a>
+    </div>
+</form>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+    .form-control:focus {
+        outline: none;
+        border-color: #1e3c72;
+        box-shadow: 0 0 0 3px rgba(30,60,114,.1);
+    }
+    select.form-control {
+        cursor: pointer;
+        padding: 0.65rem 0.9rem;
+    }
+    input[type="date"].form-control {
+        padding: 0.65rem 0.9rem;
+    }
+    textarea.form-control {
+        resize: vertical;
+    }
+    .badge {
+        display: inline-block;
+        padding: .3rem .7rem;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .badge-blue   { background: #eff6ff; color: #1d4ed8; }
+    .badge-green  { background: #f0fdf4; color: #16a34a; }
+    .badge-purple { background: #faf5ff; color: #7e22ce; }
+    .badge-orange { background: #fff7ed; color: #c2410c; }
+    .badge-red    { background: #fef2f2; color: #b91c1c; }
+
+    /* Radio buttons styling */
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.3rem;
+        margin-right: 0.5rem;
+        cursor: pointer;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: #fff;
+    }
+    .form-check-input:checked {
+        background: #1e3c72;
+        border-color: #1e3c72;
+    }
+    .form-check-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30,60,114,.1);
+    }
+    .form-check {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    .form-check label {
+        margin: 0;
+        margin-left: 0.5rem;
+        cursor: pointer;
+        flex: 1;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radioButtons = document.querySelectorAll('[name="AG_ESTADO"]');
+    const frecrealField = document.getElementById('fecreal-field');
+    const infoSuspendida = document.getElementById('info-suspendida');
+    const infoReprogramada = document.getElementById('info-reprogramada');
+
+    function actualizarCampos() {
+        let estado = null;
+        radioButtons.forEach(rb => {
+            if (rb.checked) {
+                estado = rb.value;
+            }
+        });
+
+        // Ocultar todos los campos primero
+        frecrealField.style.display = 'none';
+        infoSuspendida.style.display = 'none';
+        infoReprogramada.style.display = 'none';
+
+        // Mostrar campos según el estado seleccionado
+        if (estado === 'REALIZADA') {
+            frecrealField.style.display = 'block';
+        } else if (estado === 'SUSPENDIDA') {
+            infoSuspendida.style.display = 'block';
+        } else if (estado === 'REPROGRAMADA') {
+            infoReprogramada.style.display = 'block';
+        }
+    }
+
+    radioButtons.forEach(rb => {
+        rb.addEventListener('change', actualizarCampos);
+    });
+
+    // Ejecutar al cargar la página
+    actualizarCampos();
+});
+</script>
+{% endblock %}

@@ -23,8 +23,12 @@
                 <input class="form-control" type="date" name="RR_FEC" />
             </div>
             <div>
-                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Resumen (opcional)</label>
-                <input class="form-control" type="text" name="RR_RESUM" maxlength="200" />
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Procedencia del Recurso</label>
+                <select class="form-control" name="RR_RESUM" style="cursor: pointer;">
+                    <option value="">— Seleccionar —</option>
+                    <option value="PROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN">✅ PROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN</option>
+                    <option value="IMPROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN">❌ IMPROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN</option>
+                </select>
             </div>
         </div>
 

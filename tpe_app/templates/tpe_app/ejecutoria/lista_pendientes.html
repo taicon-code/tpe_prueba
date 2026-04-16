@@ -1,0 +1,150 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Pendientes de Ejecutoria - TPE Sistema{% endblock %}
+{% block navbar_title %}⚖️ Pendientes de Auto de Ejecutoria{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1 style="color: #1e3c72; font-size: 1.5rem;">⚖️ Pendientes de Auto de Ejecutoria</h1>
+    <a href="javascript:history.back()" class="btn" style="background: #6b7280; color: #fff; font-size: 0.85rem;">← Volver</a>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" style="padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem;
+            background: {% if 'success' in message.tags %}#d1fae5{% else %}#fee2e2{% endif %};
+            color: {% if 'success' in message.tags %}#065f46{% else %}#991b1b{% endif %};">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+{% if total == 0 %}
+<div class="card" style="text-align: center; padding: 3rem; color: #999;">
+    ✅ No hay casos pendientes de Auto de Ejecutoria en este momento.
+</div>
+{% endif %}
+
+<!-- ── Caso 1: RES sin RR (plazo 15 días hábiles vencido) ── -->
+{% if por_res %}
+<div class="card">
+    <h2 style="color: #dc2626; font-size: 1.1rem;">
+        🔴 Resoluciones sin Recurso de Reconsideración
+        <span style="background: #dc2626; color: #fff; border-radius: 9999px; padding: 0.15rem 0.55rem; font-size: 0.8rem;">{{ por_res|length }}</span>
+    </h2>
+    <p style="color: #6b7280; font-size: 0.85rem; margin-bottom: 1rem;">
+        Plazo de 15 días hábiles vencido desde la notificación de la RES. No se presentó RR.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>N° RES</th>
+                <th>Militar</th>
+                <th>Fecha Notif. RES</th>
+                <th>Fecha Límite</th>
+                <th style="text-align:center;">Días vencido</th>
+                <th style="text-align:center;">Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for res in por_res %}
+            <tr>
+                <td><strong>{{ res.sim.SIM_COD }}</strong></td>
+                <td>{{ res.RES_NUM }}</td>
+                <td style="font-size: 0.85rem;">
+                    {% if res.pm %}
+                        {{ res.pm.PM_GRADO }} {{ res.pm.PM_PATERNO }} {{ res.pm.PM_MATERNO }}
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ res.RES_FECNOT|date:"d/m/Y" }}</td>
+                <td style="color: #dc2626; font-weight: 600;">{{ res._fecha_limite|date:"d/m/Y" }}</td>
+                <td style="text-align: center;">
+                    <span style="background: #fee2e2; color: #dc2626; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                        +{{ res._dias_vencido }} días
+                    </span>
+                </td>
+                <td style="text-align: center;">
+                    <a href="{% url 'crear_auto_ejecutoria' 'res' res.id %}"
+                       class="btn"
+                       style="background: #7c3aed; color: #fff; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; text-decoration: none;">
+                        ⚖️ Crear Auto
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ── Caso 2: RR sin RAP (plazo 3 días hábiles vencido) ── -->
+{% if por_rr %}
+<div class="card">
+    <h2 style="color: #b45309; font-size: 1.1rem;">
+        🟠 Recursos de Reconsideración sin Recurso de Apelación
+        <span style="background: #b45309; color: #fff; border-radius: 9999px; padding: 0.15rem 0.55rem; font-size: 0.8rem;">{{ por_rr|length }}</span>
+    </h2>
+    <p style="color: #6b7280; font-size: 0.85rem; margin-bottom: 1rem;">
+        Plazo de 3 días hábiles vencido desde la notificación del RR. No se presentó RAP al TSP.
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>N° RR</th>
+                <th>Militar</th>
+                <th>Fecha Notif. RR</th>
+                <th>Fecha Límite</th>
+                <th style="text-align:center;">Días vencido</th>
+                <th style="text-align:center;">Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rr in por_rr %}
+            <tr>
+                <td><strong>{{ rr.sim.SIM_COD }}</strong></td>
+                <td>{{ rr.RR_NUM }}</td>
+                <td style="font-size: 0.85rem;">
+                    {% if rr.pm %}
+                        {{ rr.pm.PM_GRADO }} {{ rr.pm.PM_PATERNO }} {{ rr.pm.PM_MATERNO }}
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ rr.RR_FECNOT|date:"d/m/Y" }}</td>
+                <td style="color: #b45309; font-weight: 600;">{{ rr._fecha_limite|date:"d/m/Y" }}</td>
+                <td style="text-align: center;">
+                    <span style="background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                        +{{ rr._dias_vencido }} días
+                    </span>
+                </td>
+                <td style="text-align: center;">
+                    <a href="{% url 'crear_auto_ejecutoria' 'rr' rr.id %}"
+                       class="btn"
+                       style="background: #7c3aed; color: #fff; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; text-decoration: none;">
+                        ⚖️ Crear Auto
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<style>
+.card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+.card h2 { margin-bottom: 0.5rem; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .65rem .85rem; text-align: left; border-bottom: 1px solid #f0f0f0; }
+th { background: #f8f9fa; font-weight: 600; color: #1e3c72; font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
+tr:hover td { background: #f9fafb; }
+</style>
+{% endblock %}

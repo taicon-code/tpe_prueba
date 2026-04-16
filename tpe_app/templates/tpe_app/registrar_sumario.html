@@ -12,301 +12,265 @@
 
 <h1 style="margin-bottom: 2rem; color: #1e3c72;">➕ Registrar Nuevo Sumario</h1>
 
-<form method="post" style="max-width: 1000px; margin: 0 auto;">
+<form method="post" enctype="multipart/form-data" style="max-width: 1000px; margin: 0 auto;">
     {% csrf_token %}
-    
+
     <!-- DATOS DEL SUMARIO -->
     <div class="card">
         <h2>📄 Datos del Sumario</h2>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                    {{ form.SIM_COD.label }}
-                </label>
+                <label class="field-label">{{ form.SIM_COD.label }}</label>
                 {{ form.SIM_COD }}
-                {% if form.SIM_COD.errors %}
-                    <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                        {{ form.SIM_COD.errors.0 }}
-                    </div>
-                {% endif %}
-                <small style="color: #666; font-size: 0.85rem;">Formato: DJE-###/AA</small>
+                {% if form.SIM_COD.errors %}<div class="field-error">{{ form.SIM_COD.errors.0 }}</div>{% endif %}
+                <small class="field-hint">Formato: DJE-###/AA</small>
             </div>
-            
             <div>
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                    {{ form.SIM_FECING.label }}
-                </label>
+                <label class="field-label">{{ form.SIM_FECING.label }}</label>
                 {{ form.SIM_FECING }}
-                {% if form.SIM_FECING.errors %}
-                    <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                        {{ form.SIM_FECING.errors.0 }}
-                    </div>
-                {% endif %}
+                {% if form.SIM_FECING.errors %}<div class="field-error">{{ form.SIM_FECING.errors.0 }}</div>{% endif %}
             </div>
         </div>
-        
+
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.SIM_TIPO.label }}
-            </label>
+            <label class="field-label">{{ form.SIM_TIPO.label }}</label>
             {{ form.SIM_TIPO }}
-            {% if form.SIM_TIPO.errors %}
-                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.SIM_TIPO.errors.0 }}
-                </div>
-            {% endif %}
+            {% if form.SIM_TIPO.errors %}<div class="field-error">{{ form.SIM_TIPO.errors.0 }}</div>{% endif %}
         </div>
-        
+
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.SIM_OBJETO.label }}
-            </label>
+            <label class="field-label">{{ form.SIM_OBJETO.label }}</label>
             {{ form.SIM_OBJETO }}
-            {% if form.SIM_OBJETO.errors %}
-                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.SIM_OBJETO.errors.0 }}
-                </div>
-            {% endif %}
+            {% if form.SIM_OBJETO.errors %}<div class="field-error">{{ form.SIM_OBJETO.errors.0 }}</div>{% endif %}
         </div>
-        
+
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.SIM_RESUM.label }}
-            </label>
+            <label class="field-label">{{ form.SIM_RESUM.label }}</label>
             {{ form.SIM_RESUM }}
-            {% if form.SIM_RESUM.errors %}
-                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.SIM_RESUM.errors.0 }}
-                </div>
-            {% endif %}
+            {% if form.SIM_RESUM.errors %}<div class="field-error">{{ form.SIM_RESUM.errors.0 }}</div>{% endif %}
         </div>
-        
+
         <div>
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.SIM_AUTOFINAL.label }}
-            </label>
+            <label class="field-label">{{ form.SIM_AUTOFINAL.label }}</label>
             {{ form.SIM_AUTOFINAL }}
-            {% if form.SIM_AUTOFINAL.errors %}
-                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.SIM_AUTOFINAL.errors.0 }}
-                </div>
-            {% endif %}
-            <small style="color: #666; font-size: 0.85rem;">Opcional: Se puede agregar después</small>
+            {% if form.SIM_AUTOFINAL.errors %}<div class="field-error">{{ form.SIM_AUTOFINAL.errors.0 }}</div>{% endif %}
+            <small class="field-hint">Opcional — se puede agregar después</small>
         </div>
     </div>
-    
+
     <!-- MILITARES INVESTIGADOS -->
     <div class="card">
         <h2>👥 Militares Investigados</h2>
-        <p style="color: #666; margin-bottom: 1.5rem;">
-            Agregue los militares involucrados en este sumario. Mínimo 1 persona.
+        <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;">
+            Mínimo 1 militar. Si ya existe por CI, sus datos se cargan automáticamente.
         </p>
-        
+
         {{ formset.management_form }}
-        
+
         <div id="formset-container">
-            {% for form in formset %}
-            <div class="formset-form" style="padding: 1rem; background: #f8f9fa; border-radius: 6px; margin-bottom: 1rem;">
-                {% if form.non_field_errors %}
-                    <div style="color: #dc3545; font-size: 0.9rem; margin-bottom: 0.75rem;">
-                        {{ form.non_field_errors.0 }}
-                    </div>
+            {% for mform in formset %}
+            <div class="militar-card formset-form">
+                {% if mform.non_field_errors %}
+                    <div class="field-error" style="margin-bottom: 0.75rem;">{{ mform.non_field_errors.0 }}</div>
                 {% endif %}
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; align-items: end;">
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            CI del Militar
-                        </label>
-                        {{ form.PM_CI }}
-                        {% if form.PM_CI.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_CI.errors.0 }}
-                            </div>
-                        {% endif %}
-                    </div>
 
+                <!-- Fila 1: CI + Escalafón + Grado + Arma + Especialidad -->
+                <div class="militar-row-top">
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            {{ form.PM_ESCALAFON.label }}
-                        </label>
-                        {{ form.PM_ESCALAFON }}
-                        {% if form.PM_ESCALAFON.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_ESCALAFON.errors.0 }}
-                            </div>
-                        {% endif %}
+                        <label class="field-label-sm">CI</label>
+                        {{ mform.PM_CI }}
+                        {% if mform.PM_CI.errors %}<div class="field-error">{{ mform.PM_CI.errors.0 }}</div>{% endif %}
                     </div>
+                    <div>
+                        <label class="field-label-sm">{{ mform.PM_ESCALAFON.label }}</label>
+                        {{ mform.PM_ESCALAFON }}
+                    </div>
+                    <div>
+                        <label class="field-label-sm">{{ mform.PM_GRADO.label }}</label>
+                        {{ mform.PM_GRADO }}
+                    </div>
+                    <div>
+                        <label class="field-label-sm">{{ mform.PM_ARMA.label }}</label>
+                        {{ mform.PM_ARMA }}
+                    </div>
+                    <div>
+                        <label class="field-label-sm">{{ mform.PM_ESPEC.label }}</label>
+                        {{ mform.PM_ESPEC }}
+                    </div>
+                </div>
 
+                <!-- Fila 2: Nombre + Paterno + Materno + Foto + Eliminar -->
+                <div class="militar-row-bottom">
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            {{ form.PM_GRADO.label }}
-                        </label>
-                        {{ form.PM_GRADO }}
-                        {% if form.PM_GRADO.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_GRADO.errors.0 }}
-                            </div>
-                        {% endif %}
+                        <label class="field-label-sm">{{ mform.PM_NOMBRE.label }}</label>
+                        {{ mform.PM_NOMBRE }}
+                        {% if mform.PM_NOMBRE.errors %}<div class="field-error">{{ mform.PM_NOMBRE.errors.0 }}</div>{% endif %}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            {{ form.PM_ARMA.label }}
-                        </label>
-                        {{ form.PM_ARMA }}
-                        {% if form.PM_ARMA.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_ARMA.errors.0 }}
-                            </div>
-                        {% endif %}
+                        <label class="field-label-sm">{{ mform.PM_PATERNO.label }}</label>
+                        {{ mform.PM_PATERNO }}
+                        {% if mform.PM_PATERNO.errors %}<div class="field-error">{{ mform.PM_PATERNO.errors.0 }}</div>{% endif %}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            {{ form.PM_NOMBRE.label }}
-                        </label>
-                        {{ form.PM_NOMBRE }}
-                        {% if form.PM_NOMBRE.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_NOMBRE.errors.0 }}
-                            </div>
-                        {% endif %}
+                        <label class="field-label-sm">{{ mform.PM_MATERNO.label }}</label>
+                        {{ mform.PM_MATERNO }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            {{ form.PM_PATERNO.label }}
-                        </label>
-                        {{ form.PM_PATERNO }}
-                        {% if form.PM_PATERNO.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_PATERNO.errors.0 }}
-                            </div>
-                        {% endif %}
+                        <label class="field-label-sm">📷 {{ mform.PM_FOTO.label }}</label>
+                        {{ mform.PM_FOTO }}
+                        <small class="field-hint">JPG/PNG — opcional</small>
                     </div>
-
-                    <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                            {{ form.PM_MATERNO.label }}
-                        </label>
-                        {{ form.PM_MATERNO }}
-                        {% if form.PM_MATERNO.errors %}
-                            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                                {{ form.PM_MATERNO.errors.0 }}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
                     {% if forloop.counter > 1 %}
-                    <div style="padding-top: 1.5rem;">
-                        <div style="display:none;">{{ form.DELETE }}</div>
-                        <button type="button" class="btn btn-remove-militar" style="background:#dc3545;">
-                            🗑️ Eliminar
+                    <div style="display: flex; align-items: flex-end;">
+                        <div style="display:none;">{{ mform.DELETE }}</div>
+                        <button type="button" class="btn btn-remove-militar" style="background:#dc3545; font-size: 0.85rem; padding: 0.5rem 0.75rem;">
+                            🗑️ Quitar
                         </button>
                     </div>
                     {% endif %}
                 </div>
-                {{ form.id }}
+
+                {{ mform.id }}
             </div>
             {% endfor %}
         </div>
 
+        <!-- Template vacío para JS -->
         <template id="militar-empty-form-template">
-            <div class="formset-form" style="padding: 1rem; background: #f8f9fa; border-radius: 6px; margin-bottom: 1rem;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; align-items: end;">
+            <div class="militar-card formset-form">
+                <div class="militar-row-top">
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">CI del Militar</label>
+                        <label class="field-label-sm">CI</label>
                         {{ formset.empty_form.PM_CI }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">{{ formset.empty_form.PM_ESCALAFON.label }}</label>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_ESCALAFON.label }}</label>
                         {{ formset.empty_form.PM_ESCALAFON }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">{{ formset.empty_form.PM_GRADO.label }}</label>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_GRADO.label }}</label>
                         {{ formset.empty_form.PM_GRADO }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">{{ formset.empty_form.PM_ARMA.label }}</label>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_ARMA.label }}</label>
                         {{ formset.empty_form.PM_ARMA }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">{{ formset.empty_form.PM_NOMBRE.label }}</label>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_ESPEC.label }}</label>
+                        {{ formset.empty_form.PM_ESPEC }}
+                    </div>
+                </div>
+                <div class="militar-row-bottom">
+                    <div>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_NOMBRE.label }}</label>
                         {{ formset.empty_form.PM_NOMBRE }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">{{ formset.empty_form.PM_PATERNO.label }}</label>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_PATERNO.label }}</label>
                         {{ formset.empty_form.PM_PATERNO }}
                     </div>
-
                     <div>
-                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">{{ formset.empty_form.PM_MATERNO.label }}</label>
+                        <label class="field-label-sm">{{ formset.empty_form.PM_MATERNO.label }}</label>
                         {{ formset.empty_form.PM_MATERNO }}
                     </div>
-
-                    <div style="padding-top: 1.5rem;">
+                    <div>
+                        <label class="field-label-sm">📷 {{ formset.empty_form.PM_FOTO.label }}</label>
+                        {{ formset.empty_form.PM_FOTO }}
+                        <small class="field-hint">JPG/PNG — opcional</small>
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
                         <div style="display:none;">{{ formset.empty_form.DELETE }}</div>
-                        <button type="button" class="btn btn-remove-militar" style="background:#dc3545;"> 🗑️ Eliminar</button>
+                        <button type="button" class="btn btn-remove-militar" style="background:#dc3545; font-size: 0.85rem; padding: 0.5rem 0.75rem;">
+                            🗑️ Quitar
+                        </button>
                     </div>
                 </div>
                 {{ formset.empty_form.id }}
             </div>
         </template>
-        
-        <button type="button" id="add-form" class="btn" style="background: #28a745;">
+
+        <button type="button" id="add-form" class="btn" style="background: #28a745; margin-top: 0.5rem;">
             ➕ Agregar otro militar
         </button>
     </div>
-    
+
     <!-- DATALIST PARA AUTOCOMPLETADO -->
     <datalist id="pm_list">
         {% for pm in personal_militar %}
-            <option value="{{ pm.PM_CI }}">
-                {{ pm.PM_GRADO }} {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}
-            </option>
+            <option value="{{ pm.PM_CI }}">{{ pm.PM_GRADO }} {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}</option>
         {% endfor %}
     </datalist>
-    
+
     <!-- BOTONES -->
     <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-        <button type="submit" class="btn" style="background: #1e3c72;">
-            ✅ Registrar Sumario
-        </button>
-        <a href="{% url 'administrativo_dashboard' %}" class="btn" style="background: #6c757d;">
-            Cancelar
-        </a>
+        <button type="submit" class="btn" style="background: #1e3c72;">✅ Registrar Sumario</button>
+        <a href="{% url 'administrativo_dashboard' %}" class="btn" style="background: #6c757d;">Cancelar</a>
     </div>
 </form>
 
 <style>
     .form-control {
         width: 100%;
-        padding: 0.75rem;
+        padding: 0.65rem 0.75rem;
         border: 1px solid #ddd;
         border-radius: 4px;
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
     .form-control:focus {
         outline: none;
         border-color: #1e3c72;
+        box-shadow: 0 0 0 2px rgba(30,60,114,0.1);
     }
-    select.form-control {
-        cursor: pointer;
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; font-family: inherit; }
+
+    .field-label {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #374151;
     }
-    textarea.form-control {
-        resize: vertical;
-        font-family: inherit;
+    .field-label-sm {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .field-error { color: #dc3545; font-size: 0.8rem; margin-top: 0.2rem; }
+    .field-hint  { color: #9ca3af; font-size: 0.78rem; margin-top: 0.2rem; display: block; }
+
+    /* Tarjeta de cada militar */
+    .militar-card {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1rem;
+    }
+    .militar-row-top {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr 1.2fr 1.2fr 1.2fr;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .militar-row-bottom {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1.2fr auto;
+        gap: 0.75rem;
+        align-items: end;
+    }
+    @media (max-width: 900px) {
+        .militar-row-top,
+        .militar-row-bottom { grid-template-columns: 1fr 1fr; }
     }
 </style>
 
 <script>
-// JavaScript para agregar más formularios de militares
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('formset-container');
     const addButton = document.getElementById('add-form');
@@ -331,79 +295,67 @@ document.addEventListener('DOMContentLoaded', function() {
         const escalafonSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
         const gradoSelect = formEl.querySelector('select[name$="-PM_GRADO"]');
         if (!escalafonSelect || !gradoSelect) return;
-
         const escalafon = escalafonSelect.value;
         const permitidos = GRADOS_POR_ESCALAFON[escalafon] || null;
-
         for (const opt of Array.from(gradoSelect.options)) {
-            if (opt.value === '') {
-                opt.hidden = false;
-                opt.disabled = false;
-                continue;
-            }
-
-            if (!escalafon || !permitidos) {
-                opt.hidden = false;
-                opt.disabled = false;
-                continue;
-            }
-
+            if (opt.value === '') { opt.hidden = false; opt.disabled = false; continue; }
+            if (!escalafon || !permitidos) { opt.hidden = false; opt.disabled = false; continue; }
             const ok = permitidos.includes(opt.value);
-            opt.hidden = !ok;
-            opt.disabled = !ok;
+            opt.hidden = !ok; opt.disabled = !ok;
         }
-
-        if (gradoSelect.value) {
-            const selected = gradoSelect.selectedOptions[0];
-            if (selected && selected.disabled) {
-                gradoSelect.value = '';
-            }
-        }
+        if (gradoSelect.value && gradoSelect.selectedOptions[0]?.disabled) gradoSelect.value = '';
     }
 
     function attachRemoveHandler(formEl) {
         const btn = formEl.querySelector('.btn-remove-militar');
         if (!btn) return;
         btn.addEventListener('click', function() {
-            const deleteCheckbox = formEl.querySelector('input[type=\"checkbox\"][name$=\"-DELETE\"]');
-            if (deleteCheckbox) {
-                deleteCheckbox.checked = true;
-            }
+            const del = formEl.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (del) del.checked = true;
             formEl.style.display = 'none';
         });
     }
 
-    function attachEscalafonHandler(formEl) {
-        const escalafonSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
-        const gradoSelect = formEl.querySelector('select[name$="-PM_GRADO"]');
-        if (!escalafonSelect || !gradoSelect) return;
-
-        applyGradoFilter(formEl);
-        escalafonSelect.addEventListener('change', function() {
-            gradoSelect.value = '';
-            applyGradoFilter(formEl);
+    function attachPhotoPreview(formEl) {
+        const fileInput = formEl.querySelector('input[type="file"][name$="-PM_FOTO"]');
+        if (!fileInput) return;
+        fileInput.addEventListener('change', function() {
+            let preview = formEl.querySelector('.foto-preview');
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.className = 'foto-preview';
+                preview.style.cssText = 'width:56px;height:56px;border-radius:50%;object-fit:cover;margin-top:0.4rem;border:2px solid #e5e7eb;display:block;';
+                fileInput.parentNode.appendChild(preview);
+            }
+            const file = fileInput.files[0];
+            if (file) preview.src = URL.createObjectURL(file);
         });
     }
 
     function attachRowHandlers(formEl) {
         attachRemoveHandler(formEl);
-        attachEscalafonHandler(formEl);
+        const escSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
+        if (escSelect) {
+            applyGradoFilter(formEl);
+            escSelect.addEventListener('change', function() {
+                formEl.querySelector('select[name$="-PM_GRADO"]').value = '';
+                applyGradoFilter(formEl);
+            });
+        }
+        attachPhotoPreview(formEl);
     }
 
     container.querySelectorAll('.formset-form').forEach(attachRowHandlers);
-    
+
     addButton.addEventListener('click', function() {
         const formCount = parseInt(totalForms.value);
         const tpl = document.getElementById('militar-empty-form-template');
         if (!tpl) return;
-
         const wrapper = document.createElement('div');
         wrapper.innerHTML = tpl.innerHTML.replaceAll('__prefix__', formCount.toString());
         const newForm = wrapper.firstElementChild;
         if (!newForm) return;
-
         attachRowHandlers(newForm);
-        
         container.appendChild(newForm);
         totalForms.value = formCount + 1;
     });

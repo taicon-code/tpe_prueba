@@ -1,7 +1,7 @@
 # tpe_app/views/__init__.py
 from .auth_views import login_view, logout_view
 from .admin_views import admin_dashboard, crear_usuario_con_rol
-from .abogado_views import abogado_dashboard
+from .abogado_views import abogado_dashboard, abogado_entregar_carpeta
 from .abogado_documentos_views import (
     abogado_auto_excusa_crear,
     abogado_autotpe_crear,
@@ -20,6 +20,27 @@ from .administrativo_views import (
     crear_agenda,
     lista_agendas,
     editar_agenda_resultado,
+    admin2_dashboard,
+    admin3_dashboard,
+    admin2_entregar_carpeta,
+    admin2_recibir_carpeta,
+    subir_pdf_res,
+    gestionar_abogados_sim,
 )
 from .export_views import export_person_pdfs_zip, export_person_excel
 from .vocal_views import vocal_dashboard, vocal_agenda_detalle, vocal_confirmar_dictamen
+from .ayudante_views import (
+    ayudante_dashboard,
+    ayudante_lista_res,
+    ayudante_lista_res_sin_pdf,
+    ayudante_registrar_res,
+    ayudante_registrar_notificacion,
+    ayudante_registrar_notificacion_rr,
+    ayudante_registrar_rap,
+    ayudante_registrar_raee,
+    ayudante_registrar_autotpe,
+)
+from .ejecutoria_views import (
+    pendientes_ejecutoria,
+    crear_auto_ejecutoria,
+)

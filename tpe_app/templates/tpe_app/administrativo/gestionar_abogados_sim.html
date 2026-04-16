@@ -1,0 +1,186 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Gestionar Abogados - {{ sim.SIM_COD }}{% endblock %}
+{% block navbar_title %}⚖️ Gestionar Abogados — {{ sim.SIM_COD }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'administrativo_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 1.5rem; color: #1e3c72;">⚖️ Gestionar Abogados — {{ sim.SIM_COD }}</h1>
+
+<!-- Info del sumario -->
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #2196f3; background: #f0f7ff;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div>
+            <strong style="color: #1565c0;">Sumario:</strong> {{ sim.SIM_COD }}<br>
+            <strong style="color: #1565c0;">Estado:</strong> {{ sim.get_SIM_ESTADO_display }}<br>
+            <strong style="color: #1565c0;">Resumen:</strong> {{ sim.SIM_RESUM|truncatewords:15|default:"—" }}
+        </div>
+        <div>
+            <strong style="color: #1565c0;">Militares investigados:</strong>
+            <ul style="margin: 0.25rem 0 0 1rem; padding: 0;">
+                {% for pm in investigados %}
+                <li style="font-size: 0.9rem;">{{ pm.PM_GRADO }} {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}</li>
+                {% empty %}
+                <li style="color: #9ca3af;">Sin investigados</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Abogados actualmente asignados -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="margin-top: 0; font-size: 1.1rem; color: #1e3c72;">📋 Abogados actualmente asignados</h2>
+    {% if abogados_actuales %}
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        {% for asig in abogados_actuales %}
+        <span style="background: {% if asig.es_responsable %}#dbeafe; color: #1e40af; border: 1px solid #93c5fd;{% else %}#dcfce7; color: #166534; border: 1px solid #bbf7d0;{% endif %} padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+            {{ asig.abog.AB_GRADO }} {{ asig.abog.AB_NOMBRE }} {{ asig.abog.AB_PATERNO }}
+            {% if asig.es_responsable %} 📂 Responsable{% endif %}
+        </span>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color: #9ca3af; margin: 0;">Sin abogados asignados</p>
+    {% endif %}
+</div>
+
+<!-- Formulario -->
+<form method="post" style="max-width: 800px;" id="form-abogados">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2 style="margin-top: 0; font-size: 1.1rem; color: #1e3c72;">✏️ Seleccionar abogados</h2>
+        <p style="color: #666; font-size: 0.85rem; margin-bottom: 1rem;">
+            Marque los abogados asignados a este sumario. El <strong>responsable</strong> custodia la carpeta fisica y puede entregarla a Archivo SIM.
+        </p>
+
+        <div class="abogados-checkboxes">
+            {{ form.abogados }}
+        </div>
+        {% if form.abogados.errors %}
+            <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.5rem;">
+                {{ form.abogados.errors.0 }}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Selección de responsable -->
+    <div class="card" id="responsable-card" style="border-left: 4px solid #3b82f6; margin-top: 1rem;">
+        <h2 style="margin-top: 0; font-size: 1.1rem; color: #1e3c72;">📂 Responsable de la carpeta</h2>
+        <p style="color: #666; font-size: 0.85rem; margin-bottom: 1rem;">
+            Seleccione cual abogado sera el responsable de custodiar la carpeta fisica.
+        </p>
+        <div id="responsable-options">
+            <p style="color: #9ca3af; font-size: 0.9rem;">Seleccione al menos un abogado arriba.</p>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+        <button type="submit" class="btn" style="background: #28a745;">
+            ✅ Guardar Cambios
+        </button>
+        <a href="{% url 'administrativo_dashboard' %}" class="btn" style="background: #6c757d;">
+            Cancelar
+        </a>
+    </div>
+</form>
+
+<style>
+    .abogados-checkboxes ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 0.5rem;
+    }
+    .abogados-checkboxes li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .abogados-checkboxes li:hover {
+        background: #e3f2fd;
+    }
+    .abogados-checkboxes li label {
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+    .resp-option {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 0.4rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .resp-option:hover { background: #eff6ff; }
+    .resp-option label { cursor: pointer; font-size: 0.9rem; margin: 0; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var checkboxes = document.querySelectorAll('.abogados-checkboxes input[type="checkbox"]');
+    var respContainer = document.getElementById('responsable-options');
+    var responsableActualId = '{{ responsable_actual.abog_id|default:"" }}';
+
+    function actualizarResponsable() {
+        var seleccionados = [];
+        checkboxes.forEach(function(cb) {
+            if (cb.checked) {
+                var label = cb.parentElement.querySelector('label');
+                seleccionados.push({
+                    value: cb.value,
+                    text: label ? label.textContent.trim() : cb.value
+                });
+            }
+        });
+
+        if (seleccionados.length === 0) {
+            respContainer.innerHTML = '<p style="color: #9ca3af; font-size: 0.9rem;">Seleccione al menos un abogado arriba.</p>';
+            return;
+        }
+
+        // Verificar si el responsable actual sigue seleccionado
+        var respActualValido = seleccionados.some(function(s) { return s.value === responsableActualId; });
+        var html = '';
+        seleccionados.forEach(function(s, i) {
+            var checked = '';
+            if (respActualValido && s.value === responsableActualId) {
+                checked = ' checked';
+            } else if (!respActualValido && i === 0) {
+                checked = ' checked';
+            }
+            html += '<div class="resp-option">' +
+                '<input type="radio" name="responsable" value="' + s.value + '" id="resp_' + s.value + '"' + checked + '>' +
+                '<label for="resp_' + s.value + '">' + s.text + '</label>' +
+                '</div>';
+        });
+        respContainer.innerHTML = html;
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', actualizarResponsable);
+    });
+
+    actualizarResponsable();
+});
+</script>
+{% endblock %}

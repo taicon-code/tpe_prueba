@@ -1,0 +1,126 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Entregar Carpeta - Archivo SIM{% endblock %}
+{% block navbar_title %}📤 Archivo SIM - Entregar Carpeta{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📤 Entregar Carpeta a Abogado</h1>
+
+<div style="max-width: 700px;">
+    <!-- Información del sumario -->
+    <div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: #1565c0;">📋 Información del Sumario</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Código:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.SIM_COD }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Tipo:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.get_SIM_TIPO_display }}</p>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Resumen:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.SIM_RESUM }}</p>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Custodio Actual:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
+                    {{ custodio_actual.get_tipo_custodio_display }}
+                    {% if custodio_actual.abog %}
+                        — {{ custodio_actual.abog.AB_GRADO }} {{ custodio_actual.abog.AB_PATERNO }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de entrega -->
+    <form method="post" class="card">
+        {% csrf_token %}
+
+        <h2>✅ Entregar Carpeta</h2>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Tipo de Custodia *
+            </label>
+            <select name="tipo_custodio" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <option value="">— Seleccionar —</option>
+                {% for value, label in tipos_custodia %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Ej: Para Recurso de Reconsideración, selecciona "Abogado - RR"
+            </small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Abogado Destinatario *
+            </label>
+            <select name="abogado" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <option value="">— Seleccionar abogado —</option>
+                {% for abog in abogados %}
+                    <option value="{{ abog.pk }}">{{ abog.AB_GRADO }} {{ abog.AB_PATERNO }} ({{ abog.AB_NOMBRE }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Observaciones
+            </label>
+            <textarea name="observacion" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: inherit; resize: vertical; min-height: 80px;"></textarea>
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Ej: "Carpeta completa", "Falta documento X", "Entrega para dictamen RR", etc.
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="background: #28a745; color: #fff;">
+                ✅ Confirmar Entrega
+            </button>
+            <a href="{% url 'admin2_dashboard' %}" class="btn" style="background: #6c757d; color: #fff;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .5rem 1rem;
+        text-decoration: none;
+        border-radius: 7px;
+        border: none;
+        cursor: pointer;
+        font-size: .875rem;
+        font-family: inherit;
+        font-weight: 500;
+        transition: background .15s, transform .1s;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}

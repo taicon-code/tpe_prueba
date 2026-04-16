@@ -11,6 +11,7 @@ urlpatterns = [
     path('panel-admin/usuarios/crear/', views.crear_usuario_con_rol, name='crear_usuario'),
     path('abogado/dashboard/', views.abogado_dashboard, name='abogado_dashboard'),
     path('abogado/sumarios/<int:sim_id>/', views.abogado_sumario_detalle, name='abogado_sumario_detalle'),
+    path('abogado/sumarios/<int:sim_id>/entregar-carpeta/', views.abogado_entregar_carpeta, name='abogado_entregar_carpeta'),
     path('abogado/sumarios/<int:sim_id>/dictamen/nuevo/', views.abogado_dictamen_crear, name='abogado_dictamen_crear'),
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/res/nueva/', views.abogado_res_crear, name='abogado_res_crear'),
     path('abogado/sumarios/<int:sim_id>/res/<int:res_id>/rr/nueva/', views.abogado_rr_crear, name='abogado_rr_crear'),
@@ -18,17 +19,31 @@ urlpatterns = [
     path('abogado/sumarios/<int:sim_id>/auto-excusa/crear/', views.abogado_auto_excusa_crear, name='abogado_auto_excusa_crear'),
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
     path('administrativo/dashboard/', views.administrativo_dashboard, name='administrativo_dashboard'),
+    path('admin2/dashboard/', views.admin2_dashboard, name='admin2_dashboard'),
+    path('admin3/dashboard/', views.admin3_dashboard, name='admin3_dashboard'),
 
     # Vocal TPE - Secretario de Actas
     path('vocal/dashboard/', views.vocal_dashboard, name='vocal_dashboard'),
     path('vocal/agenda/<int:ag_id>/', views.vocal_agenda_detalle, name='vocal_agenda_detalle'),
     path('vocal/dictamen/<int:dic_id>/confirmar/', views.vocal_confirmar_dictamen, name='vocal_confirmar_dictamen'),
 
+    # ✅ NUEVO: Ayudante - Registro de datos históricos
+    path('ayudante/', views.ayudante_dashboard, name='ayudante_dashboard'),
+    path('ayudante/res/', views.ayudante_lista_res, name='ayudante_lista_res'),
+    path('ayudante/res/sin-pdf/', views.ayudante_lista_res_sin_pdf, name='ayudante_lista_res_sin_pdf'),
+    path('ayudante/res/nueva/', views.ayudante_registrar_res, name='ayudante_registrar_res'),
+    path('ayudante/res/<int:res_id>/notificar/', views.ayudante_registrar_notificacion, name='ayudante_registrar_notificacion'),
+    path('ayudante/rr/<int:rr_id>/notificar/', views.ayudante_registrar_notificacion_rr, name='ayudante_registrar_notificacion_rr'),
+    path('ayudante/rap/nuevo/', views.ayudante_registrar_rap, name='ayudante_registrar_rap'),
+    path('ayudante/raee/nuevo/', views.ayudante_registrar_raee, name='ayudante_registrar_raee'),
+    path('ayudante/autotpe/nuevo/', views.ayudante_registrar_autotpe, name='ayudante_registrar_autotpe'),
+
     # Administrativo - Sumarios
     path('administrativo/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
     path('administrativo/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
     path('administrativo/rr/registrar/', views.registrar_rr, name='registrar_rr'),
     path('administrativo/rr/agendar/', views.agendar_rr, name='agendar_rr'),
+    path('administrativo/sumarios/<int:sim_id>/abogados/', views.gestionar_abogados_sim, name='gestionar_abogados_sim'),
 
     # ✅ NUEVO v3.2: Gestión de Agendas (Admin1)
     path('administrativo/agendas/crear/', views.crear_agenda, name='crear_agenda'),
@@ -36,8 +51,11 @@ urlpatterns = [
     path('administrativo/agendas/<int:ag_id>/resultado/', views.editar_agenda_resultado, name='agenda_resultado'),
 
     # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
-    # path('administrativo/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='entregar_carpeta'),
-    # path('administrativo/custodia/<int:sim_id>/devolucion/', views.admin2_recibir_carpeta, name='devolucion_carpeta'),
+    path('administrativo/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
+    path('administrativo/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),
+
+    # ✅ NUEVO: Subir PDF de Resoluciones (Administrador)
+    path('administrativo/res/<int:res_id>/subir-pdf/', views.subir_pdf_res, name='subir_pdf_res'),
     # path('administrativo/custodia/<int:sim_id>/historial/', views.historial_custodia, name='historial_custodia'),
 
     # ✅ NUEVO v3.1: Historial de sumarios (interno y externo)
@@ -51,6 +69,10 @@ urlpatterns = [
     path('buscador/dashboard/<int:personal_id>/exportar/pdfs/', views.export_person_pdfs_zip, name='export_pdfs_zip'),
     path('buscador/dashboard/<int:personal_id>/exportar/excel/', views.export_person_excel, name='export_excel'),
     
+    # Auto de Ejecutoria (semi-automático)
+    path('ejecutoria/pendientes/', views.pendientes_ejecutoria, name='pendientes_ejecutoria'),
+    path('ejecutoria/crear/<str:origen>/<int:origen_id>/', views.crear_auto_ejecutoria, name='crear_auto_ejecutoria'),
+
     # Redirección por defecto (opcional)
     path('', views.login_view, name='index'),
 ]

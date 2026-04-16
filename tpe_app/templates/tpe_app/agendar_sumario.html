@@ -73,16 +73,18 @@
 
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.abogado.label }}
+                {{ form.abogados.label }}
             </label>
-            {{ form.abogado }}
-            {% if form.abogado.errors %}
+            <div class="abogados-checkboxes">
+                {{ form.abogados }}
+            </div>
+            {% if form.abogados.errors %}
                 <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.abogado.errors.0 }}
+                    {{ form.abogados.errors.0 }}
                 </div>
             {% endif %}
             <small style="color: #666; font-size: 0.85rem;">
-                ⚖️ Abogado que realizará el dictamen y la 1ra resolución
+                ⚖️ Seleccione uno o varios abogados. Puede agregar/quitar abogados luego desde el detalle del sumario.
             </small>
         </div>
     </div>
@@ -99,7 +101,7 @@
                 <br><small style="color: #666; margin-left: 1rem;">Militares: <span id="militares">—</span></small>
             </p>
             <p style="margin: 0.5rem 0;">
-                <strong>Abogado:</strong> <span style="color: #d32f2f;" id="abogado-nombre">—</span>
+                <strong>Abogado(s):</strong> <span style="color: #d32f2f;" id="abogado-nombre">—</span>
             </p>
         </div>
     </div>
@@ -129,6 +131,33 @@
     select.form-control {
         cursor: pointer;
     }
+    .abogados-checkboxes ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 0.5rem;
+    }
+    .abogados-checkboxes li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .abogados-checkboxes li:hover {
+        background: #e3f2fd;
+    }
+    .abogados-checkboxes li label {
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin: 0;
+    }
 </style>
 
 {# ✅ NUEVO v3.2: JavaScript para actualizar resumen en tiempo real #}
@@ -136,7 +165,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const agendaSelect = document.querySelector('[name="agenda"]');
     const sumarioSelect = document.querySelector('[name="sumario"]');
-    const abogadoSelect = document.querySelector('[name="abogado"]');
+    const abogadoCheckboxes = document.querySelectorAll('[name="abogados"]');
 
     const agNumSpan = document.getElementById('ag-num');
     const simCodSpan = document.getElementById('sim-cod');
@@ -152,11 +181,10 @@ document.addEventListener('DOMContentLoaded', function() {
             agNumSpan.textContent = '—';
         }
 
-        // Actualizar sumario (simplificado, no mostramos militares aquí por limitaciones)
+        // Actualizar sumario
         if (sumarioSelect && sumarioSelect.value) {
             const sumarioOption = sumarioSelect.options[sumarioSelect.selectedIndex];
             const sumarioText = sumarioOption.text;
-            // Extraer SIM-COD (primera parte antes del " — ")
             const parts = sumarioText.split(' — ');
             simCodSpan.textContent = parts[0];
             if (parts.length > 1) {
@@ -167,19 +195,23 @@ document.addEventListener('DOMContentLoaded', function() {
             militaresSpan.textContent = '—';
         }
 
-        // Actualizar abogado
-        if (abogadoSelect && abogadoSelect.value) {
-            const abogadoOption = abogadoSelect.options[abogadoSelect.selectedIndex];
-            abogadoNombreSpan.textContent = abogadoOption.text;
-        } else {
-            abogadoNombreSpan.textContent = '—';
-        }
+        // Actualizar abogados (checkboxes)
+        const seleccionados = [];
+        abogadoCheckboxes.forEach(function(cb) {
+            if (cb.checked) {
+                const label = cb.parentElement.querySelector('label');
+                if (label) seleccionados.push(label.textContent.trim());
+            }
+        });
+        abogadoNombreSpan.textContent = seleccionados.length > 0 ? seleccionados.join(', ') : '—';
     }
 
-    // Actualizar cuando cambie cualquier select
+    // Actualizar cuando cambie cualquier select o checkbox
     if (agendaSelect) agendaSelect.addEventListener('change', actualizarResumen);
     if (sumarioSelect) sumarioSelect.addEventListener('change', actualizarResumen);
-    if (abogadoSelect) abogadoSelect.addEventListener('change', actualizarResumen);
+    abogadoCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', actualizarResumen);
+    });
 
     // Actualizar al cargar la página
     actualizarResumen();

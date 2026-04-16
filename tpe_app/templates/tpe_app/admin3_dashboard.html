@@ -1,0 +1,162 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Admin3 Notificador - Dashboard{% endblock %}
+{% block navbar_title %}📬 Admin3 - Gestión de Notificaciones{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📬 Gestión de Notificaciones (Admin3)</h1>
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card" style="border-left-color: #8b5cf6;">
+        <h3 style="color: #1e3c72;">{{ total_res }}</h3>
+        <p>Resoluciones por notificar</p>
+    </div>
+    <div class="stat-card" style="border-left-color: #ec4899;">
+        <h3 style="color: #1e3c72;">{{ total_rr }}</h3>
+        <p>Recursos por notificar</p>
+    </div>
+</div>
+
+<!-- Resoluciones por notificar -->
+<div class="card">
+    <h2>📋 Resoluciones por Notificar (últimas 20)</h2>
+
+    {% if resoluciones %}
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>Número RES</th>
+                <th>Tipo</th>
+                <th>Fecha Emisión</th>
+                <th>Observaciones</th>
+                <th style="text-align: center;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for res in resoluciones %}
+            <tr>
+                <td><strong>{{ res.sim.SIM_COD }}</strong></td>
+                <td>{{ res.RES_NUM }}</td>
+                <td><span style="background: #f97316; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ res.get_RES_TIPO_display|truncatewords:2 }}</span></td>
+                <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                <td style="font-size: 0.9rem; color: #666;">{{ res.RES_NOT|default:"—" }}</td>
+                <td style="text-align: center;">
+                    <a href="{% url 'ayudante_registrar_notificacion' res.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff; border-radius: 4px; text-decoration: none;">
+                        ✅ Notificar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 2rem;">
+        ✅ No hay resoluciones por notificar
+    </p>
+    {% endif %}
+</div>
+
+<!-- Recursos por notificar -->
+<div class="card">
+    <h2>⚖️ Recursos de Reconsideración por Notificar (últimas 20)</h2>
+
+    {% if recursos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>Número RR</th>
+                <th>Fecha Presentación</th>
+                <th>Abogado Asignado</th>
+                <th style="text-align: center;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rr in recursos %}
+            <tr>
+                <td><strong>{{ rr.sim.SIM_COD }}</strong></td>
+                <td>{{ rr.RR_NUM }}</td>
+                <td>{{ rr.RR_FECPRESEN|date:"d/m/Y" }}</td>
+                <td style="font-size: 0.9rem;">
+                    {% if rr.abog %}
+                        {{ rr.abog.AB_GRADO }} {{ rr.abog.AB_PATERNO }}
+                    {% else %}
+                        <span style="color: #999;">Sin asignar</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <a href="{% url 'ayudante_registrar_notificacion_rr' rr.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff; border-radius: 4px; text-decoration: none;">
+                        ✅ Notificar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 2rem;">
+        ✅ No hay recursos por notificar
+    </p>
+    {% endif %}
+</div>
+
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+    .stat-card {
+        background: #fff;
+        padding: 1.4rem;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.07);
+        border-left: 4px solid #1e3c72;
+    }
+    .stat-card h3 {
+        font-size: 2rem;
+        margin-bottom: .4rem;
+    }
+    .stat-card p {
+        color: #6b7280;
+        font-size: .875rem;
+    }
+
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .card h2 {
+        margin-bottom: 1rem;
+        color: #1e3c72;
+        font-size: 1.15rem;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: .7rem .85rem;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #1e3c72;
+        font-size: .8rem;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+    tr:hover td {
+        background: #f9fafb;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Crear Agenda - TPE Sistema{% endblock %}
+{% block navbar_title %}📅 Crear Nueva Agenda{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'lista_agendas' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver a Agendas
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📅 Crear Nueva Agenda</h1>
+
+<form method="post" style="max-width: 600px;">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2>📋 Datos de la Agenda</h2>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.AG_NUM.label }} <span style="color: #dc3545;">*</span>
+            </label>
+            {{ form.AG_NUM }}
+            {% if form.AG_NUM.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.AG_NUM.errors.0 }}
+                </div>
+            {% endif %}
+            {% if form.AG_NUM.help_text %}
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    💡 {{ form.AG_NUM.help_text|safe }}
+                </small>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.AG_TIPO.label }}
+            </label>
+            {{ form.AG_TIPO }}
+            {% if form.AG_TIPO.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.AG_TIPO.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem;">
+                Tipo de sesión del tribunal
+            </small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.AG_FECPROG.label }}
+            </label>
+            {{ form.AG_FECPROG }}
+            {% if form.AG_FECPROG.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.AG_FECPROG.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem;">
+                Fecha programada para la sesión
+            </small>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn" style="background: #28a745;">
+            ✅ Crear Agenda
+        </button>
+        <a href="{% url 'lista_agendas' %}" class="btn" style="background: #6c757d;">
+            Cancelar
+        </a>
+    </div>
+</form>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-family: inherit;
+        background-color: #fff;
+        color: #333;
+    }
+    .form-control:focus {
+        outline: none;
+        border-color: #1e3c72;
+        box-shadow: 0 0 0 3px rgba(30,60,114,.1);
+        background-color: #fff;
+    }
+    input[type="text"].form-control {
+        text-transform: uppercase;
+    }
+    select.form-control {
+        cursor: pointer;
+    }
+    input[type="date"].form-control {
+        padding: 0.65rem 0.9rem;
+    }
+</style>
+{% endblock %}

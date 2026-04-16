@@ -1,0 +1,161 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Registrar Auto TPE - TPE Sistema{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
+        <span class="lk-text">Home</span>
+    </a>
+
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold;">
+        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
+        <span class="lk-text">Buscar</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'registrar_sumario' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar SIM</span>
+    </a>
+    <a href="{% url 'registrar_rr' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RR</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RES</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RAP</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RAEE</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link active">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar Auto TPE</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="mb-4">
+                <h1 class="h3 mb-1"><i class="bi bi-file-earmark-plus me-2"></i>{{ titulo }}</h1>
+                <p class="text-muted">Registre un Auto del TPE histórico con datos de memorándum (si aplica)</p>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Auto TPE -->
+                        <h5 class="mb-3 text-primary">
+                            <i class="bi bi-file-earmark me-2"></i>Datos del Auto del TPE
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.sim.label }} <span class="text-danger">*</span></label>
+                                {{ form.sim }}
+                                {% if form.sim.errors %}<div class="text-danger small mt-1">{{ form.sim.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.pm.label }} <span class="text-danger">*</span></label>
+                                {{ form.pm }}
+                                {% if form.pm.errors %}<div class="text-danger small mt-1">{{ form.pm.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.TPE_NUM.label }} <span class="text-danger">*</span></label>
+                                {{ form.TPE_NUM }}
+                                <small class="text-muted d-block mt-1">Formato: NN/AA</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.TPE_FEC.label }} <span class="text-danger">*</span></label>
+                                {{ form.TPE_FEC }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.TPE_TIPO.label }} <span class="text-danger">*</span></label>
+                                {{ form.TPE_TIPO }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.TPE_RESOL.label }} <span class="text-danger">*</span></label>
+                            {{ form.TPE_RESOL }}
+                            {% if form.TPE_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TPE_RESOL.errors }}</div>{% endif %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Memorándum (opcional) -->
+                        <h5 class="mb-3 text-secondary">
+                            <i class="bi bi-file-earmark me-2"></i>Datos del Memorándum (Opcional)
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.TPE_MEMO_NUM.label }}</label>
+                                {{ form.TPE_MEMO_NUM }}
+                                <small class="text-muted d-block mt-1">Número de memorándum (si aplica)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.TPE_MEMO_FEC.label }}</label>
+                                {{ form.TPE_MEMO_FEC }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.TPE_MEMO_ENTREGA.label }}</label>
+                                {{ form.TPE_MEMO_ENTREGA }}
+                                <small class="text-muted d-block mt-1">Fecha de entrega del memorándum</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-end pt-3">
+                            <a href="{% url 'ayudante_dashboard' %}" class="btn btn-secondary"><i class="bi bi-x-circle me-2"></i>Cancelar</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Guardar Auto TPE</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-4">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Nota:</strong> Los campos del memorándum son opcionales. Complételos solo si el auto incluye memorándum.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

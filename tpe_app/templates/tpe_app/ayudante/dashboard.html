@@ -1,0 +1,387 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Ayudante - TPE Sistema{% endblock %}
+{% block navbar_title %}Asistente - Registro de Datos Históricos{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link active" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+        <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
+        <span class="lk-text">Home</span>
+    </a>
+
+    <a href="#" class="sb-link" data-bs-toggle="collapse" data-bs-target="#collapseResPdf" style="background: rgba(251, 146, 60, 0.2); color: #fb923c; font-weight: bold; margin-bottom: 0.5rem;">
+        <span class="lk-icon" style="font-size: 1.4rem;">📤</span>
+        <span class="lk-text">Agregar PDF</span>
+    </a>
+
+    <a href="{% url 'registrar_sumario' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar SIM</span>
+    </a>
+    <a href="{% url 'registrar_rr' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RR</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RES</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RAP</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar RAEE</span>
+    </a>
+    <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Registrar Auto TPE</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">✅</span>
+        <span class="lk-text">Buscar Antecedentes</span>
+    </a>
+
+    <a href="{% url 'ayudante_lista_res' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📊</span>
+        <span class="lk-text">Estadísticas RES</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-1">
+                <i class="bi bi-person-check me-2"></i>Dashboard Ayudante
+            </h1>
+            <p class="text-muted">Registro de datos históricos y búsqueda de antecedentes</p>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Sumarios</p>
+                            <h3 class="mb-0">{{ total_sim }}</h3>
+                        </div>
+                        <i class="bi bi-folder text-primary fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Resoluciones</p>
+                            <h3 class="mb-0">{{ total_res }}</h3>
+                        </div>
+                        <i class="bi bi-file-earmark-text text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Recursos RR</p>
+                            <h3 class="mb-0">{{ total_rr }}</h3>
+                        </div>
+                        <i class="bi bi-arrow-repeat text-warning fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Recursos RAP</p>
+                            <h3 class="mb-0">{{ total_rap }}</h3>
+                        </div>
+                        <i class="bi bi-file-earmark text-danger fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones rápidas -->
+    <div class="row mb-4">
+        <div class="col">
+            <h5 class="mb-3">Registro de Datos Históricos</h5>
+            <div class="row g-2">
+                <div class="col-md-4 col-sm-6">
+                    <a href="{% url 'registrar_sumario' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Registrar SIM
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <a href="{% url 'registrar_rr' %}" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Registrar RR
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <a href="{% url 'ayudante_registrar_res' %}" class="btn btn-outline-success w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Registrar RES
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <a href="{% url 'ayudante_registrar_rap' %}" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Registrar RAP
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <a href="{% url 'ayudante_registrar_raee' %}" class="btn btn-outline-info w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Registrar RAEE
+                    </a>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <a href="{% url 'ayudante_registrar_autotpe' %}" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Registrar Auto TPE
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Búsqueda y Consultas -->
+    <div class="row mb-4">
+        <div class="col">
+            <h5 class="mb-3">Búsqueda y Consultas</h5>
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <a href="{% url 'buscador_dashboard' %}" class="btn btn-info w-100">
+                        <i class="bi bi-search me-2"></i>Buscar Antecedentes de Personal
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="{% url 'ayudante_lista_res' %}" class="btn btn-secondary w-100">
+                        <i class="bi bi-list-ul me-2"></i>Ver Lista de Resoluciones por Gestión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gestión de Documentos -->
+    <div class="row mb-4">
+        <div class="col">
+            <h5 class="mb-3">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Gestión de Documentos
+            </h5>
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="btn btn-warning w-100">
+                        <i class="bi bi-file-pdf me-2"></i>
+                        <span>RES Pendientes de PDF</span>
+                        <span class="badge bg-light text-dark ms-2">{{ total_res }}</span>
+                    </a>
+                    <small class="text-muted d-block mt-2">Resoluciones que requieren archivo PDF</small>
+                </div>
+                <div class="col-md-6">
+                    <a href="{% url 'ayudante_lista_res' %}" class="btn btn-outline-warning w-100">
+                        <i class="bi bi-list-check me-2"></i>Ver todas las RES
+                    </a>
+                    <small class="text-muted d-block mt-2">Lista completa con opciones de notificación</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos SIM registrados -->
+    <div class="row mb-4">
+        <div class="col">
+            <h5 class="mb-3">Últimos Sumarios Registrados</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Tipo</th>
+                            <th>Resumen</th>
+                            <th>Fecha Ingreso</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sim in ultimos_sim %}
+                        <tr>
+                            <td><code>{{ sim.SIM_COD }}</code></td>
+                            <td>{{ sim.get_SIM_TIPO_display }}</td>
+                            <td>{{ sim.SIM_RESUM|truncatewords:5 }}</td>
+                            <td>{{ sim.SIM_FECREG|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge bg-{% if sim.SIM_ESTADO == 'PARA_AGENDA' %}primary{% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}warning{% elif sim.SIM_ESTADO == 'EN_APELACION_TSP' %}danger{% elif sim.SIM_ESTADO == 'CONCLUIDO' %}success{% else %}secondary{% endif %}">
+                                    {{ sim.get_SIM_ESTADO_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No hay sumarios registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimas RES registradas -->
+    <div class="row">
+        <div class="col">
+            <h5 class="mb-3">Últimas Resoluciones Registradas</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Número</th>
+                            <th>Sumario</th>
+                            <th>Personal</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Notificado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in ultimas_res %}
+                        <tr>
+                            <td><code>{{ res.RES_NUM }}</code></td>
+                            <td>{{ res.sim.SIM_COD }}</td>
+                            <td>{{ res.pm.PM_GRADO }} {{ res.pm.PM_PATERNO }}, {{ res.pm.PM_NOMBRE }}</td>
+                            <td>{{ res.get_RES_TIPO_display|truncatewords:3 }}</td>
+                            <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if res.RES_FECNOT %}
+                                    <span class="badge bg-success">Sí</span>
+                                    <small>{{ res.RES_FECNOT|date:"d/m/Y" }}</small>
+                                {% else %}
+                                    <span class="badge bg-warning">Pendiente</span>
+                                    <a href="{% url 'ayudante_registrar_notificacion' res.id %}" class="btn btn-sm btn-link">Notificar</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">No hay resoluciones registradas</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Resoluciones sin PDF -->
+    <div class="row">
+        <div class="col">
+            <div class="card border-0 shadow-sm border-top border-warning border-4">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-pdf me-2 text-warning"></i>Resoluciones Pendientes de PDF
+                        <span class="badge bg-warning text-dark ms-2">{{ total_res_sin_pdf }}</span>
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#collapseResPdf">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                </div>
+                <div id="collapseResPdf" class="collapse show">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center" style="width: 100px;">Nº RES</th>
+                                    <th>Sumario</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Abogado</th>
+                                    <th class="text-center" style="width: 120px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for res in res_sin_pdf %}
+                                <tr>
+                                    <td class="text-center">
+                                        <strong>{{ res.RES_NUM }}</strong>
+                                    </td>
+                                    <td>
+                                        <code class="bg-light p-1">{{ res.sim.SIM_COD }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning" style="font-size: 0.75rem;">
+                                            {{ res.get_RES_TIPO_display|truncatewords:2 }}
+                                        </span>
+                                    </td>
+                                    <td style="white-space: nowrap;">
+                                        <small>{{ res.RES_FEC|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {% if res.abog %}
+                                                {{ res.abog.AB_GRADO }} {{ res.abog.AB_PATERNO }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{% url 'subir_pdf_res' res.pk %}" class="btn btn-sm btn-success">
+                                            <i class="bi bi-file-pdf me-1"></i>Subir
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="bi bi-check-circle text-success fs-3 mb-2 d-block"></i>
+                                        <p class="text-muted mb-0">✅ Todas las resoluciones tienen PDF subido</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer text-muted small text-center">
+                        Total: <strong>{{ total_res_sin_pdf }}</strong> resoluciones pendientes
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

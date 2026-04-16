@@ -1,0 +1,149 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Subir PDF - Resolución {{ res.RES_NUM }}{% endblock %}
+{% block navbar_title %}📤 Subir PDF de Resolución{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'administrativo_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📤 Subir PDF de Resolución</h1>
+
+<div style="max-width: 700px;">
+    <!-- Información de la RES -->
+    <div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: #1565c0;">⚖️ Información de la Resolución</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Número RES:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.RES_NUM }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Tipo:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.get_RES_TIPO_display }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Sumario:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.sim.SIM_COD }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fecha:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.RES_FEC|date:"d/m/Y" }}</p>
+            </div>
+            {% if pdf_existente %}
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>PDF Actual:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #28a745; font-size: 0.95rem;">
+                    ✅ Existe un PDF (será reemplazado)
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Formulario de carga -->
+    <form method="post" enctype="multipart/form-data" class="card">
+        {% csrf_token %}
+
+        <h2>📁 Seleccionar Archivo PDF</h2>
+
+        <div style="margin-bottom: 2rem; padding: 1rem; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: 8px; text-align: center;">
+            <label for="archivo_pdf" style="cursor: pointer; display: block;">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                <p style="margin: 0.5rem 0; color: #1e3c72; font-weight: 600;">
+                    Arrastra tu PDF aquí o haz clic para seleccionar
+                </p>
+                <p style="margin: 0; color: #666; font-size: 0.85rem;">
+                    Solo se permiten archivos PDF
+                </p>
+            </label>
+            <input
+                type="file"
+                id="archivo_pdf"
+                name="archivo_pdf"
+                accept=".pdf"
+                required
+                style="display: none;"
+                onchange="actualizarNombre(this)"
+            />
+        </div>
+
+        <div id="archivo_seleccionado" style="margin-bottom: 1.5rem; display: none;">
+            <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Archivo seleccionado:</strong></p>
+            <p id="nombre_archivo" style="margin: 0.3rem 0 0 0; color: #28a745; font-size: 0.95rem; word-break: break-word;"></p>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="background: #28a745; color: #fff;">
+                ✅ Subir PDF
+            </button>
+            <a href="{% url 'administrativo_dashboard' %}" class="btn" style="background: #6c757d; color: #fff;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .5rem 1rem;
+        text-decoration: none;
+        border-radius: 7px;
+        border: none;
+        cursor: pointer;
+        font-size: .875rem;
+        font-family: inherit;
+        font-weight: 500;
+        transition: background .15s, transform .1s;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+</style>
+
+<script>
+function actualizarNombre(input) {
+    const archivo = input.files[0];
+    if (archivo) {
+        document.getElementById('nombre_archivo').textContent = archivo.name;
+        document.getElementById('archivo_seleccionado').style.display = 'block';
+    } else {
+        document.getElementById('archivo_seleccionado').style.display = 'none';
+    }
+}
+
+// Permitir drag & drop
+const dropZone = document.querySelector('form .card');
+if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#f0f7ff';
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.background = '#fff';
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.background = '#fff';
+        const input = document.getElementById('archivo_pdf');
+        input.files = e.dataTransfer.files;
+        actualizarNombre(input);
+    });
+}
+</script>
+{% endblock %}
