@@ -364,7 +364,10 @@ class RegistrarRRForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['res'].label_from_instance = lambda obj: f"RES {obj.RES_NUM} (Sumario: {obj.sim.SIM_COD})"
+        def res_label(obj):
+            pm_info = f" - {obj.pm.PM_GRADO} {obj.pm.PM_PATERNO}" if obj.pm else ""
+            return f"RES {obj.RES_NUM}{pm_info} (SIM: {obj.sim.SIM_COD})"
+        self.fields['res'].label_from_instance = res_label
 
 
 class AgendarRRForm(forms.Form):
@@ -394,7 +397,10 @@ class AgendarRRForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['rr'].label_from_instance = lambda obj: f"Sumario {obj.sim.SIM_COD} - RES {obj.res.RES_NUM} ({obj.RR_RESUM or 'Sin resumen'})"
+        def rr_label(obj):
+            pm_info = f" - {obj.res.pm.PM_GRADO} {obj.res.pm.PM_PATERNO}" if obj.res.pm else ""
+            return f"RES {obj.res.RES_NUM}{pm_info} (SIM: {obj.sim.SIM_COD})"
+        self.fields['rr'].label_from_instance = rr_label
         self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
 
 

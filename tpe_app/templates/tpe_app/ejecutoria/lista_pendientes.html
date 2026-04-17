@@ -56,20 +56,22 @@
                 <td style="font-size: 0.85rem;">
                     {% if res.pm %}
                         {{ res.pm.PM_GRADO }} {{ res.pm.PM_PATERNO }} {{ res.pm.PM_MATERNO }}
+                    {% elif res.dictamen.pm %}
+                        {{ res.dictamen.pm.PM_GRADO }} {{ res.dictamen.pm.PM_PATERNO }} {{ res.dictamen.pm.PM_MATERNO }}
                     {% else %}—{% endif %}
                 </td>
                 <td>{{ res.RES_FECNOT|date:"d/m/Y" }}</td>
-                <td style="color: #dc2626; font-weight: 600;">{{ res._fecha_limite|date:"d/m/Y" }}</td>
+                <td style="color: #dc2626; font-weight: 600;">{{ res.fecha_limite|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <span style="background: #fee2e2; color: #dc2626; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
-                        +{{ res._dias_vencido }} días
+                        +{{ res.dias_vencido }} días
                     </span>
                 </td>
                 <td style="text-align: center;">
-                    <a href="{% url 'crear_auto_ejecutoria' 'res' res.id %}"
+                    <a href="{% url 'agendar_sumario' %}?sim={{ res.sim.id }}"
                        class="btn"
-                       style="background: #7c3aed; color: #fff; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; text-decoration: none;">
-                        ⚖️ Crear Auto
+                       style="background: #0ea5e9; color: #fff; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; text-decoration: none;">
+                        📅 Agendar
                     </a>
                 </td>
             </tr>
@@ -110,13 +112,17 @@
                 <td style="font-size: 0.85rem;">
                     {% if rr.pm %}
                         {{ rr.pm.PM_GRADO }} {{ rr.pm.PM_PATERNO }} {{ rr.pm.PM_MATERNO }}
+                    {% elif rr.res.dictamen.pm %}
+                        {{ rr.res.dictamen.pm.PM_GRADO }} {{ rr.res.dictamen.pm.PM_PATERNO }} {{ rr.res.dictamen.pm.PM_MATERNO }}
+                    {% elif rr.res.pm %}
+                        {{ rr.res.pm.PM_GRADO }} {{ rr.res.pm.PM_PATERNO }} {{ rr.res.pm.PM_MATERNO }}
                     {% else %}—{% endif %}
                 </td>
                 <td>{{ rr.RR_FECNOT|date:"d/m/Y" }}</td>
-                <td style="color: #b45309; font-weight: 600;">{{ rr._fecha_limite|date:"d/m/Y" }}</td>
+                <td style="color: #b45309; font-weight: 600;">{{ rr.fecha_limite|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <span style="background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
-                        +{{ rr._dias_vencido }} días
+                        +{{ rr.dias_vencido }} días
                     </span>
                 </td>
                 <td style="text-align: center;">

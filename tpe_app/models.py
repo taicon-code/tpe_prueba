@@ -64,8 +64,8 @@ def get_pendientes_ejecutoria():
             continue
         fecha_limite = add_business_days(res.RES_FECNOT, 15)
         if fecha_limite <= hoy:
-            res._fecha_limite = fecha_limite
-            res._dias_vencido = (hoy - fecha_limite).days
+            res.fecha_limite = fecha_limite
+            res.dias_vencido = (hoy - fecha_limite).days
             por_res.append(res)
 
     # ── Caso 2: RR notificado, sin RAP, plazo 3 días hábiles vencido ──
@@ -84,8 +84,8 @@ def get_pendientes_ejecutoria():
             continue
         fecha_limite = add_business_days(rr.RR_FECNOT, 3)
         if fecha_limite <= hoy:
-            rr._fecha_limite = fecha_limite
-            rr._dias_vencido = (hoy - fecha_limite).days
+            rr.fecha_limite = fecha_limite
+            rr.dias_vencido = (hoy - fecha_limite).days
             por_rr.append(rr)
 
     return por_res, por_rr

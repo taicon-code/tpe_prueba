@@ -26,22 +26,24 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Número RES</th>
-                <th>Tipo</th>
-                <th>Fecha Emisión</th>
-                <th>Observaciones</th>
+                <th>N° RES</th>
+                <th>Grado</th>
+                <th>Nombre</th>
+                <th>Paterno</th>
+                <th>Materno</th>
+                <th>Fecha de Emisión</th>
                 <th style="text-align: center;">Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for res in resoluciones %}
             <tr>
-                <td><strong>{{ res.sim.SIM_COD }}</strong></td>
-                <td>{{ res.RES_NUM }}</td>
-                <td><span style="background: #f97316; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">{{ res.get_RES_TIPO_display|truncatewords:2 }}</span></td>
-                <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
-                <td style="font-size: 0.9rem; color: #666;">{{ res.RES_NOT|default:"—" }}</td>
+                <td style="font-weight: 700;"><strong>{{ res.RES_NUM }}</strong></td>
+                <td style="font-size: 0.9rem;">{{ res.dictamen.pm.get_PM_GRADO_display|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.dictamen.pm.PM_NOMBRE|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.dictamen.pm.PM_PATERNO|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.dictamen.pm.PM_MATERNO|default:"—" }}</td>
+                <td style="white-space: nowrap;">{{ res.RES_FEC|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <a href="{% url 'ayudante_registrar_notificacion' res.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff; border-radius: 4px; text-decoration: none;">
                         ✅ Notificar

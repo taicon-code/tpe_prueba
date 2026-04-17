@@ -17,7 +17,7 @@ def _get_abogado_or_403(request):
     return perfil.abogado
 
 
-@rol_requerido("ABOGADO")
+@rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_sumario_detalle(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(
@@ -77,7 +77,7 @@ def abogado_sumario_detalle(request, sim_id: int):
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
 
 
-@rol_requerido("ABOGADO")
+@rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_dictamen_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
@@ -162,7 +162,7 @@ def abogado_dictamen_crear(request, sim_id: int):
     return render(request, "tpe_app/abogado/dictamen_form.html", context)
 
 
-@rol_requerido("ABOGADO")
+@rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_res_crear(request, sim_id: int, dictamen_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
@@ -192,6 +192,7 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
                         abog=abogado,
                         agenda=dictamen.agenda if dictamen.agenda_id else None,
                         dictamen=dictamen,
+                        pm=dictamen.pm,
                         RES_NUM=res_num,
                         RES_FEC=res_fec,
                         RES_TIPO=res_tipo,
@@ -211,7 +212,7 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
     return render(request, "tpe_app/abogado/res_form.html", context)
 
 
-@rol_requerido("ABOGADO")
+@rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_rr_crear(request, sim_id: int, res_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
@@ -253,7 +254,7 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
     return render(request, "tpe_app/abogado/rr_form.html", context)
 
 
-@rol_requerido("ABOGADO")
+@rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
@@ -301,7 +302,7 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
     return render(request, "tpe_app/abogado/autotpe_form.html", context)
 
 
-@rol_requerido("ABOGADO")
+@rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_auto_excusa_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)

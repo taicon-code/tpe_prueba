@@ -18,7 +18,7 @@ from ..forms import (
 )
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_dashboard(request):
     """Dashboard principal del AYUDANTE"""
     from ..models import DocumentoAdjunto, ABOG
@@ -54,7 +54,7 @@ def ayudante_dashboard(request):
     return render(request, 'tpe_app/ayudante/dashboard.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_lista_res(request):
     """Lista de RES filtrada por gestión (año) con: grado, nombres, RES_TIPO, notificado"""
 
@@ -91,7 +91,7 @@ def ayudante_lista_res(request):
     return render(request, 'tpe_app/ayudante/lista_res.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_res(request):
     """Registrar una Resolución histórica (sin dictamen previo)"""
 
@@ -125,7 +125,7 @@ def ayudante_registrar_res(request):
     return render(request, 'tpe_app/ayudante/registrar_res.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_notificacion(request, res_id):
     """Registrar la notificación de una RES existente"""
 
@@ -141,7 +141,12 @@ def ayudante_registrar_notificacion(request, res_id):
                         request,
                         f'Notificación de RES {res.RES_NUM} registrada exitosamente'
                     )
-                    return redirect('ayudante_lista_res')
+                    # Redirigir según el rol del usuario
+                    rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
+                    if rol == 'ADMIN3_NOTIFICADOR':
+                        return redirect('admin3_dashboard')
+                    else:
+                        return redirect('ayudante_lista_res')
             except Exception as e:
                 messages.error(request, f'Error al registrar notificación: {str(e)}')
     else:
@@ -156,7 +161,7 @@ def ayudante_registrar_notificacion(request, res_id):
     return render(request, 'tpe_app/ayudante/registrar_notificacion.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_rap(request):
     """Registrar un Recurso de Apelación al TSP histórico"""
 
@@ -193,7 +198,7 @@ def ayudante_registrar_rap(request):
     return render(request, 'tpe_app/ayudante/registrar_rap.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_raee(request):
     """Registrar un RAEE (Aclaración, Explicación y Enmienda) histórico"""
 
@@ -223,7 +228,7 @@ def ayudante_registrar_raee(request):
     return render(request, 'tpe_app/ayudante/registrar_raee.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_autotpe(request):
     """Registrar un Auto del TPE histórico (incluyendo memorándum)"""
 
@@ -270,7 +275,12 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
                     request,
                     f'Notificación de RR {rr.RR_NUM} registrada exitosamente'
                 )
-                return redirect('admin3_dashboard')
+                # Redirigir según el rol del usuario
+                rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
+                if rol == 'ADMIN3_NOTIFICADOR':
+                    return redirect('admin3_dashboard')
+                else:
+                    return redirect('ayudante_dashboard')
         except Exception as e:
             messages.error(request, f'Error al registrar notificación: {str(e)}')
 
@@ -282,7 +292,7 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
     return render(request, 'tpe_app/admin3/registrar_notificacion_rr.html', context)
 
 
-@rol_requerido('AYUDANTE')
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_lista_res_sin_pdf(request):
     """Lista de RES pendientes de subir PDF"""
 

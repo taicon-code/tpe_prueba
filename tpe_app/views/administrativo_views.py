@@ -9,7 +9,7 @@ from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, RR, CustodiaSIM, AGENDA, R
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 from datetime import date, timedelta
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def administrativo_dashboard(request):
     """Dashboard para administrativos - diferenciado por rol"""
 
@@ -193,7 +193,7 @@ def registrar_sumario(request):
     return render(request, 'tpe_app/registrar_sumario.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def agendar_sumario(request):
     """Formulario para agendar un sumario a una agenda existente"""
 
@@ -265,6 +265,7 @@ def registrar_rr(request):
         if form.is_valid():
             rr = form.save(commit=False)
             rr.sim = rr.res.sim
+            rr.pm = rr.sim.militares.first()  # Asignar el primer militar del sumario
             rr.save()
             messages.success(request, '✅ Recurso de Reconsideración registrado exitosamente')
             return redirect('administrativo_dashboard')
@@ -272,10 +273,10 @@ def registrar_rr(request):
             messages.error(request, '❌ Por favor corrija los errores en el formulario')
     else:
         form = RegistrarRRForm()
-    
+
     return render(request, 'tpe_app/registrar_rr.html', {'form': form})
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def agendar_rr(request):
     """Formulario para agendar un Recurso de Reconsideración (RR)"""
     if request.method == 'POST':
@@ -311,7 +312,7 @@ def agendar_rr(request):
 # Gestión de Abogados asignados a un SIM
 # ============================================================
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def gestionar_abogados_sim(request, sim_id):
     """Agregar o quitar abogados de un sumario ya agendado, elegir responsable"""
     sim = get_object_or_404(SIM, pk=sim_id)
@@ -356,7 +357,7 @@ def gestionar_abogados_sim(request, sim_id):
 # ✅ NUEVO v3.2: Gestión de Agendas (Admin1)
 # ============================================================
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def crear_agenda(request):
     """Admin1 crea una nueva agenda"""
 
@@ -380,7 +381,7 @@ def crear_agenda(request):
     return render(request, 'tpe_app/crear_agenda.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def lista_agendas(request):
     """Lista todas las agendas con su estado y opciones de edición"""
 
@@ -396,7 +397,7 @@ def lista_agendas(request):
     return render(request, 'tpe_app/lista_agendas.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMINISTRATIVO', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN2', 'ADMIN2_ARCHIVO', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def editar_agenda_resultado(request, ag_id):
     """Admin1 registra el resultado de una agenda (realizada/suspendida/reprogramada)"""
 
@@ -440,12 +441,12 @@ def editar_agenda_resultado(request, ag_id):
 
 def admin2_dashboard(request):
     """Dashboard para Admin2 - Gestión de custodia de carpetas"""
-    
+
     # Carpetas recibidas de abogados (sin entregar aún)
     carpetas_en_poder = CustodiaSIM.objects.filter(
         tipo_custodio='ADMIN2_ARCHIVO',
         fecha_entrega__isnull=True
-    ).select_related('sim').order_by('-fecha_recepcion')
+    ).select_related('sim', 'abog').prefetch_related('sim__militares', 'sim__abogados').order_by('-fecha_recepcion')
 
     # Historial de entregas
     entregas_pasadas = CustodiaSIM.objects.filter(
@@ -466,6 +467,7 @@ def admin2_dashboard(request):
 # DASHBOARD ADMIN3 (NOTIFICADOR)
 # ============================================================
 
+@rol_requerido('ADMIN3', 'ADMIN3_NOTIFICADOR')
 def admin3_dashboard(request):
     """Dashboard para Admin3 - Notificaciones de documentos"""
 
@@ -500,7 +502,7 @@ def admin3_dashboard(request):
 # ADMIN2: Gestión de custodia y entregas (v3.1+)
 # ============================================================
 
-@rol_requerido('ADMIN2_ARCHIVO')
+@rol_requerido('ADMIN2', 'ADMIN2_ARCHIVO')
 def admin2_entregar_carpeta(request, sim_id):
     """Admin2 entrega la carpeta a un abogado (RR, RAP, ejecutoria, etc.)"""
 
@@ -566,7 +568,7 @@ def admin2_entregar_carpeta(request, sim_id):
     return render(request, 'tpe_app/admin2/entregar_carpeta.html', context)
 
 
-@rol_requerido('ADMIN2_ARCHIVO')
+@rol_requerido('ADMIN2', 'ADMIN2_ARCHIVO')
 def admin2_recibir_carpeta(request, sim_id):
     """Admin2 recibe la carpeta devuelta por un abogado"""
 

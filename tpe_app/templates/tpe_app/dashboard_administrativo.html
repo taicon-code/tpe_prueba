@@ -143,8 +143,8 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Primera Resolución</th>
+                <th>Resolución</th>
+                <th>Militar — Sumario</th>
                 <th>Fecha Ingreso TPE</th>
                 <th>Fecha Límite (25 Días)</th>
                 <th>Acciones</th>
@@ -154,8 +154,16 @@
             {% for rr in rr_sin_asignar %}
             {% with alerta=rr.alerta_25 %}
             <tr>
-                <td style="white-space: nowrap;"><strong>{{ rr.sim.SIM_COD }}</strong></td>
-                <td>{{ rr.res.RES_NUM|default:"-" }} - {{ rr.res.RES_RESOL|truncatewords:8|default:"-" }}</td>
+                <td style="white-space: nowrap;"><strong>RES {{ rr.res.RES_NUM|default:"-" }}</strong></td>
+                <td style="white-space: nowrap;">
+                    <!-- DEBUG: pm_id={{ rr.res.pm_id }} -->
+                    {% if rr.res.pm_id %}
+                        <strong>{{ rr.res.pm.PM_GRADO }} {{ rr.res.pm.PM_PATERNO }}</strong><br>
+                        <small style="color: #6b7280;">SIM: {{ rr.sim.SIM_COD }}</small>
+                    {% else %}
+                        <span style="color: #9ca3af;">—</span>
+                    {% endif %}
+                </td>
                 <td style="white-space: nowrap;">{{ rr.RR_FECPRESEN|date:"d/m/Y"|default:"-" }}</td>
                 <td style="white-space: nowrap;">
                     {% if rr.fecha_limite_25 %}
