@@ -49,7 +49,7 @@ def admin3_dashboard(request):
         'resoluciones': resoluciones,
         'total_res': resoluciones.count(),
         'recursos': recursos,
-        'total_rr': recursos.count(),
+        'total_rr': len(recursos),
         'res_sin_pdf': res_sin_pdf,
         'total_res_sin_pdf': total_res_sin_pdf,
     }
