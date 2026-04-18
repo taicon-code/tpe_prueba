@@ -1162,7 +1162,6 @@ class PerfilUsuario(models.Model):
         # Legado (mantener compatibilidad)
         ('ABOGADO',                   'Abogado (General)'),
         ('BUSCADOR',                  'Buscador (General)'),
-        ('ADMINISTRATIVO',            'Administrativo (General)'),
     ]
 
     user    = models.OneToOneField('auth.User', on_delete=models.CASCADE,
