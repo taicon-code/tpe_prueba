@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import datetime
 from ..decorators import rol_requerido
-from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion
+from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM
 
 
 # ============================================================
@@ -17,11 +17,24 @@ def admin2_dashboard(request):
     """Dashboard para Admin2 - Gestión de custodia de carpetas"""
 
     # Carpetas actualmente en poder de Admin2 (confirmadas, para entregar)
-    carpetas_en_poder = CustodiaSIM.objects.filter(
+    carpetas_en_poder_qs = CustodiaSIM.objects.filter(
         tipo_custodio='ADMIN2_ARCHIVO',
         fecha_entrega__isnull=True,
         estado='ACTIVA'
     ).select_related('sim', 'abog').prefetch_related('sim__militares', 'sim__abogados').order_by('-fecha_recepcion')
+
+    # Convertir a lista y calcular abogados destino para cada carpeta
+    carpetas_en_poder = list(carpetas_en_poder_qs)
+    for custodia in carpetas_en_poder:
+        # Abogados de primera instancia (ABOG_SIM)
+        abog_primera = ABOG_SIM.objects.filter(sim=custodia.sim).select_related('abog')
+        custodia.abog_primera_list = [a.abog for a in abog_primera]
+
+        # Abogado de RR si existe
+        rr = Resolucion.objects.filter(
+            sim=custodia.sim, RES_INSTANCIA='RECONSIDERACION', abog__isnull=False
+        ).select_related('abog').last()
+        custodia.abog_rr = rr.abog if rr else None
 
     # Carpetas entregadas pendientes de confirmar recepción
     carpetas_pendientes = CustodiaSIM.objects.filter(
@@ -49,7 +62,7 @@ def admin2_dashboard(request):
 
     context = {
         'carpetas_en_poder': carpetas_en_poder,
-        'total_en_poder': carpetas_en_poder.count(),
+        'total_en_poder': len(carpetas_en_poder),
         'carpetas_pendientes': carpetas_pendientes,
         'total_pendientes': carpetas_pendientes.count(),
         'carpetas_prestadas': carpetas_prestadas,
@@ -101,7 +114,8 @@ def admin2_entregar_carpeta(request, sim_id):
                     custodio_actual.fecha_entrega = timezone.now()
                     custodio_actual.save()
 
-                    # Crear nueva custodia
+                    # Crear nueva custodia (pendiente de confirmación del abogado si es entrega a abogado)
+                    estado_custodia = 'PENDIENTE_CONFIRMACION' if tipo_custodio.startswith('ABOG_') else 'ACTIVA'
                     custodia_nueva = CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio=tipo_custodio,
@@ -110,7 +124,8 @@ def admin2_entregar_carpeta(request, sim_id):
                         observacion=observacion or None,
                         motivo=motivo,
                         nro_oficio=nro_oficio,
-                        fecha_oficio=fecha_oficio
+                        fecha_oficio=fecha_oficio,
+                        estado=estado_custodia
                     )
 
                     messages.success(request, f'✅ Carpeta entregada correctamente')
@@ -273,8 +288,9 @@ def subir_pdf_res(request, res_id):
                 DocumentoAdjunto.objects.create(
                     DOC_TABLA='resolucion',
                     DOC_ID_REG=res.pk,
+                    DOC_TIPO='resolucion',
                     DOC_RUTA=archivo_pdf,
-                    DOC_DESCRIPCION=f'PDF de la Resolución {res.RES_NUM}'
+                    DOC_NOMBRE=f'RES {res.RES_NUM} - {res.pm.PM_GRADO} {res.pm.PM_PATERNO}'
                 )
 
                 messages.success(

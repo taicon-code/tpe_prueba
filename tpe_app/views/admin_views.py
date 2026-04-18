@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.views.decorators.http import require_http_methods
 from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, RES, RR, RAP, PerfilUsuario
+from ..models import SIM, PM, ABOG, PerfilUsuario, VOCAL_TPE
 from datetime import date
 
 @rol_requerido('ADMINISTRADOR')
@@ -49,6 +49,7 @@ def crear_usuario_con_rol(request):
         last_name = request.POST.get('last_name', '').strip()
         rol = request.POST.get('rol', '').strip()
         abogado_id = request.POST.get('abogado', None)
+        vocal_id = request.POST.get('vocal', None)
 
         # Validaciones
         errores = []
@@ -66,6 +67,8 @@ def crear_usuario_con_rol(request):
             errores.append('Debe seleccionar un rol')
         if rol == 'ABOGADO' and not abogado_id:
             errores.append('Para rol ABOGADO, debe asignar un abogado')
+        if rol == 'VOCAL_TPE' and not vocal_id:
+            errores.append('Para rol VOCAL_TPE, debe asignar un vocal del tribunal')
 
         if errores:
             context = {
@@ -77,6 +80,7 @@ def crear_usuario_con_rol(request):
                 'rol': rol,
                 'rol_choices': PerfilUsuario.ROL_CHOICES,
                 'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
+                'vocales': VOCAL_TPE.objects.all().order_by('VOCAL_NOMBRE'),
             }
             return render(request, 'tpe_app/crear_usuario.html', context)
 
@@ -92,13 +96,17 @@ def crear_usuario_con_rol(request):
 
             # Asignar rol
             abogado = None
+            vocal = None
             if rol == 'ABOGADO' and abogado_id:
                 abogado = ABOG.objects.get(id=abogado_id)
+            elif rol == 'VOCAL_TPE' and vocal_id:
+                vocal = VOCAL_TPE.objects.get(id=vocal_id)
 
             perfil = PerfilUsuario.objects.create(
                 user=usuario,
                 rol=rol,
                 abogado=abogado,
+                vocal=vocal,
                 activo=True
             )
 
@@ -118,6 +126,7 @@ def crear_usuario_con_rol(request):
                 'rol': rol,
                 'rol_choices': PerfilUsuario.ROL_CHOICES,
                 'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
+                'vocales': VOCAL_TPE.objects.all().order_by('VOCAL_NOMBRE'),
             }
             return render(request, 'tpe_app/crear_usuario.html', context)
 
@@ -125,5 +134,6 @@ def crear_usuario_con_rol(request):
     context = {
         'rol_choices': PerfilUsuario.ROL_CHOICES,
         'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
+        'vocales': VOCAL_TPE.objects.all().order_by('VOCAL_NOMBRE'),
     }
     return render(request, 'tpe_app/crear_usuario.html', context)

@@ -24,8 +24,9 @@ from django.db import transaction
 from openpyxl import load_workbook
 
 from tpe_app.models import (
-    PM, SIM, PM_SIM, AGENDA, RES, RR, RAP, AUTOTPE,
-    RAEE, AUTOTSP, DICTAMEN, ABOG_SIM,
+    PM, SIM, PM_SIM, AGENDA, AUTOTPE,
+    AUTOTSP, DICTAMEN, ABOG_SIM,
+    Resolucion, RecursoTSP,
 )
 
 
@@ -353,13 +354,11 @@ class Command(BaseCommand):
     # ── Limpieza ──────────────────────────────────────────────────────────────
     def _limpiar(self):
         self.stdout.write(self.style.WARNING('Limpiando datos existentes...'))
-        RAEE.objects.all().delete()
+        RecursoTSP.objects.all().delete()
         AUTOTSP.objects.all().delete()
-        RAP.objects.all().delete()
-        RR.objects.all().delete()
         AUTOTPE.objects.all().delete()
         DICTAMEN.objects.all().delete()
-        RES.objects.all().delete()
+        Resolucion.objects.all().delete()
         AGENDA.objects.all().delete()
         PM_SIM.objects.all().delete()
         ABOG_SIM.objects.all().delete()
@@ -584,8 +583,9 @@ class Command(BaseCommand):
                 continue
 
             fec_notif = parsear_fecha(row[8]) if not es_vacio(row[8]) else None
-            _, creada = RES.objects.get_or_create(
+            _, creada = Resolucion.objects.get_or_create(
                 sim=sim,
+                RES_INSTANCIA='PRIMERA',
                 RES_NUM=truncar(res_num, 15),
                 defaults={
                     'RES_FEC': res_fec,
@@ -625,8 +625,10 @@ class Command(BaseCommand):
                 num = parsear_res_num(res_ejec)
                 if num:
                     try:
-                        sim = RES.objects.get(RES_NUM=num).sim
-                    except RES.DoesNotExist:
+                        sim = Resolucion.objects.get(
+                            RES_INSTANCIA='PRIMERA', RES_NUM=num
+                        ).sim
+                    except Resolucion.DoesNotExist:
                         pass
 
             # 2) Por nombre del militar
@@ -688,13 +690,15 @@ class Command(BaseCommand):
                 self.stats['skip'] += 1
                 continue
 
-            # ── Encontrar RES ────────────────────────────────────────────────
+            # ── Encontrar RES PRIMERA ───────────────────────────────────────
             res_obj = None
             num = parsear_res_num(res_ref)
             if num:
                 try:
-                    res_obj = RES.objects.get(RES_NUM=num)
-                except RES.DoesNotExist:
+                    res_obj = Resolucion.objects.get(
+                        RES_INSTANCIA='PRIMERA', RES_NUM=num
+                    )
+                except Resolucion.DoesNotExist:
                     pass
 
             if not res_obj:
@@ -705,8 +709,9 @@ class Command(BaseCommand):
                     self.stats['skip'] += 1
                     continue
                 if not self.dry:
-                    res_obj, _ = RES.objects.get_or_create(
+                    res_obj, _ = Resolucion.objects.get_or_create(
                         sim=sim_ph,
+                        RES_INSTANCIA='PRIMERA',
                         RES_NUM=truncar(num or res_ref, 15),
                         defaults={
                             'RES_FEC': fec_pres,
@@ -722,14 +727,15 @@ class Command(BaseCommand):
             sim = res_obj.sim
             ag  = self._agenda(str(row[8]).strip() if row[8] else None)
 
-            _, creada = RR.objects.get_or_create(
-                res=res_obj,
+            _, creada = Resolucion.objects.get_or_create(
+                RES_INSTANCIA='RECONSIDERACION',
+                resolucion_origen=res_obj,
                 sim=sim,
                 defaults={
-                    'RR_FECPRESEN': fec_pres,
-                    'RR_FECLIMITE': fec_lim,
-                    'RR_RESOL': resol,
-                    'RR_RESUM': truncar(resol, 200),
+                    'RES_FECPRESEN': fec_pres,
+                    'RES_FECLIMITE': fec_lim,
+                    'RES_RESOL': resol,
+                    'RES_RESUM': (truncar(resol, 20) or None),
                     'agenda': ag,
                 },
             )
@@ -761,12 +767,20 @@ class Command(BaseCommand):
             num = parsear_res_num(res_ref)
             if num:
                 try:
-                    rr_obj = RR.objects.get(res__RES_NUM=num)
-                    sim    = rr_obj.sim
-                except RR.DoesNotExist:
+                    rr_obj = Resolucion.objects.filter(
+                        RES_INSTANCIA='RECONSIDERACION',
+                        resolucion_origen__RES_NUM=num,
+                    ).first()
+                    if rr_obj:
+                        sim = rr_obj.sim
+                except Resolucion.DoesNotExist:
+                    pass
+                if not sim:
                     try:
-                        sim = RES.objects.get(RES_NUM=num).sim
-                    except RES.DoesNotExist:
+                        sim = Resolucion.objects.get(
+                            RES_INSTANCIA='PRIMERA', RES_NUM=num
+                        ).sim
+                    except Resolucion.DoesNotExist:
                         pass
 
             if not sim:
@@ -781,14 +795,15 @@ class Command(BaseCommand):
                 self.stats['rap'] += 1
                 continue
 
-            _, creada = RAP.objects.get_or_create(
+            _, creada = RecursoTSP.objects.get_or_create(
                 sim=sim,
-                RAP_FECPRESEN=fec_pres,
+                TSP_INSTANCIA='APELACION',
+                TSP_FECPRESEN=fec_pres,
                 defaults={
-                    'rr': rr_obj,
-                    'RAP_OFI': ofi_num,
-                    'RAP_FECOFI': ofi_fec,
-                    'RAP_RESOL': resol,
+                    'resolucion': rr_obj,
+                    'TSP_OFI': ofi_num,
+                    'TSP_FECOFI': ofi_fec,
+                    'TSP_RESOL': resol,
                 },
             )
             if creada:

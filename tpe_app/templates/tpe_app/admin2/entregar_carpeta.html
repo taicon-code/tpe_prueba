@@ -62,16 +62,53 @@
             </small>
         </div>
 
-        <div style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 1.5rem;" id="abogado_container">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                Abogado Destinatario *
+                Abogado Destinatario
             </label>
-            <select name="abogado" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+            <select name="abogado" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
                 <option value="">— Seleccionar abogado —</option>
                 {% for abog in abogados %}
                     <option value="{{ abog.pk }}">{{ abog.AB_GRADO }} {{ abog.AB_PATERNO }} ({{ abog.AB_NOMBRE }})</option>
                 {% endfor %}
             </select>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Motivo
+            </label>
+            <select name="motivo" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <option value="">— Seleccionar motivo —</option>
+                {% for value, label in motivos %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Campos para TSP (condicionales) -->
+        <div style="margin-bottom: 1.5rem; background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; border-radius: 4px; display: none;" id="tsp_fields_container">
+            <p style="margin-top: 0; color: #856404; font-weight: 600; margin-bottom: 0.75rem;">⚠️ Elevación al TSP</p>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">
+                    Número de Oficio *
+                </label>
+                <input type="text" name="nro_oficio" placeholder="Ej: OF-025/26" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Número de oficio de elevación al TSP
+                </small>
+            </div>
+
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">
+                    Fecha del Oficio *
+                </label>
+                <input type="date" name="fecha_oficio" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Fecha de emisión del oficio
+                </small>
+            </div>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
@@ -94,6 +131,46 @@
         </div>
     </form>
 </div>
+
+<script>
+    const tipoCustodioSelect = document.querySelector('select[name="tipo_custodio"]');
+    const abogadoContainer = document.getElementById('abogado_container');
+    const tspFieldsContainer = document.getElementById('tsp_fields_container');
+    const abogadoSelect = document.querySelector('select[name="abogado"]');
+    const nroOficioInput = document.querySelector('input[name="nro_oficio"]');
+    const fechaOficioInput = document.querySelector('input[name="fecha_oficio"]');
+
+    function actualizarCampos() {
+        const tipoSeleccionado = tipoCustodioSelect.value;
+
+        // Si es ARCHIVO, no mostrar abogado
+        if (tipoSeleccionado === 'ARCHIVO') {
+            abogadoContainer.style.display = 'none';
+            abogadoSelect.removeAttribute('required');
+        } else {
+            abogadoContainer.style.display = 'block';
+            if (tipoSeleccionado && tipoSeleccionado !== 'ADMIN3') {
+                abogadoSelect.setAttribute('required', 'required');
+            } else {
+                abogadoSelect.removeAttribute('required');
+            }
+        }
+
+        // Si es TSP, mostrar campos de oficio
+        if (tipoSeleccionado === 'TSP') {
+            tspFieldsContainer.style.display = 'block';
+            nroOficioInput.setAttribute('required', 'required');
+            fechaOficioInput.setAttribute('required', 'required');
+        } else {
+            tspFieldsContainer.style.display = 'none';
+            nroOficioInput.removeAttribute('required');
+            fechaOficioInput.removeAttribute('required');
+        }
+    }
+
+    tipoCustodioSelect.addEventListener('change', actualizarCampos);
+    actualizarCampos(); // Inicializar al cargar
+</script>
 
 <style>
     .card {

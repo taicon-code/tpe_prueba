@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, RES, RR, CustodiaSIM, AGENDA, RAP, RAEE, AUTOTPE
+from .models import SIM, PM, PM_SIM, ABOG, CustodiaSIM, AGENDA, AUTOTPE, Resolucion, RecursoTSP
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -314,7 +314,7 @@ class AgendaResultadoForm(forms.ModelForm):
             ('SUSPENDIDA', 'Suspendida (sin nueva fecha aún)'),
             ('REPROGRAMADA', 'Reprogramada (nueva fecha)'),
         ],
-        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input', 'style': 'display: block; margin: 0;'}),
         label='¿Qué pasó con esta agenda?'
     )
 
@@ -343,23 +343,25 @@ class AgendaResultadoForm(forms.ModelForm):
         return cleaned_data
 
 class RegistrarRRForm(forms.ModelForm):
-    """Formulario para registrar un nuevo Recurso de Reconsideración"""
-    
-    res = forms.ModelChoiceField(
-        queryset=RES.objects.all().order_by('-RES_FEC'),
+    """Formulario para registrar un Recurso de Reconsideración (Resolucion con INSTANCIA=RECONSIDERACION)"""
+
+    resolucion_origen = forms.ModelChoiceField(
+        queryset=Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').order_by('-RES_FEC'),
         label='Primera Resolución a Apelar',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione la Resolución original...'
     )
 
     class Meta:
-        model = RR
-        fields = ['res', 'RR_FECPRESEN']
+        model = Resolucion
+        fields = ['resolucion_origen', 'RES_RESUM', 'RES_FECPRESEN']
         widgets = {
-            'RR_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'RES_RESUM': forms.Select(attrs={'class': 'form-control'}),
+            'RES_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
-            'RR_FECPRESEN': 'Fecha de Presentación del Recurso',
+            'RES_RESUM': 'Tipo de Recurso',
+            'RES_FECPRESEN': 'Fecha de Presentación del Recurso',
         }
 
     def __init__(self, *args, **kwargs):
@@ -367,26 +369,26 @@ class RegistrarRRForm(forms.ModelForm):
         def res_label(obj):
             pm_info = f" - {obj.pm.PM_GRADO} {obj.pm.PM_PATERNO}" if obj.pm else ""
             return f"RES {obj.RES_NUM}{pm_info} (SIM: {obj.sim.SIM_COD})"
-        self.fields['res'].label_from_instance = res_label
+        self.fields['resolucion_origen'].label_from_instance = res_label
 
 
 class AgendarRRForm(forms.Form):
     """Formulario para agendar un Recurso de Reconsideración"""
-    
+
     rr = forms.ModelChoiceField(
-        queryset=RR.objects.filter(agenda__isnull=True),
+        queryset=Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION', agenda__isnull=True),
         label='Recurso de Reconsideración a Agendar',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un recurso...'
     )
-    
+
     abogado = forms.ModelChoiceField(
         queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
         label='Abogado Asignado',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un abogado...'
     )
-    
+
     fecha_agenda = forms.DateField(
         label='Fecha de Agenda/Reunión',
         widget=forms.DateInput(attrs={
@@ -394,12 +396,14 @@ class AgendarRRForm(forms.Form):
             'type': 'date'
         })
     )
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         def rr_label(obj):
-            pm_info = f" - {obj.res.pm.PM_GRADO} {obj.res.pm.PM_PATERNO}" if obj.res.pm else ""
-            return f"RES {obj.res.RES_NUM}{pm_info} (SIM: {obj.sim.SIM_COD})"
+            origen = obj.resolucion_origen
+            pm_info = f" - {origen.pm.PM_GRADO} {origen.pm.PM_PATERNO}" if (origen and origen.pm) else ""
+            origen_num = origen.RES_NUM if origen else 'S/N'
+            return f"RR sobre RES {origen_num}{pm_info} (SIM: {obj.sim.SIM_COD})"
         self.fields['rr'].label_from_instance = rr_label
         self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
 
@@ -507,10 +511,10 @@ class RecibirCarpetaForm(forms.Form):
 # ============================================================
 
 class RESForm(forms.ModelForm):
-    """Formulario para registrar una Resolución histórica sin dictamen previo"""
+    """Formulario para registrar una Resolución PRIMERA histórica sin dictamen previo"""
 
     class Meta:
-        model = RES
+        model = Resolucion
         fields = [
             'sim', 'pm', 'RES_NUM', 'RES_FEC', 'RES_TIPO', 'RES_RESOL'
         ]
@@ -542,12 +546,19 @@ class RESForm(forms.ModelForm):
             'RES_RESOL': 'Texto de la Resolución',
         }
 
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.RES_INSTANCIA = 'PRIMERA'
+        if commit:
+            obj.save()
+        return obj
+
 
 class RESNotificacionForm(forms.ModelForm):
-    """Formulario para registrar notificación de una Resolución existente"""
+    """Formulario para registrar notificación de una Resolución existente (PRIMERA o RECONSIDERACION)"""
 
     class Meta:
-        model = RES
+        model = Resolucion
         fields = [
             'RES_FECNOT', 'RES_HORNOT', 'RES_NOT', 'RES_TIPO_NOTIF'
         ]
@@ -575,101 +586,103 @@ class RESNotificacionForm(forms.ModelForm):
 
 
 class RAPForm(forms.ModelForm):
-    """Formulario para registrar un Recurso de Apelación al TSP histórico"""
+    """Formulario para registrar un Recurso de Apelación al TSP histórico (RecursoTSP.APELACION)"""
 
     class Meta:
-        model = RAP
+        model = RecursoTSP
         fields = [
-            'sim', 'pm', 'rr', 'RAP_FECPRESEN', 'RAP_OFI', 'RAP_FECOFI',
-            'RAP_NUM', 'RAP_FEC', 'RAP_RESOL', 'RAP_TIPO'
+            'sim', 'pm', 'resolucion', 'TSP_FECPRESEN', 'TSP_OFI', 'TSP_FECOFI',
+            'TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_TIPO'
         ]
         widgets = {
             'sim': forms.Select(attrs={'class': 'form-control'}),
             'pm': forms.Select(attrs={'class': 'form-control'}),
-            'rr': forms.Select(attrs={'class': 'form-control'}),
-            'RAP_FECPRESEN': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-                'label': 'Fecha de Presentación'
-            }),
-            'RAP_OFI': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Número de oficio'
-            }),
-            'RAP_FECOFI': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'RAP_NUM': forms.TextInput(attrs={
+            'resolucion': forms.Select(attrs={'class': 'form-control'}),
+            'TSP_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'TSP_OFI': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de oficio'}),
+            'TSP_FECOFI': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'TSP_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 03/26',
                 'pattern': '[0-9]{1,4}/[0-9]{2}'
             }),
-            'RAP_FEC': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'RAP_RESOL': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Texto del recurso'
-            }),
-            'RAP_TIPO': forms.Select(attrs={'class': 'form-control'}),
+            'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                'placeholder': 'Texto del recurso'}),
+            'TSP_TIPO': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'sim': 'Sumario',
             'pm': 'Personal Militar',
-            'rr': 'Recurso de Reconsideración (RR) - Opcional',
-            'RAP_FECPRESEN': 'Fecha de Presentación',
-            'RAP_OFI': 'Número de Oficio',
-            'RAP_FECOFI': 'Fecha de Oficio',
-            'RAP_NUM': 'Número del RAP',
-            'RAP_FEC': 'Fecha del RAP',
-            'RAP_RESOL': 'Texto del RAP',
-            'RAP_TIPO': 'Tipo de RAP',
+            'resolucion': 'Resolución RR impugnada (opcional)',
+            'TSP_FECPRESEN': 'Fecha de Presentación',
+            'TSP_OFI': 'Número de Oficio',
+            'TSP_FECOFI': 'Fecha de Oficio',
+            'TSP_NUM': 'Número del RAP',
+            'TSP_FEC': 'Fecha del RAP',
+            'TSP_RESOL': 'Texto del RAP',
+            'TSP_TIPO': 'Tipo de RAP',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['resolucion'].queryset = Resolucion.objects.filter(
+            RES_INSTANCIA='RECONSIDERACION'
+        )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.TSP_INSTANCIA = 'APELACION'
+        if commit:
+            instance.save()
+        return instance
 
 
 class RAEEForm(forms.ModelForm):
-    """Formulario para registrar un RAEE (Aclaración, Explicación y Enmienda) histórico"""
+    """Formulario para registrar un RAEE (RecursoTSP.ACLARACION_ENMIENDA) histórico"""
 
     class Meta:
-        model = RAEE
+        model = RecursoTSP
         fields = [
-            'sim', 'pm', 'rap', 'RAE_NUM', 'RAE_FEC', 'RAE_RESOL', 'RAE_RESUM'
+            'sim', 'pm', 'recurso_origen', 'TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_RESUM'
         ]
         widgets = {
             'sim': forms.Select(attrs={'class': 'form-control'}),
             'pm': forms.Select(attrs={'class': 'form-control'}),
-            'rap': forms.Select(attrs={'class': 'form-control'}),
-            'RAE_NUM': forms.TextInput(attrs={
+            'recurso_origen': forms.Select(attrs={'class': 'form-control'}),
+            'TSP_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 02/26',
                 'pattern': '[0-9]{1,4}/[0-9]{2}'
             }),
-            'RAE_FEC': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'RAE_RESOL': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Texto de la aclaración/enmienda'
-            }),
-            'RAE_RESUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Resumen breve'
-            }),
+            'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                'placeholder': 'Texto de la aclaración/enmienda'}),
+            'TSP_RESUM': forms.TextInput(attrs={'class': 'form-control',
+                'placeholder': 'Resumen breve'}),
         }
         labels = {
             'sim': 'Sumario',
             'pm': 'Personal Militar',
-            'rap': 'Recurso de Apelación (RAP)',
-            'RAE_NUM': 'Número del RAEE',
-            'RAE_FEC': 'Fecha del RAEE',
-            'RAE_RESOL': 'Texto del RAEE',
-            'RAE_RESUM': 'Resumen',
+            'recurso_origen': 'Recurso de Apelación (RAP) origen',
+            'TSP_NUM': 'Número del RAEE',
+            'TSP_FEC': 'Fecha del RAEE',
+            'TSP_RESOL': 'Texto del RAEE',
+            'TSP_RESUM': 'Resumen',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(
+            TSP_INSTANCIA='APELACION'
+        )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.TSP_INSTANCIA = 'ACLARACION_ENMIENDA'
+        if commit:
+            instance.save()
+        return instance
 
 
 class AUTOTPEHistoricoForm(forms.ModelForm):

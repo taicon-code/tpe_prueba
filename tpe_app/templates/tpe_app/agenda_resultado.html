@@ -67,39 +67,37 @@
     </div>
 </div>
 
-<form method="post" style="max-width: 600px;">
+<form method="post" style="max-width: 700px;">
     {% csrf_token %}
 
-    <div class="card">
+    <div class="card" style="margin-bottom: 3rem;">
         <h2>📋 Actualizar Resultado</h2>
 
         <div style="margin-bottom: 2rem;">
-            <div style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
-                {{ form.AG_ESTADO.label }}
+            <label style="display: block; color: #333; margin-bottom: 1.5rem; font-size: 0.95rem; font-weight: 600;">
+                ¿Qué pasó con esta agenda?
+            </label>
+
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <label style="display: flex; align-items: flex-start; padding: 1.25rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    <input type="radio" name="AG_ESTADO" value="REALIZADA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
+                    <span style="line-height: 1.5;">Realizada (sesión se realizó)</span>
+                </label>
+                <label style="display: flex; align-items: flex-start; padding: 1.25rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    <input type="radio" name="AG_ESTADO" value="SUSPENDIDA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
+                    <span style="line-height: 1.5;">Suspendida (sin nueva fecha aún)</span>
+                </label>
+                <label style="display: flex; align-items: flex-start; padding: 1.25rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
+                    <input type="radio" name="AG_ESTADO" value="REPROGRAMADA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
+                    <span style="line-height: 1.5;">Reprogramada (nueva fecha)</span>
+                </label>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                {{ form.AG_ESTADO }}
-            </div>
+
             {% if form.AG_ESTADO.errors %}
                 <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.5rem;">
                     {{ form.AG_ESTADO.errors.0 }}
                 </div>
             {% endif %}
-        </div>
-
-        <div style="margin-bottom: 1.5rem;" id="fecreal-field">
-            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.AG_FECREAL.label }}
-            </label>
-            {{ form.AG_FECREAL }}
-            {% if form.AG_FECREAL.errors %}
-                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.AG_FECREAL.errors.0 }}
-                </div>
-            {% endif %}
-            <small style="color: #666; font-size: 0.85rem;">
-                Fecha en la que se realizó la sesión (obligatoria si seleccionas "Realizada")
-            </small>
         </div>
 
         <div style="margin-bottom: 1.5rem; padding: 1rem; background: #fef3cd; border-left: 4px solid #ffc107; border-radius: 4px; display: none;" id="info-suspendida">
@@ -113,13 +111,28 @@
                 <strong>ℹ️ Reprogramación:</strong> Marca esta agenda como "Reprogramada" si será sesionada en otra fecha. Crea una nueva agenda con la nueva fecha.
             </p>
         </div>
+
+        <div style="margin-bottom: 1.5rem; padding: 1.5rem; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 6px; display: none;" id="fecreal-field">
+            <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #166534;">
+                📅 {{ form.AG_FECREAL.label }}
+            </label>
+            {{ form.AG_FECREAL }}
+            {% if form.AG_FECREAL.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.AG_FECREAL.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.5rem;">
+                Fecha en la que se realizó la sesión (obligatoria si seleccionas "Realizada")
+            </small>
+        </div>
     </div>
 
-    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-        <button type="submit" class="btn" style="background: #28a745;">
+    <div style="display: flex; gap: 1rem; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+        <button type="submit" class="btn" style="background: #28a745; color: #fff; padding: 0.75rem 1.5rem; font-weight: 600;">
             ✅ Guardar Resultado
         </button>
-        <a href="{% url 'lista_agendas' %}" class="btn" style="background: #6c757d;">
+        <a href="{% url 'lista_agendas' %}" class="btn" style="background: #6c757d; color: #fff; padding: 0.75rem 1.5rem; font-weight: 600;">
             Cancelar
         </a>
     </div>
@@ -162,22 +175,68 @@
     .badge-orange { background: #fff7ed; color: #c2410c; }
     .badge-red    { background: #fef2f2; color: #b91c1c; }
 
-    /* Radio buttons styling */
+    /* Radio buttons - custom styling */
+    input[name="AG_ESTADO"] {
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        min-width: 1.5rem !important;
+        min-height: 1.5rem !important;
+        cursor: pointer !important;
+        border: 2px solid #ccc !important;
+        border-radius: 50% !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        background: #fff !important;
+        flex-shrink: 0 !important;
+        transition: all 0.2s !important;
+    }
+
+    input[name="AG_ESTADO"]:checked {
+        background: #1e3c72 !important;
+        border-color: #1e3c72 !important;
+    }
+
+    input[name="AG_ESTADO"]:hover {
+        border-color: #1e3c72 !important;
+        box-shadow: 0 0 0 3px rgba(30,60,114,.1) !important;
+    }
+
+    input[name="AG_ESTADO"]:focus {
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(30,60,114,.2) !important;
+    }
+
+    label:has(input[name="AG_ESTADO"]:hover) {
+        background: #f0f7ff !important;
+        border-color: #3b82f6 !important;
+    }
+
+    label:has(input[name="AG_ESTADO"]:checked) {
+        background: #e0f2fe !important;
+        border-color: #1e3c72 !important;
+        font-weight: 600 !important;
+    }
+
+    /* Old classes para compatibilidad */
     .form-check-input {
         width: 1.25rem;
         height: 1.25rem;
-        margin-top: 0.3rem;
-        margin-right: 0.5rem;
+        margin-right: 0.75rem;
         cursor: pointer;
-        border: 1px solid #ddd;
+        border: 2px solid #ccc;
         border-radius: 50%;
         appearance: none;
         -webkit-appearance: none;
         -moz-appearance: none;
         background: #fff;
+        flex-shrink: 0;
     }
     .form-check-input:checked {
         background: #1e3c72;
+        border-color: #1e3c72;
+    }
+    .form-check-input:hover {
         border-color: #1e3c72;
     }
     .form-check-input:focus {
@@ -186,14 +245,37 @@
     }
     .form-check {
         display: flex;
-        align-items: flex-start;
-        margin-bottom: 0.75rem;
+        align-items: center;
+        padding: 1rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        margin-bottom: 0;
+        transition: background 0.15s;
+    }
+    .form-check:hover {
+        background: #f0f7ff;
     }
     .form-check label {
         margin: 0;
-        margin-left: 0.5rem;
         cursor: pointer;
         flex: 1;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: background 0.2s;
+    }
+    .btn:hover {
+        opacity: 0.9;
     }
 </style>
 

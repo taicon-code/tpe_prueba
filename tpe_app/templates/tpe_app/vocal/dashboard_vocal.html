@@ -97,6 +97,14 @@
     </p>
 </div>
 
+{% if sin_vocal_vinculado %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert" style="margin-bottom: 2rem;">
+    <strong>⚠️ Vocal TPE no vinculado:</strong> Este usuario no tiene un vocal del tribunal asignado.
+    Contacta al administrador para que vinculen tu cuenta con el vocal correspondiente.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
 <!-- Agendas Próximas -->
 {% if agendas_proximas %}
 <div class="section-title">📅 Próximas Agendas</div>

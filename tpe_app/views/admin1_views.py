@@ -3,6 +3,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
+from django.utils import timezone
 from datetime import date, timedelta
 from ..decorators import rol_requerido
 from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, Resolucion
@@ -130,7 +132,7 @@ def administrativo_dashboard(request):
     return render(request, 'tpe_app/dashboard_administrativo.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'AYUDANTE')
+@rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
 def registrar_sumario(request):
     """Formulario para registrar un nuevo sumario con militares"""
 
@@ -145,6 +147,14 @@ def registrar_sumario(request):
                     sumario = form.save(commit=False)
                     sumario.SIM_ESTADO = 'PARA_AGENDA'  # Estado inicial
                     sumario.save()
+
+                    # Crear custodia inicial: Admin2 es custodio desde que ingresa el SIM
+                    CustodiaSIM.objects.create(
+                        sim=sumario,
+                        tipo_custodio='ADMIN2_ARCHIVO',
+                        usuario=request.user,
+                        motivo='AGENDA',
+                    )
 
                     # Guardar los militares investigados
                     formset.instance = sumario
@@ -278,7 +288,7 @@ def agendar_sumario(request):
 
     return render(request, 'tpe_app/agendar_sumario.html', context)
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'AYUDANTE')
+@rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
 def registrar_rr(request):
     """Formulario para registrar un Recurso de Reconsideración (Resolucion RECONSIDERACION)"""
     if request.method == 'POST':
@@ -294,8 +304,17 @@ def registrar_rr(request):
             if not rr.RES_NUM:
                 rr.RES_NUM = ''
             rr.save()
+
+            # Crear custodia inicial: Admin2 es custodio del RR desde que se registra
+            CustodiaSIM.objects.create(
+                sim=rr.sim,
+                tipo_custodio='ADMIN2_ARCHIVO',
+                usuario=request.user,
+                motivo='AGENDA',
+            )
+
             messages.success(request, '✅ Recurso de Reconsideración registrado exitosamente. Ahora agendar con un abogado.')
-            return redirect(f'agendar_rr?rr={rr.id}')
+            return redirect(f"{reverse('agendar_rr')}?rr={rr.id}")
         else:
             messages.error(request, '❌ Por favor corrija los errores en el formulario')
     else:
@@ -318,7 +337,7 @@ def agendar_rr(request):
 
             messages.success(
                 request,
-                f'✅ RR asignado para el abogado {abogado} el {fecha_agenda.strftime("%d/%m/%Y")}'
+                f'✅ RR asignado para el abogado {abogado} el {fecha_agenda.strftime("%d/%m/%Y")}. Admin2 debe entregar la carpeta.'
             )
             return redirect('administrativo_dashboard')
     else:

@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
 from ..decorators import rol_requerido
-from ..models import SIM, PM, RES, RR, RAP, RAEE, AUTOTPE, AUTOTSP
+from ..models import SIM, PM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP
 
 
 def _obtener_historial_completo(personal_id):
@@ -20,10 +20,10 @@ def _obtener_historial_completo(personal_id):
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': RES.objects.filter(sim__in=sim_ids),
-        'segundas_resoluciones': RR.objects.filter(sim__in=sim_ids),
-        'recursos_apelacion': RAP.objects.filter(sim__in=sim_ids),
-        'raees': RAEE.objects.filter(sim__in=sim_ids),
+        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='PRIMERA'),
+        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='RECONSIDERACION'),
+        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='APELACION'),
+        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='ACLARACION_ENMIENDA'),
         'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }

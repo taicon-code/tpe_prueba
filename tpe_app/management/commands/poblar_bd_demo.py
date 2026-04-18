@@ -23,7 +23,8 @@ from django.utils import timezone
 from datetime import date
 from tpe_app.models import (
     PM, ABOG, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
-    AGENDA, DICTAMEN, RES, RR, AUTOTPE, RAP, AUTOTSP, RAEE,
+    AGENDA, DICTAMEN, AUTOTPE, AUTOTSP,
+    Resolucion, RecursoTSP,
     PerfilUsuario,
 )
 
@@ -42,12 +43,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['reset']:
             self.stdout.write(self.style.WARNING('\n⚠️  Borrando datos existentes...'))
-            RAEE.objects.all().delete()
+            RecursoTSP.objects.all().delete()
             AUTOTSP.objects.all().delete()
-            RAP.objects.all().delete()
             AUTOTPE.objects.all().delete()
-            RR.objects.all().delete()
-            RES.objects.all().delete()
+            Resolucion.objects.all().delete()
             DICTAMEN.objects.all().delete()
             AGENDA.objects.all().delete()
             ABOG_SIM.objects.all().delete()
@@ -241,22 +240,23 @@ class Command(BaseCommand):
                 DIC_CONFIR_FEC=date(2026, 2, 15),
             )
         )
-        res3, _ = RES.objects.get_or_create(sim=sim3, defaults=dict(
-            RES_NUM='15/26',
-            RES_FEC=date(2026, 2, 20),
-            RES_TIPO='SANCION_ARRESTO',
-            RES_RESOL='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: SANCIONAR AL MY. ROBERTO FLORES CONDORI CON 60 DIAS DE ARRESTO.',
-            abog=abog2, agenda=agenda1, dictamen=dic3, pm=pm_my,
-            RES_TIPO_NOTIF='FIRMA',
-            RES_NOT='MY. ROBERTO FLORES CONDORI',
-            RES_FECNOT=date(2026, 2, 21),
-        ))
+        res3, _ = Resolucion.objects.get_or_create(
+            sim=sim3, RES_INSTANCIA='PRIMERA', RES_NUM='15/26',
+            defaults=dict(
+                RES_FEC=date(2026, 2, 20),
+                RES_TIPO='SANCION_ARRESTO',
+                RES_RESOL='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: SANCIONAR AL MY. ROBERTO FLORES CONDORI CON 60 DIAS DE ARRESTO.',
+                abog=abog2, agenda=agenda1, dictamen=dic3, pm=pm_my,
+                RES_TIPO_NOTIF='FIRMA',
+                RES_NOT='MY. ROBERTO FLORES CONDORI',
+                RES_FECNOT=date(2026, 2, 21),
+            ))
         # Auto de ejecutoria (caso terminado sin apelación)
         AUTOTPE.objects.get_or_create(sim=sim3, TPE_TIPO='AUTO_EJECUTORIA', defaults=dict(
             TPE_NUM='08/26',
             TPE_FEC=date(2026, 3, 15),
             TPE_RESOL='SE DECLARA EJECUTORIADA LA RESOLUCION NRO. 15/26 DEL TRIBUNAL DE PERSONAL.',
-            abog=abog2, agenda=agenda2, pm=pm_my, res=res3,
+            abog=abog2, agenda=agenda2, pm=pm_my, resolucion=res3,
             TPE_TIPO_NOTIF='FIRMA',
             TPE_NOT='MY. ROBERTO FLORES CONDORI',
             TPE_FECNOT=date(2026, 3, 16),
@@ -288,25 +288,27 @@ class Command(BaseCommand):
                 DIC_CONFIR_FEC=date(2026, 1, 25),
             )
         )
-        res4, _ = RES.objects.get_or_create(sim=sim4, defaults=dict(
-            RES_NUM='05/26',
-            RES_FEC=date(2026, 2, 1),
-            RES_TIPO='SANCION_LETRA_B',
-            RES_RESOL='EL TRIBUNAL RESUELVE: SANCIONAR AL TCNL. MARIO GUTIERREZ LOPEZ CON LETRA B (PERDIDA DE ANTIGUEDAD).',
-            abog=abog1, agenda=agenda1, dictamen=dic4, pm=pm_tcnl,
-            RES_TIPO_NOTIF='CEDULON',
-            RES_NOT='TCNL. MARIO GUTIERREZ LOPEZ',
-            RES_FECNOT=date(2026, 2, 3),
-        ))
-        rr4, _ = RR.objects.get_or_create(sim=sim4, res=res4, defaults=dict(
-            RR_NUM='02/26',
-            RR_FECPRESEN=date(2026, 2, 10),
-            # RR_FECLIMITE se calcula automáticamente en save()
-            RR_FEC=None,  # pendiente de resolver
-            RR_RESOL=None,
-            RR_RESUM='RECURSO DE RECONSIDERACION PRESENTADO POR EL TCNL. MARIO GUTIERREZ LOPEZ',
-            abog=abog1, agenda=agenda2, pm=pm_tcnl,
-        ))
+        res4, _ = Resolucion.objects.get_or_create(
+            sim=sim4, RES_INSTANCIA='PRIMERA', RES_NUM='05/26',
+            defaults=dict(
+                RES_FEC=date(2026, 2, 1),
+                RES_TIPO='SANCION_LETRA_B',
+                RES_RESOL='EL TRIBUNAL RESUELVE: SANCIONAR AL TCNL. MARIO GUTIERREZ LOPEZ CON LETRA B (PERDIDA DE ANTIGUEDAD).',
+                abog=abog1, agenda=agenda1, dictamen=dic4, pm=pm_tcnl,
+                RES_TIPO_NOTIF='CEDULON',
+                RES_NOT='TCNL. MARIO GUTIERREZ LOPEZ',
+                RES_FECNOT=date(2026, 2, 3),
+            ))
+        rr4, _ = Resolucion.objects.get_or_create(
+            sim=sim4, RES_INSTANCIA='RECONSIDERACION', resolucion_origen=res4,
+            defaults=dict(
+                RES_NUM='02/26',
+                RES_FECPRESEN=date(2026, 2, 10),
+                RES_FEC=None,
+                RES_RESOL=None,
+                RES_RESUM='PROCEDENCIA',
+                abog=abog1, agenda=agenda2, pm=pm_tcnl,
+            ))
         self.stdout.write('   📌 Escenario 4: DJE-004/26 → RES emitida + RR pendiente (MODIFICADO por Secretario)')
 
         # ─────────────────────────────────────────────────────────────────────
@@ -334,32 +336,35 @@ class Command(BaseCommand):
                 DIC_CONFIR_FEC=date(2025, 12, 1),
             )
         )
-        res5, _ = RES.objects.get_or_create(sim=sim5, defaults=dict(
-            RES_NUM='52/25',
-            RES_FEC=date(2025, 12, 10),
-            RES_TIPO='SANCION_RETIRO_OBLIGATORIO',
-            RES_RESOL='EL TRIBUNAL RESUELVE: SANCIONAR AL CNL. CARLOS MENDOZA TORREZ CON RETIRO OBLIGATORIO.',
-            abog=abog2, agenda=agenda1, dictamen=dic5, pm=pm_cnl,
-            RES_TIPO_NOTIF='EDICTO',
-            RES_NOT='PERIODICO LA RAZON',
-            RES_FECNOT=date(2025, 12, 15),
-        ))
-        rr5, _ = RR.objects.get_or_create(sim=sim5, res=res5, defaults=dict(
-            RR_NUM='12/25',
-            RR_FECPRESEN=date(2025, 12, 20),
-            RR_FEC=date(2026, 1, 10),
-            RR_RESOL='EL TRIBUNAL RESUELVE: MANTENER EN TODOS SUS TERMINOS LA RESOLUCION NRO. 52/25.',
-            RR_RESUM='SE MANTIENE LA SANCION DE RETIRO OBLIGATORIO',
-            abog=abog2, agenda=agenda2, pm=pm_cnl,
-        ))
-        rap5, _ = RAP.objects.get_or_create(sim=sim5, defaults=dict(
-            rr=rr5,
-            RAP_FECPRESEN=date(2026, 1, 15),
-            RAP_OFI='OFI-012/26',
-            RAP_FECOFI=date(2026, 1, 16),
-            # RAP_FECLIMITE se calcula automáticamente en save()
-            pm=pm_cnl,
-        ))
+        res5, _ = Resolucion.objects.get_or_create(
+            sim=sim5, RES_INSTANCIA='PRIMERA', RES_NUM='52/25',
+            defaults=dict(
+                RES_FEC=date(2025, 12, 10),
+                RES_TIPO='SANCION_RETIRO_OBLIGATORIO',
+                RES_RESOL='EL TRIBUNAL RESUELVE: SANCIONAR AL CNL. CARLOS MENDOZA TORREZ CON RETIRO OBLIGATORIO.',
+                abog=abog2, agenda=agenda1, dictamen=dic5, pm=pm_cnl,
+                RES_TIPO_NOTIF='EDICTO',
+                RES_NOT='PERIODICO LA RAZON',
+                RES_FECNOT=date(2025, 12, 15),
+            ))
+        rr5, _ = Resolucion.objects.get_or_create(
+            sim=sim5, RES_INSTANCIA='RECONSIDERACION', resolucion_origen=res5,
+            defaults=dict(
+                RES_NUM='12/25',
+                RES_FECPRESEN=date(2025, 12, 20),
+                RES_FEC=date(2026, 1, 10),
+                RES_RESOL='EL TRIBUNAL RESUELVE: MANTENER EN TODOS SUS TERMINOS LA RESOLUCION NRO. 52/25.',
+                RES_RESUM='IMPROCEDENCIA',
+                abog=abog2, agenda=agenda2, pm=pm_cnl,
+            ))
+        rap5, _ = RecursoTSP.objects.get_or_create(
+            sim=sim5, TSP_INSTANCIA='APELACION', resolucion=rr5,
+            defaults=dict(
+                TSP_FECPRESEN=date(2026, 1, 15),
+                TSP_OFI='OFI-012/26',
+                TSP_FECOFI=date(2026, 1, 16),
+                pm=pm_cnl,
+            ))
         self.stdout.write('   📌 Escenario 5: DJE-005/26 → EN APELACION TSP (RES + RR + RAP)')
 
         # ─────────────────────────────────────────────────────────────────────
@@ -423,16 +428,17 @@ class Command(BaseCommand):
                 DIC_CONFIR_FEC=date(2026, 3, 10),
             )
         )
-        res7, _ = RES.objects.get_or_create(sim=sim7, defaults=dict(
-            RES_NUM='20/26',
-            RES_FEC=date(2026, 3, 15),
-            RES_TIPO='SOLICITUD_ASCENSO',
-            RES_RESOL='EL TRIBUNAL RESUELVE: APROBAR LA SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR DE MY. ANA MARIA GARCIA RIOS.',
-            abog=abog1, agenda=agenda3, dictamen=dic7, pm=pm_my2,
-            RES_TIPO_NOTIF='FIRMA',
-            RES_NOT='MY. ANA MARIA GARCIA RIOS',
-            RES_FECNOT=date(2026, 3, 16),
-        ))
+        res7, _ = Resolucion.objects.get_or_create(
+            sim=sim7, RES_INSTANCIA='PRIMERA', RES_NUM='20/26',
+            defaults=dict(
+                RES_FEC=date(2026, 3, 15),
+                RES_TIPO='SOLICITUD_ASCENSO',
+                RES_RESOL='EL TRIBUNAL RESUELVE: APROBAR LA SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR DE MY. ANA MARIA GARCIA RIOS.',
+                abog=abog1, agenda=agenda3, dictamen=dic7, pm=pm_my2,
+                RES_TIPO_NOTIF='FIRMA',
+                RES_NOT='MY. ANA MARIA GARCIA RIOS',
+                RES_FECNOT=date(2026, 3, 16),
+            ))
         self.stdout.write('   📌 Escenario 7: SLC-001/26 → CONCLUIDO (SOLICITUD ASCENSO aprobada)')
 
         # ── RESUMEN FINAL ─────────────────────────────────────────────────────

@@ -87,32 +87,32 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.rap.label }}</label>
-                            {{ form.rap }}
-                            <small class="text-muted d-block mt-1">Seleccione el RAP relacionado (opcional)</small>
+                            <label class="form-label">{{ form.recurso_origen.label }}</label>
+                            {{ form.recurso_origen }}
+                            <small class="text-muted d-block mt-1">Seleccione el RAP origen (opcional)</small>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAE_NUM.label }} <span class="text-danger">*</span></label>
-                                {{ form.RAE_NUM }}
+                                <label class="form-label">{{ form.TSP_NUM.label }} <span class="text-danger">*</span></label>
+                                {{ form.TSP_NUM }}
                                 <small class="text-muted d-block mt-1">Formato: NN/AA</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAE_FEC.label }} <span class="text-danger">*</span></label>
-                                {{ form.RAE_FEC }}
+                                <label class="form-label">{{ form.TSP_FEC.label }} <span class="text-danger">*</span></label>
+                                {{ form.TSP_FEC }}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.RAE_RESUM.label }}</label>
-                            {{ form.RAE_RESUM }}
+                            <label class="form-label">{{ form.TSP_RESUM.label }}</label>
+                            {{ form.TSP_RESUM }}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.RAE_RESOL.label }} <span class="text-danger">*</span></label>
-                            {{ form.RAE_RESOL }}
-                            {% if form.RAE_RESOL.errors %}<div class="text-danger small mt-1">{{ form.RAE_RESOL.errors }}</div>{% endif %}
+                            <label class="form-label">{{ form.TSP_RESOL.label }} <span class="text-danger">*</span></label>
+                            {{ form.TSP_RESOL }}
+                            {% if form.TSP_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TSP_RESOL.errors }}</div>{% endif %}
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end pt-3">

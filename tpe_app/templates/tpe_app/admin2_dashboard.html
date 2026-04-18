@@ -6,6 +6,16 @@
 {% block content %}
 <h1 style="margin-bottom: 2rem; color: #1e3c72;">📂 Gestión de Carpetas - Archivo SIM</h1>
 
+<!-- Acciones Rápidas -->
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+    <a href="{% url 'registrar_sumario' %}" class="btn" style="background: #10b981; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">
+        ➕ Registrar Nuevo Sumario
+    </a>
+    <a href="{% url 'registrar_rr' %}" class="btn" style="background: #f59e0b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">
+        ➕ Registrar RR
+    </a>
+</div>
+
 <!-- Stats Grid -->
 <div class="stats-grid">
     <div class="stat-card" style="border-left-color: #3b82f6;">
@@ -48,13 +58,21 @@
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.9rem;">
-                    {% for abog in custodia.sim.abogados.all %}
-                        <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
-                            {{ abog.AB_GRADO }} {{ abog.AB_PATERNO }}
+                    {% if custodia.abog_primera_list %}
+                        {% for abog in custodia.abog_primera_list %}
+                            <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
+                                {{ abog.AB_GRADO }} {{ abog.AB_PATERNO }}
+                            </span>
+                        {% endfor %}
+                    {% endif %}
+                    {% if custodia.abog_rr %}
+                        <span style="background: #fed7aa; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
+                            🔄 {{ custodia.abog_rr.AB_GRADO }} {{ custodia.abog_rr.AB_PATERNO }} (RR)
                         </span>
-                    {% empty %}
-                        <span style="color: #9ca3af;">Sin asignar</span>
-                    {% endfor %}
+                    {% endif %}
+                    {% if not custodia.abog_primera_list and not custodia.abog_rr %}
+                        <span style="color: #9ca3af;">Sin asignar aún</span>
+                    {% endif %}
                 </td>
                 <td>
                     <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #3b82f6; color: #fff;">

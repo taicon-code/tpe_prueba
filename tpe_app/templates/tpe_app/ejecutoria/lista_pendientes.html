@@ -108,17 +108,15 @@
             {% for rr in por_rr %}
             <tr>
                 <td><strong>{{ rr.sim.SIM_COD }}</strong></td>
-                <td>{{ rr.RR_NUM }}</td>
+                <td>{{ rr.RES_NUM }}</td>
                 <td style="font-size: 0.85rem;">
                     {% if rr.pm %}
                         {{ rr.pm.PM_GRADO }} {{ rr.pm.PM_PATERNO }} {{ rr.pm.PM_MATERNO }}
-                    {% elif rr.res.dictamen.pm %}
-                        {{ rr.res.dictamen.pm.PM_GRADO }} {{ rr.res.dictamen.pm.PM_PATERNO }} {{ rr.res.dictamen.pm.PM_MATERNO }}
-                    {% elif rr.res.pm %}
-                        {{ rr.res.pm.PM_GRADO }} {{ rr.res.pm.PM_PATERNO }} {{ rr.res.pm.PM_MATERNO }}
+                    {% elif rr.resolucion_origen.pm %}
+                        {{ rr.resolucion_origen.pm.PM_GRADO }} {{ rr.resolucion_origen.pm.PM_PATERNO }} {{ rr.resolucion_origen.pm.PM_MATERNO }}
                     {% else %}—{% endif %}
                 </td>
-                <td>{{ rr.RR_FECNOT|date:"d/m/Y" }}</td>
+                <td>{{ rr.RES_FECNOT|date:"d/m/Y" }}</td>
                 <td style="color: #b45309; font-weight: 600;">{{ rr.fecha_limite|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <span style="background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">

@@ -13,7 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from tpe_app.models import PM, SIM, RES, RR, RAP, RAEE, AUTOTPE, AUTOTSP
+from tpe_app.models import PM, SIM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP
 
 
 def _format_date(date_obj):
@@ -43,10 +43,10 @@ def _obtener_historial(personal_id):
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': RES.objects.filter(sim__in=sim_ids),
-        'segundas_resoluciones': RR.objects.filter(sim__in=sim_ids),
-        'recursos_apelacion': RAP.objects.filter(sim__in=sim_ids),
-        'raees': RAEE.objects.filter(sim__in=sim_ids),
+        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='PRIMERA'),
+        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='RECONSIDERACION'),
+        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='APELACION'),
+        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='ACLARACION_ENMIENDA'),
         'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }
@@ -310,34 +310,34 @@ def export_person_excel(request, personal_id):
         ws_docs.cell(row=row_idx, column=6, value=_format_date(res.RES_FECNOT))
         row_idx += 1
 
-    # Segundas Resoluciones (RR)
+    # Segundas Resoluciones (RR) — Resolucion RECONSIDERACION
     for rr in historial['segundas_resoluciones']:
         ws_docs.cell(row=row_idx, column=1, value=rr.sim.SIM_COD)
         ws_docs.cell(row=row_idx, column=2, value="Recurso Reconsideración (RR)")
-        ws_docs.cell(row=row_idx, column=3, value=rr.RR_NUM or "N/A")
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(rr.RR_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=rr.RR_NOT or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(rr.RR_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=rr.RES_NUM or "N/A")
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(rr.RES_FEC))
+        ws_docs.cell(row=row_idx, column=5, value=rr.RES_NOT or "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(rr.RES_FECNOT))
         row_idx += 1
 
-    # Recursos de Apelación (RAP)
+    # Recursos de Apelación (RAP) — RecursoTSP APELACION
     for rap in historial['recursos_apelacion']:
         ws_docs.cell(row=row_idx, column=1, value=rap.sim.SIM_COD)
         ws_docs.cell(row=row_idx, column=2, value="Recurso Apelación (RAP)")
-        ws_docs.cell(row=row_idx, column=3, value=rap.RAP_NUM or "N/A")
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(rap.RAP_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=rap.RAP_TIPO_NOTIF or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(rap.RAP_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=rap.TSP_NUM or "N/A")
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(rap.TSP_FEC))
+        ws_docs.cell(row=row_idx, column=5, value=rap.TSP_TIPO_NOTIF or "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(rap.TSP_FECNOT))
         row_idx += 1
 
-    # RAEE
+    # RAEE — RecursoTSP ACLARACION_ENMIENDA
     for raee in historial['raees']:
         ws_docs.cell(row=row_idx, column=1, value=raee.sim.SIM_COD)
         ws_docs.cell(row=row_idx, column=2, value="Recurso RAEE")
-        ws_docs.cell(row=row_idx, column=3, value=raee.RAE_NUM or "N/A")
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(raee.RAE_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=raee.RAE_TIPO_NOTIF or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(raee.RAE_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=raee.TSP_NUM or "N/A")
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(raee.TSP_FEC))
+        ws_docs.cell(row=row_idx, column=5, value=raee.TSP_TIPO_NOTIF or "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(raee.TSP_FECNOT))
         row_idx += 1
 
     for col in range(1, len(headers_docs) + 1):
@@ -361,7 +361,7 @@ def export_person_excel(request, personal_id):
         eventos.append((res.RES_FEC, "Resolución TPE", f"RES {res.RES_NUM}: {res.get_RES_TIPO_display()}"))
 
     for rap in historial['recursos_apelacion']:
-        eventos.append((rap.RAP_FEC, "Apelación TSP", f"RAP {rap.RAP_NUM or 'Pendiente'}: {rap.RAP_TIPO or 'N/A'}"))
+        eventos.append((rap.TSP_FEC, "Apelación TSP", f"RAP {rap.TSP_NUM or 'Pendiente'}: {rap.TSP_TIPO or 'N/A'}"))
 
     # Ordenar por fecha
     eventos = sorted([e for e in eventos if e[0]], key=lambda x: x[0])

@@ -9,6 +9,8 @@ from .abogado_documentos_views import (
     abogado_res_crear,
     abogado_rr_crear,
     abogado_sumario_detalle,
+    abogado_confirmar_recepcion,
+    abogado_devolver_carpeta,
 )
 from .buscador_views import buscador_dashboard, upload_foto_pm
 from .admin1_views import (

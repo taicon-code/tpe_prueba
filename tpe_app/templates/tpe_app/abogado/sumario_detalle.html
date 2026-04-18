@@ -130,40 +130,59 @@
     </div>
 </div>
 
+<!-- ── BANNER ABOG2 (EJECUTORIA) ─────────────────── -->
+{% if es_abog2 and autos_asignados %}
+<div style="background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.75rem; border-left: 4px solid #a78bfa;">
+    <div style="font-weight: 700; font-size: 0.95rem;">⚖️ Ud. trabaja la EJECUTORIA en este sumario</div>
+    <p style="margin: 0.5rem 0 0; font-size: 0.85rem; opacity: 0.9;">Puede revisar todos los actuados previos (dictámenes, resoluciones, recursos) y crear/modificar los autos de ejecución.</p>
+</div>
+{% endif %}
+
 <!-- ── CUSTODIA DE CARPETA ───────────────────────────── -->
-{% if es_responsable %}
-{# El responsable ve el estado de custodia completo y el botón de entregar #}
-<div class="card section-card" style="border-left: 4px solid {% if tiene_custodia %}#10b981{% else %}#f97316{% endif %}; background: {% if tiene_custodia %}#f0fdf4{% else %}#fffbeb{% endif %};">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <div class="card-title" style="margin-bottom: 0.5rem;">📂 Custodia de Carpeta (Ud. es el responsable)</div>
-            {% if tiene_custodia %}
-                <p style="margin: 0; color: #15803d; font-size: 0.95rem;">
-                    <strong>✅ Carpeta en su poder</strong><br>
-                    <small style="color: #6b7280; font-size: 0.85rem;">Cuando termine, entregue la carpeta a Archivo SIM</small>
-                </p>
+{% if custodio_actual %}
+<div class="card section-card" style="border-left: 4px solid {% if custodio_actual.tipo_custodio == 'ADMIN2_ARCHIVO' %}#3b82f6{% else %}#10b981{% endif %}; background: {% if custodio_actual.tipo_custodio == 'ADMIN2_ARCHIVO' %}#eff6ff{% else %}#f0fdf4{% endif %};">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="flex: 1; min-width: 250px;">
+            <div class="card-title" style="margin-bottom: 0.5rem;">📂 Custodia de Carpeta</div>
+            {% if custodio_actual.tipo_custodio == 'ADMIN2_ARCHIVO' %}
+                {% if custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
+                    <p style="margin: 0; color: #dc2626; font-size: 0.95rem;">
+                        <strong>⏳ Pendiente su confirmación de recepción</strong><br>
+                        <small style="color: #6b7280; font-size: 0.85rem;">Admin2 ha entregado la carpeta. Debe confirmar que la recibió.</small>
+                    </p>
+                {% else %}
+                    <p style="margin: 0; color: #1e40af; font-size: 0.95rem;">
+                        <strong>ℹ️ Carpeta en poder de Admin2</strong><br>
+                        <small style="color: #6b7280; font-size: 0.85rem;">Admin2 es el custodio. Puede continuar con su trabajo.</small>
+                    </p>
+                {% endif %}
             {% else %}
-                <p style="margin: 0; color: #b45309; font-size: 0.95rem;">
-                    <strong>⚠️ Carpeta no está en su poder</strong><br>
-                    <small style="color: #6b7280; font-size: 0.85rem;">Solicite la carpeta a Archivo SIM para poder entregarla</small>
-                </p>
+                {% if custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
+                    <p style="margin: 0; color: #dc2626; font-size: 0.95rem;">
+                        <strong>⏳ Pendiente su confirmación de recepción</strong><br>
+                        <small style="color: #6b7280; font-size: 0.85rem;">Admin2 acaba de entregarle la carpeta. Confirme la recepción para poder trabajar.</small>
+                    </p>
+                {% else %}
+                    <p style="margin: 0; color: #15803d; font-size: 0.95rem;">
+                        <strong>✅ Carpeta en su poder</strong><br>
+                        <small style="color: #6b7280; font-size: 0.85rem;">Cuando termine, devuelva la carpeta a Admin2.</small>
+                    </p>
+                {% endif %}
             {% endif %}
         </div>
-        {% if tiene_custodia %}
-            <a href="{% url 'abogado_entregar_carpeta' sim.pk %}" class="btn" style="background: #28a745; color: #fff; padding: 0.6rem 1.2rem; white-space: nowrap; text-decoration: none;">
-                📤 Entregar a Archivo SIM
-            </a>
-        {% endif %}
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% if custodio_actual.tipo_custodio != 'ADMIN2_ARCHIVO' and custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
+                <a href="{% url 'abogado_confirmar_recepcion' sim.pk %}" class="btn" style="background: #10b981; color: #fff; padding: 0.6rem 1.2rem; white-space: nowrap; text-decoration: none; font-weight: 600;">
+                    ✅ Recibí Conforme
+                </a>
+            {% elif custodio_actual.tipo_custodio != 'ADMIN2_ARCHIVO' and custodio_actual.estado == 'ACTIVA' %}
+                <a href="{% url 'abogado_devolver_carpeta' sim.pk %}" class="btn" style="background: #dc2626; color: #fff; padding: 0.6rem 1.2rem; white-space: nowrap; text-decoration: none; font-weight: 600;">
+                    📤 Devolver a Admin2
+                </a>
+            {% endif %}
+        </div>
     </div>
-</div>
-{% else %}
-{# Los demas abogados asignados ven un mensaje informativo, sin botón de entregar #}
-<div class="card section-card" style="border-left: 4px solid #3b82f6; background: #eff6ff;">
-    <div class="card-title" style="margin-bottom: 0.5rem;">📂 Custodia de Carpeta</div>
-    <p style="margin: 0; color: #1e40af; font-size: 0.95rem;">
-        <strong>ℹ️ Ud. no es el responsable de la carpeta fisica.</strong><br>
-        <small style="color: #6b7280; font-size: 0.85rem;">Puede crear dictamenes y resoluciones normalmente. La entrega de la carpeta la realiza el abogado responsable.</small>
-    </p>
 </div>
 {% endif %}
 
@@ -256,6 +275,58 @@
     <p style="color:#9ca3af; text-align:center; padding:1.5rem 0;">Sin investigados registrados</p>
     {% endif %}
 </div>
+
+<!-- ── DOCUMENTOS ADJUNTOS ──────────────────────── -->
+{% if documentos_sim %}
+<div class="card section-card">
+    <div class="card-title">📎 Documentos Adjuntos al Sumario</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Documento</th>
+                <th>Descripción</th>
+                <th>Fecha</th>
+                <th>Descargar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documentos_sim %}
+            <tr>
+                <td style="white-space: nowrap;"><strong>{{ doc.DOC_NOMBRE|default:"Sin nombre" }}</strong></td>
+                <td style="max-width: 250px; word-break: break-word; font-size: 0.85rem;">{{ doc.DOC_OBSERVACION|default:"—" }}</td>
+                <td style="white-space: nowrap; font-size: 0.85rem;">{{ doc.DOC_FECREGISTRO|date:"d/m/Y"|default:"—" }}</td>
+                <td>
+                    <a href="{{ doc.DOC_RUTA.url }}" target="_blank" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.55rem; background: #059669;">
+                        ⬇ Descargar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ── CONTEXTO PREVIO PARA RR ──────────────────── -->
+{% if rrs_asignados %}
+<div class="card section-card" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+    <div class="card-title">🔄 Recurso(s) asignado(s) a Ud. — Contexto previo</div>
+    {% for rr in rrs_asignados %}
+    <div style="margin-bottom: 1rem; padding: 0.75rem; background: #fff; border-radius: 6px; border: 1px solid #fcd34d;">
+        <div style="font-weight: 700; color: #1e3c72; margin-bottom: 0.5rem;">
+            RR impugna la RES Nº <strong>{{ rr.resolucion_origen.RES_NUM|default:"S/N" }}</strong>
+        </div>
+        {% if rr.resolucion_origen.dictamen %}
+        <div style="font-size: 0.85rem; color: #374151; line-height: 1.6;">
+            <div><strong>Dictamen origen:</strong> {{ rr.resolucion_origen.dictamen.DIC_NUM|default:"S/N" }} ({{ rr.resolucion_origen.dictamen.DIC_CONCL|default:"—" }})</div>
+            <div><strong>Abogado que dictaminó:</strong> {{ rr.resolucion_origen.abog|default:"—" }}</div>
+            <div><strong>Militar:</strong> {{ rr.resolucion_origen.pm.PM_GRADO|default:"" }} {{ rr.resolucion_origen.pm.PM_NOMBRE|default:"" }} {{ rr.resolucion_origen.pm.PM_PATERNO|default:"" }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <!-- ── DICTÁMENES ──────────────────────────────── -->
 <div class="card section-card">
@@ -421,11 +492,11 @@
         <tbody>
             {% for rr in reconsideraciones %}
             <tr>
-                <td><strong>{{ rr.RR_NUM|default:"S/N" }}</strong></td>
-                <td style="white-space:nowrap;">{{ rr.RR_FEC|date:"d/m/Y"|default:"-" }}</td>
-                <td style="white-space:nowrap;"><strong>{{ rr.res.RES_NUM }}</strong></td>
-                <td style="max-width:200px; word-break:break-word;">{{ rr.RR_RESUM|truncatewords:10|default:"-" }}</td>
-                <td style="max-width:200px; word-break:break-word;">{{ rr.RR_RESOL|truncatewords:10|default:"-" }}</td>
+                <td><strong>{{ rr.RES_NUM|default:"S/N" }}</strong></td>
+                <td style="white-space:nowrap;">{{ rr.RES_FEC|date:"d/m/Y"|default:"-" }}</td>
+                <td style="white-space:nowrap;"><strong>{{ rr.resolucion_origen.RES_NUM|default:"-" }}</strong></td>
+                <td style="max-width:200px; word-break:break-word;">{{ rr.get_RES_RESUM_display|default:"-" }}</td>
+                <td style="max-width:200px; word-break:break-word;">{{ rr.RES_RESOL|truncatewords:10|default:"-" }}</td>
             </tr>
             {% endfor %}
         </tbody>

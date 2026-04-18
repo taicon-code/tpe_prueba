@@ -6,15 +6,13 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from ..decorators import rol_requerido
-from ..models import AGENDA, AUTOTPE, DICTAMEN, RES, RR, VOCAL_TPE
+from ..models import AGENDA, AUTOTPE, DICTAMEN, Resolucion, VOCAL_TPE
 
 
 def _get_vocal_or_403(request):
-    """Obtiene el VOCAL_TPE del usuario actual o lanza 403"""
+    """Obtiene el VOCAL_TPE del usuario actual, o None si no está vinculado"""
     perfil = getattr(request.user, "perfilusuario", None)
-    if not perfil or not getattr(perfil, "vocal", None):
-        raise Http404
-    return perfil.vocal
+    return getattr(perfil, "vocal", None) if perfil else None
 
 
 @rol_requerido("VOCAL_TPE")
@@ -42,6 +40,7 @@ def vocal_dashboard(request):
         "vocal": vocal,
         "agendas_proximas": agendas_proximas,
         "agendas_pasadas": agendas_pasadas,
+        "sin_vocal_vinculado": vocal is None,
     }
 
     return render(request, "tpe_app/vocal/dashboard_vocal.html", context)
@@ -59,9 +58,9 @@ def vocal_agenda_detalle(request, ag_id: int):
     ).select_related("sim", "pm", "abog", "secretario").order_by("sim__SIM_COD", "pm__PM_PATERNO")
 
     # Recursos de Reconsideración en esta agenda
-    rr_en_agenda = RR.objects.filter(
-        agenda=agenda
-    ).select_related("sim", "pm", "res", "abog").order_by("-RR_FEC")
+    rr_en_agenda = Resolucion.objects.filter(
+        agenda=agenda, RES_INSTANCIA='RECONSIDERACION'
+    ).select_related("sim", "pm", "resolucion_origen", "abog").order_by("-RES_FEC")
 
     # Autos TPE en esta agenda
     autos_en_agenda = AUTOTPE.objects.filter(

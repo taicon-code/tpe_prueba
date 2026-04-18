@@ -87,50 +87,50 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.rr.label }}</label>
-                            {{ form.rr }}
-                            <small class="text-muted d-block mt-1">Seleccione el RR relacionado (opcional)</small>
+                            <label class="form-label">{{ form.resolucion.label }}</label>
+                            {{ form.resolucion }}
+                            <small class="text-muted d-block mt-1">Seleccione el RR impugnado (opcional)</small>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAP_FECPRESEN.label }} <span class="text-danger">*</span></label>
-                                {{ form.RAP_FECPRESEN }}
-                                {% if form.RAP_FECPRESEN.errors %}<div class="text-danger small mt-1">{{ form.RAP_FECPRESEN.errors }}</div>{% endif %}
+                                <label class="form-label">{{ form.TSP_FECPRESEN.label }} <span class="text-danger">*</span></label>
+                                {{ form.TSP_FECPRESEN }}
+                                {% if form.TSP_FECPRESEN.errors %}<div class="text-danger small mt-1">{{ form.TSP_FECPRESEN.errors }}</div>{% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAP_OFI.label }}</label>
-                                {{ form.RAP_OFI }}
+                                <label class="form-label">{{ form.TSP_OFI.label }}</label>
+                                {{ form.TSP_OFI }}
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAP_FECOFI.label }}</label>
-                                {{ form.RAP_FECOFI }}
+                                <label class="form-label">{{ form.TSP_FECOFI.label }}</label>
+                                {{ form.TSP_FECOFI }}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAP_NUM.label }} <span class="text-danger">*</span></label>
-                                {{ form.RAP_NUM }}
+                                <label class="form-label">{{ form.TSP_NUM.label }} <span class="text-danger">*</span></label>
+                                {{ form.TSP_NUM }}
                                 <small class="text-muted d-block mt-1">Formato: NN/AA</small>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAP_FEC.label }} <span class="text-danger">*</span></label>
-                                {{ form.RAP_FEC }}
+                                <label class="form-label">{{ form.TSP_FEC.label }} <span class="text-danger">*</span></label>
+                                {{ form.TSP_FEC }}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.RAP_TIPO.label }}</label>
-                                {{ form.RAP_TIPO }}
+                                <label class="form-label">{{ form.TSP_TIPO.label }}</label>
+                                {{ form.TSP_TIPO }}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.RAP_RESOL.label }} <span class="text-danger">*</span></label>
-                            {{ form.RAP_RESOL }}
-                            {% if form.RAP_RESOL.errors %}<div class="text-danger small mt-1">{{ form.RAP_RESOL.errors }}</div>{% endif %}
+                            <label class="form-label">{{ form.TSP_RESOL.label }} <span class="text-danger">*</span></label>
+                            {{ form.TSP_RESOL }}
+                            {% if form.TSP_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TSP_RESOL.errors }}</div>{% endif %}
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end pt-3">

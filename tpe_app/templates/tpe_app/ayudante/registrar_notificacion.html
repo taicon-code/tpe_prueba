@@ -5,42 +5,63 @@
 
 {% block sidebar_nav %}
 {% if user.is_authenticated %}
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
-        <span class="lk-text">Home</span>
-    </a>
+{% with rol=user.perfilusuario.rol %}
 
-    <a href="{% url 'buscador_dashboard' %}" class="sb-link" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold;">
-        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
-        <span class="lk-text">Buscar</span>
-    </a>
+    <!-- ── Si es ADMIN1 o ADMIN3 ─────────────────────────── -->
+    {% if rol == 'ADMIN1_AGENDADOR' or rol == 'ADMIN1' or rol == 'ADMIN3' or rol == 'ADMIN3_NOTIFICADOR' %}
+        <span class="sb-group-label">Panel Principal</span>
+        <a href="{% url 'admin3_dashboard' %}" class="sb-link">
+            <span class="lk-icon">📬</span>
+            <span class="lk-text">Notificaciones</span>
+        </a>
 
-    <hr class="sb-divider">
+        <hr class="sb-divider">
+        <span class="sb-group-label">Sistema</span>
 
-    <a href="{% url 'registrar_sumario' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar SIM</span>
-    </a>
-    <a href="{% url 'registrar_rr' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar RR</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar RES</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar RAP</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar RAEE</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar Auto TPE</span>
-    </a>
+        <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+            <span class="lk-icon">🔍</span>
+            <span class="lk-text">Buscar Historial</span>
+        </a>
+
+    <!-- ── Si es AYUDANTE ────────────────────────── -->
+    {% else %}
+        <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
+            <span class="lk-text">Home</span>
+        </a>
+
+        <a href="{% url 'buscador_dashboard' %}" class="sb-link" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold;">
+            <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
+            <span class="lk-text">Buscar</span>
+        </a>
+
+        <hr class="sb-divider">
+
+        <a href="{% url 'registrar_sumario' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+            <span class="lk-text">Registrar SIM</span>
+        </a>
+        <a href="{% url 'registrar_rr' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+            <span class="lk-text">Registrar RR</span>
+        </a>
+        <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+            <span class="lk-text">Registrar RES</span>
+        </a>
+        <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+            <span class="lk-text">Registrar RAP</span>
+        </a>
+        <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+            <span class="lk-text">Registrar RAEE</span>
+        </a>
+        <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link">
+            <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+            <span class="lk-text">Registrar Auto TPE</span>
+        </a>
+    {% endif %}
 
     <hr class="sb-divider">
 
@@ -48,6 +69,8 @@
         <span class="lk-icon" style="font-size: 1.4rem;">🚪</span>
         <span class="lk-text">Cerrar Sesión</span>
     </a>
+
+{% endwith %}
 {% endif %}
 {% endblock sidebar_nav %}
 
@@ -131,9 +154,17 @@
 
                         <!-- Botones -->
                         <div class="d-flex gap-2 justify-content-end pt-3">
-                            <a href="{% url 'ayudante_lista_res' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle me-2"></i>Cancelar
-                            </a>
+                            {% with rol=user.perfilusuario.rol %}
+                                {% if rol == 'ADMIN1_AGENDADOR' or rol == 'ADMIN1' or rol == 'ADMIN3' or rol == 'ADMIN3_NOTIFICADOR' %}
+                                    <a href="{% url 'admin3_dashboard' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'ayudante_lista_res' %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle me-2"></i>Guardar Notificación
                             </button>

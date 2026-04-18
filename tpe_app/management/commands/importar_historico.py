@@ -25,7 +25,7 @@ from openpyxl import load_workbook
 
 from tpe_app.models import (
     PM, SIM, PM_SIM,
-    RES, RR, RAP, AUTOTPE, RAEE,
+    AUTOTPE, Resolucion, RecursoTSP,
 )
 
 
@@ -412,8 +412,9 @@ class Command(BaseCommand):
                 except SIM.DoesNotExist:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                _, creado = RES.objects.get_or_create(
+                _, creado = Resolucion.objects.get_or_create(
                     sim=sim,
+                    RES_INSTANCIA='PRIMERA',
                     RES_NUM=res_num.upper(),
                     defaults=dict(
                         RES_FEC=res_fec,
@@ -453,28 +454,35 @@ class Command(BaseCommand):
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 try:
-                    res = RES.objects.get(sim=sim, RES_NUM=res_num.upper())
-                except RES.DoesNotExist:
+                    res = Resolucion.objects.get(
+                        sim=sim, RES_INSTANCIA='PRIMERA', RES_NUM=res_num.upper()
+                    )
+                except Resolucion.DoesNotExist:
                     self._registrar_skip(hoja, num_fila, f"RES no encontrada: {res_num} en {cod}"); continue
-                except RES.MultipleObjectsReturned:
-                    res = RES.objects.filter(sim=sim, RES_NUM=res_num.upper()).first()
+                except Resolucion.MultipleObjectsReturned:
+                    res = Resolucion.objects.filter(
+                        sim=sim, RES_INSTANCIA='PRIMERA', RES_NUM=res_num.upper()
+                    ).first()
 
-                # Un sumario solo tiene un RR por resolución
-                if RR.objects.filter(sim=sim, res=res).exists():
+                # Un sumario solo tiene un RR por resolución PRIMERA
+                if Resolucion.objects.filter(
+                    sim=sim, RES_INSTANCIA='RECONSIDERACION', resolucion_origen=res
+                ).exists():
                     self._registrar_skip(hoja, num_fila, f"{cod}: RR ya existe para {res_num}"); continue
 
-                RR.objects.create(
+                Resolucion.objects.create(
                     sim=sim,
-                    res=res,
-                    RR_FECPRESEN=_parse_fecha(fila.get("RR_FECPRESEN")),
-                    RR_NUM=_str(fila.get("RR_NUM")),
-                    RR_FEC=_parse_fecha(fila.get("RR_FEC")),
-                    RR_RESOL=(_str(fila.get("RR_RESOL")) or "").upper() or None,
-                    RR_RESUM=(_str(fila.get("RR_RESUM")) or "")[:200] or None,
-                    RR_TIPO_NOTIF=_str(fila.get("RR_TIPO_NOTIF")),
-                    RR_NOT=_str(fila.get("RR_NOT")),
-                    RR_FECNOT=_parse_fecha(fila.get("RR_FECNOT")),
-                    RR_HORNOT=_parse_hora(fila.get("RR_HORNOT")),
+                    RES_INSTANCIA='RECONSIDERACION',
+                    resolucion_origen=res,
+                    RES_FECPRESEN=_parse_fecha(fila.get("RR_FECPRESEN")),
+                    RES_NUM=_str(fila.get("RR_NUM")),
+                    RES_FEC=_parse_fecha(fila.get("RR_FEC")),
+                    RES_RESOL=(_str(fila.get("RR_RESOL")) or "").upper() or None,
+                    RES_RESUM=((_str(fila.get("RR_RESUM")) or "")[:20]) or None,
+                    RES_TIPO_NOTIF=_str(fila.get("RR_TIPO_NOTIF")),
+                    RES_NOT=_str(fila.get("RR_NOT")),
+                    RES_FECNOT=_parse_fecha(fila.get("RR_FECNOT")),
+                    RES_HORNOT=_parse_hora(fila.get("RR_HORNOT")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:
@@ -496,22 +504,23 @@ class Command(BaseCommand):
                 except SIM.DoesNotExist:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                if RAP.objects.filter(sim=sim).exists():
+                if RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='APELACION').exists():
                     self._registrar_skip(hoja, num_fila, f"{cod}: RAP ya existe"); continue
 
-                RAP.objects.create(
+                RecursoTSP.objects.create(
                     sim=sim,
-                    RAP_FECPRESEN=_parse_fecha(fila.get("RAP_FECPRESEN")),
-                    RAP_OFI=_str(fila.get("RAP_OFI")),
-                    RAP_FECOFI=_parse_fecha(fila.get("RAP_FECOFI")),
-                    RAP_NUM=_str(fila.get("RAP_NUM")),
-                    RAP_FEC=_parse_fecha(fila.get("RAP_FEC")),
-                    RAP_TIPO=_str(fila.get("RAP_TIPO")),
-                    RAP_RESOL=(_str(fila.get("RAP_RESOL")) or "").upper() or None,
-                    RAP_TIPO_NOTIF=_str(fila.get("RAP_TIPO_NOTIF")),
-                    RAP_NOT=_str(fila.get("RAP_NOT")),
-                    RAP_FECNOT=_parse_fecha(fila.get("RAP_FECNOT")),
-                    RAP_HORNOT=_parse_hora(fila.get("RAP_HORNOT")),
+                    TSP_INSTANCIA='APELACION',
+                    TSP_FECPRESEN=_parse_fecha(fila.get("RAP_FECPRESEN")),
+                    TSP_OFI=_str(fila.get("RAP_OFI")),
+                    TSP_FECOFI=_parse_fecha(fila.get("RAP_FECOFI")),
+                    TSP_NUM=_str(fila.get("RAP_NUM")),
+                    TSP_FEC=_parse_fecha(fila.get("RAP_FEC")),
+                    TSP_TIPO=_str(fila.get("RAP_TIPO")),
+                    TSP_RESOL=(_str(fila.get("RAP_RESOL")) or "").upper() or None,
+                    TSP_TIPO_NOTIF=_str(fila.get("RAP_TIPO_NOTIF")),
+                    TSP_NOT=_str(fila.get("RAP_NOT")),
+                    TSP_FECNOT=_parse_fecha(fila.get("RAP_FECNOT")),
+                    TSP_HORNOT=_parse_hora(fila.get("RAP_HORNOT")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:
@@ -567,16 +576,17 @@ class Command(BaseCommand):
                 except SIM.DoesNotExist:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                RAEE.objects.create(
+                RecursoTSP.objects.create(
                     sim=sim,
-                    RAE_NUM=_str(fila.get("RAE_NUM")),
-                    RAE_FEC=_parse_fecha(fila.get("RAE_FEC")),
-                    RAE_RESOL=(_str(fila.get("RAE_RESOL")) or "").upper() or None,
-                    RAE_RESUM=(_str(fila.get("RAE_RESUM")) or "")[:200] or None,
-                    RAE_TIPO_NOTIF=_str(fila.get("RAE_TIPO_NOTIF")),
-                    RAE_NOT=_str(fila.get("RAE_NOT")),
-                    RAE_FECNOT=_parse_fecha(fila.get("RAE_FECNOT")),
-                    RAE_HORNOT=_parse_hora(fila.get("RAE_HORNOT")),
+                    TSP_INSTANCIA='ACLARACION_ENMIENDA',
+                    TSP_NUM=_str(fila.get("RAE_NUM")),
+                    TSP_FEC=_parse_fecha(fila.get("RAE_FEC")),
+                    TSP_RESOL=(_str(fila.get("RAE_RESOL")) or "").upper() or None,
+                    TSP_RESUM=(_str(fila.get("RAE_RESUM")) or "")[:200] or None,
+                    TSP_TIPO_NOTIF=_str(fila.get("RAE_TIPO_NOTIF")),
+                    TSP_NOT=_str(fila.get("RAE_NOT")),
+                    TSP_FECNOT=_parse_fecha(fila.get("RAE_FECNOT")),
+                    TSP_HORNOT=_parse_hora(fila.get("RAE_HORNOT")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:

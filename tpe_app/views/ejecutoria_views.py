@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from ..decorators import rol_requerido
 from ..models import (
-    RES, RR, AUTOTPE, SIM,
+    Resolucion, AUTOTPE, SIM,
     get_pendientes_ejecutoria,
 )
 from ..forms import AutoEjecutoriaForm
@@ -41,17 +41,17 @@ def crear_auto_ejecutoria(request, origen, origen_id):
     - origen='rr'   → vincula al RR  con id=origen_id
     """
     if origen == 'res':
-        res = get_object_or_404(RES, pk=origen_id)
-        rr  = None
+        res = get_object_or_404(Resolucion, pk=origen_id, RES_INSTANCIA='PRIMERA')
+        resolucion_link = res
         sim = res.sim
         pm  = res.pm
         origen_label = f"Resolución {res.RES_NUM} — Sumario {sim.SIM_COD}"
     elif origen == 'rr':
-        rr  = get_object_or_404(RR, pk=origen_id)
-        res = rr.res
+        rr  = get_object_or_404(Resolucion, pk=origen_id, RES_INSTANCIA='RECONSIDERACION')
+        resolucion_link = rr
         sim = rr.sim
         pm  = rr.pm
-        origen_label = f"RR {rr.RR_NUM} — Sumario {sim.SIM_COD}"
+        origen_label = f"RR {rr.RES_NUM} — Sumario {sim.SIM_COD}"
     else:
         messages.error(request, "Origen inválido.")
         return redirect('pendientes_ejecutoria')
@@ -63,8 +63,7 @@ def crear_auto_ejecutoria(request, origen, origen_id):
             auto.TPE_TIPO = 'AUTO_EJECUTORIA'
             auto.sim = sim
             auto.pm  = pm
-            auto.res = res
-            auto.rr  = rr
+            auto.resolucion = resolucion_link
             auto.save()
             # Marcar SIM como concluido (save() completo para que FASE_A_ESTADO actualice SIM_ESTADO)
             sim.SIM_FASE = 'CONCLUIDO'

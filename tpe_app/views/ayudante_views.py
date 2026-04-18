@@ -11,7 +11,7 @@ from django.utils import timezone
 from datetime import date
 from ..decorators import rol_requerido
 from ..models import (
-    SIM, PM, RES, RR, RAP, RAEE, AUTOTPE, ABOG, VOCAL_TPE
+    SIM, PM, AUTOTPE, ABOG, VOCAL_TPE, Resolucion, RecursoTSP
 )
 from ..forms import (
     RESForm, RESNotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm
@@ -26,19 +26,28 @@ def ayudante_dashboard(request):
     # Últimos SIM registrados
     ultimos_sim = SIM.objects.all().order_by('-SIM_FECREG')[:10]
 
-    # Últimas RES registradas
-    ultimas_res = RES.objects.all().order_by('-RES_FEC')[:10]
+    # Últimas Resoluciones PRIMERA registradas
+    ultimas_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').order_by('-RES_FEC')[:10]
 
-    # RES sin PDF (panel principal)
-    res_con_pdf = set(DocumentoAdjunto.objects.filter(DOC_TABLA='res').values_list('DOC_ID_REG', flat=True))
-    res_sin_pdf = RES.objects.exclude(id__in=res_con_pdf).select_related('sim', 'abog').order_by('-RES_FEC')[:10]
-    total_res_sin_pdf = RES.objects.exclude(id__in=res_con_pdf).count()
+    # RES sin PDF (panel principal) — solo PRIMERA
+    res_con_pdf = set(
+        DocumentoAdjunto.objects.filter(DOC_TABLA='resolucion').values_list('DOC_ID_REG', flat=True)
+    )
+    res_sin_pdf = (
+        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
+        .exclude(id__in=res_con_pdf)
+        .select_related('sim', 'abog').order_by('-RES_FEC')[:10]
+    )
+    total_res_sin_pdf = (
+        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
+        .exclude(id__in=res_con_pdf).count()
+    )
 
     # Contadores
     total_sim = SIM.objects.count()
-    total_res = RES.objects.count()
-    total_rr = RR.objects.count()
-    total_rap = RAP.objects.count()
+    total_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
+    total_rr = Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION').count()
+    total_rap = RecursoTSP.objects.filter(TSP_INSTANCIA='APELACION').count()
 
     context = {
         'ultimos_sim': ultimos_sim,
@@ -66,17 +75,17 @@ def ayudante_lista_res(request):
     except (ValueError, TypeError):
         gestion = date.today().year
 
-    # Query: RES del año especificado, ordenadas por grado y apellido del militar
+    # Query: Resoluciones PRIMERA del año especificado, ordenadas por grado/apellido
     resoluciones = (
-        RES.objects
-        .filter(RES_FEC__year=gestion)
+        Resolucion.objects
+        .filter(RES_INSTANCIA='PRIMERA', RES_FEC__year=gestion)
         .select_related('pm', 'sim')
         .order_by('pm__PM_GRADO', 'pm__PM_PATERNO', 'pm__PM_NOMBRE')
     )
 
-    # Opciones de gestión disponibles (años únicos de RES)
+    # Opciones de gestión disponibles (años únicos)
     gestiones_disponibles = (
-        RES.objects
+        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
         .values_list('RES_FEC__year', flat=True)
         .distinct()
         .order_by('-RES_FEC__year')
@@ -125,11 +134,11 @@ def ayudante_registrar_res(request):
     return render(request, 'tpe_app/ayudante/registrar_res.html', context)
 
 
-@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('AYUDANTE', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_notificacion(request, res_id):
     """Registrar la notificación de una RES existente"""
 
-    res = get_object_or_404(RES, id=res_id)
+    res = get_object_or_404(Resolucion, id=res_id)
 
     if request.method == 'POST':
         form = RESNotificacionForm(request.POST, instance=res)
@@ -143,7 +152,7 @@ def ayudante_registrar_notificacion(request, res_id):
                     )
                     # Redirigir según el rol del usuario
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
-                    if rol == 'ADMIN3_NOTIFICADOR':
+                    if rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR', 'ADMIN1', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
                     else:
                         return redirect('ayudante_lista_res')
@@ -182,7 +191,7 @@ def ayudante_registrar_rap(request):
 
                     messages.success(
                         request,
-                        f'Recurso de Apelación {rap.RAP_NUM} registrado exitosamente'
+                        f'Recurso de Apelación {rap.TSP_NUM} registrado exitosamente'
                     )
                     return redirect('ayudante_dashboard')
             except Exception as e:
@@ -212,7 +221,7 @@ def ayudante_registrar_raee(request):
 
                     messages.success(
                         request,
-                        f'RAEE {raee.RAE_NUM} registrado exitosamente'
+                        f'RAEE {raee.TSP_NUM} registrado exitosamente'
                     )
                     return redirect('ayudante_dashboard')
             except Exception as e:
@@ -258,35 +267,38 @@ def ayudante_registrar_autotpe(request):
     return render(request, 'tpe_app/ayudante/registrar_autotpe.html', context)
 
 
-@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('AYUDANTE', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_notificacion_rr(request, rr_id):
     """Registrar la notificación de un RR existente"""
 
-    rr = get_object_or_404(RR, id=rr_id)
+    rr = get_object_or_404(Resolucion, id=rr_id, RES_INSTANCIA='RECONSIDERACION')
 
     if request.method == 'POST':
         try:
             with transaction.atomic():
-                rr.RR_FECNOT = timezone.now().date()
-                rr.RR_HORNOT = timezone.now().time()
-                rr.RR_NOT = request.POST.get('RR_NOT', '')
+                rr.RES_FECNOT = timezone.now().date()
+                rr.RES_HORNOT = timezone.now().time()
+                rr.RES_NOT = request.POST.get('RR_NOT', '')
                 rr.save()
                 messages.success(
                     request,
-                    f'Notificación de RR {rr.RR_NUM} registrada exitosamente'
+                    f'Notificación de RR {rr.RES_NUM} registrada exitosamente'
                 )
                 # Redirigir según el rol del usuario
                 rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
-                if rol == 'ADMIN3_NOTIFICADOR':
+                if rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR', 'ADMIN1', 'ADMIN1_AGENDADOR']:
                     return redirect('admin3_dashboard')
                 else:
                     return redirect('ayudante_dashboard')
         except Exception as e:
             messages.error(request, f'Error al registrar notificación: {str(e)}')
 
+    # Compat de template
+    rr.RR_NUM = rr.RES_NUM
+    rr.RR_FECPRESEN = rr.RES_FECPRESEN
     context = {
         'rr': rr,
-        'titulo': f'Registrar Notificación - RR {rr.RR_NUM}',
+        'titulo': f'Registrar Notificación - RR {rr.RES_NUM}',
     }
 
     return render(request, 'tpe_app/admin3/registrar_notificacion_rr.html', context)
@@ -296,24 +308,14 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
 def ayudante_lista_res_sin_pdf(request):
     """Lista de RES pendientes de subir PDF"""
 
-    # Obtener todas las RES que no tienen PDF adjunto
-    resoluciones_sin_pdf = (
-        RES.objects
-        .filter(documentoAdjunto__isnull=True)
-        .select_related('pm', 'sim')
-        .order_by('-RES_FEC')
-        .distinct()
-    )
-
-    # Alternativamente, si DocumentoAdjunto tiene una relación inversa
-    # Vamos a usar la consulta SQL más explícita
     from ..models import DocumentoAdjunto
     res_con_pdf = DocumentoAdjunto.objects.filter(
-        DOC_TABLA='res'
+        DOC_TABLA='resolucion'
     ).values_list('DOC_ID_REG', flat=True)
 
     resoluciones_sin_pdf = (
-        RES.objects
+        Resolucion.objects
+        .filter(RES_INSTANCIA='PRIMERA')
         .exclude(id__in=res_con_pdf)
         .select_related('pm', 'sim')
         .order_by('-RES_FEC')
@@ -321,8 +323,10 @@ def ayudante_lista_res_sin_pdf(request):
 
     # Contadores
     total_sin_pdf = resoluciones_sin_pdf.count()
-    total_con_pdf = RES.objects.filter(id__in=res_con_pdf).count()
-    total_res = RES.objects.count()
+    total_con_pdf = Resolucion.objects.filter(
+        RES_INSTANCIA='PRIMERA', id__in=res_con_pdf
+    ).count()
+    total_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
 
     context = {
         'resoluciones': resoluciones_sin_pdf,

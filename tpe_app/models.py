@@ -57,7 +57,7 @@ def get_pendientes_ejecutoria():
     )
     for res in res_notificadas:
         # ¿Ya tiene RECONSIDERACION?
-        if res.reconsideraciones.exists():
+        if res.recursos_reconsideracion.exists():
             continue
         # ¿Ya tiene Auto de Ejecutoria?
         if AUTOTPE.objects.filter(resolucion=res, TPE_TIPO='AUTO_EJECUTORIA').exists():

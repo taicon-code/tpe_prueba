@@ -244,11 +244,11 @@
         <tbody>
             {% for rr in rr_en_agenda %}
             <tr>
-                <td><strong>{{ rr.RR_NUM|default:"S/N" }}</strong></td>
+                <td><strong>{{ rr.RES_NUM|default:"S/N" }}</strong></td>
                 <td>{{ rr.sim.SIM_COD }}</td>
                 <td>{{ rr.pm.PM_GRADO|default:"—" }} {{ rr.pm.PM_NOMBRE|default:"—" }} {{ rr.pm.PM_PATERNO|default:"" }}</td>
-                <td>{{ rr.RR_FEC|date:"d/m/Y"|default:"—" }}</td>
-                <td style="max-width: 200px;">{{ rr.RR_RESUM|default:"—" }}</td>
+                <td>{{ rr.RES_FEC|date:"d/m/Y"|default:"—" }}</td>
+                <td style="max-width: 200px;">{{ rr.RES_RESUM|default:"—" }}</td>
             </tr>
             {% endfor %}
         </tbody>

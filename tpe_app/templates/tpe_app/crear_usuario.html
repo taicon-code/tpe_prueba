@@ -114,6 +114,24 @@
                         ⚠️ Requerido para rol ABOGADO
                     </small>
                 </div>
+
+                <!-- Campo de vocal (solo se muestra para rol VOCAL_TPE) -->
+                <div id="vocal-field" style="display: none;">
+                    <label for="vocal" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Vinculación a vocal del tribunal <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select id="vocal" name="vocal" class="form-control">
+                        <option value="">-- Seleccionar vocal --</option>
+                        {% for vocal in vocales %}
+                        <option value="{{ vocal.id }}">
+                            {{ vocal.get_cargo_display }} — {{ vocal.pm }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: #6b7280; display: block; margin-top: .3rem;">
+                        ⚠️ Requerido para rol VOCAL_TPE
+                    </small>
+                </div>
             </div>
         </fieldset>
 
@@ -145,14 +163,28 @@ function mostrarAbogados() {
     const rolSelect = document.getElementById('rol');
     const abogadoField = document.getElementById('abogado-field');
     const abogadoSelect = document.getElementById('abogado');
+    const vocalField = document.getElementById('vocal-field');
+    const vocalSelect = document.getElementById('vocal');
 
     if (rolSelect.value === 'ABOGADO') {
         abogadoField.style.display = 'block';
         abogadoSelect.required = true;
+        vocalField.style.display = 'none';
+        vocalSelect.required = false;
+        vocalSelect.value = '';
+    } else if (rolSelect.value === 'VOCAL_TPE') {
+        vocalField.style.display = 'block';
+        vocalSelect.required = true;
+        abogadoField.style.display = 'none';
+        abogadoSelect.required = false;
+        abogadoSelect.value = '';
     } else {
         abogadoField.style.display = 'none';
         abogadoSelect.required = false;
         abogadoSelect.value = '';
+        vocalField.style.display = 'none';
+        vocalSelect.required = false;
+        vocalSelect.value = '';
     }
 }
 

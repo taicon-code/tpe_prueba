@@ -3,6 +3,50 @@
 {% block title %}Admin3 Notificador - Dashboard{% endblock %}
 {% block navbar_title %}📬 Admin3 - Gestión de Notificaciones{% endblock %}
 
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+{% with rol=user.perfilusuario.rol %}
+
+    <!-- ── ADMINISTRATIVO 1 o 3 (Notificador) ───────────────────── -->
+    {% if rol == 'ADMIN1_AGENDADOR' or rol == 'ADMIN1' or rol == 'ADMIN3' or rol == 'ADMIN3_NOTIFICADOR' %}
+
+        <span class="sb-group-label">Panel Principal</span>
+        <a href="{% url 'admin3_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin3_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🏠</span>
+            <span class="lk-text">Notificaciones</span>
+        </a>
+
+        <!-- Si es Admin1, mostrar opción para volver a su dashboard -->
+        {% if rol == 'ADMIN1_AGENDADOR' or rol == 'ADMIN1' %}
+            <a href="{% url 'administrativo_dashboard' %}"
+               class="sb-link {% if request.resolver_match.url_name == 'administrativo_dashboard' %}active{% endif %}">
+                <span class="lk-icon">🎯</span>
+                <span class="lk-text">Mi Dashboard</span>
+            </a>
+        {% endif %}
+
+        <hr class="sb-divider">
+        <span class="sb-group-label">Sistema</span>
+
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🔍</span>
+            <span class="lk-text">Buscar Historial</span>
+        </a>
+
+    {% endif %}
+
+    <hr class="sb-divider">
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+
+{% endwith %}
+{% endif %}
+{% endblock sidebar_nav %}
+
 {% block content %}
 <h1 style="margin-bottom: 2rem; color: #1e3c72;">📬 Gestión de Notificaciones (Admin3)</h1>
 
