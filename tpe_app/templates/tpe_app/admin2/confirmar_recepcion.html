@@ -1,0 +1,108 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Confirmar Recepción - Archivo SIM{% endblock %}
+{% block navbar_title %}✅ Archivo SIM - Confirmar Recepción Conforme{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">✅ Confirmar Recepción de Carpeta</h1>
+
+<div style="max-width: 700px;">
+    <!-- Información del sumario -->
+    <div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: #1565c0;">📋 Información del Sumario</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Código:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.SIM_COD }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Tipo:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.get_SIM_TIPO_display }}</p>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Resumen:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.SIM_RESUM }}</p>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Entregada por:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
+                    {% if custodio_actual.abog %}
+                        <span style="background: #fecaca; color: #991b1b; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">
+                            {{ custodio_actual.abog.AB_GRADO }} {{ custodio_actual.abog.AB_PATERNO }}
+                        </span>
+                    {% else %}
+                        {{ custodio_actual.get_tipo_custodio_display }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de confirmación -->
+    <form method="post" class="card">
+        {% csrf_token %}
+
+        <h2 style="color: #059669;">✅ Confirmar Recepción Conforme</h2>
+
+        <div style="margin-bottom: 2rem; padding: 1rem; background: #d1fae5; border: 1px solid #a7f3d0; border-radius: 4px;">
+            <p style="margin: 0; color: #065f46; font-weight: 600;">
+                ✓ La carpeta será registrada como recibida conforme en su poder
+            </p>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Observaciones (opcional)
+            </label>
+            <textarea name="observacion" placeholder="Ej: Carpeta en buen estado, todos los documentos presentes, etc." style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: inherit; resize: vertical; min-height: 80px;"></textarea>
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Nota: Esta observación será agregada al historial de custodia de la carpeta.
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="background: #059669; color: #fff;">
+                ✅ Recibir Conforme
+            </button>
+            <a href="{% url 'admin2_dashboard' %}" class="btn" style="background: #6c757d; color: #fff;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .5rem 1rem;
+        text-decoration: none;
+        border-radius: 7px;
+        border: none;
+        cursor: pointer;
+        font-size: .875rem;
+        font-family: inherit;
+        font-weight: 500;
+        transition: background .15s, transform .1s;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}

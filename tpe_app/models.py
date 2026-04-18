@@ -41,26 +41,26 @@ def add_business_days(fecha_inicio, dias):
 def get_pendientes_ejecutoria():
     """
     Retorna dos listas de casos pendientes de Auto de Ejecutoria:
-    - por_res: RES notificadas sin RR presentado, con plazo de 15 días hábiles vencido
-    - por_rr:  RR notificados sin RAP presentado, con plazo de 3 días hábiles vencido
+    - por_res: Resolucion PRIMERA notificadas sin RECONSIDERACION presentada, plazo 15d vencido
+    - por_rr:  Resolucion RECONSIDERACION notificadas sin APELACION presentada, plazo 3d vencido
     No incluye casos que ya tienen un AUTOTPE de tipo AUTO_EJECUTORIA.
     """
     from django.utils import timezone
     hoy = timezone.now().date()
 
-    # ── Caso 1: RES notificada, sin RR, plazo 15 días hábiles vencido ──
+    # ── Caso 1: PRIMERA notificada, sin RECONSIDERACION, plazo 15 días hábiles vencido ──
     por_res = []
     res_notificadas = (
-        RES.objects
-        .filter(RES_FECNOT__isnull=False)
+        Resolucion.objects
+        .filter(RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=False)
         .select_related('sim', 'pm', 'abog')
     )
     for res in res_notificadas:
-        # ¿Ya tiene RR?
-        if res.rr_set.exists():
+        # ¿Ya tiene RECONSIDERACION?
+        if res.reconsideraciones.exists():
             continue
         # ¿Ya tiene Auto de Ejecutoria?
-        if AUTOTPE.objects.filter(res=res, TPE_TIPO='AUTO_EJECUTORIA').exists():
+        if AUTOTPE.objects.filter(resolucion=res, TPE_TIPO='AUTO_EJECUTORIA').exists():
             continue
         fecha_limite = add_business_days(res.RES_FECNOT, 15)
         if fecha_limite <= hoy:
@@ -68,21 +68,21 @@ def get_pendientes_ejecutoria():
             res.dias_vencido = (hoy - fecha_limite).days
             por_res.append(res)
 
-    # ── Caso 2: RR notificado, sin RAP, plazo 3 días hábiles vencido ──
+    # ── Caso 2: RECONSIDERACION notificada, sin APELACION, plazo 3 días hábiles vencido ──
     por_rr = []
     rr_notificados = (
-        RR.objects
-        .filter(RR_FECNOT__isnull=False)
-        .select_related('sim', 'pm', 'abog', 'res')
+        Resolucion.objects
+        .filter(RES_INSTANCIA='RECONSIDERACION', RES_FECNOT__isnull=False)
+        .select_related('sim', 'pm', 'abog', 'resolucion_origen')
     )
     for rr in rr_notificados:
-        # ¿Ya tiene RAP?
-        if rr.rap_set.exists():
+        # ¿Ya tiene APELACION (RecursoTSP.APELACION apuntando a esta RR)?
+        if RecursoTSP.objects.filter(resolucion=rr, TSP_INSTANCIA='APELACION').exists():
             continue
         # ¿Ya tiene Auto de Ejecutoria?
-        if AUTOTPE.objects.filter(rr=rr, TPE_TIPO='AUTO_EJECUTORIA').exists():
+        if AUTOTPE.objects.filter(resolucion=rr, TPE_TIPO='AUTO_EJECUTORIA').exists():
             continue
-        fecha_limite = add_business_days(rr.RR_FECNOT, 3)
+        fecha_limite = add_business_days(rr.RES_FECNOT, 3)
         if fecha_limite <= hoy:
             rr.fecha_limite = fecha_limite
             rr.dias_vencido = (hoy - fecha_limite).days
@@ -155,6 +155,8 @@ class PM(models.Model):
         ('ART.',      'ART.'),
         ('ING.',      'ING.'),
         ('COM.',  'COM.'),
+        ('LOG.',      'LOG.'),
+        ('M.B.',       'M.B.'),
         ('INT.',     'INT.'),
         ('SAN.',         'SAN.'),
         ('TGRAFO.',       'TGRAFO.'),
@@ -265,6 +267,7 @@ class SIM(models.Model):
         ('DISCIPLINARIO',  'DISCIPLINARIO'),
         ('ADMINISTRATIVO', 'ADMINISTRATIVO'),
         ('ASCENSO POSTUMO', 'ASCENSO POSTUMO'),
+        ('SOLICITUD DE RETIRO VOLUNTARIO', 'SOLICITUD DE RETIRO VOLUNTARIO'),
         ('SOLICITUD_LETRA_D',        'SOLICITUD LETRA D'),
         ('SOLICITUD_LICENCIA_MAXIMA', 'SOLICITUD LICENCIA MAXIMA'),
         ('SOLICITUD_RESTITUCION_ANTIGUEDAD', 'SOLICITUD RESTITUCIÓN ANTIGUEDAD'),
@@ -460,6 +463,19 @@ class CustodiaSIM(models.Model):
         ('ARCHIVO',     'Archivado / Concluido'),
     ]
 
+    MOTIVO_CHOICES = [
+        ('AGENDA',         'Para agenda del tribunal'),
+        ('REVISION',       'Revisión del abogado'),
+        ('NOTIFICACION',   'Para notificación'),
+        ('APELACION_TSP',  'Elevado al TSP'),
+        ('ARCHIVO',        'Archivado / Concluido'),
+    ]
+
+    ESTADO_CHOICES = [
+        ('ACTIVA',                  'Activa'),
+        ('PENDIENTE_CONFIRMACION',  'Pendiente de Confirmación'),
+    ]
+
     sim           = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                       related_name='custodias', verbose_name='Sumario')
     tipo_custodio = models.CharField(max_length=20, choices=TIPO_CHOICES,
@@ -479,6 +495,18 @@ class CustodiaSIM(models.Model):
     fecha_entrega   = models.DateTimeField(null=True, blank=True,
                                            verbose_name='Fecha de Entrega',
                                            help_text="Null = aún en su poder")
+    motivo          = models.CharField(max_length=20, choices=MOTIVO_CHOICES,
+                                       null=True, blank=True,
+                                       verbose_name='Motivo de la custodia')
+    nro_oficio      = models.CharField(max_length=30, null=True, blank=True,
+                                       verbose_name='Número de Oficio (TSP)',
+                                       help_text="Ej: OF-025/26 — solo para TSP")
+    fecha_oficio    = models.DateField(null=True, blank=True,
+                                       verbose_name='Fecha del Oficio (TSP)',
+                                       help_text="Fecha de emisión del oficio al TSP")
+    estado          = models.CharField(max_length=25, choices=ESTADO_CHOICES,
+                                       default='ACTIVA',
+                                       verbose_name='Estado de la Custodia')
 
     class Meta:
         db_table            = 'custodia_sim'
@@ -652,163 +680,6 @@ class DICTAMEN(models.Model):
         self.DIC_CONCL = self.DIC_CONCL.upper() if self.DIC_CONCL else self.DIC_CONCL
         super().save(*args, **kwargs)
 # ============================================================
-# MODELO 6: RES — Primera Resolución del TPE
-# ============================================================
-class RES(models.Model):
-
-    # ✅ CORREGIDO v1.2: lista completa de tipos de resolución
-    TIPO_CHOICES = [
-        ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
-        ('ADMINISTRATIVO',                   'Administrativo'),
-        ('SANCIONES_DISCIPLINARIAS',       'Sanciones Disciplinarias'),
-        ('NO_HA_LUGAR_SANCION_DISCIPLINARIA', 'No ha Lugar a la Sanción Disciplinaria'),
-        ('SANCION_ARRESTO',                'Sanción Arresto (Ejecutiva)'),
-        ('SANCION_LETRA_B',                'Sanción Letra B (Pérdida de Antigüedad)'),
-        ('SANCION_RETIRO_OBLIGATORIO',     'Sanción Retiro Obligatorio'),
-        ('SANCION_BAJA',                   'Sanción Baja'),
-        ('SOLICITUD_LETRA_D',              'Solicitud Letra D (Permiso Médico)'),
-        ('SOLICITUD_LICENCIA_MAXIMA',      'Solicitud Licencia Máxima'),
-        ('SOLICITUD_ASCENSO',              'Solicitud de Ascenso'),
-        ('SOLICITUD_RESTITUCION_ANTIGUEDAD','Solicitud de Restitución de Antigüedad'),
-        ('SOLICITUD_RESTITUCION_DE_DERECHOS_PROFESIONALES', 'Solicitud de Restitución de Derechos Profesionales'),
-        ('SOLICITUD_ART_114_(Invalidez Instructor)',   'Solicitud Artículo 114 (Invalides Instructor)'),
-        ('SOLICITUD_ART_117_(Fallecimiento)',  'Solicitud Artículo 117 (Fallecimiento)'),
-        ('SOLICITUD_ART_118_(Invalidez Sldo)', 'Solicitud Artículo 118 (Invalidez Sldo)'),
-        ('OTRO',                           'Otro'),
-    ]
-
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
-
-    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
-
-    abog = models.ForeignKey(
-        ABOG, on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='Abogado')
-
-    # FK a la agenda que generó esta resolución
-    agenda = models.ForeignKey(
-        AGENDA, on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='Agenda')
-
-    # FK al dictamen que originó esta resolución (nullable: históricos sin dictamen)
-    dictamen = models.ForeignKey(
-        'DICTAMEN', on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='Dictamen origen')
-
-    # ✅ NUEVO: FK al militar al que aplica la resolución
-    pm = models.ForeignKey(
-        PM, on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='Militar')
-
-    RES_NUM   = models.CharField(max_length=15,  verbose_name='Número de Resolución')
-    RES_FEC   = models.DateField(verbose_name='Fecha')
-    RES_RESOL = models.TextField(verbose_name='Resolución')
-    RES_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo')
-
-    # Notificación Tipo
-    RES_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    RES_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    RES_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    RES_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    class Meta:
-        db_table            = 'res'
-        verbose_name        = 'Primera Resolución'
-        verbose_name_plural = 'Primeras Resoluciones'
-        ordering            = ['-RES_FEC']
-
-    def __str__(self):
-        return f"{self.RES_NUM} — {self.get_RES_TIPO_display()}"
-    def save(self, *args, **kwargs):
-        self.RES_NUM   = self.RES_NUM.upper()   if self.RES_NUM   else self.RES_NUM
-        self.RES_RESOL = self.RES_RESOL.upper() if self.RES_RESOL else self.RES_RESOL
-        self.RES_NOT   = self.RES_NOT.upper()   if self.RES_NOT   else self.RES_NOT
-        super().save(*args, **kwargs)
-
-# ============================================================
-# MODELO 7: RR — Recurso de Reconsideración
-# ============================================================
-class RR(models.Model):
-
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
-
-    res = models.ForeignKey(RES, on_delete=models.CASCADE, verbose_name='Primera Resolución')
-    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
-    agenda = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
-                                 null=True, blank=True,
-                                 verbose_name='Agenda')
-
-    # ✅ NUEVO: FK al militar al que aplica el recurso
-    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
-                           null=True, blank=True,
-                           verbose_name='Militar')
-
-    RR_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso')
-    # ✅ NUEVO v1.2: fecha límite para alertas (15 días hábiles)
-    RR_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite (15 días hábiles)')
-
-# estes aumente para agregar campo para abogado del RR (puede ser el mismo u otro diferente al de la RES)
-    abog = models.ForeignKey(
-        ABOG, on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='Abogado')
-
-    RR_NUM   = models.CharField(null=True, blank=True, max_length=10,  verbose_name='Número')
-    RR_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha')
-    RR_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
-    RR_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
-
-    # Notificación Tipo
-    RR_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    RR_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    RR_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    RR_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    class Meta:
-        db_table            = 'rr'
-        verbose_name        = 'Segunda Resolución (RR)'
-        verbose_name_plural = 'Segundas Resoluciones (RR)'
-        ordering            = ['-RR_FEC']
-
-    def __str__(self):
-        return f"{self.RR_NUM} — {self.RR_RESUM or 'Sin resumen'}"
-    def save(self, *args, **kwargs):
-        # Auto-calcular fecha límite (15 días hábiles desde fecha de presentación)
-        if self.RR_FECPRESEN and not self.RR_FECLIMITE:
-            self.RR_FECLIMITE = add_business_days(self.RR_FECPRESEN, 15)
-        self.RR_NUM    = self.RR_NUM.upper()    if self.RR_NUM    else self.RR_NUM
-        self.RR_RESOL  = self.RR_RESOL.upper()  if self.RR_RESOL  else self.RR_RESOL
-        self.RR_RESUM  = self.RR_RESUM.upper()  if self.RR_RESUM  else self.RR_RESUM
-        self.RR_NOT    = self.RR_NOT.upper()    if self.RR_NOT    else self.RR_NOT
-        super().save(*args, **kwargs)
-
-    def get_alerta_plazo(self):
-        """Devuelve color de alerta según proximidad a RR_FECLIMITE."""
-        if not self.RR_FECLIMITE:
-            return 'secondary'
-        hoy = timezone.now().date()
-        diff = (self.RR_FECLIMITE - hoy).days
-        if diff < 0:
-            return 'danger'    # vencido
-        elif diff <= 5:
-            return 'warning'   # próximo a vencer
-        return 'success'       # tiempo suficiente
-
-
-
-# ============================================================
 # MODELO 5: AUTOTPE — Autos del Tribunal de Personal del Ejército
 # ============================================================
 class AUTOTPE(models.Model):
@@ -855,26 +726,16 @@ class AUTOTPE(models.Model):
         null=True, blank=True,
         verbose_name='Militar')
 
-    # ✅ NUEVO: Relaciones al documento origen que genera el auto (ejecutoria)
-    res = models.ForeignKey(
-        'RES', on_delete=models.SET_NULL,
+    # FKs a tablas unificadas
+    resolucion = models.ForeignKey(
+        'Resolucion', on_delete=models.SET_NULL,
         null=True, blank=True,
-        verbose_name='Resolución origen')
+        verbose_name='Resolución origen (PRIMERA o RECONSIDERACION)')
 
-    rr = models.ForeignKey(
-        'RR', on_delete=models.SET_NULL,
+    recurso_tsp = models.ForeignKey(
+        'RecursoTSP', on_delete=models.SET_NULL,
         null=True, blank=True,
-        verbose_name='Recurso Reconsideración origen')
-
-    rap = models.ForeignKey(
-        'RAP', on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='Recurso Apelación origen')
-
-    raee = models.ForeignKey(
-        'RAEE', on_delete=models.SET_NULL,
-        null=True, blank=True,
-        verbose_name='RAEE origen')
+        verbose_name='Recurso TSP origen (APELACION o ACLARACION_ENMIENDA)')
 
     TPE_NUM   = models.CharField(null=True, blank=True, max_length=15,  verbose_name='Número de Auto')
     TPE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
@@ -906,135 +767,6 @@ class AUTOTPE(models.Model):
         self.TPE_NOT          = self.TPE_NOT.upper()          if self.TPE_NOT          else self.TPE_NOT
         self.TPE_MEMO_NUM     = self.TPE_MEMO_NUM.upper()     if self.TPE_MEMO_NUM     else self.TPE_MEMO_NUM
         super().save(*args, **kwargs)
-# ============================================================
-# MODELO 8: RAP — Recurso de Apelación al TSP
-# ============================================================
-class RAP(models.Model):
-    
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
-    TIPO_CHOICES = [
-        ('REVOCAR',         'REVOCAR'),
-        ('CONFIRMAR',       'CONFIRMAR'),
-        ('MODIFICAR',       'MODIFICAR'),
-        ('ANULAR HASTA EL VICIO MAS ANTIGUO','ANULAR HASTA EL VICIO MAS ANTIGUO'),
-        ('OTRO',   'OTRO'),
-    ]
-    
-    rr  = models.ForeignKey(RR,  on_delete=models.SET_NULL, null=True, blank=True,
-                                 verbose_name='Segunda Resolución (RR)')
-    sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
-                                 verbose_name='Sumario')
-
-    # ✅ NUEVO: FK al militar al que aplica el recurso
-    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
-                           null=True, blank=True,
-                           verbose_name='Militar')
-
-    # Fecha de ingreso al TSP (puede ser diferente a la fecha del oficio de elevación, que es el documento que se envía al TSP)
-    RAP_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación del Recurso de Apelación al TSP')
-    # ✅ NUEVO v1.2: fecha límite para alertas (3 días hábiles)
-    RAP_FECLIMITE = models.DateField(null=True, blank=True, verbose_name='Fecha Límite remisión TSP (3 días hábiles)')
-
-    # Elevación al TSP
-    RAP_OFI    = models.CharField(max_length=25, null=True, blank=True, verbose_name='N° Oficio Elevación')
-    RAP_FECOFI = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
-    
-    # Resolución del TSP
-    RAP_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución TSP')
-    RAP_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
-    RAP_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
-    RAP_TIPO = models.CharField(max_length=50, null=True, blank=True, choices=TIPO_CHOICES, verbose_name='Tipo de Resolución TSP')
-
-    # Notificación Tipo
-    RAP_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    RAP_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    RAP_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    RAP_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    class Meta:
-        db_table            = 'rap'
-        verbose_name        = 'Recurso de Apelación (RAP)'
-        verbose_name_plural = 'Recursos de Apelación (RAP)'
-        ordering            = ['-RAP_FEC']
-
-    def __str__(self):
-        return f"{self.RAP_NUM or 'Sin número'} — {self.sim.SIM_COD}"
-    
-    def save(self, *args, **kwargs):
-        # Auto-calcular fecha límite (3 días hábiles desde fecha del oficio)
-        if self.RAP_FECOFI and not self.RAP_FECLIMITE:
-            self.RAP_FECLIMITE = add_business_days(self.RAP_FECOFI, 3)
-        self.RAP_OFI   = self.RAP_OFI.upper()   if self.RAP_OFI   else self.RAP_OFI
-        self.RAP_NUM   = self.RAP_NUM.upper()   if self.RAP_NUM   else self.RAP_NUM
-        self.RAP_RESOL = self.RAP_RESOL.upper() if self.RAP_RESOL else self.RAP_RESOL
-        self.RAP_TIPO = self.RAP_TIPO.upper() if self.RAP_TIPO else self.RAP_TIPO
-        self.RAP_NOT   = self.RAP_NOT.upper()   if self.RAP_NOT   else self.RAP_NOT
-        super().save(*args, **kwargs)
-
-    def get_alerta_plazo(self):
-        """Devuelve color de alerta según proximidad a RAP_FECLIMITE."""
-        if not self.RAP_FECLIMITE:
-            return 'secondary'
-        hoy = timezone.now().date()
-        diff = (self.RAP_FECLIMITE - hoy).days
-        if diff < 0:
-            return 'danger'
-        elif diff <= 2:
-            return 'warning'
-        return 'success'
-
-
-# ============================================================
-# MODELO 9: RAEE — Recurso de Aclaración, Explicación y Enmienda
-# ============================================================
-class RAEE(models.Model):
-
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
-
-    rap = models.ForeignKey(RAP, on_delete=models.SET_NULL, null=True, blank=True,
-                                 verbose_name='Recurso de Apelación')
-    sim = models.ForeignKey(SIM, on_delete=models.CASCADE,
-                                 verbose_name='Sumario')
-
-    # ✅ NUEVO: FK al militar al que aplica el recurso
-    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
-                           null=True, blank=True,
-                           verbose_name='Militar')
-
-    RAE_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución')
-    RAE_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución')
-    RAE_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
-    RAE_RESUM = models.CharField(max_length=200, null=True, blank=True, verbose_name='Resumen')
-
-    # Notificación Tipo
-    RAE_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    RAE_NOT    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    RAE_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    RAE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-
-    class Meta:
-        db_table            = 'raee'
-        verbose_name        = 'RAEE — Aclaración, Explicación y Enmienda'
-        verbose_name_plural = 'RAEE — Aclaración, Explicación y Enmienda'
-        ordering            = ['-RAE_FEC']
-
-    def __str__(self):
-        return f"{self.RAE_NUM or 'Sin número'} — {self.sim.SIM_COD}"
-    def save(self, *args, **kwargs):
-        self.RAE_NUM   = self.RAE_NUM.upper()   if self.RAE_NUM   else self.RAE_NUM
-        self.RAE_RESOL = self.RAE_RESOL.upper() if self.RAE_RESOL else self.RAE_RESOL
-        self.RAE_RESUM = self.RAE_RESUM.upper() if self.RAE_RESUM else self.RAE_RESUM
-        self.RAE_NOT   = self.RAE_NOT.upper()   if self.RAE_NOT   else self.RAE_NOT
-        super().save(*args, **kwargs)
-
 # ============================================================
 # MODELO 10: AUTOTSP — Autos del TSP
 # ============================================================
@@ -1091,13 +823,11 @@ class AUTOTSP(models.Model):
 class DocumentoAdjunto(models.Model):
 
     TABLA_CHOICES = [
-        ('sim',     'Sumario SIM'),
-        ('res',     'Resolución TPE'),
-        ('rr',      'Segunda Resolución RR'),
-        ('rap',     'Recurso de Apelación RAP'),
-        ('raee',    'RAEE'),
-        ('autotpe', 'Auto TPE'),
-        ('autotsp', 'Auto TSP'),
+        ('sim',         'Sumario SIM'),
+        ('resolucion',  'Resolución (PRIMERA/RECONSIDERACION)'),
+        ('recurso_tsp', 'Recurso TSP (APELACION/ACLARACION_ENMIENDA)'),
+        ('autotpe',     'Auto TPE'),
+        ('autotsp',     'Auto TSP'),
     ]
     TIPO_CHOICES = [
         ('resolucion',    'Resolución'),
@@ -1125,7 +855,284 @@ class DocumentoAdjunto(models.Model):
 
     def __str__(self):
         return f"{self.DOC_NOMBRE} ({self.get_DOC_TABLA_display()})"
-    # Agregar al FINAL de tpe_app/models.py (después de AUTOTSP)
+
+
+# ============================================================
+# MODELO 11b: Resolucion — Tabla unificada RES + RR
+# Discriminador RES_INSTANCIA = PRIMERA | RECONSIDERACION
+# Numeración consecutiva única anual (RES_NUM)
+# ============================================================
+class Resolucion(models.Model):
+
+    INSTANCIA_CHOICES = [
+        ('PRIMERA',          'Primera Resolución'),
+        ('RECONSIDERACION',  'Recurso de Reconsideración'),
+    ]
+
+    TIPO_CHOICES = [
+        ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
+        ('ADMINISTRATIVO',                 'Administrativo'),
+        ('SANCIONES_DISCIPLINARIAS',       'Sanciones Disciplinarias'),
+        ('NO_HA_LUGAR_SANCION_DISCIPLINARIA', 'No ha Lugar a la Sanción Disciplinaria'),
+        ('SOLICITUD_DE_RETIRO_VOLUNTARIO', 'Solicitud de Retiro Voluntario'),
+        ('SANCION_ARRESTO',                'Sanción Arresto (Ejecutiva)'),
+        ('SANCION_LETRA_B',                'Sanción Letra B (Pérdida de Antigüedad)'),
+        ('SANCION_RETIRO_OBLIGATORIO',     'Sanción Retiro Obligatorio'),
+        ('SANCION_BAJA',                   'Sanción Baja'),
+        ('SOLICITUD_LETRA_D',              'Solicitud Letra D (Permiso Médico)'),
+        ('SOLICITUD_LICENCIA_MAXIMA',      'Solicitud Licencia Máxima'),
+        ('SOLICITUD_ASCENSO',              'Solicitud de Ascenso'),
+        ('SOLICITUD_RESTITUCION_ANTIGUEDAD','Solicitud de Restitución de Antigüedad'),
+        ('SOLICITUD_RESTITUCION_DE_DERECHOS_PROFESIONALES', 'Solicitud de Restitución de Derechos Profesionales'),
+        ('SOLICITUD_ART_114_(Invalidez Instructor)',   'Solicitud Artículo 114 (Invalides Instructor)'),
+        ('SOLICITUD_ART_117_(Fallecimiento)',  'Solicitud Artículo 117 (Fallecimiento)'),
+        ('SOLICITUD_ART_118_(Invalidez Sldo)', 'Solicitud Artículo 118 (Invalidez Sldo)'),
+        ('OTRO',                           'Otro'),
+    ]
+
+    RESUM_CHOICES = [
+        ('PROCEDENCIA',   'Procedencia a su Recurso de Reconsideración'),
+        ('IMPROCEDENCIA', 'Improcedencia a su Recurso de Reconsideración'),
+    ]
+
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
+    # Discriminador
+    RES_INSTANCIA = models.CharField(
+        max_length=20, choices=INSTANCIA_CHOICES, default='PRIMERA',
+        verbose_name='Instancia')
+
+    # Relaciones comunes
+    sim = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    abog = models.ForeignKey(ABOG, on_delete=models.SET_NULL,
+                             null=True, blank=True, verbose_name='Abogado')
+    agenda = models.ForeignKey(AGENDA, on_delete=models.SET_NULL,
+                               null=True, blank=True, verbose_name='Agenda')
+    pm = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                           null=True, blank=True, verbose_name='Militar')
+
+    # Solo PRIMERA
+    dictamen = models.ForeignKey('DICTAMEN', on_delete=models.SET_NULL,
+                                 null=True, blank=True,
+                                 verbose_name='Dictamen origen (solo PRIMERA)')
+
+    # Solo RECONSIDERACION (reemplaza RR.res)
+    resolucion_origen = models.ForeignKey(
+        'self', on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='recursos_reconsideracion',
+        verbose_name='Resolución impugnada (solo RECONSIDERACION)')
+
+    # Numeración y cuerpo
+    RES_NUM   = models.CharField(max_length=15, verbose_name='Número de Resolución')
+    RES_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha')
+    RES_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución')
+
+    # Solo PRIMERA
+    RES_TIPO  = models.CharField(max_length=100, choices=TIPO_CHOICES,
+                                 null=True, blank=True, verbose_name='Tipo (PRIMERA)')
+
+    # Solo RECONSIDERACION
+    RES_RESUM      = models.CharField(max_length=20, choices=RESUM_CHOICES,
+                                      null=True, blank=True,
+                                      verbose_name='Resumen (RECONSIDERACION)')
+    RES_FECPRESEN  = models.DateField(null=True, blank=True,
+                                      verbose_name='Fecha Presentación (RECONSIDERACION)')
+    RES_FECLIMITE  = models.DateField(null=True, blank=True,
+                                      verbose_name='Fecha Límite 15 días (RECONSIDERACION)')
+
+    # Notificación
+    RES_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES,
+                                      null=True, blank=True, verbose_name='Tipo Notificación')
+    RES_NOT    = models.CharField(max_length=100, null=True, blank=True,
+                                  verbose_name='Notificado a /Dirección/Periódico')
+    RES_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
+    RES_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
+
+    class Meta:
+        db_table            = 'resolucion'
+        verbose_name        = 'Resolución'
+        verbose_name_plural = 'Resoluciones'
+        ordering            = ['-RES_FEC']
+
+    def __str__(self):
+        return f"{self.RES_NUM} — {self.get_RES_INSTANCIA_display()}"
+
+    def save(self, *args, **kwargs):
+        if self.RES_INSTANCIA == 'RECONSIDERACION' and self.RES_FECPRESEN and not self.RES_FECLIMITE:
+            self.RES_FECLIMITE = add_business_days(self.RES_FECPRESEN, 15)
+        self.RES_NUM   = self.RES_NUM.upper()   if self.RES_NUM   else self.RES_NUM
+        self.RES_RESOL = self.RES_RESOL.upper() if self.RES_RESOL else self.RES_RESOL
+        self.RES_NOT   = self.RES_NOT.upper()   if self.RES_NOT   else self.RES_NOT
+        super().save(*args, **kwargs)
+
+    def get_alerta_plazo(self):
+        if self.RES_INSTANCIA != 'RECONSIDERACION' or not self.RES_FECLIMITE:
+            return 'secondary'
+        hoy = timezone.now().date()
+        diff = (self.RES_FECLIMITE - hoy).days
+        if diff < 0:
+            return 'danger'
+        elif diff <= 5:
+            return 'warning'
+        return 'success'
+
+
+def next_resolucion_num(year=None):
+    """Genera el siguiente número 'NN/AA' de Resolucion de forma thread-safe.
+    Consecutivo único anual (sin importar instancia PRIMERA/RECONSIDERACION)."""
+    from django.db import transaction
+    if year is None:
+        year = timezone.now().year
+    year_suffix = str(year)[-2:]
+    with transaction.atomic():
+        qs = (Resolucion.objects
+              .select_for_update()
+              .filter(RES_NUM__endswith=f'/{year_suffix}'))
+        max_n = 0
+        for r in qs:
+            try:
+                n = int(r.RES_NUM.split('/')[0])
+                if n > max_n:
+                    max_n = n
+            except (ValueError, IndexError):
+                pass
+        return f'{max_n + 1:02d}/{year_suffix}'
+
+
+# ============================================================
+# MODELO 11c: RecursoTSP — Tabla unificada RAP + RAEE
+# Discriminador TSP_INSTANCIA = APELACION | ACLARACION_ENMIENDA
+# ============================================================
+class RecursoTSP(models.Model):
+
+    INSTANCIA_CHOICES = [
+        ('APELACION',           'Recurso de Apelación'),
+        ('ACLARACION_ENMIENDA', 'Aclaración, Explicación y Enmienda'),
+    ]
+
+    TIPO_CHOICES = [
+        ('REVOCAR',                          'REVOCAR'),
+        ('CONFIRMAR',                        'CONFIRMAR'),
+        ('MODIFICAR',                        'MODIFICAR'),
+        ('ANULAR HASTA EL VICIO MAS ANTIGUO','ANULAR HASTA EL VICIO MAS ANTIGUO'),
+        ('OTRO',                             'OTRO'),
+    ]
+
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
+    TSP_INSTANCIA = models.CharField(
+        max_length=25, choices=INSTANCIA_CHOICES, default='APELACION',
+        verbose_name='Instancia')
+
+    # Relaciones comunes
+    sim  = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    abog = models.ForeignKey(ABOG, on_delete=models.SET_NULL,
+                             null=True, blank=True, verbose_name='Abogado')
+    pm   = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                             null=True, blank=True, verbose_name='Militar')
+
+    # Solo APELACION (reemplaza RAP.rr → ahora apunta a Resolucion RECONSIDERACION)
+    resolucion = models.ForeignKey(
+        Resolucion, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Resolución impugnada (solo APELACION)')
+
+    # Solo ACLARACION_ENMIENDA (reemplaza RAEE.rap)
+    recurso_origen = models.ForeignKey(
+        'self', on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='aclaraciones',
+        verbose_name='Recurso origen (solo ACLARACION_ENMIENDA)')
+
+    # Fechas y oficio (comunes)
+    TSP_FECPRESEN = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación')
+    TSP_OFI       = models.CharField(max_length=25, null=True, blank=True, verbose_name='N° Oficio Elevación')
+    TSP_FECOFI    = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
+
+    # Solo APELACION
+    TSP_FECLIMITE = models.DateField(null=True, blank=True,
+                                     verbose_name='Fecha Límite 3 días (APELACION)')
+    TSP_TIPO      = models.CharField(max_length=50, choices=TIPO_CHOICES,
+                                     null=True, blank=True,
+                                     verbose_name='Tipo Resolución TSP (APELACION)')
+
+    # Solo ACLARACION_ENMIENDA
+    TSP_RESUM = models.CharField(max_length=200, null=True, blank=True,
+                                 verbose_name='Resumen (ACLARACION_ENMIENDA)')
+
+    # Resolución del TSP (comunes)
+    TSP_NUM   = models.CharField(max_length=15,  null=True, blank=True, verbose_name='Número Resolución TSP')
+    TSP_FEC   = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
+    TSP_RESOL = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
+
+    # Notificación
+    TSP_TIPO_NOTIF = models.CharField(max_length=20, choices=NOTIF_CHOICES,
+                                      null=True, blank=True, verbose_name='Tipo Notificación')
+    TSP_NOT    = models.CharField(max_length=100, null=True, blank=True,
+                                  verbose_name='Notificado a /Dirección/Periódico')
+    TSP_FECNOT = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
+    TSP_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
+
+    class Meta:
+        db_table            = 'recurso_tsp'
+        verbose_name        = 'Recurso TSP'
+        verbose_name_plural = 'Recursos TSP'
+        ordering            = ['-TSP_FEC']
+
+    def __str__(self):
+        return f"{self.TSP_NUM or 'Sin número'} — {self.get_TSP_INSTANCIA_display()}"
+
+    def save(self, *args, **kwargs):
+        if self.TSP_INSTANCIA == 'APELACION' and self.TSP_FECOFI and not self.TSP_FECLIMITE:
+            self.TSP_FECLIMITE = add_business_days(self.TSP_FECOFI, 3)
+        self.TSP_OFI   = self.TSP_OFI.upper()   if self.TSP_OFI   else self.TSP_OFI
+        self.TSP_NUM   = self.TSP_NUM.upper()   if self.TSP_NUM   else self.TSP_NUM
+        self.TSP_RESOL = self.TSP_RESOL.upper() if self.TSP_RESOL else self.TSP_RESOL
+        self.TSP_TIPO  = self.TSP_TIPO.upper()  if self.TSP_TIPO  else self.TSP_TIPO
+        self.TSP_RESUM = self.TSP_RESUM.upper() if self.TSP_RESUM else self.TSP_RESUM
+        self.TSP_NOT   = self.TSP_NOT.upper()   if self.TSP_NOT   else self.TSP_NOT
+        super().save(*args, **kwargs)
+
+    def get_alerta_plazo(self):
+        if self.TSP_INSTANCIA != 'APELACION' or not self.TSP_FECLIMITE:
+            return 'secondary'
+        hoy = timezone.now().date()
+        diff = (self.TSP_FECLIMITE - hoy).days
+        if diff < 0:
+            return 'danger'
+        elif diff <= 2:
+            return 'warning'
+        return 'success'
+
+
+def next_recurso_tsp_num(year=None):
+    from django.db import transaction
+    if year is None:
+        year = timezone.now().year
+    year_suffix = str(year)[-2:]
+    with transaction.atomic():
+        qs = (RecursoTSP.objects
+              .select_for_update()
+              .filter(TSP_NUM__endswith=f'/{year_suffix}'))
+        max_n = 0
+        for r in qs:
+            try:
+                n = int(r.TSP_NUM.split('/')[0])
+                if n > max_n:
+                    max_n = n
+            except (ValueError, IndexError):
+                pass
+        return f'{max_n + 1:02d}/{year_suffix}'
+
 
 # ============================================================
 # MODELO 12: PerfilUsuario — Sistema de roles

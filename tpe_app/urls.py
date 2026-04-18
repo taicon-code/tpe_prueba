@@ -53,6 +53,7 @@ urlpatterns = [
     # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
     path('administrativo/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
     path('administrativo/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),
+    path('administrativo/custodia/<int:sim_id>/confirmar/', views.admin2_confirmar_recepcion, name='admin2_confirmar_recepcion'),
 
     # ✅ NUEVO: Subir PDF de Resoluciones (Administrador)
     path('administrativo/res/<int:res_id>/subir-pdf/', views.subir_pdf_res, name='subir_pdf_res'),

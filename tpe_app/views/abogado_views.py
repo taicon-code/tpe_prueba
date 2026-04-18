@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Exists, OuterRef
 from ..decorators import rol_requerido
-from ..models import SIM, RES, RR, AUTOTPE, DocumentoAdjunto, CustodiaSIM
+from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion
 from datetime import date, timedelta
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
@@ -33,22 +33,33 @@ def abogado_dashboard(request):
         SIM_TIPO__startswith='SOLICITUD'
     ).order_by('-SIM_FECREG').distinct()
     
-    # ✅ NUEVO v3.1: Recursos CON CUSTODIA ACTIVA — con investigados para mostrar en el panel
-    # Solo mostrar RR donde el abogado tiene custodia activa
+    # ✅ NUEVO v3.1: Recursos asignados a este abogado
+    # Mostrar Resolucion RECONSIDERACION donde el abogado está asignado,
+    # aunque Admin2 aún no haya entregado custodia
     mis_recursos = list(
-        RR.objects.filter(
+        Resolucion.objects.filter(
+            RES_INSTANCIA='RECONSIDERACION',
             abog=perfil.abogado,
-            sim__pk__in=sim_ids_con_custodia
         )
-        .select_related('sim', 'res')
+        .select_related('sim', 'resolucion_origen', 'pm')
         .prefetch_related('sim__militares')
-        .order_by('-RR_FEC')
+        .order_by('-RES_FEC')
         .distinct()
     )
     for rr in mis_recursos:
-        doc = DocumentoAdjunto.objects.filter(DOC_TABLA='res', DOC_ID_REG=rr.res.pk).first()
-        rr.pdf_primera_res = doc.DOC_RUTA.url if doc else None
-        rr.investigado = rr.sim.militares.first()
+        # Adjuntar PDF de la PRIMERA resolución impugnada (si existe)
+        if rr.resolucion_origen_id:
+            doc = DocumentoAdjunto.objects.filter(
+                DOC_TABLA='resolucion', DOC_ID_REG=rr.resolucion_origen_id
+            ).first()
+            rr.pdf_primera_res = doc.DOC_RUTA.url if doc else None
+        else:
+            rr.pdf_primera_res = None
+        # Mostrar el militar específico del RR (no el primero del sumario)
+        rr.investigado = rr.pm if rr.pm else rr.sim.militares.first()
+        # Compat de template: exponer .res (resolución origen) y .RR_FEC
+        rr.res = rr.resolucion_origen
+        rr.RR_FEC = rr.RES_FEC
     
     # Todos los sumarios (para consulta opcional)
     todos_sumarios = SIM.objects.all().order_by('-SIM_FECREG')
@@ -68,8 +79,12 @@ def abogado_dashboard(request):
         'mis_solicitudes': mis_solicitudes,
         'mis_recursos': mis_recursos,
         'total_asignados': total_asignados,
-        'total_res': RES.objects.filter(abog=perfil.abogado).count(),
-        'total_rr': RR.objects.filter(abog=perfil.abogado).count(),
+        'total_res': Resolucion.objects.filter(
+            RES_INSTANCIA='PRIMERA', abog=perfil.abogado
+        ).count(),
+        'total_rr': Resolucion.objects.filter(
+            RES_INSTANCIA='RECONSIDERACION', sim__pk__in=sim_ids_con_custodia
+        ).count(),
         'total_autotpe': AUTOTPE.objects.filter(abog=perfil.abogado).count(),
         'pendientes_ejecutoria': pendientes_ej,
         'total_pendientes_ejecutoria': len(pendientes_ej),
@@ -115,12 +130,13 @@ def abogado_entregar_carpeta(request, sim_id):
                     custodia_abogado.observacion = form.cleaned_data.get('observacion', '')
                     custodia_abogado.save()
 
-                    # Crear custodia para Archivo SIM (Admin2)
+                    # Crear custodia para Archivo SIM (Admin2) pendiente de confirmación
                     CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio='ADMIN2_ARCHIVO',
                         usuario=request.user,
-                        observacion=f'Recibida de {perfil.abogado.AB_GRADO} {perfil.abogado.AB_PATERNO}. {form.cleaned_data.get("observacion", "")}'
+                        observacion=f'Recibida de {perfil.abogado.AB_GRADO} {perfil.abogado.AB_PATERNO}. {form.cleaned_data.get("observacion", "")}',
+                        estado='PENDIENTE_CONFIRMACION'
                     )
 
                     messages.success(

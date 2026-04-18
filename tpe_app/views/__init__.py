@@ -24,6 +24,7 @@ from .administrativo_views import (
     admin3_dashboard,
     admin2_entregar_carpeta,
     admin2_recibir_carpeta,
+    admin2_confirmar_recepcion,
     subir_pdf_res,
     gestionar_abogados_sim,
 )
