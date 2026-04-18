@@ -1,13 +1,17 @@
-# tpe_app/views/administrativo_views.py
+# tpe_app/views/admin1_views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
-from django.utils import timezone
-from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DocumentoAdjunto, Resolucion, next_resolucion_num
-from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 from datetime import date, timedelta
+from ..decorators import rol_requerido
+from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, Resolucion
+from ..models import get_pendientes_ejecutoria
+from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
+# import cruzado necesario para el enrutador:
+from .admin2_views import admin2_dashboard
+from .admin3_views import admin3_dashboard
+
 
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def administrativo_dashboard(request):
@@ -98,7 +102,6 @@ def administrativo_dashboard(request):
             rr.alerta_25 = 'secondary'
 
     # Pendientes de Auto de Ejecutoria (solo el conteo para la alerta)
-    from ..models import get_pendientes_ejecutoria
     por_res_ej, por_rr_ej = get_pendientes_ejecutoria()
 
     # Documentos pendientes de notificar (RES y RR)
@@ -130,7 +133,7 @@ def administrativo_dashboard(request):
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'AYUDANTE')
 def registrar_sumario(request):
     """Formulario para registrar un nuevo sumario con militares"""
-    
+
     if request.method == 'POST':
         form = SIMForm(request.POST)
         formset = PMSIMFormSet(request.POST, request.FILES)
@@ -184,13 +187,13 @@ def registrar_sumario(request):
 
                             if pm:
                                 PM_SIM.objects.get_or_create(sim=sumario, pm=pm)
-                    
+
                     messages.success(
-                        request, 
+                        request,
                         f'✅ Sumario {sumario.SIM_COD} registrado exitosamente'
                     )
                     return redirect('administrativo_dashboard')
-                    
+
             except Exception as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
         else:
@@ -198,16 +201,16 @@ def registrar_sumario(request):
     else:
         form = SIMForm()
         formset = PMSIMFormSet()
-    
+
     # Lista de personal militar para autocompletado
     personal_militar = PM.objects.values('PM_CI', 'PM_NOMBRE', 'PM_PATERNO', 'PM_GRADO')[:100]
-    
+
     context = {
         'form': form,
         'formset': formset,
         'personal_militar': personal_militar,
     }
-    
+
     return render(request, 'tpe_app/registrar_sumario.html', context)
 
 
@@ -458,350 +461,3 @@ def editar_agenda_resultado(request, ag_id):
     }
 
     return render(request, 'tpe_app/agenda_resultado.html', context)
-
-
-
-# ============================================================
-# DASHBOARD ADMIN2 (ARCHIVO SIM)
-# ============================================================
-
-@rol_requerido('ADMIN2_ARCHIVO')
-def admin2_dashboard(request):
-    """Dashboard para Admin2 - Gestión de custodia de carpetas"""
-
-    # Carpetas actualmente en poder de Admin2 (confirmadas, para entregar)
-    carpetas_en_poder = CustodiaSIM.objects.filter(
-        tipo_custodio='ADMIN2_ARCHIVO',
-        fecha_entrega__isnull=True,
-        estado='ACTIVA'
-    ).select_related('sim', 'abog').prefetch_related('sim__militares', 'sim__abogados').order_by('-fecha_recepcion')
-
-    # Carpetas entregadas pendientes de confirmar recepción
-    carpetas_pendientes = CustodiaSIM.objects.filter(
-        tipo_custodio='ADMIN2_ARCHIVO',
-        fecha_entrega__isnull=True,
-        estado='PENDIENTE_CONFIRMACION'
-    ).select_related('sim', 'abog').prefetch_related('sim__militares').order_by('-fecha_recepcion')
-
-    # Carpetas prestadas (en poder de otros, aún activas)
-    carpetas_prestadas = CustodiaSIM.objects.filter(
-        fecha_entrega__isnull=True
-    ).exclude(
-        tipo_custodio__in=['ADMIN2_ARCHIVO', 'ARCHIVO']
-    ).select_related('sim', 'abog').prefetch_related('sim__militares').order_by('-fecha_recepcion')
-
-    # Filtro de historial por código SIM
-    sim_cod = (request.GET.get('sim_cod') or '').strip()
-    historial_sim = None
-    if sim_cod:
-        try:
-            sim_obj = SIM.objects.get(SIM_COD__iexact=sim_cod)
-            historial_sim = CustodiaSIM.objects.filter(sim=sim_obj).select_related('abog').order_by('fecha_recepcion')
-        except SIM.DoesNotExist:
-            historial_sim = []
-
-    context = {
-        'carpetas_en_poder': carpetas_en_poder,
-        'total_en_poder': carpetas_en_poder.count(),
-        'carpetas_pendientes': carpetas_pendientes,
-        'total_pendientes': carpetas_pendientes.count(),
-        'carpetas_prestadas': carpetas_prestadas,
-        'total_prestadas': carpetas_prestadas.count(),
-        'sim_cod_filtro': sim_cod,
-        'historial_sim': historial_sim,
-    }
-
-    return render(request, 'tpe_app/admin2_dashboard.html', context)
-
-
-# ============================================================
-# DASHBOARD ADMIN3 (NOTIFICADOR)
-# ============================================================
-
-@rol_requerido('ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
-def admin3_dashboard(request):
-    """Dashboard para Admin3 - Notificaciones de documentos (también accesible para Admin1)"""
-
-    # RES (Resoluciones PRIMERA) por notificar (RES_FECNOT es NULL = no notificada aún)
-    resoluciones = Resolucion.objects.filter(
-        RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=True
-    ).select_related('sim').order_by('-RES_FEC')[:20]
-
-    # RR (Recursos RECONSIDERACION) por notificar
-    recursos = list(
-        Resolucion.objects.filter(
-            RES_INSTANCIA='RECONSIDERACION', RES_FECNOT__isnull=True
-        ).select_related('sim').order_by('-RES_FEC')[:20]
-    )
-    # Compat de template: exponer campos RR_*
-    for rr in recursos:
-        rr.RR_FEC = rr.RES_FEC
-        rr.RR_NUM = rr.RES_NUM
-        rr.RR_RESUM = rr.RES_RESUM
-        rr.RR_FECPRESEN = rr.RES_FECPRESEN
-        rr.RR_FECNOT = rr.RES_FECNOT
-
-    # RES sin PDF (solo PRIMERA)
-    res_con_pdf = set(
-        DocumentoAdjunto.objects.filter(DOC_TABLA='resolucion').values_list('DOC_ID_REG', flat=True)
-    )
-    res_sin_pdf = (
-        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
-        .exclude(id__in=res_con_pdf)
-        .select_related('sim', 'abog').order_by('-RES_FEC')[:20]
-    )
-    total_res_sin_pdf = (
-        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
-        .exclude(id__in=res_con_pdf).count()
-    )
-
-    context = {
-        'resoluciones': resoluciones,
-        'total_res': resoluciones.count(),
-        'recursos': recursos,
-        'total_rr': recursos.count(),
-        'res_sin_pdf': res_sin_pdf,
-        'total_res_sin_pdf': total_res_sin_pdf,
-    }
-
-    return render(request, 'tpe_app/admin3_dashboard.html', context)
-
-
-# ============================================================
-# ADMIN2: Gestión de custodia y entregas (v3.1+)
-# ============================================================
-
-@rol_requerido('ADMIN2_ARCHIVO')
-def admin2_entregar_carpeta(request, sim_id):
-    """Admin2 entrega la carpeta a un abogado (RR, RAP, ejecutoria, etc.)"""
-
-    sim = get_object_or_404(SIM, pk=sim_id)
-    custodio_actual = sim.custodio_actual()
-
-    # Verificar que la carpeta esté en poder de Admin2
-    if not custodio_actual or custodio_actual.tipo_custodio != 'ADMIN2_ARCHIVO':
-        messages.error(request, "❌ La carpeta no está registrada en poder de Archivo SIM")
-        return redirect('admin2_dashboard')
-
-    if request.method == 'POST':
-        abog_id = request.POST.get('abogado')
-        tipo_custodio = request.POST.get('tipo_custodio')
-        motivo = request.POST.get('motivo')
-        observacion = request.POST.get('observacion', '').strip()
-        nro_oficio = request.POST.get('nro_oficio', '').strip() if tipo_custodio == 'TSP' else None
-        fecha_oficio_str = request.POST.get('fecha_oficio') if tipo_custodio == 'TSP' else None
-
-        if not tipo_custodio:
-            messages.error(request, '❌ Debe seleccionar tipo de custodia')
-        elif tipo_custodio != 'ARCHIVO' and not abog_id:
-            messages.error(request, '❌ Debe seleccionar abogado (excepto para Archivado)')
-        else:
-            try:
-                abog = ABOG.objects.get(pk=abog_id) if abog_id else None
-                fecha_oficio = None
-                if fecha_oficio_str:
-                    from datetime import datetime
-                    fecha_oficio = datetime.strptime(fecha_oficio_str, '%Y-%m-%d').date()
-
-                with transaction.atomic():
-                    # Cerrar custodia actual (Admin2)
-                    custodio_actual.fecha_entrega = timezone.now()
-                    custodio_actual.save()
-
-                    # Crear nueva custodia
-                    custodia_nueva = CustodiaSIM.objects.create(
-                        sim=sim,
-                        tipo_custodio=tipo_custodio,
-                        abog=abog,
-                        usuario=request.user,
-                        observacion=observacion or None,
-                        motivo=motivo,
-                        nro_oficio=nro_oficio,
-                        fecha_oficio=fecha_oficio
-                    )
-
-                    messages.success(request, f'✅ Carpeta entregada correctamente')
-                    return redirect('admin2_dashboard')
-            except ABOG.DoesNotExist:
-                messages.error(request, '❌ Abogado no encontrado')
-            except Exception as e:
-                messages.error(request, f'❌ Error: {str(e)}')
-
-    # Obtener abogados disponibles
-    abogados = ABOG.objects.all().order_by('AB_PATERNO')
-
-    # Tipos de custodia disponibles para entregar
-    TIPOS_CUSTODIA = [
-        ('ABOG_ASESOR', 'Abogado 1 - Asesor (1ra Resolución)'),
-        ('ABOG_RR', 'Abogado 2 - Recurso de Reconsideración'),
-        ('ABOG_AUTOS', 'Abogado 3 - Autos/Ejecutoria'),
-        ('ADMIN3', 'Admin3 - Notificador'),
-        ('TSP', 'Tribunal Supremo Policial (TSP)'),
-        ('ARCHIVO', 'Archivado / Concluido'),
-    ]
-
-    # Motivos disponibles
-    MOTIVOS = [
-        ('AGENDA', 'Para agenda del tribunal'),
-        ('REVISION', 'Revisión del abogado'),
-        ('NOTIFICACION', 'Para notificación'),
-        ('APELACION_TSP', 'Elevado al TSP'),
-        ('ARCHIVO', 'Archivado / Concluido'),
-    ]
-
-    context = {
-        'sim': sim,
-        'custodio_actual': custodio_actual,
-        'abogados': abogados,
-        'tipos_custodia': TIPOS_CUSTODIA,
-        'motivos': MOTIVOS,
-    }
-
-    return render(request, 'tpe_app/admin2/entregar_carpeta.html', context)
-
-
-@rol_requerido('ADMIN2_ARCHIVO')
-def admin2_recibir_carpeta(request, sim_id):
-    """Admin2 recibe la carpeta devuelta por un abogado"""
-
-    sim = get_object_or_404(SIM, pk=sim_id)
-    custodio_actual = sim.custodio_actual()
-
-    # Verificar que la carpeta esté en poder de un abogado
-    if not custodio_actual or not custodio_actual.abog:
-        messages.error(request, "❌ La carpeta no está en poder de un abogado")
-        return redirect('admin2_dashboard')
-
-    if request.method == 'POST':
-        observacion = request.POST.get('observacion', '').strip()
-
-        try:
-            with transaction.atomic():
-                # Cerrar custodia del abogado
-                custodio_actual.fecha_entrega = timezone.now()
-                custodio_actual.save()
-
-                # Crear nueva custodia con Admin2
-                CustodiaSIM.objects.create(
-                    sim=sim,
-                    tipo_custodio='ADMIN2_ARCHIVO',
-                    usuario=request.user,
-                    observacion=observacion or None
-                )
-
-                messages.success(
-                    request,
-                    f'✅ Carpeta recibida de {custodio_actual.abog.AB_GRADO} {custodio_actual.abog.AB_PATERNO}'
-                )
-                return redirect('admin2_dashboard')
-        except Exception as e:
-            messages.error(request, f'❌ Error: {str(e)}')
-
-    context = {
-        'sim': sim,
-        'custodio_actual': custodio_actual,
-    }
-
-    return render(request, 'tpe_app/admin2/recibir_carpeta.html', context)
-
-
-@rol_requerido('ADMIN2_ARCHIVO')
-def admin2_confirmar_recepcion(request, sim_id):
-    """Admin2 confirma que recibió la carpeta conforme (entregada por abogado)"""
-    from django.db import transaction
-
-    sim = get_object_or_404(SIM, pk=sim_id)
-    custodio_actual = sim.custodio_actual()
-
-    # Verificar que hay una custodia pendiente de confirmación
-    if (not custodio_actual or
-        custodio_actual.tipo_custodio != 'ADMIN2_ARCHIVO' or
-        custodio_actual.estado != 'PENDIENTE_CONFIRMACION'):
-        messages.error(request, "❌ No hay recepción pendiente para este sumario")
-        return redirect('admin2_dashboard')
-
-    if request.method == 'POST':
-        observacion = request.POST.get('observacion', '').strip()
-
-        try:
-            with transaction.atomic():
-                # Cambiar estado a ACTIVA
-                custodio_actual.estado = 'ACTIVA'
-                if observacion:
-                    custodia_obs = (custodio_actual.observacion or '') + f' | Recibido conforme: {observacion}'
-                    custodio_actual.observacion = custodia_obs
-                custodio_actual.save()
-
-                messages.success(
-                    request,
-                    f'✅ Carpeta {sim.SIM_COD} recibida conforme y en su poder'
-                )
-                return redirect('admin2_dashboard')
-        except Exception as e:
-            messages.error(request, f'❌ Error: {str(e)}')
-
-    context = {
-        'sim': sim,
-        'custodio_actual': custodio_actual,
-    }
-
-    return render(request, 'tpe_app/admin2/confirmar_recepcion.html', context)
-
-
-# ============================================================
-# SUBIR PDF DE RESOLUCIONES (RES)
-# ============================================================
-
-@rol_requerido('AYUDANTE', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
-def subir_pdf_res(request, res_id):
-    """Sube PDF de una Resolución (RES) - Ayudante o Administrativos específicos"""
-
-    res = get_object_or_404(Resolucion, pk=res_id)
-
-    if request.method == 'POST':
-        archivo_pdf = request.FILES.get('archivo_pdf')
-
-        if not archivo_pdf:
-            messages.error(request, '❌ Selecciona un archivo PDF')
-            return redirect('subir_pdf_res', res_id=res.pk)
-
-        if not archivo_pdf.name.lower().endswith('.pdf'):
-            messages.error(request, '❌ Solo se permiten archivos PDF')
-            return redirect('subir_pdf_res', res_id=res.pk)
-
-        try:
-            with transaction.atomic():
-                # Eliminar PDF anterior si existe
-                DocumentoAdjunto.objects.filter(
-                    DOC_TABLA='resolucion',
-                    DOC_ID_REG=res.pk
-                ).delete()
-
-                # Crear nuevo documento
-                DocumentoAdjunto.objects.create(
-                    DOC_TABLA='resolucion',
-                    DOC_ID_REG=res.pk,
-                    DOC_RUTA=archivo_pdf,
-                    DOC_DESCRIPCION=f'PDF de la Resolución {res.RES_NUM}'
-                )
-
-                messages.success(
-                    request,
-                    f'✅ PDF de la Resolución {res.RES_NUM} subido correctamente'
-                )
-                return redirect('administrativo_dashboard')
-        except Exception as e:
-            messages.error(request, f'❌ Error al subir PDF: {str(e)}')
-
-    # Verificar si ya tiene PDF
-    pdf_existente = DocumentoAdjunto.objects.filter(
-        DOC_TABLA='resolucion',
-        DOC_ID_REG=res.pk
-    ).first()
-
-    context = {
-        'res': res,
-        'pdf_existente': pdf_existente,
-    }
-
-    return render(request, 'tpe_app/administrativo/subir_pdf_res.html', context)
