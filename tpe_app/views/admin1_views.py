@@ -249,21 +249,12 @@ def agendar_sumario(request):
                             es_responsable=(i == 0),
                         )
 
-                    # Custodia solo al responsable (primer abogado)
-                    responsable = abogados_list[0]
-                    CustodiaSIM.objects.create(
-                        sim=sumario,
-                        tipo_custodio='ABOG_ASESOR',
-                        abog=responsable,
-                        usuario=request.user,
-                        observacion='Entregado al agendar sumario (Admin1)'
-                    )
-
                     nombres = ", ".join(str(a) for a in abogados)
                     messages.success(
                         request,
                         f'✅ Sumario {sumario.SIM_COD} agendado en agenda {agenda.AG_NUM} '
-                        f'con abogado(s): {nombres} — {agenda.AG_FECPROG.strftime("%d/%m/%Y")}'
+                        f'con abogado(s): {nombres} — {agenda.AG_FECPROG.strftime("%d/%m/%Y")}. '
+                        f'Admin2 debe entregar la carpeta.'
                     )
             except Exception as exc:
                 messages.error(request, f'❌ Error al agendar: {exc}')
