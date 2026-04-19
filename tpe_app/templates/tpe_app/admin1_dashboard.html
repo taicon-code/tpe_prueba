@@ -46,7 +46,7 @@
                         <th>Número</th>
                         <th>Fecha Programada</th>
                         <th>Tipo</th>
-                        <th>Dictámenes</th>
+                        <th>Sumarios</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
@@ -67,7 +67,7 @@
                                 {{ agenda.get_AG_TIPO_display }}
                             </span>
                         </td>
-                        <td style="text-align: center;">{{ agenda.dictamen_set.count }}</td>
+                        <td style="text-align: center;">{{ agenda.sumarios.count }}</td>
                         <td>
                             <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;
                                 {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
@@ -111,7 +111,7 @@
                     <th>Número</th>
                     <th>Fecha Realizada</th>
                     <th>Tipo</th>
-                    <th>Dictámenes</th>
+                    <th>Sumarios</th>
                 </tr>
             </thead>
             <tbody>
@@ -130,7 +130,7 @@
                             {{ agenda.get_AG_TIPO_display }}
                         </span>
                     </td>
-                    <td style="text-align: center;">{{ agenda.dictamen_set.count }}</td>
+                    <td style="text-align: center;">{{ agenda.sumarios.count }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

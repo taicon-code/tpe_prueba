@@ -25,22 +25,24 @@ def admin1_dashboard(request):
     agendas_proximas = AGENDA.objects.filter(
         AG_ESTADO__in=['PROGRAMADA', 'REPROGRAMADA'],
         AG_FECPROG__gte=timezone.now().date()
-    ).order_by('AG_FECPROG').prefetch_related('dictamen_set')[:10]
+    ).order_by('AG_FECPROG').prefetch_related(
+        Prefetch('sumarios', queryset=SIM.objects.all())
+    )[:10]
 
     # Agendas recientes (realizadas en los últimos 30 días)
     hace_30 = timezone.now().date() - timedelta(days=30)
     agendas_recientes = AGENDA.objects.filter(
         AG_ESTADO='REALIZADA',
         AG_FECREAL__gte=hace_30
-    ).order_by('-AG_FECREAL').prefetch_related('dictamen_set')[:5]
+    ).order_by('-AG_FECREAL')[:5]
 
     # Agendas pendientes de resultado (realizadas pero sin conclusión de casos)
     agendas_pendientes_resultado = AGENDA.objects.filter(
         AG_ESTADO='REALIZADA',
         AG_FECREAL__isnull=False
     ).exclude(
-        dictamen__sim__SIM_ESTADO='CONCLUIDO'
-    ).distinct().prefetch_related('dictamen_set')[:5]
+        sumarios__SIM_ESTADO='CONCLUIDO'
+    ).distinct()[:5]
 
     # Estadísticas
     total_agendas_activas = AGENDA.objects.filter(
