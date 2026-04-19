@@ -10,9 +10,6 @@ from ..decorators import rol_requerido
 from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
-# import cruzado necesario para el enrutador:
-from .admin2_views import admin2_dashboard
-from .admin3_views import admin3_dashboard
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO')
@@ -23,11 +20,11 @@ def admin1_dashboard(request):
 
     # Si es Admin2, redirigir a su dashboard específico
     if perfil.rol == 'ADMIN2_ARCHIVO':
-        return admin2_dashboard(request)
+        return redirect('admin2_dashboard')
 
     # Si es Admin3, redirigir a su dashboard específico
     if perfil.rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR']:
-        return admin3_dashboard(request)
+        return redirect('admin3_dashboard')
 
     # Si no, es Admin1 o ADMINISTRATIVO - mostrar dashboard
     query = (request.GET.get('q') or '').strip()
