@@ -10,6 +10,12 @@ Sistema de gestión de **Sumarios Informativos Militares (SIM)** del
 **Tribunal de Personal del Ejército (TPE)** de Bolivia.
 Tecnología: Django + MySQL + Bootstrap 5.
 
+**VERSIÓN ACTUAL: v3.3** (Abril 2026)
+- v3.0: Rediseño completo (Admin1/2/3, Abogados diferenciados)
+- v3.1: Custodia de carpetas entre actores
+- v3.2: Gestión de agendas (Admin1)
+- v3.3: Rol AYUDANTE, Ejecutoria, mejoras en Buscador (v3.3.1)
+
 ---
 
 ## Flujo del proceso militar (orden cronológico)
@@ -111,15 +117,69 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 ---
 
-## Roles de usuario del sistema
+## Roles de usuario del sistema (ACTUAL v3.3)
 
-| Rol            | Vista principal | Descripción |
-|----------------|-----------------|-------------|
-| Administrador  | `admin_views.py` | Control total del sistema |
-| Abogado        | `abogado_views.py` | Gestiona dictámenes, resoluciones, autos de sus sumarios asignados |
-| Vocal TPE      | `vocal_views.py` | Secretario de Actas confirma dictámenes |
-| Administrativo | `administrativo_views.py` | Ingreso de SIM, PM, agenda |
-| Buscador       | `buscador_views.py` | Consulta historial de personal |
+| Rol            | Vista principal | Responsabilidades | Flujo |
+|----------------|-----------------|-------------------|-------|
+| **ADMIN1**     | `admin1_views.py` | Ingresa SIM, asigna abogados, crea agendas, ordena ejecutoria | Inicio del proceso |
+| **ADMIN2**     | `admin2_views.py` | Gestiona custodia/entrega de carpetas entre actores | Control de trazabilidad |
+| **ADMIN3**     | `admin3_views.py` | Envía notificaciones a terceros | Comunicaciones |
+| **ABOG1**      | `abogado_views.py` | Crea dictámenes, resoluciones, autos | Trabajo legal principal |
+| **ABOG2**      | `abogado_views.py` | Crea autos sin agenda previa (Excusa, Ejecutoria) | Autos antes de sesión |
+| **ABOG3**      | `abogado_views.py` | Confirma entrega de carpetas, suscribe autos | Recibe y valida |
+| **VOCAL**      | `vocal_views.py` | Secretario de Actas: confirma/modifica dictámenes | Sesiones del tribunal |
+| **AYUDANTE**   | `ayudante_views.py` | Registra resoluciones históricas, notificaciones, RAEE | Base de datos |
+| **BUSCADOR**   | `buscador_views.py` | Consulta historial de personal (público) | Reportes |
+
+---
+
+## Flujo de Custodia de Carpetas (v3.3)
+
+El sistema controla la **trazabilidad** de carpetas entre actores mediante `CustodiaSIM`:
+
+```
+ADMIN1 (crea SIM)
+    ↓
+    ADMIN2 entrega → ABOG1/ABOG3 (reciben conforme)
+    ↓
+    ABOG1/ABOG3 crean Dictamen/Resoluciones
+    ↓
+    ADMIN2 entrega → VOCAL (sesiona)
+    ↓
+    VOCAL confirma Dictamen
+    ↓
+    Si Resolución → ABOG3 suscribe
+    ↓
+    ADMIN2 puede devolver para correcciones
+```
+
+**Campos en CustodiaSIM:**
+- `SIM_FASE`: PARA_DICTAMEN, PARA_AGENDA, PARA_RESOLUCION, EN_APELACION, etc.
+- `estado`: recibido_conforme, pendiente_devolucion
+- `custodia_a`: quien tiene actualmente la carpeta
+
+---
+
+## Flujo de Ejecutoria (v3.3.1)
+
+Nuevas resoluciones pueden generar **Autos de Ejecutoria**:
+
+```
+ADMIN1: "Entregar para Ejecutoria" (botón en RES)
+    ↓
+ADMIN2: confirma entrega a ABOG2
+    ↓
+ABOG2: crea Auto de Ejecutoria (sin agenda previa)
+    ↓
+ADMIN2: entrega a vocales para firmar
+    ↓
+VOCAL: firma el Auto
+    ↓
+Sumario → CONCLUIDO
+```
+
+**Nota:** Los Autos de Ejecutoria NO requieren agenda previa
+(a diferencia de RES que sí la requieren)
 
 ---
 
@@ -185,56 +245,109 @@ AUTO_EXCUSA | AUTO_RECHAZO_RECURSO
 
 ---
 
+## Buscador (v3.3.1) — Reportes de Historial
+
+**Cambios recientes:**
+- **PDF directo** (no ZIP): Reporte unificado con toda la información
+- **Estadísticas simplificadas**: Solo Sumarios, Resoluciones, Autos TPE
+- **Actuados por Sumario**: Vista detallada de cada documento:
+  - Nº Resolución + link descarga
+  - Fecha, Tipo, Notificación
+  - Auto TPE: Disposición, Notificación, Memorandum
+  - Objeto completo del sumario (no truncado)
+
+**Archivos:** `buscador_views.py`, `dashboard_buscador.html`, `export_views.py`
+
+---
+
 ## Correcciones importantes ya aplicadas
 
 1. **SIM_FECTPE → SIM_FECING**: El campo de fecha se renombró correctamente.
-2. **id_abog sacado de SIM**: El abogado NO va directo en el SIM, va en `ABOG_SIM` (tabla puente), porque un abogado no realiza cada sumario, sino las resoluciones y autos.
-3. **Secretario de Actas**: Se agregó como cargo en `VOCAL_TPE` y como FK en `DICTAMEN` para que confirme o modifique el dictamen.
-4. **DICTAMEN tiene FK a PM**: Para mostrar el nombre del implicado (no del abogado) al crear el dictamen.
-5. **RR y AUTOTPE tienen FK a ABOG**: El abogado del RR puede ser diferente al de la RES.
-6. **Todos los textos en MAYÚSCULAS**: El método `save()` de cada modelo convierte automáticamente.
+2. **id_abog sacado de SIM**: El abogado NO va directo en el SIM, va en `ABOG_SIM` (tabla puente).
+3. **Secretario de Actas**: Se agregó como cargo en `VOCAL_TPE` y como FK en `DICTAMEN`.
+4. **DICTAMEN tiene FK a PM**: Para mostrar el nombre del implicado (no del abogado).
+5. **RR y AUTOTPE tienen FK a ABOG**: El abogado puede ser diferente en cada documento.
+6. **Todos los textos en MAYÚSCULAS**: El método `save()` de cada modelo lo hace automáticamente.
 7. **Grados y armas en MAYÚSCULAS**: Importación masiva con Excel (`generar_plantilla_historico.py`).
+8. **Custodia v3**: Sistema completo de trazabilidad entre Admin2, Abogados, Vocales.
+9. **Ejecutoria**: Autos sin agenda previa, flujo simplificado para conclusión.
+10. **AUTOTSP/RecursoTSP**: Mantienen para compatibilidad histórica pero NO se muestran en estadísticas.
 
 ---
 
-## Pendientes (TO_DO.py — actualizar aquí cuando se completen)
+## Pendientes / Mejoras Futuras (actualizar al completar)
 
+### Buscador
+- [ ] Dashboard buscador: mostrar filtro por fecha de ingreso del SIM
+- [ ] Historial: agregar opción de descarga en formato CSV
+- [ ] Reportes: agregar gráficas de estadísticas por año/mes
+
+### Modelos y Base de Datos
 - [ ] Agregar arma LOGÍSTICA en `ARMA_CHOICES` de PM
-- [ ] Dashboard abogado: en panel de sumarios asignados mostrar todos los militares implicados
-- [ ] Al crear dictamen: mostrar nombre de los implicados, no del abogado
-- [ ] Botón "crear dictamen" en el dashboard del abogado: sacar el botón de la parte superior
-- [ ] Resolución con auto-numeración (botón que genere número automático ej: 52/26)
-- [ ] Tipo de Resolución: agregar ART. 118 y ADMINISTRATIVO para ascenso/frontera
-- [ ] Tipo de Auto: agregar REHABILITACION DE DERECHOS PROFESIONALES
+- [ ] Campo `SIM_CAUSA_ESPECIFICA` para detallar causa más allá del tipo
+
+### Dashboards
+- [ ] Dashboard Abogado: mostrar todos los militares implicados en cada sumario
+- [ ] Dashboard Admin1: vista de "Sumarios Pendientes de Ejecutoria"
+- [ ] Dashboard Admin2: Indicador de "Carpetas con Demora en Entrega"
+
+### Documentación
+- [ ] Crear manual de usuario para cada rol
+- [ ] Documentar campos calculados automáticamente (plazos, numeración)
+- [ ] Guía de migración de datos históricos con `generar_plantilla_historico.py`
+
+### Mejoras en Flujo
+- [ ] Notificación automática cuando demora custodia > 7 días
+- [ ] Recordatorio de plazos legales (RR, RAP)
+- [ ] Auditoria: registrar quién cambió qué y cuándo
 
 ---
 
-## Estructura de archivos clave
+## Estructura de archivos clave (v3.3)
 
 ```
-tpe_prueba/
-├── CLAUDE.md                    ← ESTE ARCHIVO (memoria de Claude)
-├── TO_DO.py                     ← Lista de tareas pendientes
-├── EJEMPLOS_CONSULTAS.txt       ← Ejemplos de uso del Django shell
+TPEsystem/
+├── CLAUDE.md                          ← ESTE ARCHIVO (memoria actual)
+├── TO_DO.py                           ← Lista de tareas pendientes
+├── EJEMPLOS_CONSULTAS.txt
 ├── tpe_app/
-│   ├── models.py                ← Modelos Django (fuente de verdad de la BD)
-│   ├── resumen_choices.py       ← Tipos de causa del sumario
-│   ├── forms.py                 ← Formularios Django
-│   ├── urls.py                  ← URLs de la app
+│   ├── models.py                      ← Modelos: PM, SIM, AUTOTPE, DICTAMEN, Resolucion, etc.
+│   ├── forms.py                       ← Formularios (creación de SIM, Resoluciones, etc.)
+│   ├── urls.py                        ← Rutas: admin1/, admin2/, admin3/, abogado/, vocal/, buscador/, ayudante/
 │   ├── views/
-│   │   ├── abogado_views.py     ← Vistas del abogado
-│   │   ├── admin_views.py       ← Vistas del administrador
-│   │   ├── vocal_views.py       ← Vistas del secretario de actas/vocales
-│   │   ├── administrativo_views.py
-│   │   ├── buscador_views.py
-│   │   └── auth_views.py
+│   │   ├── admin1_views.py            ← Ingresa SIM, asigna abogados, crea agendas
+│   │   ├── admin2_views.py            ← Custodia: entrega/recepción de carpetas
+│   │   ├── admin3_views.py            ← Notificaciones
+│   │   ├── abogado_views.py           ← Dictámenes, Resoluciones, Autos (ABOG1/2/3)
+│   │   ├── abogado_documentos_views.py ← Crear RES, RR, AUTOTPE, Auto Excusa, Ejecutoria
+│   │   ├── vocal_views.py             ← Confirmar dictámenes (Secretario de Actas)
+│   │   ├── buscador_views.py          ← Historial personal (reportes PDF/Excel)
+│   │   ├── ayudante_views.py          ← Registrar RES/RR/RAP/RAEE históricas
+│   │   ├── export_views.py            ← PDF y Excel del buscador
+│   │   ├── ejecutoria_views.py        ← Auto de Ejecutoria
+│   │   ├── auth_views.py              ← Login/Logout
+│   ├── templates/
+│   │   ├── dashboard_*.html           ← Dashboards por rol
+│   │   ├── dashboard_buscador.html    ← Buscador con actuados por sumario
+│   │   └── ... (otros templates)
+│   ├── migrations/                    ← Cambios de BD (Django)
 │   ├── queries/
-│   │   └── historial_personal.py ← Consultas de historial (ver EJEMPLOS_CONSULTAS.txt)
-│   └── templates/               ← Templates HTML Bootstrap 5
+│   │   └── historial_personal.py      ← Consultas ORM reutilizables
+│   └── decorators.py                  ← @rol_requerido para control de acceso
 ├── config/
-│   └── settings.py              ← Configuración Django
-└── requirements.txt
+│   └── settings.py                    ← Configuración Django, BD, SECRET_KEY
+├── requirements.txt
+└── manage.py                          ← Django CLI
 ```
+
+**Accesos rápidos por rol:**
+- **ADMIN1**: `admin1_dashboard` (urls.py:24)
+- **ADMIN2**: `admin2_dashboard` (urls.py:25)
+- **ADMIN3**: `admin3_dashboard` (urls.py:26)
+- **ABOG**: `abogado_dashboard` (urls.py:12)
+- **VOCAL**: `vocal_dashboard` (urls.py:29)
+- **AYUDANTE**: `ayudante_dashboard` (urls.py:34)
+- **BUSCADOR**: `buscador_dashboard` (urls.py:23)
 
 ---
 
