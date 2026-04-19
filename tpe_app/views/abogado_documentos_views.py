@@ -84,9 +84,9 @@ def abogado_sumario_detalle(request, sim_id: int):
     # Para Abog2: verificar acceso via autos asignados
     autos_asignados = [a for a in autos_tpe if a.abog_id == abogado.pk]
 
-    # Validar acceso: Abog2 solo puede ver si tiene autos asignados
-    if es_abog2 and not autos_asignados and not es_via_sim and not rrs_asignados:
-        raise PermissionDenied("No tiene autos asignados en este sumario")
+    # Validar acceso: Abog2 puede ver si tiene custodia activa (aún sin autos), autos asignados, o asignación via SIM/RR
+    if es_abog2 and not autos_asignados and not es_via_sim and not rrs_asignados and not tiene_custodia:
+        raise PermissionDenied("No tiene custodia ni autos asignados en este sumario")
 
     context = {
         "sim": sim,
