@@ -404,8 +404,8 @@
         {% if rol == 'ADMIN1_AGENDADOR' or rol == 'ADMINISTRATIVO' %}
 
         <span class="sb-group-label">Panel Principal</span>
-        <a href="{% url 'administrativo_dashboard' %}"
-           class="sb-link {% if request.resolver_match.url_name == 'administrativo_dashboard' %}active{% endif %}">
+        <a href="{% url 'admin1_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin1_dashboard' %}active{% endif %}">
             <span class="lk-icon">🏠</span>
             <span class="lk-text">Inicio</span>
         </a>

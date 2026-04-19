@@ -24,8 +24,10 @@ def login_view(request):
                     return redirect('abogado_dashboard')
                 elif perfil.rol in ('BUSCADOR', 'ABOG3_BUSCADOR'):
                     return redirect('buscador_dashboard')
-                elif perfil.rol in ('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO'):
-                    return redirect('administrativo_dashboard')
+                elif perfil.rol == 'ADMIN1_AGENDADOR':
+                    return redirect('admin1_dashboard')
+                elif perfil.rol in ('ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO'):
+                    return redirect('admin1_dashboard')
                 elif perfil.rol == 'VOCAL_TPE':
                     return redirect('vocal_dashboard')
                 elif perfil.rol == 'ASESOR_JURIDICO':

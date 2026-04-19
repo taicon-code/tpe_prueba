@@ -15,9 +15,9 @@ from .admin2_views import admin2_dashboard
 from .admin3_views import admin3_dashboard
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
-def administrativo_dashboard(request):
-    """Dashboard para administrativos - diferenciado por rol"""
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO')
+def admin1_dashboard(request):
+    """Dashboard específico para ADMIN1_AGENDADOR - Gestión de agendas y sumarios"""
 
     perfil = request.user.perfilusuario
 
@@ -29,7 +29,7 @@ def administrativo_dashboard(request):
     if perfil.rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR']:
         return admin3_dashboard(request)
 
-    # Si no, es Admin1 - dashboard normal
+    # Si no, es Admin1 o ADMINISTRATIVO - mostrar dashboard
     query = (request.GET.get('q') or '').strip()
 
     filtros_q = Q()
@@ -129,7 +129,7 @@ def administrativo_dashboard(request):
         'total_sin_notificar': total_sin_notificar,
     }
 
-    return render(request, 'tpe_app/dashboard_administrativo.html', context)
+    return render(request, 'tpe_app/admin1_dashboard.html', context)
 
 
 @rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
@@ -202,7 +202,7 @@ def registrar_sumario(request):
                         request,
                         f'✅ Sumario {sumario.SIM_COD} registrado exitosamente'
                     )
-                    return redirect('administrativo_dashboard')
+                    return redirect('admin1_dashboard')
 
             except Exception as e:
                 messages.error(request, f'❌ Error al guardar: {str(e)}')
@@ -270,9 +270,9 @@ def agendar_sumario(request):
                     )
             except Exception as exc:
                 messages.error(request, f'❌ Error al agendar: {exc}')
-                return redirect('administrativo_dashboard')
+                return redirect('admin1_dashboard')
 
-            return redirect('administrativo_dashboard')
+            return redirect('admin1_dashboard')
     else:
         initial = {}
         sim_id = request.GET.get('sim')
@@ -339,7 +339,7 @@ def agendar_rr(request):
                 request,
                 f'✅ RR asignado para el abogado {abogado} el {fecha_agenda.strftime("%d/%m/%Y")}. Admin2 debe entregar la carpeta.'
             )
-            return redirect('administrativo_dashboard')
+            return redirect('admin1_dashboard')
     else:
         initial = {}
         rr_id = request.GET.get('rr')
