@@ -115,7 +115,7 @@
                 <th>Sumario</th>
                 <th>Número RR</th>
                 <th>Fecha Presentación</th>
-                <th>Abogado Asignado</th>
+                <th>Militar Implicado</th>
                 <th style="text-align: center;">Acciones</th>
             </tr>
         </thead>
@@ -126,11 +126,13 @@
                 <td>{{ rr.RR_NUM }}</td>
                 <td>{{ rr.RR_FECPRESEN|date:"d/m/Y" }}</td>
                 <td style="font-size: 0.9rem;">
-                    {% if rr.abog %}
-                        {{ rr.abog.AB_GRADO }} {{ rr.abog.AB_PATERNO }}
-                    {% else %}
-                        <span style="color: #999;">Sin asignar</span>
-                    {% endif %}
+                    {% with pm=rr.sim.militares.first %}
+                        {% if pm %}
+                            <strong>{{ pm.PM_GRADO }}</strong> {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}
+                        {% else %}
+                            <span style="color: #999;">Sin militar asignado</span>
+                        {% endif %}
+                    {% endwith %}
                 </td>
                 <td style="text-align: center;">
                     <a href="{% url 'ayudante_registrar_notificacion_rr' rr.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff; border-radius: 4px; text-decoration: none;">

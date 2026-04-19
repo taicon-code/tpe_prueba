@@ -21,6 +21,7 @@ from .admin1_views import (
     agendar_rr,
     crear_agenda,
     lista_agendas,
+    ver_agenda_detalle,
     editar_agenda_resultado,
     gestionar_abogados_sim,
 )
@@ -30,6 +31,7 @@ from .admin2_views import (
     admin2_recibir_carpeta,
     admin2_confirmar_recepcion,
     subir_pdf_res,
+    ver_historial_custodia_sim,
 )
 from .admin3_views import (
     admin3_dashboard,

@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import date, timedelta
 from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, Resolucion
+from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 # import cruzado necesario para el enrutador:
@@ -443,6 +443,25 @@ def lista_agendas(request):
     }
 
     return render(request, 'tpe_app/lista_agendas.html', context)
+
+
+@rol_requerido('ADMIN1_AGENDADOR')
+def ver_agenda_detalle(request, ag_id):
+    """Ver detalles de una agenda: sumarios y militares involucrados"""
+
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+
+    # Obtener todos los dictámenes de esta agenda con sus sumarios y militares
+    dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related(
+        'sim', 'pm', 'abog'
+    ).order_by('sim__id')
+
+    context = {
+        'agenda': agenda,
+        'dictamenes': dictamenes,
+    }
+
+    return render(request, 'tpe_app/ver_agenda_detalle.html', context)
 
 
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')

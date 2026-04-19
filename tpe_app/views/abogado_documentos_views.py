@@ -91,7 +91,7 @@ def abogado_sumario_detalle(request, sim_id: int):
     context = {
         "sim": sim,
         "abogado": abogado,
-        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim).select_related('abog'),
+        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim, es_responsable=True).select_related('abog'),
         "investigados": sim.militares.all(),
         "dictamenes": dictamenes,
         "resoluciones": resoluciones,

@@ -40,26 +40,28 @@ urlpatterns = [
     path('ayudante/raee/nuevo/', views.ayudante_registrar_raee, name='ayudante_registrar_raee'),
     path('ayudante/autotpe/nuevo/', views.ayudante_registrar_autotpe, name='ayudante_registrar_autotpe'),
 
-    # Administrativo - Sumarios
-    path('administrativo/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
-    path('administrativo/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
-    path('administrativo/rr/registrar/', views.registrar_rr, name='registrar_rr'),
-    path('administrativo/rr/agendar/', views.agendar_rr, name='agendar_rr'),
-    path('administrativo/sumarios/<int:sim_id>/abogados/', views.gestionar_abogados_sim, name='gestionar_abogados_sim'),
+    # Admin1 - Sumarios y Agendas
+    path('admin1/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
+    path('admin1/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
+    path('admin1/rr/registrar/', views.registrar_rr, name='registrar_rr'),
+    path('admin1/rr/agendar/', views.agendar_rr, name='agendar_rr'),
+    path('admin1/sumarios/<int:sim_id>/abogados/', views.gestionar_abogados_sim, name='gestionar_abogados_sim'),
 
     # ✅ NUEVO v3.2: Gestión de Agendas (Admin1)
-    path('administrativo/agendas/crear/', views.crear_agenda, name='crear_agenda'),
-    path('administrativo/agendas/', views.lista_agendas, name='lista_agendas'),
-    path('administrativo/agendas/<int:ag_id>/resultado/', views.editar_agenda_resultado, name='agenda_resultado'),
+    path('admin1/agendas/crear/', views.crear_agenda, name='crear_agenda'),
+    path('admin1/agendas/', views.lista_agendas, name='lista_agendas'),
+    path('admin1/agendas/<int:ag_id>/', views.ver_agenda_detalle, name='ver_agenda_detalle'),
+    path('admin1/agendas/<int:ag_id>/resultado/', views.editar_agenda_resultado, name='agenda_resultado'),
 
     # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
-    path('administrativo/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
-    path('administrativo/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),
-    path('administrativo/custodia/<int:sim_id>/confirmar/', views.admin2_confirmar_recepcion, name='admin2_confirmar_recepcion'),
+    path('admin2/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
+    path('admin2/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),
+    path('admin2/custodia/<int:sim_id>/confirmar/', views.admin2_confirmar_recepcion, name='admin2_confirmar_recepcion'),
+    path('admin2/custodia/<int:sim_id>/historial/', views.ver_historial_custodia_sim, name='ver_historial_custodia'),
 
     # ✅ NUEVO: Subir PDF de Resoluciones (Administrador)
-    path('administrativo/res/<int:res_id>/subir-pdf/', views.subir_pdf_res, name='subir_pdf_res'),
-    # path('administrativo/custodia/<int:sim_id>/historial/', views.historial_custodia, name='historial_custodia'),
+    path('admin1/res/<int:res_id>/subir-pdf/', views.subir_pdf_res, name='subir_pdf_res'),
+    # path('admin1/custodia/<int:sim_id>/historial/', views.historial_custodia, name='historial_custodia'),
 
     # ✅ NUEVO v3.1: Historial de sumarios (interno y externo)
     # path('sim/<int:sim_id>/historial/', views.historial_externo_sim, name='historial_externo_sim'),

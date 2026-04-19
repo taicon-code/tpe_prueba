@@ -1,0 +1,190 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Historial de Custodia - TPE Sistema{% endblock %}
+{% block navbar_title %}📂 Historial de Custodia{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<!-- INFORMACIÓN DEL SUMARIO -->
+<div class="card" style="margin-bottom: 2rem; border: 2px solid #1e3c72;">
+    <h2 style="margin-top: 0; color: #1e3c72;">📋 Sumario: {{ sim.SIM_COD }}</h2>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Tipo de Sumario</p>
+            <p style="font-size: 1rem; font-weight: 600; color: #1e3c72; margin: 0.3rem 0;">
+                {{ sim.get_SIM_TIPO_display }}
+            </p>
+        </div>
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Estado</p>
+            <p style="font-size: 1rem; font-weight: 600; margin: 0.3rem 0;">
+                {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                    <span class="badge badge-blue">Para Agenda</span>
+                {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                    <span class="badge badge-orange">En Proceso</span>
+                {% elif sim.SIM_ESTADO == 'EN_APELACION_TSP' %}
+                    <span class="badge badge-red">En Apelación</span>
+                {% elif sim.SIM_ESTADO == 'CONCLUIDO' %}
+                    <span class="badge badge-green">Concluido</span>
+                {% else %}
+                    {{ sim.SIM_ESTADO }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div style="padding-top: 1.5rem; border-top: 1px solid #eee;">
+        <h3 style="margin-top: 0; color: #d97706;">📍 UBICACIÓN ACTUAL</h3>
+        {% if custodia_actual %}
+            <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0.5rem;">
+                <p style="margin: 0.5rem 0; font-weight: 600; color: #92400e;">
+                    🎯 La carpeta está en: <strong>{{ custodia_actual.tipo_custodio_display }}</strong>
+                </p>
+                {% if custodia_actual.abog %}
+                    <p style="margin: 0.5rem 0; color: #92400e;">
+                        👤 Abogado: <strong>{{ custodia_actual.abog.AB_GRADO }} {{ custodia_actual.abog.AB_PATERNO }} {{ custodia_actual.abog.AB_MATERNO }}</strong>
+                    </p>
+                {% endif %}
+                <p style="margin: 0.5rem 0; color: #92400e;">
+                    📅 Desde: <strong>{{ custodia_actual.fecha_recepcion|date:"d/m/Y H:i" }}</strong>
+                </p>
+                {% if custodia_actual.estado != 'ACTIVA' %}
+                    <p style="margin: 0.5rem 0; color: #92400e;">
+                        ⚠️ Estado: <strong>{{ custodia_actual.get_estado_display }}</strong>
+                    </p>
+                {% endif %}
+                {% if custodia_actual.observacion %}
+                    <p style="margin: 0.5rem 0; color: #92400e;">
+                        📝 Observación: {{ custodia_actual.observacion }}
+                    </p>
+                {% endif %}
+            </div>
+        {% else %}
+            <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1rem; border-radius: 0.5rem;">
+                <p style="margin: 0; color: #991b1b; font-weight: 600;">
+                    ⚠️ No hay custodia activa. La carpeta puede estar sin registrar o archivada.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- HISTORIAL DE CUSTODIA -->
+<div class="card">
+    <h2>📜 Historial de Custodia</h2>
+
+    {% if historial %}
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 150px;">Fecha Recepción</th>
+                    <th style="width: 200px;">Custodio</th>
+                    <th style="width: 150px;">Abogado</th>
+                    <th style="width: 100px;">Estado</th>
+                    <th style="width: 150px;">Fecha Entrega</th>
+                    <th>Observación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for custodia in historial %}
+                <tr style="{% if custodia == custodia_actual %}background: #fffbeb;{% endif %}">
+                    <td style="font-weight: 600; white-space: nowrap;">
+                        {{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}
+                    </td>
+                    <td style="font-weight: 600;">
+                        {{ custodia.tipo_custodio_display }}
+                        {% if custodia == custodia_actual %}
+                            <span style="background: #fbbf24; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">ACTUAL</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if custodia.abog %}
+                            {{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}
+                        {% else %}
+                            <span style="color: #999;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if custodia.estado == 'ACTIVA' %}
+                            <span class="badge badge-green">Activa</span>
+                        {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
+                            <span class="badge badge-orange">Pendiente</span>
+                        {% else %}
+                            {{ custodia.get_estado_display }}
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        {% if custodia.fecha_entrega %}
+                            {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
+                        {% else %}
+                            <span style="color: #999;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 0.9rem; color: #666;">
+                        {{ custodia.observacion|default:"—" }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 2rem 0;">
+        No hay historial de custodia registrado para este sumario.
+    </p>
+    {% endif %}
+</div>
+
+<style>
+    .badge {
+        display: inline-block;
+        padding: .3rem .7rem;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .badge-blue   { background: #eff6ff; color: #1d4ed8; }
+    .badge-green  { background: #f0fdf4; color: #16a34a; }
+    .badge-orange { background: #fff7ed; color: #c2410c; }
+    .badge-red    { background: #fef2f2; color: #b91c1c; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+
+    table thead {
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+    }
+
+    table th {
+        padding: 0.8rem;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+    }
+
+    table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    table tbody tr:hover {
+        background: #f9f9f9;
+    }
+</style>
+
+<!-- Filtro personalizado para diccionarios en templates -->
+<script>
+    // Este script es solo para referencia; el filtro debe estar en templatetags
+</script>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Detalle Agenda - TPE Sistema{% endblock %}
+{% block navbar_title %}📅 Detalle de Agenda{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'lista_agendas' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver a Agendas
+    </a>
+</div>
+
+<div class="card" style="margin-bottom: 2rem; border: 2px solid #1e3c72;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Número de Agenda</p>
+            <p style="font-size: 1.3rem; font-weight: 600; color: #1e3c72; margin: 0.3rem 0;">
+                {{ agenda.AG_NUM }}
+            </p>
+        </div>
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Tipo</p>
+            <p style="font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0;">
+                {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                    <span class="badge badge-blue">Ordinaria</span>
+                {% elif agenda.AG_TIPO == 'EXTRAORDINARIA' %}
+                    <span class="badge badge-purple">Extraordinaria</span>
+                {% else %}
+                    {{ agenda.AG_TIPO }}
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Estado</p>
+            <p style="font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0;">
+                {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
+                    <span class="badge badge-blue">Programada</span>
+                {% elif agenda.AG_ESTADO == 'REALIZADA' %}
+                    <span class="badge badge-green">Realizada</span>
+                {% elif agenda.AG_ESTADO == 'SUSPENDIDA' %}
+                    <span class="badge badge-red">Suspendida</span>
+                {% elif agenda.AG_ESTADO == 'REPROGRAMADA' %}
+                    <span class="badge badge-orange">Reprogramada</span>
+                {% else %}
+                    {{ agenda.AG_ESTADO }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; display: grid; grid-template-columns: 1fr 1fr;">
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Fecha Programada</p>
+            <p style="font-size: 1rem; font-weight: 500; color: #1e3c72; margin: 0.3rem 0;">
+                {{ agenda.AG_FECPROG|date:"d/m/Y" }}
+            </p>
+        </div>
+        <div>
+            <p style="color: #666; font-size: 0.9rem; margin: 0;">Fecha Realizada</p>
+            <p style="font-size: 1rem; font-weight: 500; color: #1e3c72; margin: 0.3rem 0;">
+                {% if agenda.AG_FECREAL %}
+                    {{ agenda.AG_FECREAL|date:"d/m/Y" }}
+                {% else %}
+                    <span style="color: #999;">—</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📋 Sumarios de esta Agenda
+        <span style="font-size: 0.8rem; background: #e3f2fd; color: #1565c0; padding: 0.3rem 0.6rem; border-radius: 20px; margin-left: 1rem;">
+            {{ dictamenes|length }} dictamen(es)
+        </span>
+    </h2>
+
+    {% if dictamenes %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 80px;">Nº Sumario</th>
+                <th style="width: 150px;">Causas</th>
+                <th>Militar(es) Implicado(s)</th>
+                <th style="width: 120px;">Abogado</th>
+                <th style="width: 100px;">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dictamen in dictamenes %}
+            <tr>
+                <td style="font-weight: 600; color: #1e3c72;">
+                    <a href="{% url 'abogado_sumario_detalle' dictamen.sim.id %}"
+                       style="color: #1e3c72; text-decoration: none;">
+                        {{ dictamen.sim.id }}
+                    </a>
+                </td>
+                <td>
+                    <small style="color: #666;">
+                        {{ dictamen.sim.get_SIM_TIPO_display }}
+                    </small>
+                </td>
+                <td>
+                    {% if dictamen.pm %}
+                        <strong>{{ dictamen.pm.PM_PATERNO }} {{ dictamen.pm.PM_MATERNO }}, {{ dictamen.pm.PM_NOMBRE }}</strong>
+                        <br>
+                        <small style="color: #666;">
+                            {{ dictamen.pm.PM_GRADO|default:"—" }} • {{ dictamen.pm.PM_ARMA|default:"—" }}
+                        </small>
+                    {% else %}
+                        <span style="color: #999;">No especificado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if dictamen.abog %}
+                        <small>{{ dictamen.abog.AB_PATERNO }}</small>
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if dictamen.sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                        <span class="badge badge-blue">Para Agenda</span>
+                    {% elif dictamen.sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                        <span class="badge badge-orange">En Proceso</span>
+                    {% elif dictamen.sim.SIM_ESTADO == 'EN_APELACION_TSP' %}
+                        <span class="badge badge-red">En Apelación</span>
+                    {% elif dictamen.sim.SIM_ESTADO == 'CONCLUIDO' %}
+                        <span class="badge badge-green">Concluido</span>
+                    {% else %}
+                        {{ dictamen.sim.SIM_ESTADO }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 2rem 0;">
+        No hay sumarios asociados a esta agenda aún.
+    </p>
+    {% endif %}
+
+    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
+        <a href="{% url 'agenda_resultado' agenda.id %}"
+           class="btn" style="background: #1e3c72; font-size: 0.9rem; padding: 0.5rem 1rem;">
+            ✏️ Registrar Resultado
+        </a>
+    </div>
+</div>
+
+<style>
+    .badge {
+        display: inline-block;
+        padding: .3rem .7rem;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+    .badge-blue   { background: #eff6ff; color: #1d4ed8; }
+    .badge-green  { background: #f0fdf4; color: #16a34a; }
+    .badge-purple { background: #faf5ff; color: #7e22ce; }
+    .badge-orange { background: #fff7ed; color: #c2410c; }
+    .badge-red    { background: #fef2f2; color: #b91c1c; }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+
+    table thead {
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+    }
+
+    table th {
+        padding: 0.8rem;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+    }
+
+    table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    table tbody tr:hover {
+        background: #f9f9f9;
+    }
+</style>
+{% endblock %}

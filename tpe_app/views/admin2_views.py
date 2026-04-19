@@ -73,45 +73,23 @@ def admin2_dashboard(request):
     carpetas_prestadas.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
     # Filtro de historial por código SIM o militar
-    sim_cod = (request.GET.get('sim_cod') or '').strip()
-    apellido_paterno = (request.GET.get('apellido_paterno') or '').strip().upper()
-    apellido_materno = (request.GET.get('apellido_materno') or '').strip().upper()
-    nombre = (request.GET.get('nombre') or '').strip().upper()
+    from django.db.models import Q
 
+    query = (request.GET.get('q') or '').strip()
     historial_sim = None
-    if sim_cod or apellido_paterno or apellido_materno or nombre:
-        from django.db.models import Q
-        from ..models import PM, PM_SIM
 
+    if query:
         try:
-            # Si hay búsqueda por código SIM
-            if sim_cod:
-                sim_obj = SIM.objects.get(SIM_COD__iexact=sim_cod)
-                historial_sim = CustodiaSIM.objects.filter(sim=sim_obj).select_related('abog').order_by('fecha_recepcion')
-            # Si hay búsqueda por militar
-            elif apellido_paterno or apellido_materno or nombre:
-                # Construir Q para buscar en PM
-                q_filter = Q()
-                if apellido_paterno:
-                    q_filter &= Q(PM_PATERNO__icontains=apellido_paterno)
-                if apellido_materno:
-                    q_filter &= Q(PM_MATERNO__icontains=apellido_materno)
-                if nombre:
-                    q_filter &= Q(PM_NOMBRE__icontains=nombre)
-
-                # Buscar militares que cumplan los criterios
-                militares = PM.objects.filter(q_filter)
-
-                # Encontrar SIM relacionados con esos militares
-                sims = SIM.objects.filter(militares__in=militares).distinct()
-
-                if sims.exists():
-                    historial_sim = CustodiaSIM.objects.filter(sim__in=sims).select_related('abog').order_by('fecha_recepcion')
-                else:
-                    historial_sim = []
-            else:
-                historial_sim = []
-        except SIM.DoesNotExist:
+            # Buscar en SIM_COD, militares paterno/materno/nombre
+            filtros_q = (
+                Q(SIM_COD__icontains=query) |
+                Q(militares__PM_PATERNO__icontains=query) |
+                Q(militares__PM_MATERNO__icontains=query) |
+                Q(militares__PM_NOMBRE__icontains=query)
+            )
+            sims = SIM.objects.filter(filtros_q).distinct()
+            historial_sim = CustodiaSIM.objects.filter(sim__in=sims).select_related('abog').order_by('fecha_recepcion')
+        except Exception:
             historial_sim = []
 
     context = {
@@ -121,10 +99,7 @@ def admin2_dashboard(request):
         'total_pendientes': len(carpetas_pendientes),
         'carpetas_prestadas': carpetas_prestadas,
         'total_prestadas': len(carpetas_prestadas),
-        'sim_cod_filtro': sim_cod,
-        'apellido_paterno_filtro': apellido_paterno,
-        'apellido_materno_filtro': apellido_materno,
-        'nombre_filtro': nombre,
+        'query': query,
         'historial_sim': historial_sim,
     }
 

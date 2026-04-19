@@ -80,7 +80,7 @@ def crear_usuario_con_rol(request):
                 'rol': rol,
                 'rol_choices': PerfilUsuario.ROL_CHOICES,
                 'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
-                'vocales': VOCAL_TPE.objects.all().order_by('VOCAL_NOMBRE'),
+                'vocales': VOCAL_TPE.objects.all().order_by('pm__PM_PATERNO', 'pm__PM_MATERNO'),
             }
             return render(request, 'tpe_app/crear_usuario.html', context)
 
@@ -126,7 +126,7 @@ def crear_usuario_con_rol(request):
                 'rol': rol,
                 'rol_choices': PerfilUsuario.ROL_CHOICES,
                 'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
-                'vocales': VOCAL_TPE.objects.all().order_by('VOCAL_NOMBRE'),
+                'vocales': VOCAL_TPE.objects.all().order_by('pm__PM_PATERNO', 'pm__PM_MATERNO'),
             }
             return render(request, 'tpe_app/crear_usuario.html', context)
 
@@ -134,6 +134,6 @@ def crear_usuario_con_rol(request):
     context = {
         'rol_choices': PerfilUsuario.ROL_CHOICES,
         'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
-        'vocales': VOCAL_TPE.objects.all().order_by('VOCAL_NOMBRE'),
+        'vocales': VOCAL_TPE.objects.all().order_by('pm__PM_PATERNO', 'pm__PM_MATERNO'),
     }
     return render(request, 'tpe_app/crear_usuario.html', context)

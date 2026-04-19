@@ -32,17 +32,6 @@
     </div>
 </div>
 
-{% if total_pendientes_ejecutoria %}
-<div style="background: #fef3c7; border: 1px solid #fbbf24; border-left: 4px solid #d97706; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
-    <div>
-        <strong style="color: #92400e;">⚖️ {{ total_pendientes_ejecutoria }} caso{{ total_pendientes_ejecutoria|pluralize }} pendiente{{ total_pendientes_ejecutoria|pluralize }} de Auto de Ejecutoria</strong>
-        <p style="color: #78350f; font-size: 0.85rem; margin: 0.25rem 0 0;">Plazos vencidos — revisar y emitir los autos correspondientes.</p>
-    </div>
-    <a href="{% url 'pendientes_ejecutoria' %}" class="btn" style="background: #d97706; color: #fff; font-size: 0.85rem; white-space: nowrap;">
-        Ver pendientes →
-    </a>
-</div>
-{% endif %}
 
 <div class="card">
     <h2>📄 Sumarios Asignados</h2>
@@ -124,59 +113,6 @@
         </tbody>
     </table>
 </div>
-
-<div class="card">
-    <h2>🔄 Recursos de Reconsideración Asignados</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Fec. Ingreso Sumario</th>
-                <th>En contra de RES</th>
-                <th>Grado</th>
-                <th>Especialidad</th>
-                <th>Nombre Completo</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for rr in mis_recursos %}
-            <tr>
-                <td style="white-space: nowrap;">{{ rr.sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
-                <td style="white-space: nowrap;">
-                    {% if rr.pdf_primera_res %}
-                        <a href="{{ rr.pdf_primera_res }}" target="_blank"
-                           style="font-weight:700; color:#1e3c72; text-decoration:none;"
-                           title="Descargar PDF RES {{ rr.res.RES_NUM }}">
-                            📄 {{ rr.res.RES_NUM }}
-                        </a>
-                    {% else %}
-                        <strong>{{ rr.res.RES_NUM }}</strong>
-                        <span style="color:#9ca3af; font-size:.75rem; display:block;">Sin PDF</span>
-                    {% endif %}
-                </td>
-                <td>{{ rr.investigado.get_PM_GRADO_display|default:"-" }}</td>
-                <td>{{ rr.investigado.PM_ESPEC|default:"-" }}</td>
-                <td>
-                    {{ rr.investigado.PM_NOMBRE|default:"" }}
-                    {{ rr.investigado.PM_PATERNO|default:"" }}
-                    {% if rr.investigado.PM_MATERNO %}{{ rr.investigado.PM_MATERNO }}{% endif %}
-                </td>
-                <td>
-                    <a href="{% url 'abogado_sumario_detalle' rr.sim.pk %}"
-                       class="btn" style="font-size:0.8rem; padding:0.3rem 0.7rem;">
-                        Ver
-                    </a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" style="text-align:center; color:#999;">No tienes recursos asignados</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
 
 {% endif %}
 {% endblock %}

@@ -34,67 +34,29 @@
 <div class="card">
     <h2>🔍 Buscar Historial de Custodia</h2>
 
-    <form method="get" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end;">
-        <div>
-            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Código Sumario</label>
-            <input
-                type="text"
-                name="sim_cod"
-                placeholder="ej: DJE-25/25"
-                value="{{ sim_cod_filtro }}"
-                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
-            >
-        </div>
-
-        <div>
-            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Apellido Paterno</label>
-            <input
-                type="text"
-                name="apellido_paterno"
-                placeholder="ej: García"
-                value="{{ apellido_paterno_filtro }}"
-                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
-            >
-        </div>
-
-        <div>
-            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Apellido Materno</label>
-            <input
-                type="text"
-                name="apellido_materno"
-                placeholder="ej: López"
-                value="{{ apellido_materno_filtro }}"
-                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
-            >
-        </div>
-
-        <div>
-            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Nombre</label>
-            <input
-                type="text"
-                name="nombre"
-                placeholder="ej: Juan"
-                value="{{ nombre_filtro }}"
-                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
-            >
-        </div>
-
-        <div style="display: flex; gap: 0.5rem;">
-            <button type="submit" class="btn" style="background: #3b82f6; color: #fff; padding: 0.5rem 1.5rem; white-space: nowrap;">
-                🔍 Buscar
-            </button>
-            {% if sim_cod_filtro or apellido_paterno_filtro or apellido_materno_filtro or nombre_filtro %}
-                <a href="{% url 'admin2_dashboard' %}" style="background: #6b7280; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; white-space: nowrap;">
-                    ✕ Limpiar
-                </a>
-            {% endif %}
-        </div>
+    <form method="get" class="search-box" style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+        <input
+            type="text"
+            name="q"
+            placeholder="Buscar por Código SIM, Apellido Paterno, Apellido Materno o Nombre..."
+            value="{{ query }}"
+            style="flex: 1; min-width: 250px; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
+        >
+        <button type="submit" class="btn" style="background: #3b82f6; color: #fff; padding: 0.5rem 1.5rem; white-space: nowrap;">
+            🔍 Buscar
+        </button>
+        {% if query %}
+            <a href="{% url 'admin2_dashboard' %}" style="background: #6b7280; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; white-space: nowrap;">
+                ✕ Limpiar
+            </a>
+        {% endif %}
     </form>
 
     {% if historial_sim %}
     <table>
         <thead>
             <tr>
+                <th>Sumario</th>
                 <th>Fecha Recepción</th>
                 <th>Custodio</th>
                 <th>Motivo</th>
@@ -106,6 +68,7 @@
         <tbody>
             {% for custodia in historial_sim %}
             <tr>
+                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
                 <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
                 <td style="font-size: 0.85rem;">
                     {% if custodia.abog %}
@@ -152,9 +115,9 @@
             {% endfor %}
         </tbody>
     </table>
-    {% elif sim_cod_filtro or apellido_paterno_filtro or apellido_materno_filtro or nombre_filtro %}
+    {% elif query %}
     <p style="text-align: center; color: #dc2626; padding: 2rem;">
-        ❌ No se encontraron resultados para los criterios de búsqueda especificados
+        ❌ No se encontraron resultados para "<strong>{{ query }}</strong>"
     </p>
     {% else %}
     <p style="text-align: center; color: #999; padding: 2rem;">

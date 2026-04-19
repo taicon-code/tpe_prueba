@@ -89,10 +89,14 @@
                         {{ agenda.AG_ESTADO }}
                     {% endif %}
                 </td>
-                <td>
+                <td style="display: flex; gap: 0.5rem;">
+                    <a href="{% url 'ver_agenda_detalle' agenda.id %}"
+                       class="btn" style="background: #2196f3; font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                        👁️ Ver Detalle
+                    </a>
                     <a href="{% url 'agenda_resultado' agenda.id %}"
                        class="btn" style="background: #1e3c72; font-size: 0.8rem; padding: 0.4rem 0.8rem;">
-                        ✏️ Registrar Resultado
+                        ✏️ Resultado
                     </a>
                 </td>
             </tr>

@@ -26,7 +26,11 @@ def login_view(request):
                     return redirect('buscador_dashboard')
                 elif perfil.rol == 'ADMIN1_AGENDADOR':
                     return redirect('admin1_dashboard')
-                elif perfil.rol in ('ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO'):
+                elif perfil.rol == 'ADMIN2_ARCHIVO':
+                    return redirect('admin2_dashboard')
+                elif perfil.rol == 'ADMIN3_NOTIFICADOR':
+                    return redirect('admin3_dashboard')
+                elif perfil.rol == 'ADMINISTRATIVO':
                     return redirect('admin1_dashboard')
                 elif perfil.rol == 'VOCAL_TPE':
                     return redirect('vocal_dashboard')

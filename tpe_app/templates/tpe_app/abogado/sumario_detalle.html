@@ -225,20 +225,36 @@
 
 <!-- ── ABOGADOS ASIGNADOS ──────────────────────── -->
 <div class="card section-card">
-    <div class="card-title">⚖️ Abogados Asignados</div>
+    <div class="card-title">⚖️ Custodio Actual - Responsable de Carpeta</div>
     {% if abogados_asignados %}
-    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
         {% for asig in abogados_asignados %}
-        <span style="background: {% if asig.abog.pk == abogado.pk %}#dbeafe; color: #1e40af; border: 1px solid #93c5fd;{% else %}#f3f4f6; color: #374151; border: 1px solid #e5e7eb;{% endif %} padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-            {{ asig.abog.AB_GRADO }} {{ asig.abog.AB_NOMBRE }} {{ asig.abog.AB_PATERNO }}
-            {% if asig.es_responsable %} 📂{% endif %}
-            {% if asig.abog.pk == abogado.pk %} (Ud.){% endif %}
-        </span>
+        <div style="background: {% if asig.abog.pk == abogado.pk %}#dbeafe{% else %}#f3f4f6{% endif %}; border: 2px solid {% if asig.abog.pk == abogado.pk %}#93c5fd{% else %}#e5e7eb{% endif %}; border-radius: 10px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <p style="margin: 0; font-weight: 700; color: {% if asig.abog.pk == abogado.pk %}#1e40af{% else %}#374151{% endif %}; font-size: 0.95rem;">
+                    {{ asig.abog.AB_GRADO }} {{ asig.abog.AB_NOMBRE }} {{ asig.abog.AB_PATERNO }}
+                    {% if asig.abog.pk == abogado.pk %} (Usted){% endif %}
+                </p>
+                <small style="color: #6b7280; font-size: 0.8rem; margin-top: 0.25rem; display: block;">
+                    {% if custodio_actual and custodio_actual.abog.abog_id == asig.abog.abog_id %}
+                        {% if custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
+                            ⏳ <strong>Pendiente su confirmación de recepción</strong>
+                        {% else %}
+                            ✅ <strong>Custodia Activa</strong>
+                        {% endif %}
+                    {% else %}
+                        — No tiene la carpeta actualmente
+                    {% endif %}
+                </small>
+            </div>
+            <span style="background: {% if custodio_actual and custodio_actual.abog.abog_id == asig.abog.abog_id %}#10b981{% else %}#9ca3af{% endif %}; color: #fff; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;">
+                📂 RESPONSABLE
+            </span>
+        </div>
         {% endfor %}
     </div>
-    <small style="color: #6b7280; font-size: 0.78rem; margin-top: 0.5rem; display: block;">📂 = Responsable de la carpeta fisica</small>
     {% else %}
-    <p style="color:#9ca3af; text-align:center; padding:1rem 0;">Sin abogados asignados</p>
+    <p style="color:#9ca3af; text-align:center; padding:1rem 0;">Sin abogados asignados como responsables</p>
     {% endif %}
 </div>
 
