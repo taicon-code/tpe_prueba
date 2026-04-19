@@ -443,7 +443,7 @@
   <!-- EXPORT BUTTONS -->
   <div class="export-buttons">
     <a href="{% url 'export_pdfs_zip' personal_seleccionado.pm_id %}" class="btn-export btn-export-pdf" style="background: #3b82f6; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-      📥 Descargar PDFs (.zip)
+      📄 Descargar Reporte PDF
     </a>
     <a href="{% url 'export_excel' personal_seleccionado.pm_id %}" class="btn-export btn-export-excel" style="background: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
       📊 Descargar Excel
@@ -462,8 +462,24 @@
       <div class="stat-label">Resoluciones</div>
     </div>
     <div class="stat-box">
+      <div class="stat-number">{{ estado.total_autos }}</div>
+      <div class="stat-label">Autos Totales</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_autos_tpe }}</div>
+      <div class="stat-label">Autos TPE</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_autos_tsp }}</div>
+      <div class="stat-label">Autos TSP</div>
+    </div>
+    <div class="stat-box">
       <div class="stat-number">{{ estado.total_apelaciones }}</div>
       <div class="stat-label">Apelaciones</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">{{ estado.total_reconsideraciones }}</div>
+      <div class="stat-label">Reconsideraciones</div>
     </div>
     <div class="stat-box">
       <div class="stat-number">{{ estado.total_raees }}</div>
@@ -490,31 +506,121 @@
   </div>
   {% endif %}
 
-  <!-- RESOLUCIONES TABLE -->
-  {% if historial.resoluciones %}
-  <table class="sim-table">
-    <thead>
-      <tr>
-        <th>Tipo</th>
-        <th>Número</th>
-        <th>Fecha</th>
-        <th>Notificación</th>
-        <th>Fecha Notif.</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for res in historial.resoluciones %}
-      <tr>
-        <td>{{ res.get_RES_TIPO_display|truncatewords:3 }}</td>
-        <td><strong>{{ res.RES_NUM }}</strong></td>
-        <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
-        <td>{{ res.RES_TIPO_NOTIF|default:"N/A" }}</td>
-        <td>{{ res.RES_FECNOT|date:"d/m/Y"|default:"N/A" }}</td>
-      </tr>
+  <!-- ACTUADOS POR SUMARIO -->
+  {% if historial.sumarios %}
+  <div style="margin-bottom: 2rem;">
+    <h3 style="color: #185FA5; font-size: 1.1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #185FA5; padding-bottom: 0.5rem;">📋 Actuados por Sumario</h3>
+
+    {% for sim in historial.sumarios %}
+    {% with resoluciones=historial.resoluciones|dictsort:"sim.id" autos_tpe=historial.autos_tpe|dictsort:"sim.id" %}
+    <div style="background: #f9fafb; border-left: 4px solid #185FA5; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 6px;">
+      <!-- Encabezado del Sumario -->
+      <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
+        <h4 style="margin: 0 0 0.5rem 0; color: #185FA5;">{{ sim.SIM_COD }}</h4>
+        <div style="font-size: 0.9rem; color: #666;">
+          <span style="display: inline-block; margin-right: 1.5rem;"><strong>Tipo:</strong> {{ sim.get_SIM_TIPO_display }}</span>
+          <span style="display: inline-block; margin-right: 1.5rem;"><strong>Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</span>
+          <span><strong>Estado:</strong> {{ sim.SIM_ESTADO }}</span>
+        </div>
+      </div>
+
+      <!-- Resoluciones del Sumario -->
+      {% with sim_resoluciones=historial.resoluciones|dictsort:"sim.id" %}
+      {% for res in sim_resoluciones %}
+        {% if res.sim.id == sim.id %}
+        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #3b82f6;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; font-size: 0.85rem;">
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Nº Resolución:</span>
+              <span>{{ res.RES_NUM|default:"N/A" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Fecha Resolución:</span>
+              <span>{{ res.RES_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Tipo:</span>
+              <span>{{ res.get_RES_TIPO_display|default:"N/A" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Disposición:</span>
+              <span>{{ res.get_RES_TIPO_display|default:"N/A" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Notificación:</span>
+              <span>{{ res.RES_TIPO_NOTIF|default:"N/A" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Fecha Notificación:</span>
+              <span>{{ res.RES_FECNOT|date:"d/m/Y"|default:"N/A" }}</span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
       {% endfor %}
-    </tbody>
-  </table>
+      {% endwith %}
+
+      <!-- Autos TPE del Sumario -->
+      {% for auto in historial.autos_tpe %}
+        {% if auto.sim.id == sim.id %}
+        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #f59e0b;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; font-size: 0.85rem;">
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Auto TPE Nº:</span>
+              <span>{{ auto.TPE_NUM|default:"S/N" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Fecha:</span>
+              <span>{{ auto.TPE_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+            </div>
+            <div>
+              <span style="font-weight: 700; color: #185FA5; display: block;">Tipo:</span>
+              <span>{{ auto.get_TPE_TIPO_display|default:"N/A" }}</span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Recursos del Sumario -->
+      {% with sim_rr=historial.segundas_resoluciones|dictsort:"sim.id" sim_rap=historial.recursos_apelacion|dictsort:"sim.id" sim_raee=historial.raees|dictsort:"sim.id" %}
+      {% for rr in sim_rr %}
+        {% if rr.sim.id == sim.id %}
+        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #8b5cf6;">
+          <span style="font-weight: 700; color: #185FA5;">Recurso Reconsideración:</span>
+          Nº {{ rr.RES_NUM|default:"S/N" }} ({{ rr.RES_FEC|date:"d/m/Y"|default:"N/A" }})
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      {% for rap in sim_rap %}
+        {% if rap.sim.id == sim.id %}
+        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #ef4444;">
+          <span style="font-weight: 700; color: #185FA5;">Apelación TSP:</span>
+          Nº {{ rap.TSP_NUM|default:"S/N" }} ({{ rap.TSP_FEC|date:"d/m/Y"|default:"N/A" }})
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      {% for raee in sim_raee %}
+        {% if raee.sim.id == sim.id %}
+        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #06b6d4;">
+          <span style="font-weight: 700; color: #185FA5;">RAEE:</span>
+          Nº {{ raee.TSP_NUM|default:"S/N" }} ({{ raee.TSP_FEC|date:"d/m/Y"|default:"N/A" }})
+        </div>
+        {% endif %}
+      {% endfor %}
+      {% endwith %}
+
+      {% if not historial.resoluciones|dictsort:"sim.id" and not historial.autos_tpe|dictsort:"sim.id" and not historial.segundas_resoluciones and not historial.recursos_apelacion and not historial.raees %}
+      <div style="color: #999; font-style: italic;">No hay actuados registrados para este sumario.</div>
+      {% endif %}
+    </div>
+    {% endwith %}
+    {% endfor %}
+  </div>
   {% endif %}
+
 
 </div>
 

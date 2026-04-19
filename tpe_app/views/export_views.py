@@ -54,12 +54,10 @@ def _obtener_historial(personal_id):
     return personal, historial
 
 
-def export_person_pdfs_zip(request, personal_id):
+def export_person_historial_pdf(request, personal_id):
     """
-    Genera un ZIP con múltiples PDFs (uno por sumario) del historial de una persona.
-
-    Naming: HISTORIAL_{CI}_{FECHA}.zip
-    Contenido: DJE-XXX_YY_HISTORIAL_{CI}.pdf (uno por sumario)
+    Genera un PDF único con el historial completo de una persona.
+    Incluye estadísticas, todos los sumarios y sus actuados.
     """
     personal, historial = _obtener_historial(personal_id)
 
@@ -67,35 +65,203 @@ def export_person_pdfs_zip(request, personal_id):
         personal = get_object_or_404(PM, pm_id=personal_id)
         return HttpResponse("Personal no encontrado", status=404)
 
-    if not historial:
-        return HttpResponse("Personal no encontrado", status=404)
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    x_margin = 0.5 * inch
+    y_position = height - 0.5 * inch
+    line_height = 0.2 * inch
 
+    # ===== ENCABEZADO =====
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(x_margin, y_position, "REPORTE DE HISTORIAL - SUMARIOS DISCIPLINARIOS")
+    y_position -= 1.5 * line_height
+
+    c.setFont("Helvetica", 9)
+    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+    c.drawString(x_margin, y_position, f"Generado: {fecha_hoy}")
+    y_position -= line_height
+
+    c.setLineWidth(1)
+    c.line(x_margin, y_position, width - x_margin, y_position)
+    y_position -= 1.2 * line_height
+
+    # ===== DATOS PERSONALES =====
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(x_margin, y_position, "PERSONAL MILITAR")
+    y_position -= line_height
+
+    c.setFont("Helvetica", 9)
+    datos = [
+        f"Nombre: {personal.PM_NOMBRE} {personal.PM_PATERNO} {personal.PM_MATERNO or ''}",
+        f"CI: {personal.PM_CI}",
+        f"Grado: {personal.get_PM_GRADO_display() or 'N/A'}",
+        f"Arma: {personal.get_PM_ARMA_display() or 'N/A'}",
+        f"Estado: {personal.get_PM_ESTADO_display()}"
+    ]
+    for dato in datos:
+        c.drawString(x_margin + 0.2 * inch, y_position, dato)
+        y_position -= line_height
+
+    y_position -= 0.5 * line_height
+
+    # ===== ESTADÍSTICAS =====
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(x_margin, y_position, "ESTADÍSTICAS")
+    y_position -= line_height
+
+    c.setFont("Helvetica", 9)
+    total_autos = historial['autos_tpe'].count() + historial['autos_tsp'].count()
+    stats = [
+        f"Total Sumarios: {historial['sumarios'].count()}",
+        f"Total Resoluciones: {historial['resoluciones'].count()}",
+        f"Total Autos TPE: {historial['autos_tpe'].count()}",
+        f"Total Autos TSP: {historial['autos_tsp'].count()}",
+        f"Total Autos: {total_autos}",
+        f"Total Recursos Reconsideración: {historial['segundas_resoluciones'].count()}",
+        f"Total Apelaciones TSP: {historial['recursos_apelacion'].count()}",
+        f"Total RAEE: {historial['raees'].count()}"
+    ]
+    for stat in stats:
+        c.drawString(x_margin + 0.2 * inch, y_position, stat)
+        y_position -= line_height
+
+    y_position -= 0.7 * line_height
+
+    # ===== ACTUADOS POR SUMARIO =====
     sumarios = historial['sumarios']
-    fecha_export = datetime.now().strftime("%Y-%m-%d")
-    zip_filename = f"HISTORIAL_{personal.PM_CI}_{fecha_export}.zip"
+    if sumarios.exists():
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(x_margin, y_position, "ACTUADOS POR SUMARIO")
+        y_position -= line_height * 1.3
 
-    # Buffer para ZIP
-    zip_buffer = BytesIO()
+        for idx, sim in enumerate(sumarios, 1):
+            if y_position < 2 * inch:
+                c.showPage()
+                y_position = height - 0.5 * inch
 
-    with ZipFile(zip_buffer, 'w') as zip_file:
-        if not sumarios.exists():
-            # Si no hay sumarios, crear un PDF vacío
-            pdf_buffer = _generar_pdf_sumario(personal, None, historial)
-            zip_file.writestr(f"NO_SUMARIOS_HISTORIAL_{personal.PM_CI}.pdf", pdf_buffer.getvalue())
-        else:
-            # Un PDF por cada sumario
-            for sim in sumarios:
-                pdf_buffer = _generar_pdf_sumario(personal, sim, historial)
-                # Nombre: DJE-001_24_HISTORIAL_{CI}.pdf
-                sim_cod_sanitized = _sanitize_filename(sim.SIM_COD)
-                pdf_filename = f"{sim_cod_sanitized}_HISTORIAL_{personal.PM_CI}.pdf"
-                zip_file.writestr(pdf_filename, pdf_buffer.getvalue())
+            # Encabezado del sumario
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(x_margin, y_position, f"SUMARIO {idx}: {sim.SIM_COD}")
+            y_position -= line_height
 
-    zip_buffer.seek(0)
+            c.setFont("Helvetica", 8)
+            c.drawString(x_margin + 0.2 * inch, y_position, f"Tipo: {sim.get_SIM_TIPO_display() if sim.SIM_TIPO else 'N/A'}")
+            y_position -= line_height * 0.7
 
-    response = HttpResponse(zip_buffer, content_type='application/zip')
-    response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+            c.drawString(x_margin + 0.2 * inch, y_position, f"Objeto: {sim.SIM_OBJETO[:80] if sim.SIM_OBJETO else 'N/A'}")
+            y_position -= line_height * 0.7
+
+            c.drawString(x_margin + 0.2 * inch, y_position, f"Fecha Ingreso: {_format_date(sim.SIM_FECING)}")
+            y_position -= line_height * 0.7
+
+            c.drawString(x_margin + 0.2 * inch, y_position, f"Estado Actual: {sim.SIM_ESTADO if hasattr(sim, 'SIM_ESTADO') else 'N/A'}")
+            y_position -= line_height
+
+            # Resoluciones de este sumario
+            resoluciones = historial['resoluciones'].filter(sim=sim)
+            if resoluciones.exists():
+                c.setFont("Helvetica-Bold", 9)
+                c.drawString(x_margin + 0.3 * inch, y_position, f"Resoluciones ({resoluciones.count()}):")
+                y_position -= line_height * 0.8
+
+                c.setFont("Helvetica", 8)
+                for res in resoluciones:
+                    if y_position < 1.5 * inch:
+                        c.showPage()
+                        y_position = height - 0.5 * inch
+
+                    c.drawString(x_margin + 0.5 * inch, y_position, f"• Nº {res.RES_NUM} ({_format_date(res.RES_FEC)})")
+                    y_position -= line_height * 0.7
+
+                    c.drawString(x_margin + 0.7 * inch, y_position, f"Tipo: {res.get_RES_TIPO_display() if res.RES_TIPO else 'N/A'}")
+                    y_position -= line_height * 0.7
+
+                    if res.RES_TIPO_NOTIF:
+                        c.drawString(x_margin + 0.7 * inch, y_position, f"Notificación: {res.RES_TIPO_NOTIF}")
+                        y_position -= line_height * 0.7
+
+                    if res.RES_FECNOT:
+                        c.drawString(x_margin + 0.7 * inch, y_position, f"Fecha Notificación: {_format_date(res.RES_FECNOT)}")
+                        y_position -= line_height * 0.7
+
+                y_position -= line_height * 0.5
+
+            # Autos TPE de este sumario
+            autos_tpe = historial['autos_tpe'].filter(sim=sim)
+            if autos_tpe.exists():
+                c.setFont("Helvetica-Bold", 9)
+                c.drawString(x_margin + 0.3 * inch, y_position, f"Autos TPE ({autos_tpe.count()}):")
+                y_position -= line_height * 0.8
+
+                c.setFont("Helvetica", 8)
+                for auto in autos_tpe:
+                    if y_position < 1.5 * inch:
+                        c.showPage()
+                        y_position = height - 0.5 * inch
+
+                    c.drawString(x_margin + 0.5 * inch, y_position, f"• Nº {auto.TPE_NUM or 'S/N'} ({_format_date(auto.TPE_FEC)})")
+                    y_position -= line_height * 0.7
+
+                    c.drawString(x_margin + 0.7 * inch, y_position, f"Tipo: {auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'}")
+                    y_position -= line_height * 0.7
+
+                y_position -= line_height * 0.5
+
+            # Recursos de este sumario
+            rr = historial['segundas_resoluciones'].filter(sim=sim)
+            rap = historial['recursos_apelacion'].filter(sim=sim)
+            autos_tsp = historial['autos_tsp'].filter(sim=sim)
+            raee = historial['raees'].filter(sim=sim)
+
+            if rr.exists() or rap.exists() or autos_tsp.exists() or raee.exists():
+                if y_position < 1.5 * inch:
+                    c.showPage()
+                    y_position = height - 0.5 * inch
+
+                c.setFont("Helvetica-Bold", 9)
+                c.drawString(x_margin + 0.3 * inch, y_position, "Recursos y Autos Posteriores:")
+                y_position -= line_height * 0.8
+
+                c.setFont("Helvetica", 8)
+                if rr.exists():
+                    for res2 in rr:
+                        c.drawString(x_margin + 0.5 * inch, y_position, f"• Reconsideración Nº {res2.RES_NUM or 'S/N'} ({_format_date(res2.RES_FEC)})")
+                        y_position -= line_height * 0.7
+
+                if rap.exists():
+                    for apel in rap:
+                        c.drawString(x_margin + 0.5 * inch, y_position, f"• Apelación Nº {apel.TSP_NUM or 'S/N'} ({_format_date(apel.TSP_FEC)})")
+                        y_position -= line_height * 0.7
+
+                if autos_tsp.exists():
+                    for auto_tsp in autos_tsp:
+                        c.drawString(x_margin + 0.5 * inch, y_position, f"• Auto TSP Nº {auto_tsp.TSP_NUM or 'S/N'} ({_format_date(auto_tsp.TSP_FEC)})")
+                        y_position -= line_height * 0.7
+
+                if raee.exists():
+                    for r in raee:
+                        c.drawString(x_margin + 0.5 * inch, y_position, f"• RAEE Nº {r.TSP_NUM or 'S/N'} ({_format_date(r.TSP_FEC)})")
+                        y_position -= line_height * 0.7
+
+            y_position -= line_height
+
+    c.save()
+    buffer.seek(0)
+
+    fecha_export = datetime.now().strftime("%d-%m-%Y")
+    filename = f"HISTORIAL_{personal.PM_CI}_{fecha_export}.pdf"
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+def export_person_pdfs_zip(request, personal_id):
+    """
+    DEPRECATED: Mantener por compatibilidad. Redirige a export_person_historial_pdf.
+    """
+    return export_person_historial_pdf(request, personal_id)
 
 
 def _generar_pdf_sumario(personal, sim, historial):

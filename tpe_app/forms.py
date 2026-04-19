@@ -74,20 +74,22 @@ class PMSIMForm(forms.ModelForm):
     PM_NOMBRE = forms.CharField(
         label='Nombre',
         max_length=25,
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Nombre(s)'
+            'placeholder': 'Nombre(s)',
+            'autocomplete': 'off'
         })
     )
 
     PM_PATERNO = forms.CharField(
         label='Apellido Paterno',
         max_length=25,
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Apellido paterno'
+            'placeholder': 'Apellido paterno',
+            'autocomplete': 'off'
         })
     )
 
@@ -164,9 +166,9 @@ class PMSIMForm(forms.ModelForm):
             return cleaned_data
 
         ci = (cleaned_data.get('PM_CI') or '').strip()
-        nombre = (cleaned_data.get('PM_NOMBRE') or '').strip()
-        paterno = (cleaned_data.get('PM_PATERNO') or '').strip()
-        materno = (cleaned_data.get('PM_MATERNO') or '').strip()
+        nombre = (cleaned_data.get('PM_NOMBRE') or '').strip().upper()
+        paterno = (cleaned_data.get('PM_PATERNO') or '').strip().upper()
+        materno = (cleaned_data.get('PM_MATERNO') or '').strip().upper()
         escalafon = cleaned_data.get('PM_ESCALAFON') or None
         grado = cleaned_data.get('PM_GRADO') or None
         arma = cleaned_data.get('PM_ARMA') or None
@@ -176,19 +178,7 @@ class PMSIMForm(forms.ModelForm):
         if not any([ci, nombre, paterno, materno, escalafon, grado, arma]):
             return cleaned_data
 
-        # Validación CI (si viene)
-        pm = None
-        if ci:
-            if not ci.isdigit():
-                self.add_error('PM_CI', 'El CI debe contener solo números.')
-                return cleaned_data
-
-            pm = PM.objects.filter(PM_CI=ci).first()
-            if pm:
-                cleaned_data['pm'] = pm
-                return cleaned_data
-
-        # Si no existe por CI (o no se ingresó), exigir datos mínimos para crear
+        # Exigir nombre y paterno como mínimo
         if not nombre:
             self.add_error('PM_NOMBRE', 'Ingrese el nombre del militar.')
         if not paterno:
@@ -197,6 +187,27 @@ class PMSIMForm(forms.ModelForm):
         if self.errors:
             return cleaned_data
 
+        # PRIORIDAD 1: Buscar por CI (si se ingresó)
+        pm = None
+        if ci:
+            if not ci.isdigit():
+                self.add_error('PM_CI', 'El CI debe contener solo números.')
+                return cleaned_data
+            pm = PM.objects.filter(PM_CI=ci).first()
+
+        # PRIORIDAD 2: Buscar por Nombre + Paterno + Materno (si no encontró por CI)
+        if not pm:
+            query = PM.objects.filter(PM_NOMBRE=nombre, PM_PATERNO=paterno)
+            if materno:
+                query = query.filter(PM_MATERNO=materno)
+            pm = query.first()
+
+        # Si encontró PM existente, reutilizarlo
+        if pm:
+            cleaned_data['pm'] = pm
+            return cleaned_data
+
+        # Si no encontró, preparar datos para crear nuevo PM
         cleaned_data['pm_data'] = {
             'PM_CI': ci or None,
             'PM_ESCALAFON': escalafon,

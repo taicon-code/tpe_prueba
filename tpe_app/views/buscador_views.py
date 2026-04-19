@@ -32,14 +32,20 @@ def _obtener_historial_completo(personal_id):
 
 
 def _obtener_estado_actual(personal_id):
-    """Obtiene el estado actual del personal"""
+    """Obtiene el estado actual del personal con estadísticas completas"""
     historial = _obtener_historial_completo(personal_id)
     if not historial:
         return None
 
+    total_autos = historial['autos_tpe'].count() + historial['autos_tsp'].count()
+
     return {
         'total_sumarios': historial['sumarios'].count(),
         'total_resoluciones': historial['resoluciones'].count(),
+        'total_autos_tpe': historial['autos_tpe'].count(),
+        'total_autos_tsp': historial['autos_tsp'].count(),
+        'total_autos': total_autos,
+        'total_reconsideraciones': historial['segundas_resoluciones'].count(),
         'total_apelaciones': historial['recursos_apelacion'].count(),
         'total_raees': historial['raees'].count(),
         'estado_actual': 'Historial disponible'

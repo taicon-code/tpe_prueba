@@ -345,7 +345,65 @@ document.addEventListener('DOMContentLoaded', function() {
         attachPhotoPreview(formEl);
     }
 
-    container.querySelectorAll('.formset-form').forEach(attachRowHandlers);
+    function attachAutocompleteHandler(formEl) {
+        const ciInput = formEl.querySelector('input[name$="-PM_CI"]');
+        const nombreInput = formEl.querySelector('input[name$="-PM_NOMBRE"]');
+        const paternoInput = formEl.querySelector('input[name$="-PM_PATERNO"]');
+        const maternoInput = formEl.querySelector('input[name$="-PM_MATERNO"]');
+        const gradoSelect = formEl.querySelector('select[name$="-PM_GRADO"]');
+        const armaSelect = formEl.querySelector('select[name$="-PM_ARMA"]');
+        const escalafonSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
+        const especInput = formEl.querySelector('input[name$="-PM_ESPEC"]');
+
+        function buscarPM() {
+            const ci = (ciInput?.value || '').trim();
+            const nombre = (nombreInput?.value || '').trim().toUpperCase();
+            const paterno = (paternoInput?.value || '').trim().toUpperCase();
+            const materno = (maternoInput?.value || '').trim().toUpperCase();
+
+            if (!ci && (!nombre || !paterno)) return;
+
+            const params = new URLSearchParams();
+            if (ci) params.append('ci', ci);
+            if (nombre) params.append('nombre', nombre);
+            if (paterno) params.append('paterno', paterno);
+            if (materno) params.append('materno', materno);
+
+            fetch(`{% url 'autocomplete_pm' %}?${params}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        // Autocompleta todos los campos
+                        if (ciInput && data.PM_CI) ciInput.value = data.PM_CI;
+                        if (nombreInput) nombreInput.value = data.PM_NOMBRE;
+                        if (paternoInput) paternoInput.value = data.PM_PATERNO;
+                        if (maternoInput) maternoInput.value = data.PM_MATERNO;
+                        if (escalafonSelect) escalafonSelect.value = data.PM_ESCALAFON;
+                        if (gradoSelect) gradoSelect.value = data.PM_GRADO;
+                        if (armaSelect) armaSelect.value = data.PM_ARMA;
+                        if (especInput) especInput.value = data.PM_ESPEC;
+
+                        // Aplicar filtro de grado según escalafón
+                        if (escalafonSelect) {
+                            applyGradoFilter(formEl);
+                        }
+
+                        // Marcar como "encontrado"
+                        nombreInput?.style.setProperty('border-color', '#10b981', 'important');
+                    }
+                })
+                .catch(err => console.error('Error en autocompletado:', err));
+        }
+
+        if (ciInput) ciInput.addEventListener('blur', buscarPM);
+        if (paternoInput) paternoInput.addEventListener('blur', buscarPM);
+        if (maternoInput) maternoInput.addEventListener('blur', buscarPM);
+    }
+
+    container.querySelectorAll('.formset-form').forEach(formEl => {
+        attachRowHandlers(formEl);
+        attachAutocompleteHandler(formEl);
+    });
 
     addButton.addEventListener('click', function() {
         const formCount = parseInt(totalForms.value);
@@ -356,6 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const newForm = wrapper.firstElementChild;
         if (!newForm) return;
         attachRowHandlers(newForm);
+        attachAutocompleteHandler(newForm);
         container.appendChild(newForm);
         totalForms.value = formCount + 1;
     });

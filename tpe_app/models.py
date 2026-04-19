@@ -43,7 +43,7 @@ def get_pendientes_ejecutoria():
     Retorna dos listas de casos pendientes de Auto de Ejecutoria:
     - por_res: Resolucion PRIMERA notificadas sin RECONSIDERACION presentada, plazo 15d vencido
     - por_rr:  Resolucion RECONSIDERACION notificadas sin APELACION presentada, plazo 3d vencido
-    No incluye casos que ya tienen un AUTOTPE de tipo AUTO_EJECUTORIA.
+    No incluye casos que ya tienen un AUTOTPE de tipo AUTO_EJECUTORIA ni órdenes ACTIVAS de ejecutoria.
     """
     from django.utils import timezone
     hoy = timezone.now().date()
@@ -61,6 +61,9 @@ def get_pendientes_ejecutoria():
             continue
         # ¿Ya tiene Auto de Ejecutoria?
         if AUTOTPE.objects.filter(resolucion=res, TPE_TIPO='AUTO_EJECUTORIA').exists():
+            continue
+        # ¿Ya tiene orden ACTIVA de ejecutoria?
+        if CustodiaSIM.objects.filter(sim=res.sim, motivo='EJECUTORIA', estado='ACTIVA').exists():
             continue
         fecha_limite = add_business_days(res.RES_FECNOT, 15)
         if fecha_limite <= hoy:
@@ -81,6 +84,9 @@ def get_pendientes_ejecutoria():
             continue
         # ¿Ya tiene Auto de Ejecutoria?
         if AUTOTPE.objects.filter(resolucion=rr, TPE_TIPO='AUTO_EJECUTORIA').exists():
+            continue
+        # ¿Ya tiene orden ACTIVA de ejecutoria?
+        if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', estado='ACTIVA').exists():
             continue
         fecha_limite = add_business_days(rr.RES_FECNOT, 3)
         if fecha_limite <= hoy:

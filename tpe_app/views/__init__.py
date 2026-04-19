@@ -17,6 +17,7 @@ from .buscador_views import buscador_dashboard, upload_foto_pm
 from .admin1_views import (
     admin1_dashboard,
     registrar_sumario,
+    autocomplete_pm,
     agendar_sumario,
     registrar_rr,
     agendar_rr,
@@ -38,7 +39,7 @@ from .admin2_views import (
 from .admin3_views import (
     admin3_dashboard,
 )
-from .export_views import export_person_pdfs_zip, export_person_excel
+from .export_views import export_person_pdfs_zip, export_person_excel, export_person_historial_pdf
 from .vocal_views import vocal_dashboard, vocal_agenda_detalle, vocal_confirmar_dictamen
 from .ayudante_views import (
     ayudante_dashboard,

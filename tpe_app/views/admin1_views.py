@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
+from django.http import JsonResponse
 from datetime import date, timedelta
 from ..decorators import rol_requerido
 from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion
@@ -495,6 +496,20 @@ def admin1_ordenar_ejecutoria(request, res_id):
     res = get_object_or_404(Resolucion, pk=res_id, RES_INSTANCIA='PRIMERA')
     sim = res.sim
 
+    # Validar: ¿ya existe custodia ACTIVA para ejecutoria?
+    custodia_existente = CustodiaSIM.objects.filter(
+        sim=sim,
+        motivo='EJECUTORIA',
+        estado='ACTIVA'
+    ).first()
+
+    if custodia_existente:
+        messages.warning(
+            request,
+            f'⚠️ Orden ya creada para {sim.SIM_COD}. Admin2 debe completar la entrega.'
+        )
+        return redirect('pendientes_ejecutoria')
+
     # Buscar el abogado ABOG2_AUTOS activo con perfil vinculado
     from django.contrib.auth.models import User
     abog2_user = User.objects.filter(
@@ -529,3 +544,43 @@ def admin1_ordenar_ejecutoria(request, res_id):
         messages.error(request, f'❌ Error al crear orden: {exc}')
 
     return redirect('pendientes_ejecutoria')
+
+
+@rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
+def autocomplete_pm(request):
+    """Endpoint para autocompletar datos de PM por CI o Nombre+Paterno+Materno"""
+    query_ci = (request.GET.get('ci', '') or '').strip()
+    query_nombre = (request.GET.get('nombre', '') or '').strip().upper()
+    query_paterno = (request.GET.get('paterno', '') or '').strip().upper()
+    query_materno = (request.GET.get('materno', '') or '').strip().upper()
+
+    pm = None
+
+    # PRIORIDAD 1: Buscar por CI
+    if query_ci:
+        if query_ci.isdigit():
+            pm = PM.objects.filter(PM_CI=query_ci).first()
+
+    # PRIORIDAD 2: Buscar por Nombre + Paterno + Materno
+    if not pm and query_nombre and query_paterno:
+        query = PM.objects.filter(PM_NOMBRE=query_nombre, PM_PATERNO=query_paterno)
+        if query_materno:
+            query = query.filter(PM_MATERNO=query_materno)
+        pm = query.first()
+
+    if pm:
+        return JsonResponse({
+            'encontrado': True,
+            'pm_id': pm.pm_id,
+            'PM_CI': str(pm.PM_CI) if pm.PM_CI else '',
+            'PM_NOMBRE': pm.PM_NOMBRE,
+            'PM_PATERNO': pm.PM_PATERNO,
+            'PM_MATERNO': pm.PM_MATERNO or '',
+            'PM_GRADO': pm.PM_GRADO or '',
+            'PM_ARMA': pm.PM_ARMA or '',
+            'PM_ESCALAFON': pm.PM_ESCALAFON or '',
+            'PM_ESPEC': pm.PM_ESPEC or '',
+            'PM_FOTO': pm.PM_FOTO.url if pm.PM_FOTO else '',
+        })
+    else:
+        return JsonResponse({'encontrado': False})
