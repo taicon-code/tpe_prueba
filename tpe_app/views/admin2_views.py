@@ -16,47 +16,101 @@ from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_
 def admin2_dashboard(request):
     """Dashboard para Admin2 - Gestión de custodia de carpetas"""
 
-    # Carpetas actualmente en poder de Admin2 (confirmadas, para entregar)
-    carpetas_en_poder_qs = CustodiaSIM.objects.filter(
-        tipo_custodio='ADMIN2_ARCHIVO',
-        fecha_entrega__isnull=True,
-        estado='ACTIVA'
-    ).select_related('sim', 'abog').prefetch_related('sim__militares', 'sim__abogados').order_by('-fecha_recepcion')
+    # Carpetas actualmente en poder de Admin2: obtener solo la custodia actual de cada SIM
+    # Estrategia: obtener todos los SIM que tienen custodia en Admin2, luego filtrar por su custodio actual
+    sims_con_custodia_admin2 = SIM.objects.filter(
+        custodias__tipo_custodio='ADMIN2_ARCHIVO',
+        custodias__estado='ACTIVA'
+    ).distinct().prefetch_related('custodias', 'militares', 'abogados')
 
-    # Convertir a lista y calcular abogados destino para cada carpeta
-    carpetas_en_poder = list(carpetas_en_poder_qs)
-    for custodia in carpetas_en_poder:
-        # Abogados de primera instancia (ABOG_SIM)
-        abog_primera = ABOG_SIM.objects.filter(sim=custodia.sim).select_related('abog')
-        custodia.abog_primera_list = [a.abog for a in abog_primera]
+    # Filtrar en Python para obtener solo la custodia actual de cada SIM que cumpla las condiciones
+    carpetas_en_poder = []
+    for sim in sims_con_custodia_admin2:
+        custodia_actual = sim.custodio_actual()
+        if custodia_actual and custodia_actual.tipo_custodio == 'ADMIN2_ARCHIVO' and custodia_actual.estado == 'ACTIVA':
+            # Abogados de primera instancia (ABOG_SIM)
+            abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
+            custodia_actual.abog_primera_list = [a.abog for a in abog_primera]
 
-        # Abogado de RR si existe
-        rr = Resolucion.objects.filter(
-            sim=custodia.sim, RES_INSTANCIA='RECONSIDERACION', abog__isnull=False
-        ).select_related('abog').last()
-        custodia.abog_rr = rr.abog if rr else None
+            # Abogado de RR si existe
+            rr = Resolucion.objects.filter(
+                sim=sim, RES_INSTANCIA='RECONSIDERACION', abog__isnull=False
+            ).select_related('abog').last()
+            custodia_actual.abog_rr = rr.abog if rr else None
 
-    # Carpetas entregadas pendientes de confirmar recepción
-    carpetas_pendientes = CustodiaSIM.objects.filter(
-        tipo_custodio='ADMIN2_ARCHIVO',
-        fecha_entrega__isnull=True,
-        estado='PENDIENTE_CONFIRMACION'
-    ).select_related('sim', 'abog').prefetch_related('sim__militares').order_by('-fecha_recepcion')
+            carpetas_en_poder.append(custodia_actual)
 
-    # Carpetas prestadas (en poder de otros, aún activas)
-    carpetas_prestadas = CustodiaSIM.objects.filter(
-        fecha_entrega__isnull=True
+    # Ordenar por fecha de recepción descendente
+    carpetas_en_poder.sort(key=lambda x: x.fecha_recepcion, reverse=True)
+
+    # Carpetas entregadas pendientes de confirmar recepción (solo la custodia actual de cada SIM)
+    sims_con_custodia_pend = SIM.objects.filter(
+        custodias__tipo_custodio='ADMIN2_ARCHIVO',
+        custodias__estado='PENDIENTE_CONFIRMACION'
+    ).distinct().prefetch_related('custodias', 'militares')
+
+    carpetas_pendientes = []
+    for sim in sims_con_custodia_pend:
+        custodia_actual = sim.custodio_actual()
+        if custodia_actual and custodia_actual.tipo_custodio == 'ADMIN2_ARCHIVO' and custodia_actual.estado == 'PENDIENTE_CONFIRMACION':
+            carpetas_pendientes.append(custodia_actual)
+
+    carpetas_pendientes.sort(key=lambda x: x.fecha_recepcion, reverse=True)
+
+    # Carpetas prestadas (en poder de otros, aún activas) - solo la custodia actual de cada SIM
+    sims_con_custodia_prest = SIM.objects.filter(
+        custodias__fecha_entrega__isnull=True
     ).exclude(
-        tipo_custodio__in=['ADMIN2_ARCHIVO', 'ARCHIVO']
-    ).select_related('sim', 'abog').prefetch_related('sim__militares').order_by('-fecha_recepcion')
+        custodias__tipo_custodio__in=['ADMIN2_ARCHIVO', 'ARCHIVO']
+    ).distinct().prefetch_related('custodias', 'militares')
 
-    # Filtro de historial por código SIM
+    carpetas_prestadas = []
+    for sim in sims_con_custodia_prest:
+        custodia_actual = sim.custodio_actual()
+        if custodia_actual and custodia_actual.tipo_custodio not in ['ADMIN2_ARCHIVO', 'ARCHIVO']:
+            carpetas_prestadas.append(custodia_actual)
+
+    carpetas_prestadas.sort(key=lambda x: x.fecha_recepcion, reverse=True)
+
+    # Filtro de historial por código SIM o militar
     sim_cod = (request.GET.get('sim_cod') or '').strip()
+    apellido_paterno = (request.GET.get('apellido_paterno') or '').strip().upper()
+    apellido_materno = (request.GET.get('apellido_materno') or '').strip().upper()
+    nombre = (request.GET.get('nombre') or '').strip().upper()
+
     historial_sim = None
-    if sim_cod:
+    if sim_cod or apellido_paterno or apellido_materno or nombre:
+        from django.db.models import Q
+        from ..models import PM, PM_SIM
+
         try:
-            sim_obj = SIM.objects.get(SIM_COD__iexact=sim_cod)
-            historial_sim = CustodiaSIM.objects.filter(sim=sim_obj).select_related('abog').order_by('fecha_recepcion')
+            # Si hay búsqueda por código SIM
+            if sim_cod:
+                sim_obj = SIM.objects.get(SIM_COD__iexact=sim_cod)
+                historial_sim = CustodiaSIM.objects.filter(sim=sim_obj).select_related('abog').order_by('fecha_recepcion')
+            # Si hay búsqueda por militar
+            elif apellido_paterno or apellido_materno or nombre:
+                # Construir Q para buscar en PM
+                q_filter = Q()
+                if apellido_paterno:
+                    q_filter &= Q(PM_PATERNO__icontains=apellido_paterno)
+                if apellido_materno:
+                    q_filter &= Q(PM_MATERNO__icontains=apellido_materno)
+                if nombre:
+                    q_filter &= Q(PM_NOMBRE__icontains=nombre)
+
+                # Buscar militares que cumplan los criterios
+                militares = PM.objects.filter(q_filter)
+
+                # Encontrar SIM relacionados con esos militares
+                sims = SIM.objects.filter(militares__in=militares).distinct()
+
+                if sims.exists():
+                    historial_sim = CustodiaSIM.objects.filter(sim__in=sims).select_related('abog').order_by('fecha_recepcion')
+                else:
+                    historial_sim = []
+            else:
+                historial_sim = []
         except SIM.DoesNotExist:
             historial_sim = []
 
@@ -64,10 +118,13 @@ def admin2_dashboard(request):
         'carpetas_en_poder': carpetas_en_poder,
         'total_en_poder': len(carpetas_en_poder),
         'carpetas_pendientes': carpetas_pendientes,
-        'total_pendientes': carpetas_pendientes.count(),
+        'total_pendientes': len(carpetas_pendientes),
         'carpetas_prestadas': carpetas_prestadas,
-        'total_prestadas': carpetas_prestadas.count(),
+        'total_prestadas': len(carpetas_prestadas),
         'sim_cod_filtro': sim_cod,
+        'apellido_paterno_filtro': apellido_paterno,
+        'apellido_materno_filtro': apellido_materno,
+        'nombre_filtro': nombre,
         'historial_sim': historial_sim,
     }
 
@@ -313,3 +370,44 @@ def subir_pdf_res(request, res_id):
     }
 
     return render(request, 'tpe_app/administrativo/subir_pdf_res.html', context)
+
+
+# ============================================================
+# VER HISTORIAL DE CUSTODIA DE UN SIM
+# ============================================================
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+def ver_historial_custodia_sim(request, sim_id):
+    """Ver dónde está un SIM actualmente y su historial de custodia"""
+
+    sim = get_object_or_404(SIM, pk=sim_id)
+    custodia_actual = sim.custodio_actual()
+
+    # Obtener historial completo de custodia
+    historial = list(CustodiaSIM.objects.filter(sim=sim).select_related('abog', 'usuario').order_by('fecha_recepcion'))
+
+    # Enriquecer datos de historial con nombre legible del custodio
+    TIPO_CUSTODIO_DISPLAY = {
+        'ADMIN1': 'Admin1 - Agendador',
+        'ADMIN2_ARCHIVO': 'Admin2 - Archivo SIM',
+        'ADMIN3': 'Admin3 - Notificador',
+        'ABOG_ASESOR': 'Abogado 1 - Asesor',
+        'ABOG_RR': 'Abogado 2 - RR',
+        'ABOG_AUTOS': 'Abogado 3 - Autos',
+        'TSP': 'Tribunal Supremo Policial',
+        'ARCHIVO': 'Archivado / Concluido',
+    }
+
+    for custodia in historial:
+        custodia.tipo_custodio_display = TIPO_CUSTODIO_DISPLAY.get(custodia.tipo_custodio, custodia.tipo_custodio)
+
+    if custodia_actual:
+        custodia_actual.tipo_custodio_display = TIPO_CUSTODIO_DISPLAY.get(custodia_actual.tipo_custodio, custodia_actual.tipo_custodio)
+
+    context = {
+        'sim': sim,
+        'custodia_actual': custodia_actual,
+        'historial': historial,
+    }
+
+    return render(request, 'tpe_app/ver_historial_custodia.html', context)

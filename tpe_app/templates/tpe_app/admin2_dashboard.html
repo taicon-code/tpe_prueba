@@ -29,6 +29,141 @@
 </div>
 
 <!-- ============================================================ -->
+<!-- PANEL DE BÚSQUEDA: Historial de Custodia por Sumario o Militar -->
+<!-- ============================================================ -->
+<div class="card">
+    <h2>🔍 Buscar Historial de Custodia</h2>
+
+    <form method="get" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end;">
+        <div>
+            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Código Sumario</label>
+            <input
+                type="text"
+                name="sim_cod"
+                placeholder="ej: DJE-25/25"
+                value="{{ sim_cod_filtro }}"
+                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
+            >
+        </div>
+
+        <div>
+            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Apellido Paterno</label>
+            <input
+                type="text"
+                name="apellido_paterno"
+                placeholder="ej: García"
+                value="{{ apellido_paterno_filtro }}"
+                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
+            >
+        </div>
+
+        <div>
+            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Apellido Materno</label>
+            <input
+                type="text"
+                name="apellido_materno"
+                placeholder="ej: López"
+                value="{{ apellido_materno_filtro }}"
+                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
+            >
+        </div>
+
+        <div>
+            <label style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; font-weight: 500;">Nombre</label>
+            <input
+                type="text"
+                name="nombre"
+                placeholder="ej: Juan"
+                value="{{ nombre_filtro }}"
+                style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
+            >
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn" style="background: #3b82f6; color: #fff; padding: 0.5rem 1.5rem; white-space: nowrap;">
+                🔍 Buscar
+            </button>
+            {% if sim_cod_filtro or apellido_paterno_filtro or apellido_materno_filtro or nombre_filtro %}
+                <a href="{% url 'admin2_dashboard' %}" style="background: #6b7280; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; white-space: nowrap;">
+                    ✕ Limpiar
+                </a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if historial_sim %}
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha Recepción</th>
+                <th>Custodio</th>
+                <th>Motivo</th>
+                <th>N° Oficio</th>
+                <th>Fecha Entrega</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for custodia in historial_sim %}
+            <tr>
+                <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                <td style="font-size: 0.85rem;">
+                    {% if custodia.abog %}
+                        <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
+                    {% else %}
+                        <span style="font-weight: 600;">{{ custodia.get_tipo_custodio_display }}</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.8rem;">
+                    {% if custodia.motivo %}
+                        <span style="background: #dbeafe; color: #1e40af; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">
+                            {{ custodia.get_motivo_display }}
+                        </span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem; font-weight: 600;">
+                    {% if custodia.nro_oficio %}
+                        <span title="Fecha oficio: {{ custodia.fecha_oficio|date:'d/m/Y'|default:'-' }}">{{ custodia.nro_oficio }}</span>
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td style="white-space: nowrap; font-size: 0.85rem;">
+                    {% if custodia.fecha_entrega %}
+                        {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
+                    {% else %}
+                        <span style="color: #f97316; font-weight: 600;">↔ Activa</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem;">
+                    {% if custodia.fecha_entrega %}
+                        <span style="background: #d1e7dd; color: #0a3622; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
+                            Entregada
+                        </span>
+                    {% else %}
+                        <span style="background: #fff3cd; color: #664d03; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
+                            Activa
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% elif sim_cod_filtro or apellido_paterno_filtro or apellido_materno_filtro or nombre_filtro %}
+    <p style="text-align: center; color: #dc2626; padding: 2rem;">
+        ❌ No se encontraron resultados para los criterios de búsqueda especificados
+    </p>
+    {% else %}
+    <p style="text-align: center; color: #999; padding: 2rem;">
+        Ingrese un código de sumario o datos del militar para ver el historial de custodia
+    </p>
+    {% endif %}
+</div>
+
+<!-- ============================================================ -->
 <!-- SECCIÓN A: Carpetas en su poder (para entregar) -->
 <!-- ============================================================ -->
 <div class="card">
@@ -216,101 +351,6 @@
     {% endif %}
 </div>
 
-<!-- ============================================================ -->
-<!-- SECCIÓN C: Historial por sumario (con buscador) -->
-<!-- ============================================================ -->
-<div class="card">
-    <h2>📜 Historial de Custodia por Sumario</h2>
-
-    <form method="get" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem;">
-        <input
-            type="text"
-            name="sim_cod"
-            placeholder="Ingrese código de sumario (ej: DJE-25/25)"
-            value="{{ sim_cod_filtro }}"
-            style="flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
-        >
-        <button type="submit" class="btn" style="background: #3b82f6; color: #fff; padding: 0.5rem 1.5rem;">
-            🔍 Buscar
-        </button>
-        {% if sim_cod_filtro %}
-            <a href="{% url 'admin2_dashboard' %}" style="background: #6b7280; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center;">
-                ✕ Limpiar
-            </a>
-        {% endif %}
-    </form>
-
-    {% if historial_sim %}
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha Recepción</th>
-                <th>Custodio</th>
-                <th>Motivo</th>
-                <th>N° Oficio</th>
-                <th>Fecha Entrega</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for custodia in historial_sim %}
-            <tr>
-                <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-                <td style="font-size: 0.85rem;">
-                    {% if custodia.abog %}
-                        <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
-                    {% else %}
-                        <span style="font-weight: 600;">{{ custodia.get_tipo_custodio_display }}</span>
-                    {% endif %}
-                </td>
-                <td style="font-size: 0.8rem;">
-                    {% if custodia.motivo %}
-                        <span style="background: #dbeafe; color: #1e40af; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">
-                            {{ custodia.get_motivo_display }}
-                        </span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.nro_oficio %}
-                        <span title="Fecha oficio: {{ custodia.fecha_oficio|date:'d/m/Y'|default:'-' }}">{{ custodia.nro_oficio }}</span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td style="white-space: nowrap; font-size: 0.85rem;">
-                    {% if custodia.fecha_entrega %}
-                        {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
-                    {% else %}
-                        <span style="color: #f97316; font-weight: 600;">↔ Activa</span>
-                    {% endif %}
-                </td>
-                <td style="font-size: 0.85rem;">
-                    {% if custodia.fecha_entrega %}
-                        <span style="background: #d1e7dd; color: #0a3622; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                            Entregada
-                        </span>
-                    {% else %}
-                        <span style="background: #fff3cd; color: #664d03; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                            Activa
-                        </span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% elif sim_cod_filtro %}
-    <p style="text-align: center; color: #dc2626; padding: 2rem;">
-        ❌ No se encontró sumario con código "<strong>{{ sim_cod_filtro }}</strong>"
-    </p>
-    {% else %}
-    <p style="text-align: center; color: #999; padding: 2rem;">
-        Ingrese un código de sumario para ver el historial de custodia
-    </p>
-    {% endif %}
-</div>
 
 <style>
     .stats-grid {
