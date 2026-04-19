@@ -19,6 +19,7 @@ urlpatterns = [
     path('abogado/sumarios/<int:sim_id>/res/<int:res_id>/rr/nueva/', views.abogado_rr_crear, name='abogado_rr_crear'),
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/autotpe/nuevo/', views.abogado_autotpe_crear, name='abogado_autotpe_crear'),
     path('abogado/sumarios/<int:sim_id>/auto-excusa/crear/', views.abogado_auto_excusa_crear, name='abogado_auto_excusa_crear'),
+    path('abogado/sumarios/<int:sim_id>/auto-ejecutoria/crear/', views.abogado_autotpe_ejecutoria_crear, name='abogado_autotpe_ejecutoria_crear'),
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
     path('admin1/dashboard/', views.admin1_dashboard, name='admin1_dashboard'),
     path('admin2/dashboard/', views.admin2_dashboard, name='admin2_dashboard'),

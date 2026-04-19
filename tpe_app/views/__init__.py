@@ -5,6 +5,7 @@ from .abogado_views import abogado_dashboard, abogado_entregar_carpeta
 from .abogado_documentos_views import (
     abogado_auto_excusa_crear,
     abogado_autotpe_crear,
+    abogado_autotpe_ejecutoria_crear,
     abogado_dictamen_crear,
     abogado_res_crear,
     abogado_rr_crear,

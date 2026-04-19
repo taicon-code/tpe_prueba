@@ -1,0 +1,44 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Crear Auto de Ejecutoria - {{ sim.SIM_COD }}{% endblock %}
+{% block navbar_title %}✅ Crear Auto de Ejecutoria — {{ sim.SIM_COD }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'abogado_sumario_detalle' sim.pk %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Sumario
+    </a>
+</div>
+
+<h1 style="margin-bottom: 1rem; color: #1e3c72;">✅ Crear Auto de Ejecutoria</h1>
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <p style="margin: 0 0 0.5rem 0;"><strong>Sumario:</strong> {{ sim.SIM_COD }} — {{ sim.SIM_RESUM|truncatewords:12 }}</p>
+    <p style="margin: 0 0 1.5rem 0; font-size: 0.9rem; color: #666;">
+        <strong>Resolución origen:</strong> {{ resolucion.RES_NUM }} ({{ resolucion.get_RES_INSTANCIA_display|default:"" }}) —
+        {% if resolucion.pm %}{{ resolucion.pm.PM_GRADO }} {{ resolucion.pm.PM_PATERNO }}{% endif %}
+    </p>
+
+    <p style="color:#16a34a; font-size: 0.9rem; margin: 0 0 1.5rem 0; background: #f0fdf4; padding: 0.75rem; border-radius: 4px; border-left: 4px solid #16a34a;">
+        ℹ️ Auto de Ejecutoria: finaliza el proceso del sumario marcándolo como concluido.
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Fecha del Auto *</label>
+            <input class="form-control" type="date" name="TPE_FEC" required />
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Resolución (opcional)</label>
+            <textarea class="form-control" name="TPE_RESOL" rows="4" maxlength="1000" placeholder="Descripción del auto de ejecutoria..."></textarea>
+        </div>
+
+        <div style="display:flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button class="btn" type="submit" name="autogenerar_numero" value="1" style="background: #10b981; color: #fff;">⚙️ Crear y generar N°</button>
+            <button class="btn" type="submit" style="background:#6c757d; color: #fff;">Crear sin N°</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

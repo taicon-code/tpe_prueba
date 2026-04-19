@@ -522,11 +522,18 @@
 
 <!-- ── AUTOS TPE ───────────────────────────────── -->
 <div class="card section-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
         <div class="card-title">🏛️ Autos TPE</div>
-        <a href="{% url 'abogado_auto_excusa_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #ffc107; color: #000;">
-            ⚠️ Crear Auto de Excusa
-        </a>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'abogado_auto_excusa_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #ffc107; color: #000;">
+                ⚠️ Crear Auto de Excusa
+            </a>
+            {% if es_abog2 %}
+            <a href="{% url 'abogado_autotpe_ejecutoria_crear' sim.pk %}" class="btn" style="padding: .4rem .8rem; font-size: .85rem; background: #10b981; color: #fff;">
+                ✅ Crear Auto de Ejecutoria
+            </a>
+            {% endif %}
+        </div>
     </div>
     <table>
         <thead>

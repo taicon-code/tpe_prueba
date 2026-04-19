@@ -335,6 +335,67 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
     return render(request, "tpe_app/abogado/autotpe_form.html", context)
 
 
+@rol_requerido("ABOG2_AUTOS", "ADMINISTRADOR", "MASTER")
+def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
+    """ABOG2 crea Auto de Ejecutoria desde el dashboard del sumario"""
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    # Buscar la Resolución más reciente (PRIMERA o RECONSIDERACION)
+    resolucion = (
+        Resolucion.objects
+        .filter(sim=sim)
+        .select_related('pm')
+        .order_by('-RES_FEC')
+        .first()
+    )
+
+    if not resolucion:
+        messages.error(request, "❌ No hay resoluciones en este sumario para crear Auto de Ejecutoria")
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
+    if request.method == "POST":
+        tpe_fec = request.POST.get("TPE_FEC") or ""
+        tpe_resol = (request.POST.get("TPE_RESOL") or "").strip()
+        autogen = request.POST.get("autogenerar_numero") == "1"
+
+        try:
+            with transaction.atomic():
+                tpe_num = None
+                if autogen:
+                    existentes = list(AUTOTPE.objects.values_list("TPE_NUM", flat=True))
+                    from ..utils.numeracion import next_num_yy
+                    from datetime import date
+                    tpe_num = next_num_yy(existentes, today=date.today())
+
+                AUTOTPE.objects.create(
+                    sim=sim,
+                    abog=abogado,
+                    pm=resolucion.pm,
+                    resolucion=resolucion,
+                    TPE_NUM=tpe_num,
+                    TPE_FEC=tpe_fec or None,
+                    TPE_TIPO='AUTO_EJECUTORIA',
+                    TPE_RESOL=tpe_resol or None,
+                )
+
+                # Marcar SIM como concluido
+                sim.SIM_FASE = 'CONCLUIDO'
+                sim.save()
+
+                messages.success(request, f"✅ Auto de Ejecutoria {tpe_num or 'S/N'} creado correctamente")
+                return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+        except Exception as exc:
+            messages.error(request, f"❌ Error: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "resolucion": resolucion,
+    }
+    return render(request, "tpe_app/abogado/autotpe_ejecutoria_form.html", context)
+
+
 @rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
 def abogado_auto_excusa_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
