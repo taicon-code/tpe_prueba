@@ -9,6 +9,7 @@ urlpatterns = [
     # Dashboards por rol
     path('panel-admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('panel-admin/usuarios/crear/', views.crear_usuario_con_rol, name='crear_usuario'),
+    path('admin1/dashboard/', views.admin1_dashboard, name='admin1_dashboard'),
     path('abogado/dashboard/', views.abogado_dashboard, name='abogado_dashboard'),
     path('abogado/sumarios/<int:sim_id>/', views.abogado_sumario_detalle, name='abogado_sumario_detalle'),
     path('abogado/sumarios/<int:sim_id>/entregar-carpeta/', views.abogado_entregar_carpeta, name='abogado_entregar_carpeta'),

@@ -15,11 +15,64 @@ from .admin2_views import admin2_dashboard
 from .admin3_views import admin3_dashboard
 
 
+@rol_requerido('ADMIN1_AGENDADOR')
+def admin1_dashboard(request):
+    """Dashboard específico para Admin1 - Agendador de sesiones"""
+
+    from django.db.models import Count, Prefetch
+
+    # Agendas próximas (programadas en el futuro)
+    agendas_proximas = AGENDA.objects.filter(
+        AG_ESTADO__in=['PROGRAMADA', 'REPROGRAMADA'],
+        AG_FECPROG__gte=timezone.now().date()
+    ).order_by('AG_FECPROG').prefetch_related(
+        Prefetch('sumarios', queryset=SIM.objects.all())
+    )[:10]
+
+    # Agendas recientes (realizadas en los últimos 30 días)
+    hace_30 = timezone.now().date() - timedelta(days=30)
+    agendas_recientes = AGENDA.objects.filter(
+        AG_ESTADO='REALIZADA',
+        AG_FECREAL__gte=hace_30
+    ).order_by('-AG_FECREAL')[:5]
+
+    # Agendas pendientes de resultado (realizadas pero sin conclusión de casos)
+    agendas_pendientes_resultado = AGENDA.objects.filter(
+        AG_ESTADO='REALIZADA',
+        AG_FECREAL__isnull=False
+    ).exclude(
+        sumarios__SIM_ESTADO='CONCLUIDO'
+    ).distinct()[:5]
+
+    # Estadísticas
+    total_agendas_activas = AGENDA.objects.filter(
+        AG_ESTADO__in=['PROGRAMADA', 'REPROGRAMADA']
+    ).count()
+
+    sumarios_por_agendar = SIM.objects.filter(
+        SIM_ESTADO='PARA_AGENDA'
+    ).count()
+
+    context = {
+        'agendas_proximas': agendas_proximas,
+        'agendas_recientes': agendas_recientes,
+        'agendas_pendientes_resultado': agendas_pendientes_resultado,
+        'total_agendas_activas': total_agendas_activas,
+        'sumarios_por_agendar': sumarios_por_agendar,
+    }
+
+    return render(request, 'tpe_app/admin1_dashboard.html', context)
+
+
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def administrativo_dashboard(request):
     """Dashboard para administrativos - diferenciado por rol"""
 
     perfil = request.user.perfilusuario
+
+    # Si es Admin1, redirigir a su dashboard específico
+    if perfil.rol == 'ADMIN1_AGENDADOR':
+        return admin1_dashboard(request)
 
     # Si es Admin2, redirigir a su dashboard específico
     if perfil.rol == 'ADMIN2_ARCHIVO':

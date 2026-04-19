@@ -1,0 +1,165 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Dashboard Admin1 - Agendador - TPE Sistema{% endblock %}
+
+{% block navbar_title %}📅 Panel de Agendador{% endblock %}
+
+{% block content %}
+
+<!-- 1. Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card" style="border-left-color: #3b82f6;">
+        <h3 style="color: #1e3c72;">{{ total_agendas_activas }}</h3>
+        <p>Agendas Activas</p>
+    </div>
+    <div class="stat-card" style="border-left-color: #8b5cf6;">
+        <h3 style="color: #1e3c72;">{{ sumarios_por_agendar }}</h3>
+        <p>Sumarios por Agendar</p>
+    </div>
+    <div class="stat-card" style="border-left-color: #10b981;">
+        <h3 style="color: #1e3c72;">{{ agendas_proximas|length }}</h3>
+        <p>Próximas Sesiones</p>
+    </div>
+</div>
+
+<!-- 2. Action Buttons -->
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+    <a href="{% url 'crear_agenda' %}" class="btn" style="background: #8b5cf6; color: #fff;">
+        ➕ Nueva Agenda
+    </a>
+    <a href="{% url 'agendar_sumario' %}" class="btn" style="background: #3b82f6; color: #fff;">
+        📋 Agendar Sumario
+    </a>
+    <a href="{% url 'lista_agendas' %}" class="btn" style="background: #6b7280; color: #fff;">
+        📅 Ver todas las Agendas
+    </a>
+</div>
+
+<!-- 3. Agendas Próximas -->
+<div class="card">
+    <h2>📅 Próximas Sesiones</h2>
+    {% if agendas_proximas %}
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Fecha Programada</th>
+                        <th>Tipo</th>
+                        <th>Sumarios</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agenda in agendas_proximas %}
+                    <tr>
+                        <td><strong>{{ agenda.AG_NUM }}</strong></td>
+                        <td style="white-space: nowrap;">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</td>
+                        <td>
+                            <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;
+                                {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                                    background: #dbeafe; color: #1e40af;
+                                {% else %}
+                                    background: #fef3c7; color: #92400e;
+                                {% endif %}
+                            ">
+                                {{ agenda.get_AG_TIPO_display }}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">{{ agenda.sumarios.count }}</td>
+                        <td>
+                            <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;
+                                {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
+                                    background: #dbeafe; color: #1e40af;
+                                {% elif agenda.AG_ESTADO == 'REALIZADA' %}
+                                    background: #dcfce7; color: #166534;
+                                {% elif agenda.AG_ESTADO == 'SUSPENDIDA' %}
+                                    background: #fee2e2; color: #991b1b;
+                                {% else %}
+                                    background: #fef3c7; color: #92400e;
+                                {% endif %}
+                            ">
+                                {{ agenda.get_AG_ESTADO_display }}
+                            </span>
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <a href="{% url 'agenda_resultado' agenda.id %}" class="btn" style="background: #3b82f6; color: #fff; padding: 0.25rem 0.75rem; font-size: 0.85rem;">
+                                Resultado
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p style="color: #6b7280; text-align: center; padding: 2rem;">
+            No hay agendas próximas. <a href="{% url 'crear_agenda' %}" style="color: #3b82f6; font-weight: 500;">Crear nueva agenda →</a>
+        </p>
+    {% endif %}
+</div>
+
+<!-- 4. Agendas Realizadas Recientemente -->
+{% if agendas_recientes %}
+<div class="card">
+    <h2>✅ Sesiones Realizadas (Últimos 30 días)</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Número</th>
+                    <th>Fecha Realizada</th>
+                    <th>Tipo</th>
+                    <th>Sumarios</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for agenda in agendas_recientes %}
+                <tr>
+                    <td><strong>{{ agenda.AG_NUM }}</strong></td>
+                    <td style="white-space: nowrap;">{{ agenda.AG_FECREAL|date:"d/m/Y" }}</td>
+                    <td>
+                        <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;
+                            {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                                background: #dbeafe; color: #1e40af;
+                            {% else %}
+                                background: #fef3c7; color: #92400e;
+                            {% endif %}
+                        ">
+                            {{ agenda.get_AG_TIPO_display }}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">{{ agenda.sumarios.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 5. Pendientes de Resultado -->
+{% if agendas_pendientes_resultado %}
+<div style="background: #fef3c7; border: 1px solid #fbbf24; border-left: 4px solid #d97706; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+    <strong style="color: #92400e;">⚠️ {{ agendas_pendientes_resultado|length }} sesión(es) sin conclusión de casos</strong>
+    <p style="color: #78350f; font-size: 0.85rem; margin: 0.5rem 0 0;">
+        Estas agendas se han realizado pero algunos casos aún no están registrados como concluidos.
+    </p>
+</div>
+{% endif %}
+
+<!-- 6. Sumarios por Agendar -->
+{% if sumarios_por_agendar %}
+<div style="background: #fef3c7; border: 1px solid #fbbf24; border-left: 4px solid #d97706; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+    <div>
+        <strong style="color: #92400e;">📋 {{ sumarios_por_agendar }} sumario(s) en estado PARA_AGENDA</strong>
+        <p style="color: #78350f; font-size: 0.85rem; margin: 0.25rem 0 0;">Listos para agendar en una sesión próxima.</p>
+    </div>
+    <a href="{% url 'agendar_sumario' %}" class="btn" style="background: #d97706; color: #fff; font-size: 0.85rem; white-space: nowrap;">
+        Agendar ahora →
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}

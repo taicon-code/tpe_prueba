@@ -14,6 +14,7 @@ from .abogado_documentos_views import (
 )
 from .buscador_views import buscador_dashboard, upload_foto_pm
 from .admin1_views import (
+    admin1_dashboard,
     administrativo_dashboard,
     registrar_sumario,
     agendar_sumario,
