@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
 from ..decorators import rol_requerido
-from ..models import SIM, PM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP
+from ..models import SIM, PM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, DocumentoAdjunto
 
 
 def _obtener_historial_completo(personal_id):
@@ -32,22 +32,15 @@ def _obtener_historial_completo(personal_id):
 
 
 def _obtener_estado_actual(personal_id):
-    """Obtiene el estado actual del personal con estadísticas completas"""
+    """Obtiene el estado actual del personal con estadísticas simplificadas"""
     historial = _obtener_historial_completo(personal_id)
     if not historial:
         return None
-
-    total_autos = historial['autos_tpe'].count() + historial['autos_tsp'].count()
 
     return {
         'total_sumarios': historial['sumarios'].count(),
         'total_resoluciones': historial['resoluciones'].count(),
         'total_autos_tpe': historial['autos_tpe'].count(),
-        'total_autos_tsp': historial['autos_tsp'].count(),
-        'total_autos': total_autos,
-        'total_reconsideraciones': historial['segundas_resoluciones'].count(),
-        'total_apelaciones': historial['recursos_apelacion'].count(),
-        'total_raees': historial['raees'].count(),
         'estado_actual': 'Historial disponible'
     }
 

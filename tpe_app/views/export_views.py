@@ -111,16 +111,10 @@ def export_person_historial_pdf(request, personal_id):
     y_position -= line_height
 
     c.setFont("Helvetica", 9)
-    total_autos = historial['autos_tpe'].count() + historial['autos_tsp'].count()
     stats = [
         f"Total Sumarios: {historial['sumarios'].count()}",
         f"Total Resoluciones: {historial['resoluciones'].count()}",
-        f"Total Autos TPE: {historial['autos_tpe'].count()}",
-        f"Total Autos TSP: {historial['autos_tsp'].count()}",
-        f"Total Autos: {total_autos}",
-        f"Total Recursos Reconsideración: {historial['segundas_resoluciones'].count()}",
-        f"Total Apelaciones TSP: {historial['recursos_apelacion'].count()}",
-        f"Total RAEE: {historial['raees'].count()}"
+        f"Total Autos TPE: {historial['autos_tpe'].count()}"
     ]
     for stat in stats:
         c.drawString(x_margin + 0.2 * inch, y_position, stat)
@@ -149,8 +143,38 @@ def export_person_historial_pdf(request, personal_id):
             c.drawString(x_margin + 0.2 * inch, y_position, f"Tipo: {sim.get_SIM_TIPO_display() if sim.SIM_TIPO else 'N/A'}")
             y_position -= line_height * 0.7
 
-            c.drawString(x_margin + 0.2 * inch, y_position, f"Objeto: {sim.SIM_OBJETO[:80] if sim.SIM_OBJETO else 'N/A'}")
-            y_position -= line_height * 0.7
+            # Objeto completo
+            if y_position < 1.5 * inch:
+                c.showPage()
+                y_position = height - 0.5 * inch
+
+            c.setFont("Helvetica", 8)
+            objeto_text = f"Objeto: {sim.SIM_OBJETO if sim.SIM_OBJETO else 'N/A'}"
+            # Envolver texto largo
+            if len(sim.SIM_OBJETO or '') > 80:
+                palabras = (sim.SIM_OBJETO or '').split()
+                lineas = []
+                linea_actual = ""
+                for palabra in palabras:
+                    if len(linea_actual + palabra) > 80:
+                        lineas.append(linea_actual)
+                        linea_actual = palabra
+                    else:
+                        linea_actual += (" " if linea_actual else "") + palabra
+                if linea_actual:
+                    lineas.append(linea_actual)
+
+                c.drawString(x_margin + 0.2 * inch, y_position, "Objeto:")
+                y_position -= line_height * 0.7
+                for linea in lineas:
+                    if y_position < 1.5 * inch:
+                        c.showPage()
+                        y_position = height - 0.5 * inch
+                    c.drawString(x_margin + 0.3 * inch, y_position, linea)
+                    y_position -= line_height * 0.7
+            else:
+                c.drawString(x_margin + 0.2 * inch, y_position, objeto_text)
+                y_position -= line_height * 0.7
 
             c.drawString(x_margin + 0.2 * inch, y_position, f"Fecha Ingreso: {_format_date(sim.SIM_FECING)}")
             y_position -= line_height * 0.7
@@ -203,46 +227,18 @@ def export_person_historial_pdf(request, personal_id):
                     c.drawString(x_margin + 0.5 * inch, y_position, f"• Nº {auto.TPE_NUM or 'S/N'} ({_format_date(auto.TPE_FEC)})")
                     y_position -= line_height * 0.7
 
-                    c.drawString(x_margin + 0.7 * inch, y_position, f"Tipo: {auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'}")
+                    c.drawString(x_margin + 0.7 * inch, y_position, f"Disposición: {auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'}")
                     y_position -= line_height * 0.7
 
+                    if auto.TPE_FECNOT:
+                        c.drawString(x_margin + 0.7 * inch, y_position, f"Notificación: {auto.TPE_TIPO_NOTIF or 'N/A'} ({_format_date(auto.TPE_FECNOT)})")
+                        y_position -= line_height * 0.7
+
+                    if auto.TPE_MEMO_NUM:
+                        c.drawString(x_margin + 0.7 * inch, y_position, f"Memorandum Nº {auto.TPE_MEMO_NUM} ({_format_date(auto.TPE_MEMO_FEC)})")
+                        y_position -= line_height * 0.7
+
                 y_position -= line_height * 0.5
-
-            # Recursos de este sumario
-            rr = historial['segundas_resoluciones'].filter(sim=sim)
-            rap = historial['recursos_apelacion'].filter(sim=sim)
-            autos_tsp = historial['autos_tsp'].filter(sim=sim)
-            raee = historial['raees'].filter(sim=sim)
-
-            if rr.exists() or rap.exists() or autos_tsp.exists() or raee.exists():
-                if y_position < 1.5 * inch:
-                    c.showPage()
-                    y_position = height - 0.5 * inch
-
-                c.setFont("Helvetica-Bold", 9)
-                c.drawString(x_margin + 0.3 * inch, y_position, "Recursos y Autos Posteriores:")
-                y_position -= line_height * 0.8
-
-                c.setFont("Helvetica", 8)
-                if rr.exists():
-                    for res2 in rr:
-                        c.drawString(x_margin + 0.5 * inch, y_position, f"• Reconsideración Nº {res2.RES_NUM or 'S/N'} ({_format_date(res2.RES_FEC)})")
-                        y_position -= line_height * 0.7
-
-                if rap.exists():
-                    for apel in rap:
-                        c.drawString(x_margin + 0.5 * inch, y_position, f"• Apelación Nº {apel.TSP_NUM or 'S/N'} ({_format_date(apel.TSP_FEC)})")
-                        y_position -= line_height * 0.7
-
-                if autos_tsp.exists():
-                    for auto_tsp in autos_tsp:
-                        c.drawString(x_margin + 0.5 * inch, y_position, f"• Auto TSP Nº {auto_tsp.TSP_NUM or 'S/N'} ({_format_date(auto_tsp.TSP_FEC)})")
-                        y_position -= line_height * 0.7
-
-                if raee.exists():
-                    for r in raee:
-                        c.drawString(x_margin + 0.5 * inch, y_position, f"• RAEE Nº {r.TSP_NUM or 'S/N'} ({_format_date(r.TSP_FEC)})")
-                        y_position -= line_height * 0.7
 
             y_position -= line_height
 
