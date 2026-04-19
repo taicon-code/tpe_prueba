@@ -77,6 +77,7 @@ urlpatterns = [
     # Auto de Ejecutoria (semi-automático)
     path('ejecutoria/pendientes/', views.pendientes_ejecutoria, name='pendientes_ejecutoria'),
     path('ejecutoria/crear/<str:origen>/<int:origen_id>/', views.crear_auto_ejecutoria, name='crear_auto_ejecutoria'),
+    path('admin1/ejecutoria/<int:res_id>/entregar/', views.admin1_ordenar_ejecutoria, name='admin1_ordenar_ejecutoria'),
 
     # Redirección por defecto (opcional)
     path('', views.login_view, name='index'),

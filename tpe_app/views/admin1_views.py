@@ -487,3 +487,45 @@ def editar_agenda_resultado(request, ag_id):
     }
 
     return render(request, 'tpe_app/agenda_resultado.html', context)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def admin1_ordenar_ejecutoria(request, res_id):
+    """Admin1 ordena a Admin2 que entregue carpeta a abogado de ejecutoria (ABOG2)"""
+    res = get_object_or_404(Resolucion, pk=res_id, RES_INSTANCIA='PRIMERA')
+    sim = res.sim
+
+    # Buscar el abogado ABOG2_AUTOS activo con perfil vinculado
+    from django.contrib.auth.models import User
+    abog2_user = User.objects.filter(
+        perfilusuario__rol='ABOG2_AUTOS',
+        perfilusuario__activo=True,
+        perfilusuario__abogado__isnull=False
+    ).select_related('perfilusuario__abogado').first()
+
+    abog_destino = abog2_user.perfilusuario.abogado if abog2_user else None
+
+    if not abog_destino:
+        messages.error(request, '❌ No hay abogado ABOG2_AUTOS activo asignado. Contactar administrador.')
+        return redirect('pendientes_ejecutoria')
+
+    # Crear custodia para Admin2 en estado PENDIENTE_CONFIRMACION
+    try:
+        with transaction.atomic():
+            CustodiaSIM.objects.create(
+                sim=sim,
+                tipo_custodio='ADMIN2_ARCHIVO',
+                motivo='EJECUTORIA',
+                abog_destino=abog_destino,
+                estado='PENDIENTE_CONFIRMACION',
+                usuario=request.user,
+                observacion='Ejecutoria — entregar a Abog. de Autos'
+            )
+            messages.success(
+                request,
+                f'✅ Orden de entrega creada para {sim.SIM_COD}. Admin2 debe confirmar recepción.'
+            )
+    except Exception as exc:
+        messages.error(request, f'❌ Error al crear orden: {exc}')
+
+    return redirect('pendientes_ejecutoria')

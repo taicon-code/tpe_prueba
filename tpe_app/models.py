@@ -468,6 +468,7 @@ class CustodiaSIM(models.Model):
         ('REVISION',       'Revisión del abogado'),
         ('NOTIFICACION',   'Para notificación'),
         ('APELACION_TSP',  'Elevado al TSP'),
+        ('EJECUTORIA',     'Para ejecutoria/cumplimiento'),
         ('ARCHIVO',        'Archivado / Concluido'),
     ]
 
@@ -483,6 +484,10 @@ class CustodiaSIM(models.Model):
     abog          = models.ForeignKey('ABOG', on_delete=models.SET_NULL,
                                       null=True, blank=True, verbose_name='Abogado',
                                       help_text="Si el custodio es un abogado")
+    abog_destino  = models.ForeignKey('ABOG', on_delete=models.SET_NULL,
+                                      null=True, blank=True, related_name='custodias_destino',
+                                      verbose_name='Abogado Destino',
+                                      help_text="A quién Admin2 debe entregar la carpeta (ej: para ejecutoria)")
     usuario       = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
                                       null=True, blank=True,
                                       related_name='custodias_registradas',

@@ -72,6 +72,18 @@ def admin2_dashboard(request):
 
     carpetas_prestadas.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
+    # Carpetas para ejecutoria (en poder de Admin2, motivo=EJECUTORIA, ACTIVA)
+    custodias_ejecutoria = CustodiaSIM.objects.filter(
+        tipo_custodio='ADMIN2_ARCHIVO',
+        motivo='EJECUTORIA',
+        estado='ACTIVA',
+        fecha_entrega__isnull=True
+    ).select_related('sim', 'abog_destino').order_by('fecha_recepcion')
+
+    para_ejecutoria = []
+    for custodia in custodias_ejecutoria:
+        para_ejecutoria.append(custodia)
+
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
 
@@ -99,6 +111,8 @@ def admin2_dashboard(request):
         'total_pendientes': len(carpetas_pendientes),
         'carpetas_prestadas': carpetas_prestadas,
         'total_prestadas': len(carpetas_prestadas),
+        'para_ejecutoria': para_ejecutoria,
+        'total_ejecutoria': len(para_ejecutoria),
         'query': query,
         'historial_sim': historial_sim,
     }

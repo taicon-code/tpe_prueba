@@ -24,6 +24,7 @@ from .admin1_views import (
     ver_agenda_detalle,
     editar_agenda_resultado,
     gestionar_abogados_sim,
+    admin1_ordenar_ejecutoria,
 )
 from .admin2_views import (
     admin2_dashboard,
