@@ -509,7 +509,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
         messages.error(request, '❌ No hay abogado ABOG2_AUTOS activo asignado. Contactar administrador.')
         return redirect('pendientes_ejecutoria')
 
-    # Crear custodia para Admin2 en estado PENDIENTE_CONFIRMACION
+    # Crear orden (custodia en estado ACTIVA) para Admin2
     try:
         with transaction.atomic():
             CustodiaSIM.objects.create(
@@ -517,13 +517,13 @@ def admin1_ordenar_ejecutoria(request, res_id):
                 tipo_custodio='ADMIN2_ARCHIVO',
                 motivo='EJECUTORIA',
                 abog_destino=abog_destino,
-                estado='PENDIENTE_CONFIRMACION',
+                estado='ACTIVA',
                 usuario=request.user,
-                observacion='Ejecutoria — entregar a Abog. de Autos'
+                observacion='Orden: Entregar a Abog. de Autos (Ejecutoria)'
             )
             messages.success(
                 request,
-                f'✅ Orden de entrega creada para {sim.SIM_COD}. Admin2 debe confirmar recepción.'
+                f'✅ Orden creada: {sim.SIM_COD} → Admin2 debe entregar a ABOG2'
             )
     except Exception as exc:
         messages.error(request, f'❌ Error al crear orden: {exc}')

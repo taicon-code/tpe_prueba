@@ -72,17 +72,15 @@ def admin2_dashboard(request):
 
     carpetas_prestadas.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
-    # Carpetas para ejecutoria (en poder de Admin2, motivo=EJECUTORIA, ACTIVA)
+    # Órdenes de ejecutoria (instrucciones para entregar a ABOG2, no carpetas en poder)
     custodias_ejecutoria = CustodiaSIM.objects.filter(
         tipo_custodio='ADMIN2_ARCHIVO',
         motivo='EJECUTORIA',
         estado='ACTIVA',
         fecha_entrega__isnull=True
-    ).select_related('sim', 'abog_destino').order_by('fecha_recepcion')
+    ).select_related('sim', 'abog_destino').order_by('-fecha_recepcion')
 
-    para_ejecutoria = []
-    for custodia in custodias_ejecutoria:
-        para_ejecutoria.append(custodia)
+    para_ejecutoria = list(custodias_ejecutoria)
 
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
@@ -200,8 +198,26 @@ def admin2_entregar_carpeta(request, sim_id):
         ('REVISION', 'Revisión del abogado'),
         ('NOTIFICACION', 'Para notificación'),
         ('APELACION_TSP', 'Elevado al TSP'),
+        ('EJECUTORIA', 'Para ejecutoria/cumplimiento'),
         ('ARCHIVO', 'Archivado / Concluido'),
     ]
+
+    # Detectar si hay una orden de ejecutoria previa
+    orden_ejecutoria = CustodiaSIM.objects.filter(
+        sim=sim,
+        motivo='EJECUTORIA',
+        fecha_entrega__isnull=True
+    ).select_related('abog_destino').first()
+
+    # Pre-llenar si hay orden de ejecutoria
+    pre_llenar_tipo = None
+    pre_llenar_abog = None
+    mensaje_orden = None
+
+    if orden_ejecutoria and orden_ejecutoria.abog_destino:
+        pre_llenar_tipo = 'ABOG_AUTOS'
+        pre_llenar_abog = orden_ejecutoria.abog_destino.pk
+        mensaje_orden = f'📋 Orden: Entregar a ABOG2 ({orden_ejecutoria.abog_destino.AB_PATERNO}) para Ejecutoria'
 
     context = {
         'sim': sim,
@@ -209,6 +225,10 @@ def admin2_entregar_carpeta(request, sim_id):
         'abogados': abogados,
         'tipos_custodia': TIPOS_CUSTODIA,
         'motivos': MOTIVOS,
+        'orden_ejecutoria': orden_ejecutoria,
+        'mensaje_orden': mensaje_orden,
+        'pre_llenar_tipo': pre_llenar_tipo,
+        'pre_llenar_abog': pre_llenar_abog,
     }
 
     return render(request, 'tpe_app/admin2/entregar_carpeta.html', context)

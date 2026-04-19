@@ -41,6 +41,15 @@
         </div>
     </div>
 
+    <!-- Mensaje de orden (si existe) -->
+    {% if mensaje_orden %}
+    <div class="card" style="background: #dbeafe; border-left: 4px solid #0ea5e9; margin-bottom: 2rem;">
+        <p style="margin: 0; color: #0c4a6e; font-size: 1rem; font-weight: 600;">
+            {{ mensaje_orden }}
+        </p>
+    </div>
+    {% endif %}
+
     <!-- Formulario de entrega -->
     <form method="post" class="card">
         {% csrf_token %}
@@ -54,7 +63,7 @@
             <select name="tipo_custodio" required style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
                 <option value="">— Seleccionar —</option>
                 {% for value, label in tipos_custodia %}
-                    <option value="{{ value }}">{{ label }}</option>
+                    <option value="{{ value }}" {% if pre_llenar_tipo == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
             <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
@@ -69,7 +78,7 @@
             <select name="abogado" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
                 <option value="">— Seleccionar abogado —</option>
                 {% for abog in abogados %}
-                    <option value="{{ abog.pk }}">{{ abog.AB_GRADO }} {{ abog.AB_PATERNO }} ({{ abog.AB_NOMBRE }})</option>
+                    <option value="{{ abog.pk }}" {% if pre_llenar_abog == abog.pk %}selected{% endif %}>{{ abog.AB_GRADO }} {{ abog.AB_PATERNO }} ({{ abog.AB_NOMBRE }})</option>
                 {% endfor %}
             </select>
         </div>
@@ -81,7 +90,7 @@
             <select name="motivo" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
                 <option value="">— Seleccionar motivo —</option>
                 {% for value, label in motivos %}
-                    <option value="{{ value }}">{{ label }}</option>
+                    <option value="{{ value }}" {% if orden_ejecutoria.motivo == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </div>
