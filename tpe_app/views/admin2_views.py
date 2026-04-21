@@ -58,15 +58,15 @@ def admin2_dashboard(request):
     carpetas_pendientes.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
     # Carpetas prestadas (en poder de otros, aún activas) - solo la custodia actual de cada SIM
-    sims_con_custodia_prest = SIM.objects.filter(
-        custodias__fecha_entrega__isnull=True
-    ).exclude(
-        custodias__tipo_custodio__in=['ADMIN2_ARCHIVO', 'ARCHIVO']
+    # Obtener todos los SIM que tienen al menos una custodia activa
+    sims_con_custodia = SIM.objects.filter(
+        custodias__estado='ACTIVA'
     ).distinct().prefetch_related('custodias', 'militares')
 
     carpetas_prestadas = []
-    for sim in sims_con_custodia_prest:
+    for sim in sims_con_custodia:
         custodia_actual = sim.custodio_actual()
+        # Si la custodia ACTUAL no es ADMIN2, mostrar en prestadas
         if custodia_actual and custodia_actual.tipo_custodio not in ['ADMIN2_ARCHIVO', 'ARCHIVO']:
             carpetas_prestadas.append(custodia_actual)
 
