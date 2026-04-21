@@ -82,6 +82,25 @@ def admin2_dashboard(request):
 
     para_ejecutoria = list(custodias_ejecutoria)
 
+    # SIM pendientes de entregar: Asignados a abogado pero sin custodia activa aún
+    sims_asignados = SIM.objects.filter(
+        abogados__isnull=False
+    ).exclude(
+        custodias__estado='ACTIVA'  # Excluir los que ya están en custodia activa
+    ).distinct().prefetch_related('militares', 'abogados')
+
+    sims_pendientes_entregar = []
+    for sim in sims_asignados:
+        # Verificar que no haya custodia activa
+        has_active_custody = sim.custodias.filter(estado='ACTIVA').exists()
+        if not has_active_custody and sim.SIM_ESTADO not in ['CONCLUIDO']:
+            abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
+            sim.abogados_asignados = [a.abog for a in abog_primera]
+            sims_pendientes_entregar.append(sim)
+
+    # Ordenar por fecha de ingreso descendente
+    sims_pendientes_entregar.sort(key=lambda x: x.SIM_FECING, reverse=True)
+
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
 
@@ -111,6 +130,8 @@ def admin2_dashboard(request):
         'total_prestadas': len(carpetas_prestadas),
         'para_ejecutoria': para_ejecutoria,
         'total_ejecutoria': len(para_ejecutoria),
+        'sims_pendientes_entregar': sims_pendientes_entregar,
+        'total_sin_entregar': len(sims_pendientes_entregar),
         'query': query,
         'historial_sim': historial_sim,
     }
