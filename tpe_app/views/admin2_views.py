@@ -43,17 +43,22 @@ def admin2_dashboard(request):
     # Ordenar por fecha de recepción descendente
     carpetas_en_poder.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
-    # Carpetas entregadas pendientes de confirmar recepción (solo la custodia actual de cada SIM)
-    sims_con_custodia_pend = SIM.objects.filter(
-        custodias__tipo_custodio='ADMIN2_ARCHIVO',
-        custodias__estado='PENDIENTE_CONFIRMACION'
-    ).distinct().prefetch_related('custodias', 'militares')
+    # Carpetas entregadas pendientes de confirmar recepción
+    # Son SIM cuya custodia ACTUAL es PENDIENTE_CONFIRMACION (a abogado/vocal)
+    # y la custodia anterior de ADMIN2 ya fue cerrada (tiene fecha_entrega)
+    custodias_pendientes_confirmacion = CustodiaSIM.objects.filter(
+        estado='PENDIENTE_CONFIRMACION',
+        fecha_entrega__isnull=True  # Aún no entregadas de vuelta
+    ).exclude(
+        tipo_custodio='ADMIN2_ARCHIVO'  # Excluir si es custodia de ADMIN2 (eso no se usa)
+    ).select_related('sim').prefetch_related('sim__militares')
 
     carpetas_pendientes = []
-    for sim in sims_con_custodia_pend:
-        custodia_actual = sim.custodio_actual()
-        if custodia_actual and custodia_actual.tipo_custodio == 'ADMIN2_ARCHIVO' and custodia_actual.estado == 'PENDIENTE_CONFIRMACION':
-            carpetas_pendientes.append(custodia_actual)
+    for custodia in custodias_pendientes_confirmacion:
+        # Verificar que sea la custodia ACTUAL
+        custodia_actual_del_sim = custodia.sim.custodio_actual()
+        if custodia_actual_del_sim and custodia_actual_del_sim.id == custodia.id:
+            carpetas_pendientes.append(custodia_actual_del_sim)
 
     carpetas_pendientes.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
