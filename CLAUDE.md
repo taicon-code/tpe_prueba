@@ -133,30 +133,85 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 ---
 
-## Flujo de Custodia de Carpetas (v3.3)
+## Flujo de Custodia de Carpetas (v3.3 — CORRECCIONES IMPORTANTES)
 
-El sistema controla la **trazabilidad** de carpetas entre actores mediante `CustodiaSIM`:
+El sistema controla la **trazabilidad** de carpetas entre actores mediante `CustodiaSIM`.
 
+### Modelo CustodiaSIM — Campos clave:
+- `SIM_FASE`: PARA_DICTAMEN, PARA_AGENDA, PARA_RESOLUCION, EN_APELACION, PARA_EJECUTORIA
+- `estado`: **ACTIVA** (en poder del custodio), **PENDIENTE_CONFIRMACION** (entregada, aguardando confirmación)
+- `tipo_custodio`: ADMIN2_ARCHIVO, ABOG_ASESOR, ABOG_RR, ABOG_AUTOS, VOCAL_SESION, ADMIN1_AGENDADOR
+- `custodio_a`: FK a PM (si es abogado/vocal) o NULL (si es admin)
+
+### ⚠️ CORRECCIÓN v3.3: Flujo correcto de Admin2 (IMPORTANTE)
+
+**Regla cardinal:** Admin2 **SIEMPRE** crea la custodia cuando **ENTREGA**. NO cuando se registra o agenda.
+
+#### Paso 1: SIM Ingresa
 ```
-ADMIN1 (crea SIM)
-    ↓
-    ADMIN2 entrega → ABOG1/ABOG3 (reciben conforme)
-    ↓
-    ABOG1/ABOG3 crean Dictamen/Resoluciones
-    ↓
-    ADMIN2 entrega → VOCAL (sesiona)
-    ↓
-    VOCAL confirma Dictamen
-    ↓
-    Si Resolución → ABOG3 suscribe
-    ↓
-    ADMIN2 puede devolver para correcciones
+ADMIN1: Registra SIM → estado=PARA_AGENDA
+ADMIN2: Recibe SIM → crea CustodiaSIM(tipo_custodio='ADMIN2_ARCHIVO', estado='ACTIVA')
 ```
 
-**Campos en CustodiaSIM:**
-- `SIM_FASE`: PARA_DICTAMEN, PARA_AGENDA, PARA_RESOLUCION, EN_APELACION, etc.
-- `estado`: recibido_conforme, pendiente_devolucion
-- `custodia_a`: quien tiene actualmente la carpeta
+#### Paso 2: AGENDA y ASIGNACIÓN
+```
+ADMIN1: Programa AGENDA para SIM
+ADMIN1: Asigna abogados (crea ABOG_SIM para cada abogado)
+SIM: SIM_ESTADO='PROCESO_EN_EL_TPE'
+ADMIN2: VE EN DASHBOARD que el SIM está agendado
+```
+
+#### Paso 3: ADMIN2 ENTREGA AL ABOGADO
+```
+ADMIN2 (Dashboard):
+  ① Selecciona SIM pendiente
+  ② Elige ABOGADO (consulta ABOG_SIM para ver quién está asignado)
+  ③ Hace clic "Entregar Carpeta"
+  
+SISTEMA AUTOMÁTICO:
+  ① Cierra custodia ADMIN2_ARCHIVO (fecha_entrega=now())
+  ② Crea NEW custodia: CustodiaSIM(
+       tipo_custodio='ABOG_ASESOR',
+       abog=abogado_seleccionado,
+       estado='PENDIENTE_CONFIRMACION'  ← CLAVE: No está confirmada aún
+     )
+  ③ ABOGADO ve SIM en su dashboard (asignado + custodia pendiente)
+```
+
+#### Paso 4: ABOGADO CONFIRMA RECEPCIÓN
+```
+ABOGADO (Dashboard):
+  ① Ve custodia PENDIENTE_CONFIRMACION en su SIM
+  ② Hace clic "Confirmar Recepción"
+  
+SISTEMA:
+  ① Cambia custodia.estado='ACTIVA'
+  ② Ahora abogado puede crear DICTAMEN
+```
+
+#### Paso 5: ABOGADO DEVUELVE A ADMIN2
+```
+ABOGADO (después de crear Dictamen/RES):
+  ① Hace clic "Devolver Carpeta"
+  
+SISTEMA:
+  ① Cierra custodia del abogado (fecha_entrega=now())
+  ② Crea NEW custodia: CustodiaSIM(tipo_custodio='ADMIN2_ARCHIVO', estado='ACTIVA')
+  ③ ADMIN2 ve SIM nuevamente en su poder
+```
+
+#### Paso 6: ADMIN2 ENTREGA A VOCAL (para sesión)
+```
+ADMIN2: Entrega carpeta al Secretario de Actas (VOCAL)
+SISTEMA: Crea custodia con tipo_custodio='VOCAL_SESION', estado='PENDIENTE_CONFIRMACION'
+VOCAL: Confirma recepción, sesiona, confirma Dictamen
+VOCAL: Devuelve a ADMIN2
+```
+
+### Dashboard de ADMIN2 (3 secciones):
+1. **📁 Carpetas en su poder** → `estado='ACTIVA'` (confirmadas)
+2. **⏳ Pendiente confirmar recepción** → `estado='PENDIENTE_CONFIRMACION'` (entregadas pero no confirmadas aún)
+3. **🔄 Carpetas prestadas** → Custodia de otros actores activas en ese momento
 
 ---
 
@@ -215,15 +270,47 @@ INF. | CAB. | ART. | ING. | COM. | INT. | SAN. | TGRAFO. | AV. | MÚS.
 
 ---
 
-## Estados del SIM
+## Estados del SIM — CORRECCIONES IMPORTANTES (v3.3)
 
-| Estado | Significado |
-|--------|-------------|
-| `PARA_AGENDA` | Esperando ser incluido en una agenda (color: azul/primary) |
-| `PROCESO_EN_EL_TPE` | En proceso activo (color: amarillo/warning) |
-| `EN_APELACION_TSP` | Apelado ante el TSP (color: rojo/danger) |
-| `CONCLUIDO` | Proceso terminado |
-| `OBSERVADO` | Observado/pendiente de corrección |
+| Estado | Significado | Transición | Disparado por |
+|--------|-------------|-----------|---|
+| `PARA_AGENDA` | SIM ingresa al TPE, pendiente ser agendado. ⚠️ **ESTADO INICIAL** | ADMIN1 registra SIM | ADMIN1 |
+| `PROCESO_EN_EL_TPE` | SIM fue agendado en una AGENDA. Abogado está trabajando (Dictamen/RES). | `PARA_AGENDA` → `PROCESO_EN_EL_TPE` | ADMIN1 cuando lo agenda + asigna abogados |
+| `EN_APELACION_TSP` | Se emitió RAP (Recurso de Apelación). El caso subió al TSP. | Cuando se crea `RAP` para el SIM | ABOGADO cuando registra RAP o AYUDANTE |
+| `CONCLUIDO` | Proceso judicial terminado. Auto de Ejecutoria firmado por VOCAL. | `PROCESO_EN_EL_TPE` → `CONCLUIDO` | ADMIN1 cuando ordena ejecutoria + ABOG2 crea Auto + VOCAL firma |
+| `OBSERVADO` | ⚠️ **RARO, evitar**: Sumario con observaciones pendientes. Requiere corrección. | Flujo poco común | Correcciones manuales |
+
+### ⚠️ Correcciones de lógica de estados:
+
+1. **NO hay transición directa** `PARA_AGENDA` → `CONCLUIDO`
+   - El SIM debe pasar por `PROCESO_EN_EL_TPE` primero
+   - Esto requiere: AGENDA + DICTAMEN + RES/AUTOTPE + EJECUCIÓN
+
+2. **`PARA_AGENDA` es el ÚNICO estado inicial**
+   - Cuando ADMIN1 registra un SIM nuevo, SIEMPRE comienza aquí
+   - SIM_ESTADO='PARA_AGENDA' en el modelo
+
+3. **`PROCESO_EN_EL_TPE` se activa cuando:**
+   - ✅ ADMIN1 crea AGENDA para el SIM
+   - ✅ ADMIN1 asigna al menos 1 ABOG a ese SIM (tabla ABOG_SIM)
+   - ✅ El sistema cambia automáticamente a `PROCESO_EN_EL_TPE`
+
+4. **`EN_APELACION_TSP` se activa solo si:**
+   - ✅ Se registra un RAP para ese SIM (tabla RAP)
+   - Si hay RR pero NO RAP → sigue en `PROCESO_EN_EL_TPE`
+   - Si hay RAP → automáticamente pasa a `EN_APELACION_TSP`
+
+5. **`CONCLUIDO` se activa solo cuando:**
+   - ✅ Se emite RES (Primera Resolución) O AUTOTPE (Auto)
+   - ✅ Se crea Auto de EJECUTORIA (paso final del proceso)
+   - ✅ VOCAL firma el Auto de Ejecutoria
+   - Entonces: SIM_ESTADO='CONCLUIDO'
+
+### Visualización en dashboards:
+- Color **AZUL** (`PARA_AGENDA`): Sumarios nuevos sin agendar
+- Color **AMARILLO** (`PROCESO_EN_EL_TPE`): Sumarios activos en el tribunal
+- Color **ROJO** (`EN_APELACION_TSP`): Sumarios apelados ante TSP
+- Color **GRIS** (`CONCLUIDO`): Casos terminados (archivados)
 
 ---
 
