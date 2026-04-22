@@ -128,7 +128,7 @@
                     {% elif dictamen.sim.SIM_ESTADO == 'CONCLUIDO' %}
                         <span class="badge badge-green">Concluido</span>
                     {% else %}
-                        {{ dictamen.sim.SIM_ESTADO }}
+                        {{ dictamen.sim.get_SIM_ESTADO_display }}
                     {% endif %}
                 </td>
             </tr>

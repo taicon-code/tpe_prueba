@@ -14,101 +14,126 @@ from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_
 
 @rol_requerido('ADMIN2_ARCHIVO')
 def admin2_dashboard(request):
-    """Dashboard para Admin2 - Gestión de custodia de carpetas"""
+    """Dashboard para Admin2 - Gestión de custodia de carpetas
 
-    # Carpetas actualmente en poder de Admin2: obtener solo la custodia actual de cada SIM
-    # Estrategia: obtener todos los SIM que tienen custodia en Admin2, luego filtrar por su custodio actual
-    sims_con_custodia_admin2 = SIM.objects.filter(
-        custodias__tipo_custodio='ADMIN2_ARCHIVO',
-        custodias__estado='ACTIVA'
-    ).distinct().prefetch_related('custodias', 'militares', 'abogados')
+    Garantiza que TODOS los SIM registrados aparezcan en ALGUNA sección del dashboard.
+    Cada SIM se muestra según su custodia actual.
+    """
 
-    # Filtrar en Python para obtener solo la custodia actual de cada SIM que cumpla las condiciones
+    # ✅ 1. PENDIENTES DE CONFIRMAR RECEPCIÓN (Admin2 recibió de vuelta)
+    # Son custodias ADMIN2_ARCHIVO en estado PENDIENTE_CONFIRMACION
+    # Esto ocurre cuando Admin2 recibe un sumario de vuelta de un abogado/vocal
+    custodias_admin2_pendientes = CustodiaSIM.objects.filter(
+        tipo_custodio='ADMIN2_ARCHIVO',
+        estado='PENDIENTE_CONFIRMACION',
+        fecha_entrega__isnull=True
+    ).select_related('sim').prefetch_related('sim__militares')
+
+    carpetas_admin2_pendientes = []
+    for custodia in custodias_admin2_pendientes:
+        if custodia.sim.custodio_actual() and custodia.sim.custodio_actual().id == custodia.id:
+            carpetas_admin2_pendientes.append(custodia)
+
+    carpetas_admin2_pendientes.sort(key=lambda x: x.fecha_recepcion, reverse=True)
+
+    # ✅ 2. CARPETAS EN PODER DE ADMIN2 (Activas)
+    # Son custodias ADMIN2_ARCHIVO en estado ACTIVA (excepto ejecutoria)
+    custodias_admin2_activas = CustodiaSIM.objects.filter(
+        tipo_custodio='ADMIN2_ARCHIVO',
+        estado='RECIBIDA_CONFORME',
+        fecha_entrega__isnull=True
+    ).exclude(
+        motivo='EJECUTORIA'  # Las de ejecutoria van en otra sección
+    ).select_related('sim').prefetch_related('sim__militares')
+
     carpetas_en_poder = []
-    for sim in sims_con_custodia_admin2:
-        custodia_actual = sim.custodio_actual()
-        if custodia_actual and custodia_actual.tipo_custodio == 'ADMIN2_ARCHIVO' and custodia_actual.estado == 'ACTIVA':
+    for custodia in custodias_admin2_activas:
+        if custodia.sim.custodio_actual() and custodia.sim.custodio_actual().id == custodia.id:
             # Abogados de primera instancia (ABOG_SIM)
-            abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
-            custodia_actual.abog_primera_list = [a.abog for a in abog_primera]
+            abog_primera = ABOG_SIM.objects.filter(sim=custodia.sim).select_related('abog')
+            custodia.abog_primera_list = [a.abog for a in abog_primera]
 
             # Abogado de RR si existe
             rr = Resolucion.objects.filter(
-                sim=sim, RES_INSTANCIA='RECONSIDERACION', abog__isnull=False
+                sim=custodia.sim, RES_INSTANCIA='RECONSIDERACION', abog__isnull=False
             ).select_related('abog').last()
-            custodia_actual.abog_rr = rr.abog if rr else None
+            custodia.abog_rr = rr.abog if rr else None
 
-            carpetas_en_poder.append(custodia_actual)
+            carpetas_en_poder.append(custodia)
 
-    # Ordenar por fecha de recepción descendente
     carpetas_en_poder.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
-    # Carpetas entregadas pendientes de confirmar recepción
-    # Son SIM cuya custodia ACTUAL es PENDIENTE_CONFIRMACION (a abogado/vocal)
-    # y la custodia anterior de ADMIN2 ya fue cerrada (tiene fecha_entrega)
-    custodias_pendientes_confirmacion = CustodiaSIM.objects.filter(
+    # ✅ 3. PARA EJECUTORIA
+    # Son custodias ADMIN2_ARCHIVO con motivo='EJECUTORIA'
+    custodias_ejecutoria = CustodiaSIM.objects.filter(
+        tipo_custodio='ADMIN2_ARCHIVO',
+        motivo='EJECUTORIA',
+        estado='RECIBIDA_CONFORME',
+        fecha_entrega__isnull=True
+    ).select_related('sim', 'abog_destino').order_by('-fecha_recepcion')
+
+    para_ejecutoria = []
+    for custodia in custodias_ejecutoria:
+        if custodia.sim.custodio_actual() and custodia.sim.custodio_actual().id == custodia.id:
+            para_ejecutoria.append(custodia)
+
+    # ✅ 4. PENDIENTES DE CONFIRMACIÓN (Abogados/Vocales)
+    # Son custodias de otros tipos en estado PENDIENTE_CONFIRMACION
+    custodias_otros_pendientes = CustodiaSIM.objects.filter(
         estado='PENDIENTE_CONFIRMACION',
-        fecha_entrega__isnull=True  # Aún no entregadas de vuelta
+        fecha_entrega__isnull=True
     ).exclude(
-        tipo_custodio='ADMIN2_ARCHIVO'  # Excluir si es custodia de ADMIN2 (eso no se usa)
+        tipo_custodio='ADMIN2_ARCHIVO'
     ).select_related('sim').prefetch_related('sim__militares')
 
     carpetas_pendientes = []
-    for custodia in custodias_pendientes_confirmacion:
-        # Verificar que sea la custodia ACTUAL
-        custodia_actual_del_sim = custodia.sim.custodio_actual()
-        if custodia_actual_del_sim and custodia_actual_del_sim.id == custodia.id:
-            carpetas_pendientes.append(custodia_actual_del_sim)
+    for custodia in custodias_otros_pendientes:
+        if custodia.sim.custodio_actual() and custodia.sim.custodio_actual().id == custodia.id:
+            carpetas_pendientes.append(custodia)
 
     carpetas_pendientes.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
-    # Carpetas prestadas (en poder de otros, aún activas) - solo la custodia actual de cada SIM
-    # Obtener TODAS las custodias que no son ADMIN2/ARCHIVO y aún sin fecha_entrega (activas)
-    custodias_activas_otros = CustodiaSIM.objects.filter(
-        fecha_entrega__isnull=True  # Aún no devueltos
+    # ✅ 5. CARPETAS PRESTADAS (En poder de abogados/vocales/otros)
+    # Son custodias de otros tipos en estado ACTIVA
+    custodias_otros_activas = CustodiaSIM.objects.filter(
+        estado='RECIBIDA_CONFORME',
+        fecha_entrega__isnull=True
     ).exclude(
         tipo_custodio__in=['ADMIN2_ARCHIVO', 'ARCHIVO']
     ).select_related('sim').prefetch_related('sim__militares')
 
     carpetas_prestadas = []
-    for custodia in custodias_activas_otros:
-        # Verificar que sea la custodia ACTUAL (la última)
-        custodia_actual_del_sim = custodia.sim.custodio_actual()
-        if custodia_actual_del_sim and custodia_actual_del_sim.id == custodia.id:
-            # Solo agregar si la custodia ACTUAL no está pendiente de confirmación
-            if custodia_actual_del_sim.estado == 'ACTIVA':
-                carpetas_prestadas.append(custodia_actual_del_sim)
+    for custodia in custodias_otros_activas:
+        if custodia.sim.custodio_actual() and custodia.sim.custodio_actual().id == custodia.id:
+            carpetas_prestadas.append(custodia)
 
     carpetas_prestadas.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
-    # Órdenes de ejecutoria (instrucciones para entregar a ABOG2, no carpetas en poder)
-    custodias_ejecutoria = CustodiaSIM.objects.filter(
-        tipo_custodio='ADMIN2_ARCHIVO',
-        motivo='EJECUTORIA',
-        estado='ACTIVA',
-        fecha_entrega__isnull=True
-    ).select_related('sim', 'abog_destino').order_by('-fecha_recepcion')
-
-    para_ejecutoria = list(custodias_ejecutoria)
-
-    # SIM pendientes de entregar: Asignados a abogado pero sin custodia activa aún
+    # ✅ 6. PENDIENTES DE ENTREGAR
+    # Son SIM asignados a abogados pero sin custodia activa aún
     sims_asignados = SIM.objects.filter(
         abogados__isnull=False
     ).exclude(
-        custodias__estado='ACTIVA'  # Excluir los que ya están en custodia activa
+        custodias__estado='RECIBIDA_CONFORME'
+    ).exclude(
+        custodias__estado='PENDIENTE_CONFIRMACION'
     ).distinct().prefetch_related('militares', 'abogados')
 
     sims_pendientes_entregar = []
     for sim in sims_asignados:
-        # Verificar que no haya custodia activa
-        has_active_custody = sim.custodias.filter(estado='ACTIVA').exists()
-        if not has_active_custody and sim.SIM_ESTADO not in ['CONCLUIDO']:
+        # Verificar que no haya custodia activa ni pendiente
+        has_active_custody = sim.custodias.filter(
+            estado__in=['RECIBIDA_CONFORME', 'PENDIENTE_CONFIRMACION']
+        ).exists()
+
+        # No incluir archivados/concluidos
+        if not has_active_custody and sim.SIM_ESTADO not in ['PROCESO_CONCLUIDO_TPE', 'PROCESO_EJECUTADO']:
             abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
             sim.abogados_asignados = [a.abog for a in abog_primera]
             sims_pendientes_entregar.append(sim)
 
     # Ordenar por fecha de ingreso descendente
-    sims_pendientes_entregar.sort(key=lambda x: x.SIM_FECING, reverse=True)
+    sims_pendientes_entregar.sort(key=lambda x: x.SIM_FECING if x.SIM_FECING else timezone.now(), reverse=True)
 
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
@@ -131,6 +156,8 @@ def admin2_dashboard(request):
             historial_sim = []
 
     context = {
+        'carpetas_admin2_pendientes': carpetas_admin2_pendientes,
+        'total_admin2_pendientes': len(carpetas_admin2_pendientes),
         'carpetas_en_poder': carpetas_en_poder,
         'total_en_poder': len(carpetas_en_poder),
         'carpetas_pendientes': carpetas_pendientes,
@@ -189,7 +216,7 @@ def admin2_entregar_carpeta(request, sim_id):
                     custodio_actual.save()
 
                     # Crear nueva custodia (pendiente de confirmación del abogado si es entrega a abogado)
-                    estado_custodia = 'PENDIENTE_CONFIRMACION' if tipo_custodio.startswith('ABOG_') else 'ACTIVA'
+                    estado_custodia = 'PENDIENTE_CONFIRMACION' if tipo_custodio.startswith('ABOG_') else 'RECIBIDA_CONFORME'
                     custodia_nueva = CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio=tipo_custodio,
@@ -328,8 +355,8 @@ def admin2_confirmar_recepcion(request, sim_id):
 
         try:
             with transaction.atomic():
-                # Cambiar estado a ACTIVA
-                custodio_actual.estado = 'ACTIVA'
+                # Cambiar estado a RECIBIDA_CONFORME
+                custodio_actual.estado = 'RECIBIDA_CONFORME'
                 if observacion:
                     custodia_obs = (custodio_actual.observacion or '') + f' | Recibido conforme: {observacion}'
                     custodio_actual.observacion = custodia_obs

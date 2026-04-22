@@ -272,6 +272,7 @@ AUTO_EXCUSA | AUTO_RECHAZO_RECURSO
 8. **Custodia v3**: Sistema completo de trazabilidad entre Admin2, Abogados, Vocales.
 9. **Ejecutoria**: Autos sin agenda previa, flujo simplificado para conclusión.
 10. **AUTOTSP/RecursoTSP**: Mantienen para compatibilidad histórica pero NO se muestran en estadísticas.
+11. **Admin nativo de Django (Abril 21 2026)**: Se restauró el panel de admin al estilo Django estándar (removidas personalizaciones de admin.py y desactivado admin_custom.css). El dashboard `/panel-admin/dashboard/` sigue siendo el panel principal personalizado del sistema.
 
 ---
 

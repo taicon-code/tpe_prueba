@@ -479,7 +479,7 @@
         <strong>Objeto:</strong> {{ sim.SIM_OBJETO }}<br>
         <strong>Resumen:</strong> {{ sim.SIM_RESUM|truncatewords:15 }}<br>
         <strong>Fecha Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }} |
-        <strong>Estado:</strong> {{ sim.SIM_ESTADO }}
+        <strong>Estado:</strong> {{ sim.get_SIM_ESTADO_display }}
       </div>
     </div>
     {% endfor %}
@@ -501,7 +501,7 @@
         </div>
         <div style="font-size: 0.9rem; color: #666;">
           <span style="display: inline-block; margin-right: 1.5rem;"><strong>Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</span>
-          <span><strong>Estado:</strong> {{ sim.SIM_ESTADO }}</span>
+          <span><strong>Estado:</strong> {{ sim.get_SIM_ESTADO_display }}</span>
         </div>
       </div>
 
@@ -661,7 +661,7 @@
         <td>{{ sim.get_SIM_TIPO_display|truncatewords:2 }}</td>
         <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
         <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</td>
-        <td>{{ sim.SIM_ESTADO }}</td>
+        <td>{{ sim.get_SIM_ESTADO_display }}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -10,7 +10,7 @@ from django.utils import timezone
 from ..decorators import rol_requerido
 from ..models import (
     ABOG_SIM, AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, SIM, VOCAL_TPE,
-    CustodiaSIM, Resolucion, next_resolucion_num,
+    CustodiaSIM, Resolucion, next_resolucion_num, PerfilUsuario,
 )
 from ..utils.numeracion import next_num_yy
 
@@ -72,6 +72,18 @@ def abogado_sumario_detalle(request, sim_id: int):
     ).exists()
     custodio_actual = sim.custodio_actual()
 
+    # Obtener información del usuario Admin2 (para mostrar en template)
+    admin2_user = None
+    try:
+        admin2_perfil = PerfilUsuario.objects.filter(
+            rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
+            activo=True
+        ).first()
+        if admin2_perfil:
+            admin2_user = admin2_perfil.user
+    except:
+        admin2_user = None
+
     # Documentos adjuntos al SIM (PDFs escaneados)
     documentos_sim = DocumentoAdjunto.objects.filter(
         DOC_TABLA='sim', DOC_ID_REG=sim.pk
@@ -105,6 +117,7 @@ def abogado_sumario_detalle(request, sim_id: int):
         "documentos_sim": documentos_sim,
         "es_abog2": es_abog2,
         "autos_asignados": autos_asignados,
+        "admin2_user": admin2_user,
     }
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
 
@@ -379,8 +392,8 @@ def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
                     TPE_RESOL=tpe_resol or None,
                 )
 
-                # Marcar SIM como concluido
-                sim.SIM_FASE = 'CONCLUIDO'
+                # Marcar SIM como concluido en el TPE (estado: PROCESO_CONCLUIDO_TPE)
+                sim.SIM_ESTADO = 'PROCESO_CONCLUIDO_TPE'
                 sim.save()
 
                 messages.success(request, f"✅ Auto de Ejecutoria {tpe_num or 'S/N'} creado correctamente")
@@ -473,14 +486,30 @@ def abogado_confirmar_recepcion(request, sim_id: int):
 
     if request.method == 'POST':
         try:
-            custodia.estado = 'ACTIVA'
+            custodia.estado = 'RECIBIDA_CONFORME'
             custodia.save()
             messages.success(request, "✅ Recepción confirmada. La carpeta está en su poder.")
             return redirect('abogado_sumario_detalle', sim_id=sim_id)
         except Exception as e:
             messages.error(request, f"❌ Error: {str(e)}")
 
-    return render(request, 'tpe_app/abogado/confirmar_recepcion.html', {'sim': sim, 'custodia': custodia})
+    # Obtener información del usuario Admin2 (para mostrar en template)
+    admin2_user = None
+    try:
+        admin2_perfil = PerfilUsuario.objects.filter(
+            rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
+            activo=True
+        ).first()
+        if admin2_perfil:
+            admin2_user = admin2_perfil.user
+    except:
+        admin2_user = None
+
+    return render(request, 'tpe_app/abogado/confirmar_recepcion.html', {
+        'sim': sim,
+        'custodia': custodia,
+        'admin2_user': admin2_user,
+    })
 
 
 @rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
@@ -490,7 +519,7 @@ def abogado_devolver_carpeta(request, sim_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
 
     custodia = CustodiaSIM.objects.filter(
-        sim=sim, abog=abogado, estado='ACTIVA', fecha_entrega__isnull=True
+        sim=sim, abog=abogado, estado='RECIBIDA_CONFORME', fecha_entrega__isnull=True
     ).first()
 
     if not custodia:
@@ -518,4 +547,20 @@ def abogado_devolver_carpeta(request, sim_id: int):
         except Exception as e:
             messages.error(request, f"❌ Error: {str(e)}")
 
-    return render(request, 'tpe_app/abogado/devolver_carpeta.html', {'sim': sim, 'custodia': custodia})
+    # Obtener información del usuario Admin2 (para mostrar en template)
+    admin2_user = None
+    try:
+        admin2_perfil = PerfilUsuario.objects.filter(
+            rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
+            activo=True
+        ).first()
+        if admin2_perfil:
+            admin2_user = admin2_perfil.user
+    except:
+        admin2_user = None
+
+    return render(request, 'tpe_app/abogado/devolver_carpeta.html', {
+        'sim': sim,
+        'custodia': custodia,
+        'admin2_user': admin2_user,
+    })

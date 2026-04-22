@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.http import JsonResponse
 from datetime import date, timedelta
+import calendar
 from ..decorators import rol_requerido
 from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion
 from ..models import get_pendientes_ejecutoria
@@ -113,6 +114,17 @@ def admin1_dashboard(request):
     ).count()
     total_sin_notificar = res_sin_notificar + rr_sin_notificar
 
+    # Agendas realizadas para marcar en el calendario del sidebar
+    agendas_realizadas = AGENDA.objects.filter(
+        AG_ESTADO='REALIZADA', AG_FECREAL__isnull=False
+    ).values_list('AG_FECREAL', flat=True).order_by('AG_FECREAL')
+
+    # Formatear fechas de agendas realizadas para el JavaScript
+    agendas_por_fecha = {}
+    for fecha in agendas_realizadas:
+        if fecha:
+            agendas_por_fecha[fecha.isoformat()] = True
+
     context = {
         'query': query,
         'sumarios_recientes': sumarios_recientes,
@@ -125,6 +137,7 @@ def admin1_dashboard(request):
         'total_pendientes_ejecutoria': len(por_res_ej) + len(por_rr_ej),
         'sumarios_en_proceso': sumarios_en_proceso,
         'total_sin_notificar': total_sin_notificar,
+        'agendas_por_fecha': agendas_por_fecha,
     }
 
     return render(request, 'tpe_app/admin1_dashboard.html', context)
@@ -414,7 +427,95 @@ def crear_agenda(request):
     else:
         form = AgendaForm()
 
-    context = {'form': form}
+    # Obtener mes/año actual para el calendario (permitir navegación con GET params)
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = int(request.GET.get('month', today.month))
+
+    # Agendas ordinarias y extraordinarias del mes actual
+    agendas_mes = AGENDA.objects.filter(
+        AG_FECPROG__year=year,
+        AG_FECPROG__month=month
+    ).exclude(AG_ESTADO='CANCELADA')
+
+    # Importar feriados
+    from ..models import FERIADOS_2026
+
+    # Mapear nombres de feriados
+    nombres_feriados = {
+        (1, 23): 'Creación Estado',
+        (2, 16): 'Carnaval',
+        (2, 17): 'Carnaval',
+        (4, 3): 'Viernes Santo',
+        (5, 1): 'Día del Trabajo',
+        (6, 4): 'Corpus Christi',
+        (6, 5): 'Corpus Christi',
+        (6, 22): 'Año Nuevo Andino',
+        (8, 6): 'Independencia',
+        (8, 7): 'Independencia',
+        (11, 2): 'Día Difuntos',
+        (12, 25): 'Navidad',
+    }
+
+    # Construir datos por día
+    dias_datos = {}
+    for agenda in agendas_mes:
+        dia = agenda.AG_FECPROG.day
+        if dia not in dias_datos:
+            dias_datos[dia] = {'agendas': [], 'feriado': None}
+        dias_datos[dia]['agendas'].append({
+            'tipo': agenda.AG_TIPO,
+            'num': agenda.AG_NUM
+        })
+
+    # Agregar feriados del mes
+    for feriado in FERIADOS_2026:
+        if feriado.year == year and feriado.month == month:
+            dia = feriado.day
+            if dia not in dias_datos:
+                dias_datos[dia] = {'agendas': [], 'feriado': None}
+            nombre = nombres_feriados.get((feriado.month, feriado.day), 'Feriado')
+            dias_datos[dia]['feriado'] = nombre
+
+    # Generar datos del calendario (comenzando desde lunes)
+    calendar.setfirstweekday(calendar.MONDAY)
+    mes_calendar = calendar.monthcalendar(year, month)
+
+    # Obtener último día del mes anterior y días del mes siguiente
+    if month == 1:
+        prev_month_last_day = 31  # diciembre tiene 31 días
+    else:
+        prev_month_last_day = (date(year, month, 1) - timedelta(days=1)).day
+
+    # Calcular cuántos días se muestran del mes siguiente
+    first_week = mes_calendar[0]
+    last_week = mes_calendar[-1]
+    days_before = first_week.count(0)
+    days_after = 7 - (last_week.count(0) + len([d for d in last_week if d != 0]))
+
+    # Calcular mes anterior y siguiente para botones de navegación
+    if month == 1:
+        prev_month, prev_year = 12, year - 1
+        next_month, next_year = 2, year
+    elif month == 12:
+        prev_month, prev_year = 11, year
+        next_month, next_year = 1, year + 1
+    else:
+        prev_month, prev_year = month - 1, year
+        next_month, next_year = month + 1, year
+
+    context = {
+        'form': form,
+        'dias_datos': dias_datos,
+        'mes_calendar': mes_calendar,
+        'current_year': year,
+        'current_month': month,
+        'nombre_mes': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'][month - 1],
+        'prev_month_days': list(range(prev_month_last_day - days_before + 1, prev_month_last_day + 1)),
+        'next_month_days': list(range(1, days_after + 1)) if days_after > 0 else [],
+        'prev_month_url': f'?year={prev_year}&month={prev_month}',
+        'next_month_url': f'?year={next_year}&month={next_month}',
+    }
     return render(request, 'tpe_app/crear_agenda.html', context)
 
 
@@ -500,7 +601,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
     custodia_existente = CustodiaSIM.objects.filter(
         sim=sim,
         motivo='EJECUTORIA',
-        estado='ACTIVA'
+        estado='RECIBIDA_CONFORME'
     ).first()
 
     if custodia_existente:
@@ -532,7 +633,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
                 tipo_custodio='ADMIN2_ARCHIVO',
                 motivo='EJECUTORIA',
                 abog_destino=abog_destino,
-                estado='ACTIVA',
+                estado='RECIBIDA_CONFORME',
                 usuario=request.user,
                 observacion='Orden: Entregar a Abog. de Autos (Ejecutoria)'
             )

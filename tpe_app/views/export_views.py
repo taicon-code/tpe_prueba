@@ -11,6 +11,10 @@ from django.shortcuts import get_object_or_404
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from tpe_app.models import PM, SIM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP
@@ -77,10 +81,16 @@ def export_person_historial_pdf(request, personal_id):
     c.drawString(x_margin, y_position, "REPORTE DE HISTORIAL - SUMARIOS DISCIPLINARIOS")
     y_position -= 1.5 * line_height
 
-    c.setFont("Helvetica", 9)
+    c.setFont("Helvetica", 8)
     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-    c.drawString(x_margin, y_position, f"Generado: {fecha_hoy}")
-    y_position -= line_height
+    hora_hoy = datetime.now().strftime("%H:%M:%S")
+    usuario = request.user.get_full_name() or request.user.username if request.user.is_authenticated else "Usuario Anónimo"
+
+    c.drawString(x_margin, y_position, f"Impreso por: {usuario.upper()}")
+    y_position -= line_height * 0.8
+
+    c.drawString(x_margin, y_position, f"Fecha: {fecha_hoy} — Hora: {hora_hoy}")
+    y_position -= line_height * 0.8
 
     c.setLineWidth(1)
     c.line(x_margin, y_position, width - x_margin, y_position)
@@ -130,113 +140,147 @@ def export_person_historial_pdf(request, personal_id):
         y_position -= line_height * 1.3
 
         for idx, sim in enumerate(sumarios, 1):
-            if y_position < 2 * inch:
+            if y_position < 3 * inch:
                 c.showPage()
                 y_position = height - 0.5 * inch
 
-            # Encabezado del sumario
+            # Encabezado del sumario con Objeto y Estado
             c.setFont("Helvetica-Bold", 10)
-            c.drawString(x_margin, y_position, f"SUMARIO {idx}: {sim.SIM_COD}")
-            y_position -= line_height
+            c.drawString(x_margin, y_position, f"SIM: {sim.SIM_COD}")
+            y_position -= line_height * 0.8
 
             c.setFont("Helvetica", 8)
-            c.drawString(x_margin + 0.2 * inch, y_position, f"Tipo: {sim.get_SIM_TIPO_display() if sim.SIM_TIPO else 'N/A'}")
+            objeto_completo = sim.SIM_OBJETO or 'N/A'
+
+            # Envolver texto del objeto si es muy largo
+            c.drawString(x_margin + 0.2 * inch, y_position, "Objeto:")
             y_position -= line_height * 0.7
 
-            # Objeto completo
-            if y_position < 1.5 * inch:
-                c.showPage()
-                y_position = height - 0.5 * inch
-
-            c.setFont("Helvetica", 8)
-            objeto_text = f"Objeto: {sim.SIM_OBJETO if sim.SIM_OBJETO else 'N/A'}"
-            # Envolver texto largo
-            if len(sim.SIM_OBJETO or '') > 80:
-                palabras = (sim.SIM_OBJETO or '').split()
-                lineas = []
+            if len(objeto_completo) > 80:
+                palabras = objeto_completo.split()
                 linea_actual = ""
                 for palabra in palabras:
-                    if len(linea_actual + palabra) > 80:
-                        lineas.append(linea_actual)
+                    if len(linea_actual + " " + palabra) > 80:
+                        if linea_actual:
+                            c.drawString(x_margin + 0.3 * inch, y_position, linea_actual)
+                            y_position -= line_height * 0.7
                         linea_actual = palabra
                     else:
                         linea_actual += (" " if linea_actual else "") + palabra
                 if linea_actual:
-                    lineas.append(linea_actual)
-
-                c.drawString(x_margin + 0.2 * inch, y_position, "Objeto:")
-                y_position -= line_height * 0.7
-                for linea in lineas:
-                    if y_position < 1.5 * inch:
-                        c.showPage()
-                        y_position = height - 0.5 * inch
-                    c.drawString(x_margin + 0.3 * inch, y_position, linea)
+                    c.drawString(x_margin + 0.3 * inch, y_position, linea_actual)
                     y_position -= line_height * 0.7
             else:
-                c.drawString(x_margin + 0.2 * inch, y_position, objeto_text)
+                c.drawString(x_margin + 0.3 * inch, y_position, objeto_completo)
                 y_position -= line_height * 0.7
 
-            c.drawString(x_margin + 0.2 * inch, y_position, f"Fecha Ingreso: {_format_date(sim.SIM_FECING)}")
-            y_position -= line_height * 0.7
-
-            c.drawString(x_margin + 0.2 * inch, y_position, f"Estado Actual: {sim.SIM_ESTADO if hasattr(sim, 'SIM_ESTADO') else 'N/A'}")
+            estado_display = sim.get_SIM_ESTADO_display() if hasattr(sim, 'get_SIM_ESTADO_display') else sim.SIM_ESTADO
+            c.drawString(x_margin + 0.2 * inch, y_position, f"Estado: {estado_display}")
             y_position -= line_height
 
-            # Resoluciones de este sumario
+            # Recopilar todos los documentos (RES, RR, AUTOTPE) ordenados por fecha
+            documentos = []
+
+            # Resoluciones (RES)
             resoluciones = historial['resoluciones'].filter(sim=sim)
-            if resoluciones.exists():
-                c.setFont("Helvetica-Bold", 9)
-                c.drawString(x_margin + 0.3 * inch, y_position, f"Resoluciones ({resoluciones.count()}):")
-                y_position -= line_height * 0.8
+            for res in resoluciones:
+                notif = "Sí" if res.RES_FECNOT else "No"
+                notif_tipo = f" ({res.RES_TIPO_NOTIF})" if res.RES_TIPO_NOTIF else ""
+                documentos.append({
+                    'tipo': 'RESOLUCIÓN',
+                    'numero': res.RES_NUM or 'S/N',
+                    'fecha_doc': res.RES_FEC,
+                    'resolutiva': (res.RES_RESOL or 'N/A')[:80],
+                    'notificacion': notif + notif_tipo
+                })
 
-                c.setFont("Helvetica", 8)
-                for res in resoluciones:
-                    if y_position < 1.5 * inch:
-                        c.showPage()
-                        y_position = height - 0.5 * inch
+            # Segundas Resoluciones (RR - Reconsideración)
+            rr_list = historial.get('segundas_resoluciones', Resolucion.objects.none()).filter(sim=sim)
+            if hasattr(historial.get('segundas_resoluciones'), 'filter'):
+                for rr in rr_list:
+                    notif = "Sí" if rr.RES_FECNOT else "No"
+                    notif_tipo = f" ({rr.RES_TIPO_NOTIF})" if rr.RES_TIPO_NOTIF else ""
+                    documentos.append({
+                        'tipo': 'RECURSO DE RECONSIDERACIÓN',
+                        'numero': rr.RES_NUM or 'S/N',
+                        'fecha_doc': rr.RES_FEC,
+                        'resolutiva': (rr.RES_RESOL or 'N/A')[:80],
+                        'notificacion': notif + notif_tipo
+                    })
 
-                    c.drawString(x_margin + 0.5 * inch, y_position, f"• Nº {res.RES_NUM} ({_format_date(res.RES_FEC)})")
-                    y_position -= line_height * 0.7
-
-                    c.drawString(x_margin + 0.7 * inch, y_position, f"Tipo: {res.get_RES_TIPO_display() if res.RES_TIPO else 'N/A'}")
-                    y_position -= line_height * 0.7
-
-                    if res.RES_TIPO_NOTIF:
-                        c.drawString(x_margin + 0.7 * inch, y_position, f"Notificación: {res.RES_TIPO_NOTIF}")
-                        y_position -= line_height * 0.7
-
-                    if res.RES_FECNOT:
-                        c.drawString(x_margin + 0.7 * inch, y_position, f"Fecha Notificación: {_format_date(res.RES_FECNOT)}")
-                        y_position -= line_height * 0.7
-
-                y_position -= line_height * 0.5
-
-            # Autos TPE de este sumario
+            # Autos TPE
             autos_tpe = historial['autos_tpe'].filter(sim=sim)
-            if autos_tpe.exists():
-                c.setFont("Helvetica-Bold", 9)
-                c.drawString(x_margin + 0.3 * inch, y_position, f"Autos TPE ({autos_tpe.count()}):")
-                y_position -= line_height * 0.8
+            for auto in autos_tpe:
+                tipo_auto = auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'AUTO TPE'
+                notif = "Sí" if auto.TPE_FECNOT else "No"
+                notif_tipo = f" ({auto.TPE_TIPO_NOTIF})" if auto.TPE_TIPO_NOTIF else ""
+                documentos.append({
+                    'tipo': f'AUTO TPE - {tipo_auto}',
+                    'numero': auto.TPE_NUM or 'S/N',
+                    'fecha_doc': auto.TPE_FEC,
+                    'resolutiva': (auto.TPE_RESOL or 'N/A')[:80],
+                    'notificacion': notif + notif_tipo
+                })
 
-                c.setFont("Helvetica", 8)
-                for auto in autos_tpe:
+            # Ordenar por fecha de documento
+            from datetime import date
+            documentos.sort(key=lambda x: x['fecha_doc'] or date.min)
+
+            # Dibujar tabla de actuados
+            if documentos:
+                # Encabezados de tabla (5 columnas ahora)
+                c.setFont("Helvetica-Bold", 7)
+                col_widths = [1.3 * inch, 0.7 * inch, 1.1 * inch, 1.5 * inch, 1.0 * inch]
+                col_positions = [x_margin]
+                for cw in col_widths[:-1]:
+                    col_positions.append(col_positions[-1] + cw)
+
+                headers = ["Documento", "Número", "Fecha Doc.", "Resolutiva", "Notificación"]
+
+                for i, header in enumerate(headers):
+                    c.drawString(col_positions[i], y_position, header)
+
+                y_position -= line_height * 0.8
+                c.setLineWidth(1)
+                c.line(x_margin, y_position, width - x_margin, y_position)
+                y_position -= line_height * 0.6
+
+                # Filas de documentos
+                c.setFont("Helvetica", 6)
+                for doc in documentos:
+                    # Verificar espacio disponible
                     if y_position < 1.5 * inch:
                         c.showPage()
                         y_position = height - 0.5 * inch
+                        # Redibujar encabezados
+                        c.setFont("Helvetica-Bold", 7)
+                        for i, header in enumerate(headers):
+                            c.drawString(col_positions[i], y_position, header)
+                        y_position -= line_height * 0.8
+                        c.setLineWidth(1)
+                        c.line(x_margin, y_position, width - x_margin, y_position)
+                        y_position -= line_height * 0.6
+                        c.setFont("Helvetica", 6)
 
-                    c.drawString(x_margin + 0.5 * inch, y_position, f"• Nº {auto.TPE_NUM or 'S/N'} ({_format_date(auto.TPE_FEC)})")
-                    y_position -= line_height * 0.7
+                    # Columna 1: Documento (truncar si es necesario)
+                    doc_tipo = (doc['tipo'][:35] + "...") if len(doc['tipo']) > 35 else doc['tipo']
+                    c.drawString(col_positions[0], y_position, doc_tipo)
 
-                    c.drawString(x_margin + 0.7 * inch, y_position, f"Disposición: {auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'}")
-                    y_position -= line_height * 0.7
+                    # Columna 2: Número
+                    c.drawString(col_positions[1], y_position, str(doc['numero']))
 
-                    if auto.TPE_FECNOT:
-                        c.drawString(x_margin + 0.7 * inch, y_position, f"Notificación: {auto.TPE_TIPO_NOTIF or 'N/A'} ({_format_date(auto.TPE_FECNOT)})")
-                        y_position -= line_height * 0.7
+                    # Columna 3: Fecha Documento
+                    c.drawString(col_positions[2], y_position, _format_date(doc['fecha_doc']))
 
-                    if auto.TPE_MEMO_NUM:
-                        c.drawString(x_margin + 0.7 * inch, y_position, f"Memorandum Nº {auto.TPE_MEMO_NUM} ({_format_date(auto.TPE_MEMO_FEC)})")
-                        y_position -= line_height * 0.7
+                    # Columna 4: Resolutiva (truncar si es necesario)
+                    resol = (doc['resolutiva'][:35] + "...") if len(doc['resolutiva']) > 35 else doc['resolutiva']
+                    c.drawString(col_positions[3], y_position, resol)
+
+                    # Columna 5: Notificación
+                    notif = (doc['notificacion'][:20] + "...") if len(doc['notificacion']) > 20 else doc['notificacion']
+                    c.drawString(col_positions[4], y_position, notif)
+
+                    y_position -= line_height * 0.8
 
                 y_position -= line_height * 0.5
 

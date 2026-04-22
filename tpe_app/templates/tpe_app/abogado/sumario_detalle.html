@@ -148,24 +148,57 @@
                 {% if custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
                     <p style="margin: 0; color: #dc2626; font-size: 0.95rem;">
                         <strong>⏳ Pendiente su confirmación de recepción</strong><br>
-                        <small style="color: #6b7280; font-size: 0.85rem;">Admin2 ha entregado la carpeta. Debe confirmar que la recibió.</small>
+                        <small style="color: #6b7280; font-size: 0.85rem;">
+                            {% if admin2_user %}
+                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+                            {% else %}
+                                Admin2
+                            {% endif %}
+                            ha entregado la carpeta. Debe confirmar que la recibió.
+                        </small>
                     </p>
                 {% else %}
                     <p style="margin: 0; color: #1e40af; font-size: 0.95rem;">
-                        <strong>ℹ️ Carpeta en poder de Admin2</strong><br>
-                        <small style="color: #6b7280; font-size: 0.85rem;">Admin2 es el custodio. Puede continuar con su trabajo.</small>
+                        <strong>ℹ️ Carpeta en poder de
+                            {% if admin2_user %}
+                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+                            {% else %}
+                                Admin2
+                            {% endif %}
+                        </strong><br>
+                        <small style="color: #6b7280; font-size: 0.85rem;">
+                            {% if admin2_user %}
+                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+                            {% else %}
+                                Admin2
+                            {% endif %}
+                            es el custodio. Puede continuar con su trabajo.
+                        </small>
                     </p>
                 {% endif %}
             {% else %}
                 {% if custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
                     <p style="margin: 0; color: #dc2626; font-size: 0.95rem;">
                         <strong>⏳ Pendiente su confirmación de recepción</strong><br>
-                        <small style="color: #6b7280; font-size: 0.85rem;">Admin2 acaba de entregarle la carpeta. Confirme la recepción para poder trabajar.</small>
+                        <small style="color: #6b7280; font-size: 0.85rem;">
+                            {% if admin2_user %}
+                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+                            {% else %}
+                                Admin2
+                            {% endif %}
+                            acaba de entregarle la carpeta. Confirme la recepción para poder trabajar.
+                        </small>
                     </p>
                 {% else %}
                     <p style="margin: 0; color: #15803d; font-size: 0.95rem;">
                         <strong>✅ Carpeta en su poder</strong><br>
-                        <small style="color: #6b7280; font-size: 0.85rem;">Cuando termine, devuelva la carpeta a Admin2.</small>
+                        <small style="color: #6b7280; font-size: 0.85rem;">Cuando termine, devuelva la carpeta a
+                            {% if admin2_user %}
+                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+                            {% else %}
+                                Admin2
+                            {% endif %}.
+                        </small>
                     </p>
                 {% endif %}
             {% endif %}
@@ -176,7 +209,7 @@
                 <a href="{% url 'abogado_confirmar_recepcion' sim.pk %}" class="btn" style="background: #10b981; color: #fff; padding: 0.6rem 1.2rem; white-space: nowrap; text-decoration: none; font-weight: 600;">
                     ✅ Recibí Conforme
                 </a>
-            {% elif custodio_actual.tipo_custodio != 'ADMIN2_ARCHIVO' and custodio_actual.estado == 'ACTIVA' %}
+            {% elif custodio_actual.tipo_custodio != 'ADMIN2_ARCHIVO' and custodio_actual.estado == 'RECIBIDA_CONFORME' %}
                 <a href="{% url 'abogado_devolver_carpeta' sim.pk %}" class="btn" style="background: #dc2626; color: #fff; padding: 0.6rem 1.2rem; white-space: nowrap; text-decoration: none; font-weight: 600;">
                     📤 Devolver a Admin2
                 </a>

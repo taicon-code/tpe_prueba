@@ -8,7 +8,13 @@
 
 <div style="background: #fef3c7; border: 2px solid #d97706; border-radius: 12px; padding: 2rem; margin: 2rem 0; text-align: center; max-width: 600px; margin-left: auto; margin-right: auto;">
     <div style="font-size: 3rem; margin-bottom: 1rem;">📤</div>
-    <h2 style="color: #92400e; margin-bottom: 1rem;">Devolver Carpeta a Admin2</h2>
+    <h2 style="color: #92400e; margin-bottom: 1rem;">Devolver Carpeta a
+        {% if admin2_user %}
+            {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+        {% else %}
+            Admin2
+        {% endif %}
+    </h2>
 
     <div style="background: white; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; text-align: left;">
         <div style="font-size: 0.9rem; color: #6b7280; margin-bottom: 0.5rem;"><strong>Sumario:</strong> {{ sim.SIM_COD }}</div>
@@ -16,7 +22,13 @@
     </div>
 
     <p style="color: #374151; margin: 1.5rem 0; font-size: 0.95rem;">
-        Confirme que está devolviendo la carpeta física a Admin2 (Archivo SIM).
+        Confirme que está devolviendo la carpeta física a
+        {% if admin2_user %}
+            {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+        {% else %}
+            Admin2
+        {% endif %}
+        (Archivo SIM).
         Asegúrese de haber completado su trabajo antes de devolver.
     </p>
 

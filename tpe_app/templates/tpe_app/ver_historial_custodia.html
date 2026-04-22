@@ -33,7 +33,7 @@
                 {% elif sim.SIM_ESTADO == 'CONCLUIDO' %}
                     <span class="badge badge-green">Concluido</span>
                 {% else %}
-                    {{ sim.SIM_ESTADO }}
+                    {{ sim.get_SIM_ESTADO_display }}
                 {% endif %}
             </p>
         </div>
@@ -54,7 +54,7 @@
                 <p style="margin: 0.5rem 0; color: #92400e;">
                     📅 Desde: <strong>{{ custodia_actual.fecha_recepcion|date:"d/m/Y H:i" }}</strong>
                 </p>
-                {% if custodia_actual.estado != 'ACTIVA' %}
+                {% if custodia_actual.estado != 'RECIBIDA_CONFORME' %}
                     <p style="margin: 0.5rem 0; color: #92400e;">
                         ⚠️ Estado: <strong>{{ custodia_actual.get_estado_display }}</strong>
                     </p>
@@ -112,7 +112,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if custodia.estado == 'ACTIVA' %}
+                        {% if custodia.estado == 'RECIBIDA_CONFORME' %}
                             <span class="badge badge-green">Activa</span>
                         {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
                             <span class="badge badge-orange">Pendiente</span>

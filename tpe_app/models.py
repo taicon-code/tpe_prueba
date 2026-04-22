@@ -17,13 +17,26 @@ from datetime import timedelta
 from datetime import date, timedelta
 
 FERIADOS_2026 = [
+    # Día de la Creación del Estado Plurinacional (se traslada del 22 al 23 de enero)
+    date(2026, 1, 23),
+    # Carnaval
+    date(2026, 2, 16),
+    date(2026, 2, 17),
+    # Viernes Santo
+    date(2026, 4, 3),
+    # Día del Trabajo
     date(2026, 5, 1),
+    # Corpus Christi
     date(2026, 6, 4),
     date(2026, 6, 5),
+    # Año Nuevo Andino Amazónico Chagueño (se traslada del 21 al 22 de junio)
     date(2026, 6, 22),
+    # Día de la Independencia
     date(2026, 8, 6),
     date(2026, 8, 7),
+    # Día de Todos los Difuntos
     date(2026, 11, 2),
+    # Navidad
     date(2026, 12, 25),
 ]
 
@@ -286,11 +299,12 @@ class SIM(models.Model):
 
     # ✅ CORREGIDO v1.2: estados del sumario
     ESTADO_CHOICES = [
-        ('PARA_AGENDA',      'Para Agenda'),
-        ('PROCESO_EN_EL_TPE', 'Proceso en el TPE'),
-        ('EN_APELACION_TSP',  'En Apelación TSP'),
-        ('CONCLUIDO',          'Concluido'),
-        ('OBSERVADO',           'Observado'),
+        ('PARA_AGENDA',           'Para Agenda'),
+        ('PROCESO_EN_EL_TPE',     'Proceso en el TPE'),
+        ('PROCESO_EN_EL_TSP',     'Proceso en el TSP'),
+        ('PROCESO_CONCLUIDO_TPE', 'Proceso Concluido (TPE)'),
+        ('PROCESO_EJECUTADO',     'Proceso Ejecutado'),
+        ('OBSERVADO',             'Observado'),
     ]
 
     # ✅ NUEVO: estados detallados del flujo (fase dentro del TPE)
@@ -330,9 +344,9 @@ class SIM(models.Model):
         'NOTIFICACION_RR': 'PROCESO_EN_EL_TPE',
         'NOTIFICADO_RR': 'PROCESO_EN_EL_TPE',
         'EN_ESPERA_RAP': 'PROCESO_EN_EL_TPE',
-        'ELEVADO_TSP': 'EN_APELACION_TSP',
-        'EN_AGENDA_EJECUTORIA': 'EN_APELACION_TSP',
-        'CONCLUIDO': 'CONCLUIDO',
+        'ELEVADO_TSP': 'PROCESO_EN_EL_TSP',
+        'EN_AGENDA_EJECUTORIA': 'PROCESO_CONCLUIDO_TPE',
+        'CONCLUIDO': 'PROCESO_CONCLUIDO_TPE',
     }
 
     militares = models.ManyToManyField(
@@ -479,7 +493,7 @@ class CustodiaSIM(models.Model):
     ]
 
     ESTADO_CHOICES = [
-        ('ACTIVA',                  'Activa'),
+        ('RECIBIDA_CONFORME',       'Recibida Conforme'),
         ('PENDIENTE_CONFIRMACION',  'Pendiente de Confirmación'),
     ]
 
@@ -515,8 +529,14 @@ class CustodiaSIM(models.Model):
     fecha_oficio    = models.DateField(null=True, blank=True,
                                        verbose_name='Fecha del Oficio (TSP)',
                                        help_text="Fecha de emisión del oficio al TSP")
+    nro_oficio_archivo = models.CharField(max_length=30, null=True, blank=True,
+                                          verbose_name='Número de Oficio (ARCHIVO/SPRODA)',
+                                          help_text="Ej: OF-001/26 — cuando se envía a archivo permanente")
+    fecha_oficio_archivo = models.DateField(null=True, blank=True,
+                                            verbose_name='Fecha del Oficio (ARCHIVO/SPRODA)',
+                                            help_text="Fecha de envío a ARCHIVO PERMANENTE")
     estado          = models.CharField(max_length=25, choices=ESTADO_CHOICES,
-                                       default='ACTIVA',
+                                       default='RECIBIDA_CONFORME',
                                        verbose_name='Estado de la Custodia')
 
     class Meta:

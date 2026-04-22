@@ -8,9 +8,7 @@ from .widgets import ResumenConOpcionesWidget
 # ============================================================
 #  Configuración general del panel admin
 # ============================================================
-admin.site.site_header = "Sistema TPE — Tribunal de Personal del Ejército"
-admin.site.site_title  = "TPE Sistema"
-admin.site.index_title = "Panel de Administración"
+# Usando estilo Django estándar (sin personalizaciones)
 
 
 RESUMEN_CHOICES = [

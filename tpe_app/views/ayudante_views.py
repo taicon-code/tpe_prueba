@@ -186,7 +186,7 @@ def ayudante_registrar_rap(request):
                     sim = rap.sim
                     if sim.SIM_FASE not in ['ELEVADO_TSP', 'CONCLUIDO']:
                         sim.SIM_FASE = 'ELEVADO_TSP'
-                        sim.SIM_ESTADO = 'EN_APELACION_TSP'
+                        sim.SIM_ESTADO = 'PROCESO_EN_EL_TSP'
                         sim.save()
 
                     messages.success(
