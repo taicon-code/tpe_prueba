@@ -340,6 +340,7 @@ class SIM(models.Model):
         ('EJECUTORIA_NOTIFICADA',    'Ejecutoria Notificada (Pte. Archivo)'),
         ('PENDIENTE_ARCHIVO',        'Pendiente Archivo SPRODA'),
         ('CONCLUIDO',                'Archivado / Concluido (TPE)'),
+        ('MEMORANDUM_RETORNADO',     'Memorandum Retornado (Proceso Ejecutado)'),
     ]
 
     # Mapeo automático de FASE → ESTADO general
@@ -362,6 +363,7 @@ class SIM(models.Model):
         'EJECUTORIA_NOTIFICADA': 'PROCESO_EN_EL_TPE',
         'PENDIENTE_ARCHIVO': 'PROCESO_EN_EL_TPE',
         'CONCLUIDO': 'PROCESO_CONCLUIDO_TPE',
+        'MEMORANDUM_RETORNADO': 'PROCESO_EJECUTADO',
     }
 
     militares = models.ManyToManyField(
@@ -528,15 +530,15 @@ class CustodiaSIM(models.Model):
     """Registra quién tiene la carpeta física de cada sumario en cada momento."""
 
     TIPO_CHOICES = [
-        ('ADMIN1',      'Administrativo 1 (Agendador)'),
-        ('ADMIN2',      'Administrativo 2 (Archivo SIM)'),
-        ('ADMIN3',      'Administrativo 3 (Notificador)'),
-        ('ABOG_ASESOR', 'Abogado Asesor (1ra. Resolución)'),
-        ('ABOG_RR',     'Abogado (Recurso de Reconsideración)'),
-        ('ABOG_AUTOS',  'Abogado Autos (Ejecutoria/Cumplimiento)'),
-        ('ABOG_RAP',    'Abogado 3 (Búsqueda/RAP)'),
-        ('TSP',         'Elevado al TSP (externo)'),
-        ('ARCHIVO',     'Archivado / Concluido'),
+        ('ADMIN2_ARCHIVO',      'Archivo del Tribunal'),
+        ('ABOG_ASESOR',         'Abogado Asesor'),
+        ('ABOG_RR',             'Abogado (Reconsideración)'),
+        ('ABOG_AUTOS',          'Abogado (Autos)'),
+        ('VOCAL_SESION',        'Secretario de Actas'),
+        ('ADMIN1_AGENDADOR',    'Agendador'),
+        ('ADMIN3_NOTIFICADOR',  'Notificador'),
+        ('TSP',                 'Tribunal Supremo Policial'),
+        ('ARCHIVO',             'Archivo Permanente'),
     ]
 
     MOTIVO_CHOICES = [

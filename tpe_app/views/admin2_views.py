@@ -487,14 +487,15 @@ def ver_historial_custodia_sim(request, sim_id):
 
     # Enriquecer datos de historial con nombre legible del custodio
     TIPO_CUSTODIO_DISPLAY = {
-        'ADMIN1': 'Admin1 - Agendador',
-        'ADMIN2_ARCHIVO': 'Admin2 - Archivo SIM',
-        'ADMIN3': 'Admin3 - Notificador',
-        'ABOG_ASESOR': 'Abogado 1 - Asesor',
-        'ABOG_RR': 'Abogado 2 - RR',
-        'ABOG_AUTOS': 'Abogado 3 - Autos',
+        'ADMIN1_AGENDADOR': 'Agendador',
+        'ADMIN2_ARCHIVO': 'Archivo del Tribunal',
+        'ADMIN3_NOTIFICADOR': 'Notificador',
+        'ABOG_ASESOR': 'Abogado Asesor',
+        'ABOG_RR': 'Abogado (Reconsideración)',
+        'ABOG_AUTOS': 'Abogado (Autos)',
+        'VOCAL_SESION': 'Secretario de Actas',
         'TSP': 'Tribunal Supremo Policial',
-        'ARCHIVO': 'Archivado / Concluido',
+        'ARCHIVO': 'Archivo Permanente',
     }
 
     for custodia in historial:
@@ -578,7 +579,7 @@ def admin2_registrar_retorno_memo(request, auto_id):
                     auto.TPE_MEMO_ENTREGA = fecha
                     auto.save(update_fields=['TPE_MEMO_ENTREGA'])
                     sim = auto.sim
-                    sim.SIM_ESTADO = 'PROCESO_EJECUTADO'
+                    sim.SIM_FASE = 'MEMORANDUM_RETORNADO'
                     sim.save()
                 messages.success(
                     request,
