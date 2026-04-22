@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import datetime
 from ..decorators import rol_requerido
-from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM
+from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE
 
 
 # ============================================================
@@ -135,6 +135,34 @@ def admin2_dashboard(request):
     # Ordenar por fecha de ingreso descendente
     sims_pendientes_entregar.sort(key=lambda x: x.SIM_FECING if x.SIM_FECING else timezone.now(), reverse=True)
 
+    # ✅ 7. PENDIENTE ARCHIVO SPRODA (Admin1 ordenó el archivo final)
+    sims_pendiente_archivo = list(
+        SIM.objects.filter(SIM_FASE='PENDIENTE_ARCHIVO')
+        .prefetch_related('militares')
+        .order_by('-SIM_FECING')
+    )
+    for sim_pa in sims_pendiente_archivo:
+        sim_pa.auto_ejecutoria = AUTOTPE.objects.filter(
+            sim=sim_pa, TPE_TIPO='AUTO_EJECUTORIA'
+        ).order_by('-TPE_FEC').first()
+
+    # ✅ 8. PROCESO_CONCLUIDO_TPE con memorándum pendiente de retorno
+    sims_memo_pendiente = list(
+        SIM.objects.filter(SIM_ESTADO='PROCESO_CONCLUIDO_TPE')
+        .prefetch_related('militares')
+        .order_by('-SIM_FECING')
+    )
+    sims_con_memo_pendiente = []
+    for sim_m in sims_memo_pendiente:
+        auto = AUTOTPE.objects.filter(
+            sim=sim_m, TPE_TIPO='AUTO_EJECUTORIA',
+            TPE_MEMO_NUM__isnull=False,
+            TPE_MEMO_ENTREGA__isnull=True,
+        ).first()
+        if auto:
+            sim_m.auto_ejecutoria = auto
+            sims_con_memo_pendiente.append(sim_m)
+
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
 
@@ -168,6 +196,10 @@ def admin2_dashboard(request):
         'total_ejecutoria': len(para_ejecutoria),
         'sims_pendientes_entregar': sims_pendientes_entregar,
         'total_sin_entregar': len(sims_pendientes_entregar),
+        'sims_pendiente_archivo': sims_pendiente_archivo,
+        'total_pendiente_archivo': len(sims_pendiente_archivo),
+        'sims_con_memo_pendiente': sims_con_memo_pendiente,
+        'total_memo_pendiente': len(sims_con_memo_pendiente),
         'query': query,
         'historial_sim': historial_sim,
     }
@@ -316,6 +348,7 @@ def admin2_recibir_carpeta(request, sim_id):
                 CustodiaSIM.objects.create(
                     sim=sim,
                     tipo_custodio='ADMIN2_ARCHIVO',
+                    abog=custodio_actual.abog,
                     usuario=request.user,
                     observacion=observacion or None
                 )
@@ -477,3 +510,83 @@ def ver_historial_custodia_sim(request, sim_id):
     }
 
     return render(request, 'tpe_app/ver_historial_custodia.html', context)
+
+
+# ============================================================
+# ADMIN2: Confirmar Archivo Final a SPRODA
+# ============================================================
+
+@rol_requerido('ADMIN2_ARCHIVO')
+def admin2_confirmar_archivo_sproda(request, sim_id):
+    """Admin2 confirma que realizó el archivo final (SPRODA + copias a secciones si corresponde).
+    Transiciona el SIM a CONCLUIDO → PROCESO_CONCLUIDO_TPE."""
+
+    sim = get_object_or_404(SIM, pk=sim_id, SIM_FASE='PENDIENTE_ARCHIVO')
+
+    if request.method == 'POST':
+        observacion = request.POST.get('observacion', '').strip()
+        with transaction.atomic():
+            sim.SIM_FASE = 'CONCLUIDO'
+            sim.save()
+            # Registrar en historial de custodia
+            CustodiaSIM.objects.create(
+                sim=sim,
+                tipo_custodio='ARCHIVO',
+                usuario=request.user,
+                motivo='ARCHIVO',
+                observacion=observacion or 'Archivo final SPRODA',
+                estado='RECIBIDA_CONFORME',
+            )
+        messages.success(
+            request,
+            f"✅ SIM {sim.SIM_COD} archivado correctamente. Estado: Proceso Concluido (TPE)."
+        )
+        return redirect('admin2_dashboard')
+
+    auto_ej = AUTOTPE.objects.filter(
+        sim=sim, TPE_TIPO='AUTO_EJECUTORIA'
+    ).order_by('-TPE_FEC').first()
+
+    return render(request, 'tpe_app/admin2/confirmar_archivo_sproda.html', {
+        'sim': sim,
+        'auto': auto_ej,
+        'militares': sim.militares.all(),
+    })
+
+
+@rol_requerido('ADMIN2_ARCHIVO')
+def admin2_registrar_retorno_memo(request, auto_id):
+    """Admin2 registra el retorno del memorándum del Auto de Ejecutoria.
+    Cuando el memo retorna, el SIM pasa a PROCESO_EJECUTADO."""
+
+    auto = get_object_or_404(AUTOTPE, id=auto_id, TPE_TIPO='AUTO_EJECUTORIA')
+
+    if request.method == 'POST':
+        fecha_entrega = request.POST.get('fecha_entrega')
+        if not fecha_entrega:
+            messages.error(request, "Debe ingresar la fecha de retorno del memorándum.")
+        else:
+            from datetime import datetime as dt
+            try:
+                fecha = dt.strptime(fecha_entrega, '%Y-%m-%d').date()
+            except ValueError:
+                messages.error(request, "Formato de fecha inválido.")
+                fecha = None
+
+            if fecha:
+                with transaction.atomic():
+                    auto.TPE_MEMO_ENTREGA = fecha
+                    auto.save(update_fields=['TPE_MEMO_ENTREGA'])
+                    sim = auto.sim
+                    sim.SIM_ESTADO = 'PROCESO_EJECUTADO'
+                    sim.save()
+                messages.success(
+                    request,
+                    f"✅ Retorno de memorándum registrado. SIM {sim.SIM_COD}: Proceso Ejecutado."
+                )
+                return redirect('admin2_dashboard')
+
+    return render(request, 'tpe_app/admin2/registrar_retorno_memo.html', {
+        'auto': auto,
+        'sim': auto.sim,
+    })

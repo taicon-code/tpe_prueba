@@ -1,0 +1,435 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Detalles del Sumario — TPE Sistema{% endblock %}
+{% block navbar_title %}📋 Detalles del Sumario{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Buscar</span>
+    </a>
+    <hr class="sb-divider">
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<style>
+  .sim-header {
+    background: linear-gradient(135deg, #185FA5 0%, #1a3a52 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: #fff;
+  }
+
+  .sim-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .sim-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .meta-item {
+    font-size: 0.9rem;
+  }
+
+  .meta-label {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  .meta-value {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #185FA5;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #185FA5;
+    padding-bottom: 0.5rem;
+  }
+
+  .section-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  /* Tabla de militares */
+  .militares-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .militares-table thead {
+    background: #f0f0f0;
+  }
+
+  .militares-table thead th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 700;
+    color: #185FA5;
+    border-bottom: 2px solid #185FA5;
+  }
+
+  .militares-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .militares-table tbody tr:hover {
+    background: #f9fafb;
+  }
+
+  .militares-table tbody td {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  /* Actuados */
+  .actuado-card {
+    background: #f9fafb;
+    border-left: 4px solid #185FA5;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+  }
+
+  .actuado-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .actuado-titulo {
+    font-weight: 700;
+    color: #185FA5;
+    font-size: 0.95rem;
+  }
+
+  .actuado-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-label {
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 2px;
+  }
+
+  .info-value {
+    color: #333;
+    font-weight: 500;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+    font-style: italic;
+  }
+
+  .btn-volver {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #185FA5;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    transition: background 0.2s;
+  }
+
+  .btn-volver:hover {
+    background: #1a3a52;
+  }
+
+  .estado-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-left: 1rem;
+  }
+
+  .estado-para-agenda {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .estado-proceso {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .estado-apelacion {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .estado-concluido {
+    background: #d1fae5;
+    color: #065f46;
+  }
+</style>
+
+<div style="display: flex; gap: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
+  <a href="{% url 'buscador_dashboard' %}" style="background: #185FA5; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block;">
+    ← Volver a Búsqueda
+  </a>
+
+  <a href="{% url 'export_sim_pdf' sim.id %}" style="background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block;">
+    📄 Descargar PDF
+  </a>
+
+  <a href="{% url 'export_sim_excel' sim.id %}" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block;">
+    📊 Descargar Excel
+  </a>
+</div>
+
+<!-- ENCABEZADO DEL SIM -->
+<div class="sim-header">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+      <h1>{{ sim.SIM_COD }}</h1>
+      <div style="font-size: 0.95rem; opacity: 0.9;">{{ sim.get_SIM_TIPO_display }}</div>
+    </div>
+    <div>
+      {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
+        <span class="estado-badge estado-para-agenda">{{ sim.get_SIM_ESTADO_display }}</span>
+      {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+        <span class="estado-badge estado-proceso">{{ sim.get_SIM_ESTADO_display }}</span>
+      {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TSP' %}
+        <span class="estado-badge estado-apelacion">{{ sim.get_SIM_ESTADO_display }}</span>
+      {% elif sim.SIM_ESTADO == 'PROCESO_CONCLUIDO_TPE' %}
+        <span class="estado-badge estado-concluido">{{ sim.get_SIM_ESTADO_display }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="margin-top: 1.5rem;">
+    <div style="margin-bottom: 1rem;">
+      <div style="font-weight: 600; opacity: 0.9; margin-bottom: 0.25rem;">Objeto:</div>
+      <div style="font-size: 1rem; font-weight: 700;">{{ sim.SIM_OBJETO }}</div>
+    </div>
+
+    <div class="sim-meta">
+      <div class="meta-item">
+        <div class="meta-label">Fecha Ingreso:</div>
+        <div class="meta-value">{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Resumen:</div>
+        <div class="meta-value">{{ sim.SIM_RESUM }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MILITARES DEL SIM -->
+<div class="section-container">
+  <h2 class="section-title">👥 Militares Investigados ({{ militares.count }})</h2>
+
+  {% if militares %}
+  <table class="militares-table">
+    <thead>
+      <tr>
+        <th>Grado</th>
+        <th>Nombre</th>
+        <th>Apellido Paterno</th>
+        <th>Apellido Materno</th>
+        <th>CI</th>
+        <th>Arma</th>
+        <th>Escalafón</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for militar in militares %}
+      <tr>
+        <td>{{ militar.PM_GRADO }}</td>
+        <td>{{ militar.PM_NOMBRE }}</td>
+        <td>{{ militar.PM_PATERNO }}</td>
+        <td>{{ militar.PM_MATERNO|default:"—" }}</td>
+        <td>{{ militar.PM_CI|default:"—" }}</td>
+        <td>{{ militar.get_PM_ARMA_display|default:"—" }}</td>
+        <td>{{ militar.get_PM_ESCALAFON_display|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">No hay militares registrados para este sumario.</div>
+  {% endif %}
+</div>
+
+<!-- ACTUADOS DEL SIM -->
+<div class="section-container">
+  <h2 class="section-title">📄 Actuados</h2>
+
+  <!-- RESOLUCIONES -->
+  {% if resoluciones %}
+  <h3 style="color: #185FA5; margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.05rem;">Resoluciones ({{ resoluciones.count }})</h3>
+  {% for res in resoluciones %}
+  <div class="actuado-card">
+    <div class="actuado-header">
+      <div class="actuado-titulo">Resolución Nº {{ res.RES_NUM|default:"S/N" }}</div>
+      {% with docs=res.documentoadjunto_set.all %}
+        {% if docs %}
+          <div>
+            {% for doc in docs %}
+              <a href="{{ doc.archivo.url }}" target="_blank" style="color: #3b82f6; text-decoration: none; font-size: 0.85rem;">📥 Descargar</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+    </div>
+    <div class="actuado-info">
+      <div class="info-item">
+        <span class="info-label">Fecha:</span>
+        <span class="info-value">{{ res.RES_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Instancia:</span>
+        <span class="info-value">{{ res.get_RES_INSTANCIA_display|default:"—" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Tipo:</span>
+        <span class="info-value">{{ res.get_RES_TIPO_display|default:"—" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Notificación:</span>
+        <span class="info-value">{{ res.RES_TIPO_NOTIF|default:"—" }} ({{ res.RES_FECNOT|date:"d/m/Y"|default:"—" }})</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- AUTOS TPE -->
+  {% if autos_tpe %}
+  <h3 style="color: #f59e0b; margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.05rem;">Autos TPE ({{ autos_tpe.count }})</h3>
+  {% for auto in autos_tpe %}
+  <div class="actuado-card" style="border-left-color: #f59e0b;">
+    <div class="actuado-header">
+      <div class="actuado-titulo">Auto TPE Nº {{ auto.TPE_NUM|default:"S/N" }}</div>
+    </div>
+    <div class="actuado-info">
+      <div class="info-item">
+        <span class="info-label">Fecha:</span>
+        <span class="info-value">{{ auto.TPE_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Disposición:</span>
+        <span class="info-value">{{ auto.get_TPE_TIPO_display|default:"—" }}</span>
+      </div>
+      {% if auto.TPE_FECNOT %}
+      <div class="info-item">
+        <span class="info-label">Notificación:</span>
+        <span class="info-value">{{ auto.TPE_TIPO_NOTIF|default:"—" }} ({{ auto.TPE_FECNOT|date:"d/m/Y" }})</span>
+      </div>
+      {% endif %}
+      {% if auto.TPE_MEMO_NUM %}
+      <div class="info-item">
+        <span class="info-label">Memorandum:</span>
+        <span class="info-value">Nº {{ auto.TPE_MEMO_NUM }} ({{ auto.TPE_MEMO_FEC|date:"d/m/Y"|default:"N/A" }})</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- AUTOS TSP -->
+  {% if autos_tsp %}
+  <h3 style="color: #8b5cf6; margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.05rem;">Autos TSP ({{ autos_tsp.count }})</h3>
+  {% for auto in autos_tsp %}
+  <div class="actuado-card" style="border-left-color: #8b5cf6;">
+    <div class="actuado-header">
+      <div class="actuado-titulo">Auto TSP Nº {{ auto.TSP_NUM|default:"S/N" }}</div>
+    </div>
+    <div class="actuado-info">
+      <div class="info-item">
+        <span class="info-label">Fecha:</span>
+        <span class="info-value">{{ auto.TSP_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Disposición:</span>
+        <span class="info-value">{{ auto.get_TSP_TIPO_display|default:"—" }}</span>
+      </div>
+      {% if auto.TSP_FECNOT %}
+      <div class="info-item">
+        <span class="info-label">Notificación:</span>
+        <span class="info-value">{{ auto.TSP_FECNOT|date:"d/m/Y"|default:"—" }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- RECURSOS TSP (RAP, RAEE) -->
+  {% if recursos_tsp %}
+  <h3 style="color: #10b981; margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.05rem;">Recursos ante TSP ({{ recursos_tsp.count }})</h3>
+  {% for recurso in recursos_tsp %}
+  <div class="actuado-card" style="border-left-color: #10b981;">
+    <div class="actuado-header">
+      <div class="actuado-titulo">{{ recurso.get_TSP_INSTANCIA_display|default:"Recurso" }}</div>
+    </div>
+    <div class="actuado-info">
+      <div class="info-item">
+        <span class="info-label">Fecha Presentación:</span>
+        <span class="info-value">{{ recurso.TSP_FECOFI|date:"d/m/Y"|default:"N/A" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Instancia:</span>
+        <span class="info-value">{{ recurso.get_TSP_INSTANCIA_display|default:"—" }}</span>
+      </div>
+      {% if recurso.TSP_FECLIMITE %}
+      <div class="info-item">
+        <span class="info-label">Plazo Límite:</span>
+        <span class="info-value">{{ recurso.TSP_FECLIMITE|date:"d/m/Y" }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- SIN ACTUADOS -->
+  {% if not resoluciones and not autos_tpe and not autos_tsp and not recursos_tsp %}
+  <div class="empty-state">No hay actuados registrados para este sumario.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

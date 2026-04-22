@@ -14,7 +14,7 @@ from ..models import (
     SIM, PM, AUTOTPE, ABOG, VOCAL_TPE, Resolucion, RecursoTSP
 )
 from ..forms import (
-    RESForm, RESNotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm
+    RESForm, RESNotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, AUTOTPENotificacionForm
 )
 
 
@@ -302,6 +302,49 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
     }
 
     return render(request, 'tpe_app/admin3/registrar_notificacion_rr.html', context)
+
+
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
+def ayudante_registrar_notificacion_auto(request, auto_id):
+    """Registrar la notificación de un Auto TPE existente"""
+
+    auto = get_object_or_404(AUTOTPE, id=auto_id)
+
+    if request.method == 'POST':
+        form = AUTOTPENotificacionForm(request.POST, instance=auto)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    form.save()
+                    # Si es Auto de Ejecutoria, transicionar SIM a EJECUTORIA_NOTIFICADA
+                    # para que Admin1 pueda ordenar el archivo final a SPRODA
+                    if auto.TPE_TIPO == 'AUTO_EJECUTORIA' and auto.sim:
+                        sim = auto.sim
+                        if sim.SIM_FASE == 'EN_EJECUTORIA':
+                            sim.SIM_FASE = 'EJECUTORIA_NOTIFICADA'
+                            sim.save()
+                    messages.success(
+                        request,
+                        f'Notificación de Auto {auto.TPE_NUM} registrada exitosamente'
+                    )
+                    # Redirigir según el rol del usuario
+                    rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
+                    if rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR', 'ADMIN1', 'ADMIN1_AGENDADOR']:
+                        return redirect('admin3_dashboard')
+                    else:
+                        return redirect('ayudante_dashboard')
+            except Exception as e:
+                messages.error(request, f'Error al registrar notificación: {str(e)}')
+    else:
+        form = AUTOTPENotificacionForm(instance=auto)
+
+    context = {
+        'form': form,
+        'auto': auto,
+        'titulo': f'Registrar Notificación - Auto {auto.TPE_NUM}',
+    }
+
+    return render(request, 'tpe_app/ayudante/registrar_notificacion_auto.html', context)
 
 
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')

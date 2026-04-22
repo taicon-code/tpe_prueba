@@ -591,3 +591,263 @@ def export_person_excel(request, personal_id):
     response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="{excel_filename}"'
     return response
+
+
+# ============================================================
+# EXPORTACIÓN DE SIM COMPLETO
+# ============================================================
+
+def export_sim_pdf(request, sim_id):
+    """Exporta un SIM completo a PDF con militares y actuados"""
+    sim = get_object_or_404(SIM, id=sim_id)
+    militares = sim.militares.all()
+    resoluciones = Resolucion.objects.filter(sim=sim)
+    autos_tpe = AUTOTPE.objects.filter(sim=sim)
+    autos_tsp = AUTOTSP.objects.filter(sim=sim)
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim)
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    x_margin = 0.5 * inch
+    y_position = height - 0.5 * inch
+    line_height = 0.2 * inch
+
+    # ENCABEZADO
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(x_margin, y_position, "REPORTE DE SUMARIO")
+    y_position -= 1.2 * line_height
+
+    c.setFont("Helvetica", 8)
+    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+    hora_hoy = datetime.now().strftime("%H:%M:%S")
+    usuario = request.user.get_full_name() or request.user.username if request.user.is_authenticated else "Usuario"
+
+    c.drawString(x_margin, y_position, f"Impreso por: {usuario.upper()} — Fecha: {fecha_hoy} — Hora: {hora_hoy}")
+    y_position -= line_height * 0.8
+
+    c.setLineWidth(1)
+    c.line(x_margin, y_position, width - x_margin, y_position)
+    y_position -= 1 * line_height
+
+    # INFORMACIÓN DEL SIM
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(x_margin, y_position, "INFORMACIÓN DEL SUMARIO")
+    y_position -= line_height
+
+    c.setFont("Helvetica", 9)
+    info_sim = [
+        f"Código: {sim.SIM_COD}",
+        f"Tipo: {sim.get_SIM_TIPO_display()}",
+        f"Objeto: {sim.SIM_OBJETO}",
+        f"Resumen: {sim.SIM_RESUM}",
+        f"Fecha Ingreso: {_format_date(sim.SIM_FECING)}",
+        f"Estado: {sim.get_SIM_ESTADO_display()}",
+    ]
+
+    for info in info_sim:
+        if y_position < 2 * inch:
+            c.showPage()
+            y_position = height - 0.5 * inch
+        c.drawString(x_margin + 0.2 * inch, y_position, info)
+        y_position -= line_height
+
+    y_position -= 0.5 * line_height
+
+    # MILITARES INVESTIGADOS
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(x_margin, y_position, f"MILITARES INVESTIGADOS ({militares.count()})")
+    y_position -= line_height
+
+    c.setFont("Helvetica", 8)
+    for militar in militares:
+        if y_position < 2 * inch:
+            c.showPage()
+            y_position = height - 0.5 * inch
+        nombre_completo = f"{militar.PM_GRADO} {militar.PM_NOMBRE} {militar.PM_PATERNO} {militar.PM_MATERNO or ''}"
+        c.drawString(x_margin + 0.2 * inch, y_position, f"• {nombre_completo} (CI: {militar.PM_CI or 'N/A'})")
+        y_position -= line_height
+
+    y_position -= 0.5 * line_height
+
+    # RESOLUCIONES
+    if resoluciones.exists():
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(x_margin, y_position, f"RESOLUCIONES ({resoluciones.count()})")
+        y_position -= line_height
+
+        c.setFont("Helvetica", 8)
+        for res in resoluciones:
+            if y_position < 2 * inch:
+                c.showPage()
+                y_position = height - 0.5 * inch
+            res_info = f"• RES {res.RES_NUM} ({_format_date(res.RES_FEC)}) — {res.get_RES_TIPO_display()}"
+            c.drawString(x_margin + 0.2 * inch, y_position, res_info)
+            y_position -= line_height
+
+        y_position -= 0.3 * line_height
+
+    # AUTOS TPE
+    if autos_tpe.exists():
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(x_margin, y_position, f"AUTOS TPE ({autos_tpe.count()})")
+        y_position -= line_height
+
+        c.setFont("Helvetica", 8)
+        for auto in autos_tpe:
+            if y_position < 2 * inch:
+                c.showPage()
+                y_position = height - 0.5 * inch
+            auto_info = f"• AUTO {auto.TPE_NUM} ({_format_date(auto.TPE_FEC)}) — {auto.get_TPE_TIPO_display()}"
+            c.drawString(x_margin + 0.2 * inch, y_position, auto_info)
+            y_position -= line_height
+
+        y_position -= 0.3 * line_height
+
+    # RECURSOS TSP
+    if recursos_tsp.exists():
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(x_margin, y_position, f"RECURSOS TSP ({recursos_tsp.count()})")
+        y_position -= line_height
+
+        c.setFont("Helvetica", 8)
+        for recurso in recursos_tsp:
+            if y_position < 2 * inch:
+                c.showPage()
+                y_position = height - 0.5 * inch
+            recurso_info = f"• {recurso.get_TSP_INSTANCIA_display()} ({_format_date(recurso.TSP_FEC)})"
+            c.drawString(x_margin + 0.2 * inch, y_position, recurso_info)
+            y_position -= line_height
+
+    c.save()
+    buffer.seek(0)
+
+    fecha_export = datetime.now().strftime("%Y-%m-%d")
+    filename = f"SIM_{_sanitize_filename(sim.SIM_COD)}_{fecha_export}.pdf"
+
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def export_sim_excel(request, sim_id):
+    """Exporta un SIM completo a Excel con 3 hojas: SIM, Militares, Actuados"""
+    sim = get_object_or_404(SIM, id=sim_id)
+    militares = sim.militares.all()
+    resoluciones = Resolucion.objects.filter(sim=sim)
+    autos_tpe = AUTOTPE.objects.filter(sim=sim)
+    autos_tsp = AUTOTSP.objects.filter(sim=sim)
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim)
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    # ===== HOJA 1: INFORMACIÓN DEL SIM =====
+    ws_sim = wb.create_sheet("SIM")
+    ws_sim['A1'] = "INFORMACIÓN DEL SUMARIO"
+    ws_sim['A1'].font = Font(bold=True, size=12)
+
+    sim_data = [
+        ("Código:", sim.SIM_COD),
+        ("Tipo:", sim.get_SIM_TIPO_display()),
+        ("Objeto:", sim.SIM_OBJETO),
+        ("Resumen:", sim.SIM_RESUM),
+        ("Fecha Ingreso:", _format_date(sim.SIM_FECING)),
+        ("Estado:", sim.get_SIM_ESTADO_display()),
+    ]
+
+    for idx, (label, value) in enumerate(sim_data, start=2):
+        ws_sim[f'A{idx}'] = label
+        ws_sim[f'A{idx}'].font = Font(bold=True)
+        ws_sim[f'B{idx}'] = value
+
+    ws_sim.column_dimensions['A'].width = 20
+    ws_sim.column_dimensions['B'].width = 50
+
+    # ===== HOJA 2: MILITARES =====
+    ws_militares = wb.create_sheet("MILITARES")
+    headers_militares = ["Grado", "Nombre", "Apellido Paterno", "Apellido Materno", "CI", "Arma", "Escalafón"]
+    for col, header in enumerate(headers_militares, 1):
+        cell = ws_militares.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="185FA5", end_color="185FA5", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center")
+
+    for idx, militar in enumerate(militares, start=2):
+        ws_militares.cell(row=idx, column=1, value=militar.PM_GRADO)
+        ws_militares.cell(row=idx, column=2, value=militar.PM_NOMBRE)
+        ws_militares.cell(row=idx, column=3, value=militar.PM_PATERNO)
+        ws_militares.cell(row=idx, column=4, value=militar.PM_MATERNO or "")
+        ws_militares.cell(row=idx, column=5, value=str(militar.PM_CI) if militar.PM_CI else "")
+        ws_militares.cell(row=idx, column=6, value=militar.get_PM_ARMA_display() or "")
+        ws_militares.cell(row=idx, column=7, value=militar.get_PM_ESCALAFON_display() or "")
+
+    for col in range(1, len(headers_militares) + 1):
+        ws_militares.column_dimensions[chr(64 + col)].width = 18
+
+    # ===== HOJA 3: ACTUADOS =====
+    ws_actuados = wb.create_sheet("ACTUADOS")
+    headers_actuados = ["Tipo", "Número", "Fecha", "Descripción", "Notificación", "Fecha Notificación"]
+    for col, header in enumerate(headers_actuados, 1):
+        cell = ws_actuados.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="185FA5", end_color="185FA5", fill_type="solid")
+
+    row_idx = 2
+
+    # Resoluciones
+    for res in resoluciones:
+        ws_actuados.cell(row=row_idx, column=1, value="Resolución TPE")
+        ws_actuados.cell(row=row_idx, column=2, value=res.RES_NUM or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(res.RES_FEC))
+        ws_actuados.cell(row=row_idx, column=4, value=res.get_RES_TIPO_display() or "")
+        ws_actuados.cell(row=row_idx, column=5, value=res.RES_TIPO_NOTIF or "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(res.RES_FECNOT))
+        row_idx += 1
+
+    # Autos TPE
+    for auto in autos_tpe:
+        ws_actuados.cell(row=row_idx, column=1, value="Auto TPE")
+        ws_actuados.cell(row=row_idx, column=2, value=auto.TPE_NUM or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(auto.TPE_FEC))
+        ws_actuados.cell(row=row_idx, column=4, value=auto.get_TPE_TIPO_display() or "")
+        ws_actuados.cell(row=row_idx, column=5, value=auto.TPE_TIPO_NOTIF or "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(auto.TPE_FECNOT))
+        row_idx += 1
+
+    # Autos TSP
+    for auto in autos_tsp:
+        ws_actuados.cell(row=row_idx, column=1, value="Auto TSP")
+        ws_actuados.cell(row=row_idx, column=2, value=auto.TSP_NUM or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(auto.TSP_FEC))
+        ws_actuados.cell(row=row_idx, column=4, value=auto.get_TSP_TIPO_display() or "")
+        ws_actuados.cell(row=row_idx, column=5, value=auto.TSP_TIPO_NOTIF or "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(auto.TSP_FECNOT))
+        row_idx += 1
+
+    # Recursos TSP
+    for recurso in recursos_tsp:
+        ws_actuados.cell(row=row_idx, column=1, value=recurso.get_TSP_INSTANCIA_display())
+        ws_actuados.cell(row=row_idx, column=2, value=recurso.TSP_NUM or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(recurso.TSP_FEC))
+        ws_actuados.cell(row=row_idx, column=4, value=recurso.get_TSP_INSTANCIA_display() or "")
+        ws_actuados.cell(row=row_idx, column=5, value=recurso.TSP_TIPO_NOTIF or "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(recurso.TSP_FECNOT))
+        row_idx += 1
+
+    for col in range(1, len(headers_actuados) + 1):
+        ws_actuados.column_dimensions[chr(64 + col)].width = 18
+
+    # Guardar
+    fecha_export = datetime.now().strftime("%Y-%m-%d")
+    excel_filename = f"SIM_{_sanitize_filename(sim.SIM_COD)}_{fecha_export}.xlsx"
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{excel_filename}"'
+    return response

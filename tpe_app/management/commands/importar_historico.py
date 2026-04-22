@@ -363,9 +363,8 @@ class Command(BaseCommand):
                     self._registrar_skip(hoja, num_fila, "SIM_COD o PM_CI vacios")
                     continue
 
-                try:
-                    sim = SIM.objects.get(SIM_COD=cod.upper())
-                except SIM.DoesNotExist:
+                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}")
                     continue
 
@@ -407,9 +406,8 @@ class Command(BaseCommand):
                 if not res_res:
                     self._registrar_skip(hoja, num_fila, f"{cod}: RES_RESOL vacio"); continue
 
-                try:
-                    sim = SIM.objects.get(SIM_COD=cod.upper())
-                except SIM.DoesNotExist:
+                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 _, creado = Resolucion.objects.get_or_create(
@@ -448,9 +446,8 @@ class Command(BaseCommand):
                 if not res_num:
                     self._registrar_skip(hoja, num_fila, f"{cod}: RES_NUM vacio"); continue
 
-                try:
-                    sim = SIM.objects.get(SIM_COD=cod.upper())
-                except SIM.DoesNotExist:
+                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 try:
@@ -499,9 +496,8 @@ class Command(BaseCommand):
                 if not cod:
                     self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
 
-                try:
-                    sim = SIM.objects.get(SIM_COD=cod.upper())
-                except SIM.DoesNotExist:
+                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 if RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='APELACION').exists():
@@ -537,9 +533,8 @@ class Command(BaseCommand):
                 if not cod:
                     self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
 
-                try:
-                    sim = SIM.objects.get(SIM_COD=cod.upper())
-                except SIM.DoesNotExist:
+                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 AUTOTPE.objects.create(
@@ -571,9 +566,8 @@ class Command(BaseCommand):
                 if not cod:
                     self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
 
-                try:
-                    sim = SIM.objects.get(SIM_COD=cod.upper())
-                except SIM.DoesNotExist:
+                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 RecursoTSP.objects.create(

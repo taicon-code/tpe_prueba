@@ -17,9 +17,9 @@ class SIMForm(forms.ModelForm):
         widgets = {
             'SIM_COD': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Ejemplo: DJE-123/25',
-                'pattern': 'DJE-[0-9]{1,4}/[0-9]{2}',
-                'title': 'Formato: DJE-###/AA'
+                'placeholder': 'Ejemplo: DJE-123/25, SASJUR-25/25, SDISCAPE-86/25',
+                'pattern': '[A-Z]+-[0-9]{1,4}/[0-9]{2}',
+                'title': 'Formato: PREFIJO-NUM/AÑO (ej: DJE-95/25, SASJUR-25/25)'
             }),
             'SIM_FECING': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -48,12 +48,24 @@ class SIMForm(forms.ModelForm):
         }
 
     def clean_SIM_COD(self):
-        """Validar que el código no exista ya"""
+        """Validar que el código no exista ya (considera SIM_VERSION para reaperturas)"""
         cod = self.cleaned_data.get('SIM_COD')
         if cod:
             cod = cod.upper()
-            if SIM.objects.filter(SIM_COD=cod).exists():
-                raise forms.ValidationError(f'El código {cod} ya existe en el sistema')
+            version = self.cleaned_data.get('SIM_VERSION', 1)
+
+            # Si es edición de un SIM existente, permitir el mismo código
+            if self.instance and self.instance.pk:
+                existentes = SIM.objects.filter(SIM_COD=cod, SIM_VERSION=version).exclude(pk=self.instance.pk)
+            else:
+                # Si es nuevo SIM, verificar si (SIM_COD, SIM_VERSION) ya existe
+                existentes = SIM.objects.filter(SIM_COD=cod, SIM_VERSION=version)
+
+            if existentes.exists():
+                raise forms.ValidationError(
+                    f'El código {cod} versión {version} ya existe. '
+                    'Para reaperturas, use una versión diferente.'
+                )
         return cod
 
 
@@ -777,5 +789,36 @@ class AutoEjecutoriaForm(forms.ModelForm):
             'TPE_FEC': 'Fecha del Auto',
             'TPE_RESOL': 'Texto del Auto de Ejecutoria',
             'abog': 'Abogado',
+        }
+
+
+class AUTOTPENotificacionForm(forms.ModelForm):
+    """Formulario para registrar notificación de un Auto TPE existente"""
+
+    class Meta:
+        model = AUTOTPE
+        fields = [
+            'TPE_FECNOT', 'TPE_HORNOT', 'TPE_NOT', 'TPE_TIPO_NOTIF'
+        ]
+        widgets = {
+            'TPE_FECNOT': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'TPE_HORNOT': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'TPE_NOT': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Quién notificó'
+            }),
+            'TPE_TIPO_NOTIF': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'TPE_FECNOT': 'Fecha de Notificación',
+            'TPE_HORNOT': 'Hora de Notificación',
+            'TPE_NOT': 'Notificado a (persona)',
+            'TPE_TIPO_NOTIF': 'Tipo de Notificación',
         }
 

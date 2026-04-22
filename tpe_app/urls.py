@@ -37,6 +37,7 @@ urlpatterns = [
     path('ayudante/res/nueva/', views.ayudante_registrar_res, name='ayudante_registrar_res'),
     path('ayudante/res/<int:res_id>/notificar/', views.ayudante_registrar_notificacion, name='ayudante_registrar_notificacion'),
     path('ayudante/rr/<int:rr_id>/notificar/', views.ayudante_registrar_notificacion_rr, name='ayudante_registrar_notificacion_rr'),
+    path('ayudante/auto/<int:auto_id>/notificar/', views.ayudante_registrar_notificacion_auto, name='ayudante_registrar_notificacion_auto'),
     path('ayudante/rap/nuevo/', views.ayudante_registrar_rap, name='ayudante_registrar_rap'),
     path('ayudante/raee/nuevo/', views.ayudante_registrar_raee, name='ayudante_registrar_raee'),
     path('ayudante/autotpe/nuevo/', views.ayudante_registrar_autotpe, name='ayudante_registrar_autotpe'),
@@ -69,7 +70,10 @@ urlpatterns = [
     # path('sim/<int:sim_id>/historial/', views.historial_externo_sim, name='historial_externo_sim'),
     # path('admin/sim/<int:sim_id>/auditoria/', views.historial_auditoria_sim, name='historial_auditoria_sim'),
     
-    # Buscador - subir foto de PM
+    # Buscador - Detalle de SIM y subir foto
+    path('buscador/sim/<int:sim_id>/', views.detalles_sim, name='detalles_sim'),
+    path('buscador/sim/<int:sim_id>/exportar/pdf/', views.export_sim_pdf, name='export_sim_pdf'),
+    path('buscador/sim/<int:sim_id>/exportar/excel/', views.export_sim_excel, name='export_sim_excel'),
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),
 
     # Exportación de historial (desde buscador_dashboard)
@@ -80,6 +84,11 @@ urlpatterns = [
     path('ejecutoria/pendientes/', views.pendientes_ejecutoria, name='pendientes_ejecutoria'),
     path('ejecutoria/crear/<str:origen>/<int:origen_id>/', views.crear_auto_ejecutoria, name='crear_auto_ejecutoria'),
     path('admin1/ejecutoria/<int:res_id>/entregar/', views.admin1_ordenar_ejecutoria, name='admin1_ordenar_ejecutoria'),
+
+    # Archivo final SPRODA (flujo post-ejecutoria notificada)
+    path('admin1/sim/<int:sim_id>/ordenar-archivo/', views.admin1_ordenar_archivo_sproda, name='admin1_ordenar_archivo_sproda'),
+    path('admin2/sim/<int:sim_id>/confirmar-archivo/', views.admin2_confirmar_archivo_sproda, name='admin2_confirmar_archivo_sproda'),
+    path('admin2/auto/<int:auto_id>/retorno-memo/', views.admin2_registrar_retorno_memo, name='admin2_registrar_retorno_memo'),
 
     # Redirección por defecto (opcional)
     path('', views.login_view, name='index'),

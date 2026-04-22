@@ -648,6 +648,7 @@
     <thead>
       <tr>
         <th>Código DJE</th>
+        <th>Militares</th>
         <th>Tipo</th>
         <th>Resumen</th>
         <th>Fecha Ingreso</th>
@@ -657,7 +658,14 @@
     <tbody>
       {% for sim in resultados_sim %}
       <tr>
-        <td class="sim-codigo">{{ sim.SIM_COD }}</td>
+        <td class="sim-codigo"><a href="{% url 'detalles_sim' sim.id %}" style="color: #185FA5; text-decoration: underline; cursor: pointer; font-weight: 700;">{{ sim.SIM_COD }}</a></td>
+        <td>
+          {% for militar in sim.militares.all %}
+            <div style="font-size: 0.85rem; margin-bottom: 4px;">{{ militar.PM_GRADO }} {{ militar.PM_NOMBRE }} {{ militar.PM_PATERNO }}</div>
+          {% empty %}
+            <span style="color: #999;">—</span>
+          {% endfor %}
+        </td>
         <td>{{ sim.get_SIM_TIPO_display|truncatewords:2 }}</td>
         <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
         <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</td>

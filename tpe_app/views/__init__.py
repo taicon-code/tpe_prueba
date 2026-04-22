@@ -13,7 +13,7 @@ from .abogado_documentos_views import (
     abogado_confirmar_recepcion,
     abogado_devolver_carpeta,
 )
-from .buscador_views import buscador_dashboard, upload_foto_pm
+from .buscador_views import buscador_dashboard, upload_foto_pm, detalles_sim
 from .admin1_views import (
     admin1_dashboard,
     registrar_sumario,
@@ -27,6 +27,7 @@ from .admin1_views import (
     editar_agenda_resultado,
     gestionar_abogados_sim,
     admin1_ordenar_ejecutoria,
+    admin1_ordenar_archivo_sproda,
 )
 from .admin2_views import (
     admin2_dashboard,
@@ -35,11 +36,13 @@ from .admin2_views import (
     admin2_confirmar_recepcion,
     subir_pdf_res,
     ver_historial_custodia_sim,
+    admin2_confirmar_archivo_sproda,
+    admin2_registrar_retorno_memo,
 )
 from .admin3_views import (
     admin3_dashboard,
 )
-from .export_views import export_person_pdfs_zip, export_person_excel, export_person_historial_pdf
+from .export_views import export_person_pdfs_zip, export_person_excel, export_person_historial_pdf, export_sim_pdf, export_sim_excel
 from .vocal_views import vocal_dashboard, vocal_agenda_detalle, vocal_confirmar_dictamen
 from .ayudante_views import (
     ayudante_dashboard,
@@ -48,6 +51,7 @@ from .ayudante_views import (
     ayudante_registrar_res,
     ayudante_registrar_notificacion,
     ayudante_registrar_notificacion_rr,
+    ayudante_registrar_notificacion_auto,
     ayudante_registrar_rap,
     ayudante_registrar_raee,
     ayudante_registrar_autotpe,

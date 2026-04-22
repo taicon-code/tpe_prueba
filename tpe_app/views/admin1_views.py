@@ -8,8 +8,9 @@ from django.utils import timezone
 from django.http import JsonResponse
 from datetime import date, timedelta
 import calendar
+import json
 from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion
+from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 
@@ -114,16 +115,29 @@ def admin1_dashboard(request):
     ).count()
     total_sin_notificar = res_sin_notificar + rr_sin_notificar
 
+    # Ejecutorias notificadas pendientes de ordenar archivo a SPRODA
+    ejecutorias_notificadas = (
+        AUTOTPE.objects.filter(
+            TPE_TIPO='AUTO_EJECUTORIA',
+            TPE_FECNOT__isnull=False,
+            sim__SIM_FASE='EJECUTORIA_NOTIFICADA',
+        )
+        .select_related('sim', 'pm', 'resolucion')
+        .prefetch_related('sim__militares')
+        .order_by('-TPE_FECNOT')
+    )
+
     # Agendas realizadas para marcar en el calendario del sidebar
     agendas_realizadas = AGENDA.objects.filter(
         AG_ESTADO='REALIZADA', AG_FECREAL__isnull=False
     ).values_list('AG_FECREAL', flat=True).order_by('AG_FECREAL')
 
-    # Formatear fechas de agendas realizadas para el JavaScript
-    agendas_por_fecha = {}
+    # Formatear fechas de agendas realizadas para el JavaScript (JSON válido)
+    agendas_dict = {}
     for fecha in agendas_realizadas:
         if fecha:
-            agendas_por_fecha[fecha.isoformat()] = True
+            agendas_dict[fecha.isoformat()] = True
+    agendas_por_fecha = json.dumps(agendas_dict)
 
     context = {
         'query': query,
@@ -138,6 +152,8 @@ def admin1_dashboard(request):
         'sumarios_en_proceso': sumarios_en_proceso,
         'total_sin_notificar': total_sin_notificar,
         'agendas_por_fecha': agendas_por_fecha,
+        'ejecutorias_notificadas': ejecutorias_notificadas,
+        'total_ejecutorias_notificadas': ejecutorias_notificadas.count(),
     }
 
     return render(request, 'tpe_app/admin1_dashboard.html', context)
@@ -685,3 +701,39 @@ def autocomplete_pm(request):
         })
     else:
         return JsonResponse({'encontrado': False})
+
+
+# ============================================================
+# ADMIN1: Ordenar Archivo Final a SPRODA
+# ============================================================
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def admin1_ordenar_archivo_sproda(request, sim_id):
+    """Admin1 ordena a Admin2 realizar el archivo final del SIM a SPRODA.
+    Solo aplica a SIMs con ejecutoria notificada (EJECUTORIA_NOTIFICADA)."""
+
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    if sim.SIM_FASE != 'EJECUTORIA_NOTIFICADA':
+        messages.error(request, "Este sumario no está en fase de ejecutoria notificada.")
+        return redirect('admin1_dashboard')
+
+    if request.method == 'POST':
+        sim.SIM_FASE = 'PENDIENTE_ARCHIVO'
+        sim.save()
+        messages.success(
+            request,
+            f"✅ Archivo SPRODA ordenado para SIM {sim.SIM_COD}. Admin2 recibirá la instrucción."
+        )
+        return redirect('admin1_dashboard')
+
+    # Obtener el Auto de Ejecutoria asociado
+    auto_ej = AUTOTPE.objects.filter(
+        sim=sim, TPE_TIPO='AUTO_EJECUTORIA', TPE_FECNOT__isnull=False
+    ).order_by('-TPE_FEC').first()
+
+    return render(request, 'tpe_app/admin1/ordenar_archivo_sproda.html', {
+        'sim': sim,
+        'auto': auto_ej,
+        'militares': sim.militares.all(),
+    })

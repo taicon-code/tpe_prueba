@@ -327,6 +327,7 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
 
                 AUTOTPE.objects.create(
                     sim=sim,
+                    pm=dictamen.pm,
                     abog=abogado,
                     agenda=dictamen.agenda if dictamen.agenda_id else None,
                     TPE_NUM=tpe_num,
@@ -441,8 +442,15 @@ def abogado_auto_excusa_crear(request, sim_id: int):
                         )
                         tpe_num = next_num_yy(existentes, today=date.today())
 
+                    # Obtener el primer militar del sumario
+                    pm = sim.militares.first()
+                    if not pm:
+                        messages.error(request, "❌ El sumario no tiene militares asignados.")
+                        return render(request, "tpe_app/abogado/auto_excusa_form.html", context)
+
                     auto = AUTOTPE.objects.create(
                         sim=sim,
+                        pm=pm,
                         abog=abogado,
                         agenda=agenda,
                         vocal_excusado=vocal,
@@ -537,6 +545,7 @@ def abogado_devolver_carpeta(request, sim_id: int):
                 CustodiaSIM.objects.create(
                     sim=sim,
                     tipo_custodio='ADMIN2_ARCHIVO',
+                    abog=abogado,
                     usuario=request.user,
                     motivo='REVISION',
                     estado='PENDIENTE_CONFIRMACION',

@@ -542,9 +542,9 @@ class Command(BaseCommand):
 
             if re.match(r'DJE-', sim_cod_raw, re.I):
                 # SIM disciplinario con código DJE
-                try:
-                    sim = SIM.objects.get(SIM_COD=sim_cod_raw.upper())
-                except SIM.DoesNotExist:
+                # ✅ CORREGIDO: Usar filter() + first() para evitar MultipleObjectsReturned con reaperturas
+                sim = SIM.objects.filter(SIM_COD=sim_cod_raw.upper(), SIM_VERSION=1).first()
+                if not sim:
                     # Caso histórico (2023-2025) no en hoja SIM.
                     objeto_ph = truncar(row[6], 500) if row[6] else 'SIM HISTÓRICO'
                     sim = self._sim_placeholder(

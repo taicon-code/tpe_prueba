@@ -225,12 +225,20 @@ ADMIN1: "Entregar para Ejecutoria" (botón en RES)
 ADMIN2: confirma entrega a ABOG2
     ↓
 ABOG2: crea Auto de Ejecutoria (sin agenda previa)
+    → SIM_FASE = 'EN_EJECUTORIA' (pendiente de notificación)
     ↓
-ADMIN2: entrega a vocales para firmar
+ADMIN3: notifica Auto de Ejecutoria (TPE_FECNOT)
+    → SIM_FASE = 'EJECUTORIA_NOTIFICADA'
     ↓
-VOCAL: firma el Auto
+ADMIN1 (dashboard): ve lista y hace clic "Ordenar Archivo a SPRODA"
+    → SIM_FASE = 'PENDIENTE_ARCHIVO'
     ↓
-Sumario → CONCLUIDO
+ADMIN2: realiza archivo a SPRODA + copias a secciones (si corresponde)
+         confirma en su dashboard "Confirmar Archivo SPRODA"
+    → SIM_FASE = 'CONCLUIDO' → SIM_ESTADO = 'PROCESO_CONCLUIDO_TPE'
+    ↓
+Si hay memorándum (TPE_MEMO_NUM): ADMIN2 registra retorno cuando vuelva
+    → SIM_ESTADO = 'PROCESO_EJECUTADO'
 ```
 
 **Nota:** Los Autos de Ejecutoria NO requieren agenda previa
@@ -277,7 +285,8 @@ INF. | CAB. | ART. | ING. | COM. | INT. | SAN. | TGRAFO. | AV. | MÚS.
 | `PARA_AGENDA` | SIM ingresa al TPE, pendiente ser agendado. ⚠️ **ESTADO INICIAL** | ADMIN1 registra SIM | ADMIN1 |
 | `PROCESO_EN_EL_TPE` | SIM fue agendado en una AGENDA. Abogado está trabajando (Dictamen/RES). | `PARA_AGENDA` → `PROCESO_EN_EL_TPE` | ADMIN1 cuando lo agenda + asigna abogados |
 | `EN_APELACION_TSP` | Se emitió RAP (Recurso de Apelación). El caso subió al TSP. | Cuando se crea `RAP` para el SIM | ABOGADO cuando registra RAP o AYUDANTE |
-| `CONCLUIDO` | Proceso judicial terminado. Auto de Ejecutoria firmado por VOCAL. | `PROCESO_EN_EL_TPE` → `CONCLUIDO` | ADMIN1 cuando ordena ejecutoria + ABOG2 crea Auto + VOCAL firma |
+| `PROCESO_CONCLUIDO_TPE` | Auto de Ejecutoria notificado Y archivado en SPRODA. Admin2 confirmó el archivo. | `PROCESO_EN_EL_TPE` → `PROCESO_CONCLUIDO_TPE` | ADMIN2 al confirmar archivo SPRODA (`SIM_FASE='CONCLUIDO'`) |
+| `PROCESO_EJECUTADO` | Memorándum del Auto de Ejecutoria retornó (si correspondía). Proceso totalmente terminado. | `PROCESO_CONCLUIDO_TPE` → `PROCESO_EJECUTADO` | ADMIN2 registra retorno de memorándum |
 | `OBSERVADO` | ⚠️ **RARO, evitar**: Sumario con observaciones pendientes. Requiere corrección. | Flujo poco común | Correcciones manuales |
 
 ### ⚠️ Correcciones de lógica de estados:

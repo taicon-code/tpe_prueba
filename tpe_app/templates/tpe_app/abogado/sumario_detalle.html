@@ -149,12 +149,15 @@
                     <p style="margin: 0; color: #dc2626; font-size: 0.95rem;">
                         <strong>⏳ Pendiente su confirmación de recepción</strong><br>
                         <small style="color: #6b7280; font-size: 0.85rem;">
-                            {% if admin2_user %}
-                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+                            Entregada por
+                            {% if custodio_actual.abog %}
+                                <strong>{{ custodio_actual.abog.AB_GRADO }} {{ custodio_actual.abog.AB_PATERNO }}</strong>
+                            {% elif admin2_user %}
+                                <strong>{{ admin2_user.first_name }} {{ admin2_user.last_name }}</strong>
                             {% else %}
-                                Admin2
-                            {% endif %}
-                            ha entregado la carpeta. Debe confirmar que la recibió.
+                                <strong>Admin2</strong>
+                            {% endif %}.
+                            Debe confirmar que la recibió.
                         </small>
                     </p>
                 {% else %}
@@ -167,12 +170,10 @@
                             {% endif %}
                         </strong><br>
                         <small style="color: #6b7280; font-size: 0.85rem;">
-                            {% if admin2_user %}
-                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
-                            {% else %}
-                                Admin2
+                            {% if custodio_actual.abog %}
+                                Entregada por <strong>{{ custodio_actual.abog.AB_GRADO }} {{ custodio_actual.abog.AB_PATERNO }}</strong>.
                             {% endif %}
-                            es el custodio. Puede continuar con su trabajo.
+                            Es el custodio actual. Puede continuar con su trabajo.
                         </small>
                     </p>
                 {% endif %}

@@ -1,0 +1,64 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Registrar Retorno de Memorándum - TPE{% endblock %}
+{% block navbar_title %}📬 Registrar Retorno de Memorándum{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📬 Registrar Retorno de Memorándum</h1>
+
+<div style="max-width: 650px;">
+
+    <!-- Info del SIM -->
+    <div class="card" style="background: #fffbeb; border-left: 4px solid #d97706; margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: #92400e;">📄 Memorándum N° {{ auto.TPE_MEMO_NUM }}</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Sumario:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ sim.SIM_COD }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>N° Auto Ejecutoria:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ auto.TPE_NUM|default:"—" }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fecha Emisión Memo:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333;">{{ auto.TPE_MEMO_FEC|date:"d/m/Y"|default:"—" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+        <p style="margin: 0; color: #1e40af; font-size: 0.9rem;">
+            Al registrar el retorno, el sumario pasará a estado <strong>"Proceso Ejecutado"</strong>.
+        </p>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 1.25rem;">
+            <label for="fecha_entrega" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: #374151;">
+                Fecha de Retorno del Memorándum <span style="color: #dc2626;">*</span>
+            </label>
+            <input type="date" name="fecha_entrega" id="fecha_entrega" required
+                   value="{% now 'Y-m-d' %}"
+                   style="width: 100%; max-width: 250px; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem;">
+        </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button type="submit" class="btn" style="background: #d97706; color: #fff; font-size: 1rem; padding: 0.75rem 2rem;">
+                📬 Registrar Retorno
+            </button>
+            <a href="{% url 'admin2_dashboard' %}" class="btn" style="background: #6b7280; color: #fff; font-size: 1rem; padding: 0.75rem 2rem;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

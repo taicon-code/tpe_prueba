@@ -1,0 +1,95 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Confirmar Archivo SPRODA - TPE{% endblock %}
+{% block navbar_title %}✅ Confirmar Archivo Final SPRODA{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">✅ Confirmar Archivo Final a SPRODA</h1>
+
+<div style="max-width: 750px;">
+
+    <!-- Información del SIM -->
+    <div class="card" style="background: #f0fdf4; border-left: 4px solid #059669; margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: #065f46;">📋 Sumario: {{ sim.SIM_COD }}</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Tipo:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333;">{{ sim.get_SIM_TIPO_display|default:"—" }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fecha Ingreso:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333;">{{ sim.SIM_FECING|date:"d/m/Y"|default:"—" }}</p>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Militar(es) Implicado(s):</strong></p>
+                {% for pm in militares %}
+                <p style="margin: 0.3rem 0 0 0; color: #333;">
+                    {{ pm.PM_GRADO|default:"" }} {{ pm.PM_PATERNO }} {{ pm.PM_MATERNO|default:"" }}, {{ pm.PM_NOMBRE }}
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto de Ejecutoria -->
+    {% if auto %}
+    <div class="card" style="background: #fffbeb; border-left: 4px solid #d97706; margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: #92400e;">⚖️ Auto de Ejecutoria</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>N° Auto:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ auto.TPE_NUM|default:"—" }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fecha Notificación:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #059669; font-weight: 600;">{{ auto.TPE_FECNOT|date:"d/m/Y"|default:"—" }}</p>
+            </div>
+            {% if auto.TPE_MEMO_NUM %}
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Memorándum:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #d97706; font-weight: 600;">{{ auto.TPE_MEMO_NUM }} — {{ auto.TPE_MEMO_FEC|date:"d/m/Y"|default:"" }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Advertencia si tiene memorándum -->
+    {% if auto and auto.TPE_MEMO_NUM %}
+    <div style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;">
+        <p style="margin: 0; color: #92400e; font-size: 0.95rem;">
+            <strong>⚠️ Este Auto tiene memorándum N° {{ auto.TPE_MEMO_NUM }}.</strong>
+            Después de confirmar el archivo, cuando retorne el memorándum, regístrelo en la sección correspondiente del dashboard.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Formulario -->
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 1.25rem;">
+            <label for="observacion" style="display: block; font-weight: 600; margin-bottom: 0.4rem; color: #374151;">
+                Observación (opcional)
+            </label>
+            <input type="text" name="observacion" id="observacion"
+                   placeholder="Ej: Archivado SPRODA, copia a DNJM y SECCIÓN PERSONAL"
+                   style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem;">
+        </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button type="submit" class="btn" style="background: #059669; color: #fff; font-size: 1rem; padding: 0.75rem 2rem;">
+                ✅ Confirmar Archivo SPRODA
+            </button>
+            <a href="{% url 'admin2_dashboard' %}" class="btn" style="background: #6b7280; color: #fff; font-size: 1rem; padding: 0.75rem 2rem;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

@@ -297,6 +297,15 @@ class SIM(models.Model):
         ('SOLICITUD_ART_118_(Invalidez Sldo)', 'SOLICITUD ARTÍCULO 118 (INVALIDEZ SLDO)'),
     ]
 
+    # ✅ NUEVO v3.4: Motivos de reapertura de sumarios
+    MOTIVO_REAPERTURA_CHOICES = [
+        ('NULIDAD_OBRADOS', 'Nulidad de Obrados'),
+        ('VICIO_PROCESAL', 'Vicio Procesal'),
+        ('ERROR_JURIDICO', 'Error Jurídico'),
+        ('FALTA_NOTIFICACION', 'Falta de Notificación'),
+        ('OTRO', 'Otro Motivo'),
+    ]
+
     # ✅ CORREGIDO v1.2: estados del sumario
     ESTADO_CHOICES = [
         ('PARA_AGENDA',           'Para Agenda'),
@@ -326,8 +335,11 @@ class SIM(models.Model):
         ('EN_ESPERA_RAP',            'En Espera de RAP (plazo 3 días)'),
         ('ELEVADO_TSP',              'Elevado al TSP'),
         ('EN_AGENDA_EJECUTORIA',     'En Agenda (Auto de Ejecutoria)'),
-        # Fin
-        ('CONCLUIDO',                'Concluido'),
+        # Fin: Ejecutoria → Archivo → Concluido
+        ('EN_EJECUTORIA',            'Auto de Ejecutoria Emitido'),
+        ('EJECUTORIA_NOTIFICADA',    'Ejecutoria Notificada (Pte. Archivo)'),
+        ('PENDIENTE_ARCHIVO',        'Pendiente Archivo SPRODA'),
+        ('CONCLUIDO',                'Archivado / Concluido (TPE)'),
     ]
 
     # Mapeo automático de FASE → ESTADO general
@@ -346,6 +358,9 @@ class SIM(models.Model):
         'EN_ESPERA_RAP': 'PROCESO_EN_EL_TPE',
         'ELEVADO_TSP': 'PROCESO_EN_EL_TSP',
         'EN_AGENDA_EJECUTORIA': 'PROCESO_CONCLUIDO_TPE',
+        'EN_EJECUTORIA': 'PROCESO_EN_EL_TPE',
+        'EJECUTORIA_NOTIFICADA': 'PROCESO_EN_EL_TPE',
+        'PENDIENTE_ARCHIVO': 'PROCESO_EN_EL_TPE',
         'CONCLUIDO': 'PROCESO_CONCLUIDO_TPE',
     }
 
@@ -354,7 +369,28 @@ class SIM(models.Model):
     abogados  = models.ManyToManyField(
                     'ABOG', through='ABOG_SIM', verbose_name='Abogados asignados')
 
-    SIM_COD       = models.CharField(max_length=10,  unique=True, verbose_name='Código SIM')
+    SIM_COD       = models.CharField(max_length=25, unique=False, db_index=True, verbose_name='Código SIM', help_text='Formato: PREFIJO-NUM/AÑO (ej: DJE-95/25, SASJUR-25/25, SDISCAPE-86/25)')
+    # ✅ NUEVO v3.4: Versión del sumario (para reaperturas tras nulidad)
+    SIM_VERSION   = models.IntegerField(default=1, verbose_name='Versión', help_text='1=original, 2=1ª reapertura, 3=2ª reapertura, etc.')
+    # ✅ NUEVO v3.4: Referencias a sumario original (si es reapertura)
+    SIM_ORIGEN    = models.ForeignKey(
+                    'self',
+                    null=True,
+                    blank=True,
+                    on_delete=models.PROTECT,
+                    related_name='reaperturas',
+                    verbose_name='SIM Original',
+                    help_text='Si este SIM es reapertura de otro, referencia el original aquí'
+                    )
+    # ✅ NUEVO v3.4: Motivo de reapertura
+    SIM_MOTIVO_REAPERTURA = models.CharField(
+                    max_length=30,
+                    choices=MOTIVO_REAPERTURA_CHOICES,
+                    null=True,
+                    blank=True,
+                    verbose_name='Motivo de Reapertura',
+                    help_text='¿Por qué se reabrió este sumario?'
+                    )
     # ✅ CORREGIDO v1.2: renombrado de SIM_FECTPE → SIM_FECING
     SIM_FECING    = models.DateField(null=True, blank=True, verbose_name='Fecha de Ingreso al TPE')
     # ✅ NUEVO v1.2: estado del sumario
@@ -377,9 +413,12 @@ class SIM(models.Model):
         verbose_name        = 'Sumario Informativo Militar'
         verbose_name_plural = 'Sumarios Informativos Militares'
         ordering            = ['-SIM_FECREG']
+        unique_together     = [('SIM_COD', 'SIM_VERSION')]  # ✅ NUEVO: Combinación única
 
     def __str__(self):
-        return f"{self.SIM_COD} — {self.SIM_RESUM}"
+        ver = f" v{self.SIM_VERSION}" if self.SIM_VERSION > 1 else ""
+        estado_reap = " [REAPERTURA]" if self.SIM_ORIGEN else ""
+        return f"{self.SIM_COD}{ver}{estado_reap} — {self.SIM_RESUM}"
 
     def get_estado_color(self):
         """Devuelve el color de alerta según el estado del sumario."""
@@ -408,6 +447,23 @@ class SIM(models.Model):
     def custodio_actual(self):
         """Retorna la CustodiaSIM activa (fecha_entrega=None), o None."""
         return self.custodias.filter(fecha_entrega__isnull=True).first()
+
+    def get_sim_original(self):
+        """Retorna el SIM original (root) de este árbol genealógico."""
+        if self.SIM_ORIGEN is None:
+            return self
+        return self.SIM_ORIGEN.get_sim_original()
+
+    def get_arbol_genealogico(self):
+        """Retorna lista ordenada de [Original, Reapertura1, Reapertura2, ...] de este SIM."""
+        arbol = [self]
+        for reapertura in self.reaperturas.order_by('id'):
+            arbol.extend(reapertura.get_arbol_genealogico())
+        return arbol
+
+    def tiene_reaperturas(self):
+        """Retorna True si este SIM tiene reaperturas."""
+        return self.reaperturas.exists()
 
     def save(self, *args, **kwargs):
         # Convertir a MAYÚSCULAS

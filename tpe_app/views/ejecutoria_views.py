@@ -65,8 +65,8 @@ def crear_auto_ejecutoria(request, origen, origen_id):
             auto.pm  = pm
             auto.resolucion = resolucion_link
             auto.save()
-            # Marcar SIM como concluido (save() completo para que FASE_A_ESTADO actualice SIM_ESTADO)
-            sim.SIM_FASE = 'CONCLUIDO'
+            # Auto emitido: SIM pasa a EN_EJECUTORIA (pendiente de notificación y archivo)
+            sim.SIM_FASE = 'EN_EJECUTORIA'
             sim.save()
             messages.success(request, f"Auto de Ejecutoria {auto.TPE_NUM or ''} registrado correctamente.")
             return redirect('pendientes_ejecutoria')

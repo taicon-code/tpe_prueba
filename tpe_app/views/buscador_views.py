@@ -91,6 +91,30 @@ def buscador_dashboard(request):
     return render(request, 'tpe_app/dashboard_buscador.html', context)
 
 
+def detalles_sim(request, sim_id):
+    """Vista detallada de un SIM: militares, resoluciones, autos, etc."""
+    sim = get_object_or_404(SIM, id=sim_id)
+
+    # Obtener todos los militares del SIM
+    militares = sim.militares.all()
+
+    # Obtener todos los actuados del SIM
+    resoluciones = Resolucion.objects.filter(sim=sim).select_related('abog', 'pm')
+    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abog')
+    autos_tsp = AUTOTSP.objects.filter(sim=sim)
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim).select_related('abog')
+
+    context = {
+        'sim': sim,
+        'militares': militares,
+        'resoluciones': resoluciones,
+        'autos_tpe': autos_tpe,
+        'autos_tsp': autos_tsp,
+        'recursos_tsp': recursos_tsp,
+    }
+    return render(request, 'tpe_app/detalles_sim.html', context)
+
+
 def upload_foto_pm(request, pm_id):
     """Subir o reemplazar la foto de un Personal Militar"""
     pm = get_object_or_404(PM, pk=pm_id)

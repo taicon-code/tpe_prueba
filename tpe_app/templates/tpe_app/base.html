@@ -443,7 +443,7 @@
         </a>
         <a href="{% url 'agendar_rr' %}"
            class="sb-link {% if request.resolver_match.url_name == 'agendar_rr' %}active{% endif %}">
-            <span class="lk-icon">📅</span>
+            <span class="lk-icon">🔄</span>
             <span class="lk-text">Agendar RR</span>
         </a>
 
@@ -638,7 +638,7 @@
 ════════════════════════════════════════════════════ -->
 <script>
 /* ── Agendas realizadas para el calendario ──────── */
-var agendasJSON = {{ agendas_por_fecha|default:"{}" }};
+var agendasJSON = {{ agendas_por_fecha|default:"{}"|safe }};
 
 /* ── Sidebar toggle ─────────────────────────────── */
 (function () {

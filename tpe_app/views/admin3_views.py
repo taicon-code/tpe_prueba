@@ -1,7 +1,7 @@
 # tpe_app/views/admin3_views.py
 from django.shortcuts import render
 from ..decorators import rol_requerido
-from ..models import Resolucion, DocumentoAdjunto
+from ..models import Resolucion, AUTOTPE, DocumentoAdjunto
 
 
 # ============================================================
@@ -15,7 +15,7 @@ def admin3_dashboard(request):
     # RES (Resoluciones PRIMERA) por notificar (RES_FECNOT es NULL = no notificada aún)
     resoluciones = Resolucion.objects.filter(
         RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=True
-    ).select_related('sim').order_by('-RES_FEC')[:20]
+    ).select_related('sim', 'pm').order_by('-RES_FEC')[:20]
 
     # RR (Recursos RECONSIDERACION) por notificar
     recursos = list(
@@ -31,6 +31,11 @@ def admin3_dashboard(request):
         rr.RR_FECPRESEN = rr.RES_FECPRESEN
         rr.RR_FECNOT = rr.RES_FECNOT
 
+    # AUTOS TPE por notificar (TPE_FECNOT es NULL)
+    autos = AUTOTPE.objects.filter(
+        TPE_FECNOT__isnull=True
+    ).select_related('sim', 'pm', 'abog').order_by('-TPE_FEC')[:20]
+
     # RES sin PDF (solo PRIMERA)
     res_con_pdf = set(
         DocumentoAdjunto.objects.filter(DOC_TABLA='resolucion').values_list('DOC_ID_REG', flat=True)
@@ -38,7 +43,7 @@ def admin3_dashboard(request):
     res_sin_pdf = (
         Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
         .exclude(id__in=res_con_pdf)
-        .select_related('sim', 'abog').order_by('-RES_FEC')[:20]
+        .select_related('sim', 'pm').order_by('-RES_FEC')[:20]
     )
     total_res_sin_pdf = (
         Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
@@ -50,6 +55,8 @@ def admin3_dashboard(request):
         'total_res': resoluciones.count(),
         'recursos': recursos,
         'total_rr': len(recursos),
+        'autos': autos,
+        'total_autos': autos.count(),
         'res_sin_pdf': res_sin_pdf,
         'total_res_sin_pdf': total_res_sin_pdf,
     }

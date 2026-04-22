@@ -134,6 +134,7 @@ def abogado_entregar_carpeta(request, sim_id):
                     CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio='ADMIN2_ARCHIVO',
+                        abog=perfil.abogado,
                         usuario=request.user,
                         observacion=f'Recibida de {perfil.abogado.AB_GRADO} {perfil.abogado.AB_PATERNO}. {form.cleaned_data.get("observacion", "")}',
                         estado='PENDIENTE_CONFIRMACION'
