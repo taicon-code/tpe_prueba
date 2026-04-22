@@ -51,106 +51,131 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- PANEL DE BÚSQUEDA: Historial de Custodia por Sumario o Militar -->
+<!-- PANEL DE BÚSQUEDA: Historial de Custodia (Activos + Archivados) -->
 <!-- ============================================================ -->
 <div class="card">
-    <h2>🔍 Buscar Historial de Custodia</h2>
+    <h2>🔍 Buscar Historial de Custodia (Activos y Archivados)</h2>
+    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+        Busca sumarios por <strong>Código SIM</strong> o datos del <strong>militar</strong> (apellido paterno, materno o nombre).
+        Muestra el historial completo aunque el archivo ya esté archivado.
+    </p>
 
     <form method="get" class="search-box" style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
         <input
             type="text"
             name="q"
-            placeholder="Buscar por Código SIM, Apellido Paterno, Apellido Materno o Nombre..."
+            placeholder="Ej: SIM-2026-001 o PÉREZ o GARCÍA"
             value="{{ query }}"
-            style="flex: 1; min-width: 250px; padding: 0.5rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem;"
+            style="flex: 1; min-width: 250px; padding: 0.75rem; border: 2px solid #3b82f6; border-radius: 6px; font-size: 0.9rem;"
         >
-        <button type="submit" class="btn" style="background: #3b82f6; color: #fff; padding: 0.5rem 1.5rem; white-space: nowrap;">
+        <button type="submit" class="btn" style="background: #3b82f6; color: #fff; padding: 0.75rem 1.5rem; white-space: nowrap; font-weight: 600;">
             🔍 Buscar
         </button>
         {% if query %}
-            <a href="{% url 'admin2_dashboard' %}" style="background: #6b7280; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; white-space: nowrap;">
+            <a href="{% url 'admin2_dashboard' %}" style="background: #6b7280; color: #fff; padding: 0.75rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; white-space: nowrap; font-weight: 600;">
                 ✕ Limpiar
             </a>
         {% endif %}
     </form>
 
     {% if historial_sim %}
-    <table>
-        <thead>
-            <tr>
-                <th>Sumario</th>
-                <th>Fecha Recepción</th>
-                <th>Custodio</th>
-                <th>Motivo</th>
-                <th>N° Oficio</th>
-                <th>Fecha Entrega</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for custodia in historial_sim %}
-            <tr>
-                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
-                <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-                <td style="font-size: 0.85rem;">
-                    {% if custodia.abog %}
-                        <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
-                    {% elif custodia.tipo_custodio == 'ADMIN2_ARCHIVO' %}
-                        <span style="background: #dbeafe; color: #1e40af; padding: 0.15rem 0.35rem; border-radius: 3px; font-weight: 600; font-size: 0.8rem;">📁 Archivo SIM</span>
-                    {% else %}
-                        <span style="font-weight: 600;">{{ custodia.get_tipo_custodio_display }}</span>
-                    {% endif %}
-                </td>
-                <td style="font-size: 0.8rem;">
-                    {% if custodia.motivo %}
-                        <span style="background: #dbeafe; color: #1e40af; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">
-                            {{ custodia.get_motivo_display }}
-                        </span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.nro_oficio %}
-                        <span title="Fecha oficio: {{ custodia.fecha_oficio|date:'d/m/Y'|default:'-' }}">{{ custodia.nro_oficio }}</span>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td style="white-space: nowrap; font-size: 0.85rem;">
-                    {% if custodia.fecha_entrega %}
-                        {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
-                    {% else %}
-                        <span style="color: #f97316; font-weight: 600;">↔ Activa</span>
-                    {% endif %}
-                </td>
-                <td style="font-size: 0.85rem;">
-                    {% if custodia.fecha_entrega %}
-                        <span style="background: #d1e7dd; color: #0a3622; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                            Entregada
-                        </span>
-                    {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
-                        <span style="background: #fed7aa; color: #92400e; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                            {{ custodia.get_estado_display }}
-                        </span>
-                    {% else %}
-                        <span style="background: #dbeafe; color: #1e40af; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                            {{ custodia.get_estado_display }}
-                        </span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+        <strong style="color: #065f46;">✓ Se encontraron resultados</strong> para: <strong>{{ query }}</strong>
+    </div>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Sumario</th>
+                    <th>Fecha Recepción</th>
+                    <th>Custodio</th>
+                    <th>Motivo</th>
+                    <th>Fecha Entrega</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% regroup historial_sim by sim.id as custodias_por_sim %}
+                {% for sim_group in custodias_por_sim %}
+                    {% for custodia in sim_group.list %}
+                    <tr>
+                        <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                        <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
+                        <td style="font-size: 0.85rem;">
+                            {% if custodia.abog %}
+                                <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
+                            {% elif custodia.tipo_custodio == 'ADMIN2_ARCHIVO' %}
+                                <span style="background: #dbeafe; color: #1e40af; padding: 0.15rem 0.35rem; border-radius: 3px; font-weight: 600; font-size: 0.8rem;">📁 Archivo SIM</span>
+                            {% elif custodia.tipo_custodio == 'ARCHIVO' %}
+                                <span style="background: #d1fae5; color: #065f46; padding: 0.15rem 0.35rem; border-radius: 3px; font-weight: 600; font-size: 0.8rem;">✓ ARCHIVADO</span>
+                            {% else %}
+                                <span style="font-weight: 600;">{{ custodia.get_tipo_custodio_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.8rem;">
+                            {% if custodia.motivo %}
+                                <span style="background: #dbeafe; color: #1e40af; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.75rem;">
+                                    {{ custodia.get_motivo_display }}
+                                </span>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td style="white-space: nowrap; font-size: 0.85rem;">
+                            {% if custodia.fecha_entrega %}
+                                {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
+                            {% else %}
+                                <span style="color: #f97316; font-weight: 600;">↔ Activa</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.85rem;">
+                            {% if custodia.fecha_entrega %}
+                                <span style="background: #d1e7dd; color: #0a3622; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
+                                    Entregada
+                                </span>
+                            {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
+                                <span style="background: #fed7aa; color: #92400e; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ custodia.get_estado_display }}
+                                </span>
+                            {% else %}
+                                <span style="background: #dbeafe; color: #1e40af; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
+                                    {{ custodia.get_estado_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <!-- Botones solo en el ÚLTIMO registro de este SIM -->
+                        <td>
+                            {% if forloop.last %}
+                            <div style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                                <a href="{% url 'detalles_sim' custodia.sim.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                                    📋 Ver
+                                </a>
+                                <a href="{% url 'export_custodia_pdf' custodia.sim.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                                    📄 PDF
+                                </a>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% elif query %}
-    <p style="text-align: center; color: #dc2626; padding: 2rem;">
-        ❌ No se encontraron resultados para "<strong>{{ query }}</strong>"
-    </p>
+    <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 1rem; border-radius: 4px; text-align: center;">
+        <p style="color: #991b1b; margin: 0; font-weight: 600;">
+            ❌ No se encontraron resultados para: <strong>"{{ query }}"</strong>
+        </p>
+        <p style="color: #7f1d1d; font-size: 0.9rem; margin: 0.5rem 0 0;">
+            Verifica que el código SIM o el nombre del militar sean correctos.
+        </p>
+    </div>
     {% else %}
-    <p style="text-align: center; color: #999; padding: 2rem;">
-        Ingrese un código de sumario o datos del militar para ver el historial de custodia
-    </p>
+    <div style="text-align: center; color: #999; padding: 2rem; background: #f9fafb; border-radius: 6px;">
+        <p style="margin: 0;">👉 Ingresa un <strong>Código SIM</strong> (ej: SIM-2026-001) o datos del <strong>militar</strong> para ver su historial completo</p>
+    </div>
     {% endif %}
 </div>
 
@@ -196,9 +221,15 @@
                         {{ sim.get_SIM_ESTADO_display }}
                     </span>
                 </td>
-                <td>
-                    <a href="{% url 'admin2_entregar_carpeta' sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #dc2626; color: #fff;">
-                        Entregar Ahora
+                <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_entregar_carpeta' sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #dc2626; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📤 Entregar
+                    </a>
+                    <a href="{% url 'detalles_sim' sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📋 Historial
+                    </a>
+                    <a href="{% url 'export_custodia_pdf' sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📄 PDF
                     </a>
                 </td>
             </tr>
@@ -258,9 +289,15 @@
                         <span style="color: #9ca3af;">Sin asignar aún</span>
                     {% endif %}
                 </td>
-                <td>
-                    <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #3b82f6; color: #fff;">
-                        Entregar
+                <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📤 Entregar
+                    </a>
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📋 Historial
+                    </a>
+                    <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📄 PDF
                     </a>
                 </td>
             </tr>
@@ -314,9 +351,15 @@
                 </td>
                 <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
                 <td style="font-size: 0.8rem; max-width: 200px; word-break: break-word;">{{ custodia.observacion|default:"—" }}</td>
-                <td>
-                    <a href="{% url 'admin2_confirmar_recepcion' custodia.sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff;">
+                <td style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_confirmar_recepcion' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                         ✓ Confirmar
+                    </a>
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📋 Ver
+                    </a>
+                    <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📄 PDF
                     </a>
                 </td>
             </tr>
@@ -372,9 +415,15 @@
                 <td style="font-size: 0.85rem; max-width: 250px; color: #555;">
                     {{ custodia.observacion|truncatewords:20|default:"—" }}
                 </td>
-                <td>
-                    <a href="{% url 'admin2_confirmar_recepcion' custodia.sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #d97706; color: #fff;">
-                        ✅ Recibir Conforme
+                <td style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_confirmar_recepcion' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #d97706; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        ✅ Recibir
+                    </a>
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📋 Ver
+                    </a>
+                    <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📄 PDF
                     </a>
                 </td>
             </tr>
@@ -440,9 +489,15 @@
                 <td style="font-size: 0.85rem; font-weight: 600;">
                     {{ custodia.nro_oficio|default:"—" }}
                 </td>
-                <td>
-                    <a href="{% url 'admin2_recibir_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff;">
+                <td style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_recibir_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                         Recibir
+                    </a>
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📋 Ver
+                    </a>
+                    <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📄 PDF
                     </a>
                 </td>
             </tr>
@@ -494,9 +549,15 @@
                     {% endif %}
                 </td>
                 <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-                <td>
-                    <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.8rem; padding: 0.3rem 0.6rem; background: #f59e0b; color: #fff;">
+                <td style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #f59e0b; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                         Entregar
+                    </a>
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📋 Ver
+                    </a>
+                    <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📄 PDF
                     </a>
                 </td>
             </tr>

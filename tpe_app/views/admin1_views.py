@@ -116,12 +116,13 @@ def admin1_dashboard(request):
     total_sin_notificar = res_sin_notificar + rr_sin_notificar
 
     # Ejecutorias notificadas pendientes de ordenar archivo a SPRODA
+    # Mostrar todos los Autos de Ejecutoria notificados que no hayan sido archivados
     ejecutorias_notificadas = (
         AUTOTPE.objects.filter(
             TPE_TIPO='AUTO_EJECUTORIA',
             TPE_FECNOT__isnull=False,
-            sim__SIM_FASE='EJECUTORIA_NOTIFICADA',
         )
+        .exclude(sim__SIM_FASE__in=['PENDIENTE_ARCHIVO', 'CONCLUIDO'])
         .select_related('sim', 'pm', 'resolucion')
         .prefetch_related('sim__militares')
         .order_by('-TPE_FECNOT')

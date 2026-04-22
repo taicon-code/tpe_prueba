@@ -74,6 +74,7 @@ urlpatterns = [
     path('buscador/sim/<int:sim_id>/', views.detalles_sim, name='detalles_sim'),
     path('buscador/sim/<int:sim_id>/exportar/pdf/', views.export_sim_pdf, name='export_sim_pdf'),
     path('buscador/sim/<int:sim_id>/exportar/excel/', views.export_sim_excel, name='export_sim_excel'),
+    path('buscador/sim/<int:sim_id>/custodia/pdf/', views.export_custodia_pdf, name='export_custodia_pdf'),
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),
 
     # Exportación de historial (desde buscador_dashboard)

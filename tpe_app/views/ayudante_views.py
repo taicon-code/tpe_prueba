@@ -320,7 +320,8 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
                     # para que Admin1 pueda ordenar el archivo final a SPRODA
                     if auto.TPE_TIPO == 'AUTO_EJECUTORIA' and auto.sim:
                         sim = auto.sim
-                        if sim.SIM_FASE == 'EN_EJECUTORIA':
+                        # Actualizar SIM_FASE a EJECUTORIA_NOTIFICADA si no está ya en estado final
+                        if sim.SIM_FASE not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']:
                             sim.SIM_FASE = 'EJECUTORIA_NOTIFICADA'
                             sim.save()
                     messages.success(

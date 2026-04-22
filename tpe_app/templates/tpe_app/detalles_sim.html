@@ -202,6 +202,83 @@
     background: #d1fae5;
     color: #065f46;
   }
+
+  /* Timeline de Custodia */
+  .timeline {
+    position: relative;
+    padding: 20px 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e5e7eb;
+  }
+
+  .timeline-item {
+    margin-bottom: 2rem;
+    padding-left: 100px;
+    position: relative;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+
+  .timeline-item.actual::before {
+    background: #10b981;
+    box-shadow: 0 0 0 2px #10b981;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 2px #10b981; }
+    50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3); }
+  }
+
+  .timeline-date {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #7c3aed;
+    margin-bottom: 0.25rem;
+  }
+
+  .timeline-custodio {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #185FA5;
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-obs {
+    background: #f0fdf4;
+    border-left: 3px solid #10b981;
+    padding: 0.75rem;
+    margin-top: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #065f46;
+    font-style: italic;
+  }
 </style>
 
 <div style="display: flex; gap: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
@@ -431,5 +508,85 @@
   <div class="empty-state">No hay actuados registrados para este sumario.</div>
   {% endif %}
 </div>
+
+<!-- HISTORIAL DE CUSTODIA (Trazabilidad) - SOLO ADMIN2 -->
+{% if es_admin2 and custodia_historial %}
+<div class="section-container">
+  <h2 class="section-title">📂 Trazabilidad de Carpeta (Custodia)</h2>
+
+  {% if custodia_actual %}
+  <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 2px solid #10b981; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+      <span style="font-size: 1.5rem;">📍</span>
+      <div>
+        <div style="font-weight: 700; color: #065f46; font-size: 1rem;">UBICACIÓN ACTUAL</div>
+        <div style="color: #047857; margin-top: 0.25rem;">{{ custodia_actual.get_tipo_custodio_display }}</div>
+      </div>
+    </div>
+    {% if custodia_actual.abog %}
+    <div style="color: #065f46; margin-bottom: 0.5rem;">
+      <strong>Abogado:</strong> {{ custodia_actual.abog.AB_GRADO }} {{ custodia_actual.abog.AB_PATERNO }} {{ custodia_actual.abog.AB_MATERNO }}
+    </div>
+    {% endif %}
+    <div style="color: #065f46; margin-bottom: 0.5rem;">
+      <strong>Desde:</strong> {{ custodia_actual.fecha_recepcion|date:"d/m/Y H:i" }}
+    </div>
+    {% if custodia_actual.estado != 'RECIBIDA_CONFORME' %}
+    <div style="color: #d97706; font-weight: 600; margin-top: 0.5rem;">
+      ⚠️ Estado: {{ custodia_actual.get_estado_display }}
+    </div>
+    {% endif %}
+    {% if custodia_actual.observacion %}
+    <div class="timeline-obs" style="margin-top: 1rem;">
+      <strong>Observación:</strong> {{ custodia_actual.observacion }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="timeline">
+    {% for custodia in custodia_historial %}
+    <div class="timeline-item {% if custodia == custodia_actual %}actual{% endif %}">
+      <div class="timeline-date">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</div>
+      <div class="timeline-custodio">{{ custodia.get_tipo_custodio_display }}</div>
+
+      {% if custodia.abog %}
+      <div class="timeline-info">
+        👤 <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
+      </div>
+      {% endif %}
+
+      <div class="timeline-info">
+        {% if custodia.estado == 'RECIBIDA_CONFORME' %}
+          <span style="background: #d1fae5; color: #065f46; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">✓ Activa</span>
+        {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
+          <span style="background: #fef3c7; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">⏳ Pendiente Confirmar</span>
+        {% else %}
+          <span style="background: #f3f4f6; color: #374151; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">{{ custodia.get_estado_display }}</span>
+        {% endif %}
+      </div>
+
+      {% if custodia.fecha_entrega %}
+      <div class="timeline-info">
+        📤 <strong>Entregada:</strong> {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
+      </div>
+      {% endif %}
+
+      {% if custodia.observacion %}
+      <div class="timeline-obs">
+        <strong>📝 Nota:</strong> {{ custodia.observacion }}
+      </div>
+      {% endif %}
+
+      {% if custodia == custodia_actual %}
+      <div style="margin-top: 0.75rem; padding: 0.75rem; background: #dbeafe; border-radius: 4px; font-size: 0.85rem; color: #1e40af; font-weight: 600;">
+        🔄 Esta es la custodia actual
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}
