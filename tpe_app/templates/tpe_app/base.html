@@ -565,6 +565,30 @@
             <span class="lk-text">Panel Django Admin</span>
         </a>
 
+        <!-- ── ASESOR JEFE (Supervisor) ─────────────────────── -->
+        {% elif rol == 'ASESOR_JEFE' %}
+
+        <span class="sb-group-label">Panel Principal</span>
+        <a href="{% url 'asesor_jefe_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'asesor_jefe_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🎖️</span>
+            <span class="lk-text">Dashboard</span>
+        </a>
+
+        <hr class="sb-divider">
+        <span class="sb-group-label">Monitoreo</span>
+
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
+            <span class="lk-icon">📊</span>
+            <span class="lk-text">Estadísticas</span>
+        </a>
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🔍</span>
+            <span class="lk-text">Buscar Historial</span>
+        </a>
+
         <!-- ── ASESOR JURÍDICO ────────────────────────── -->
         {% elif rol == 'ASESOR_JURIDICO' %}
 
