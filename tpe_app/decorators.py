@@ -7,6 +7,8 @@ def rol_requerido(*roles_permitidos):
     """
     Decorador para proteger vistas según el rol del usuario.
     Uso: @rol_requerido('ADMINISTRADOR', 'ABOGADO')
+
+    MASTER tiene acceso automático a todas las vistas.
     """
     def decorator(view_func):
         @wraps(view_func)
@@ -16,6 +18,12 @@ def rol_requerido(*roles_permitidos):
                 return view_func(request, *args, **kwargs)
             try:
                 perfil = request.user.perfilusuario
+                # MASTER tiene acceso a todo
+                if perfil.rol == 'MASTER':
+                    if not perfil.activo:
+                        raise PermissionDenied("Tu cuenta está desactivada")
+                    return view_func(request, *args, **kwargs)
+                # Otros roles requieren estar en la lista de permitidos
                 if perfil.rol not in roles_permitidos:
                     raise PermissionDenied("No tienes permisos para acceder a esta página")
                 if not perfil.activo:
