@@ -36,6 +36,8 @@ def login_view(request):
                     return redirect('vocal_dashboard')
                 elif perfil.rol == 'ASESOR_JURIDICO':
                     return redirect('buscador_dashboard')
+                elif perfil.rol == 'ASESOR_JEFE':
+                    return redirect('asesor_jefe_dashboard')
                 else:
                     messages.error(request, f'Rol no reconocido: {perfil.rol}')
                     logout(request)
