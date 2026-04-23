@@ -88,7 +88,7 @@ def buscador_dashboard(request):
         'historial': historial,
         'estado': estado,
     }
-    return render(request, 'tpe_app/dashboard_buscador.html', context)
+    return render(request, 'tpe_app/buscador/dashboard_buscador.html', context)
 
 
 def detalles_sim(request, sim_id):
@@ -126,7 +126,7 @@ def detalles_sim(request, sim_id):
         'custodia_actual': custodia_actual,
         'es_admin2': es_admin2,
     }
-    return render(request, 'tpe_app/detalles_sim.html', context)
+    return render(request, 'tpe_app/buscador/detalles_sim.html', context)
 
 
 def upload_foto_pm(request, pm_id):

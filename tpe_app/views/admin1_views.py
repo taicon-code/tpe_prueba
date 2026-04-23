@@ -157,7 +157,7 @@ def admin1_dashboard(request):
         'total_ejecutorias_notificadas': ejecutorias_notificadas.count(),
     }
 
-    return render(request, 'tpe_app/admin1_dashboard.html', context)
+    return render(request, 'tpe_app/admin1/admin1_dashboard.html', context)
 
 
 @rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
@@ -249,7 +249,7 @@ def registrar_sumario(request):
         'personal_militar': personal_militar,
     }
 
-    return render(request, 'tpe_app/registrar_sumario.html', context)
+    return render(request, 'tpe_app/admin1/registrar_sumario.html', context)
 
 
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -305,7 +305,7 @@ def agendar_sumario(request):
         'agendas_programadas': AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').count(),
     }
 
-    return render(request, 'tpe_app/agendar_sumario.html', context)
+    return render(request, 'tpe_app/admin1/agendar_sumario.html', context)
 
 @rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
 def registrar_rr(request):
@@ -339,7 +339,7 @@ def registrar_rr(request):
     else:
         form = RegistrarRRForm()
 
-    return render(request, 'tpe_app/registrar_rr.html', {'form': form})
+    return render(request, 'tpe_app/admin1/registrar_rr.html', {'form': form})
 
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def agendar_rr(request):
@@ -372,7 +372,7 @@ def agendar_rr(request):
             RES_INSTANCIA='RECONSIDERACION', abog__isnull=True
         ).count(),
     }
-    return render(request, 'tpe_app/agendar_rr.html', context)
+    return render(request, 'tpe_app/admin1/agendar_rr.html', context)
 
 
 # ============================================================
@@ -533,7 +533,7 @@ def crear_agenda(request):
         'prev_month_url': f'?year={prev_year}&month={prev_month}',
         'next_month_url': f'?year={next_year}&month={next_month}',
     }
-    return render(request, 'tpe_app/crear_agenda.html', context)
+    return render(request, 'tpe_app/admin1/crear_agenda.html', context)
 
 
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -549,7 +549,7 @@ def lista_agendas(request):
         'total_suspendidas': AGENDA.objects.filter(AG_ESTADO='SUSPENDIDA').count(),
     }
 
-    return render(request, 'tpe_app/lista_agendas.html', context)
+    return render(request, 'tpe_app/admin1/lista_agendas.html', context)
 
 
 @rol_requerido('ADMIN1_AGENDADOR')
@@ -568,7 +568,7 @@ def ver_agenda_detalle(request, ag_id):
         'dictamenes': dictamenes,
     }
 
-    return render(request, 'tpe_app/ver_agenda_detalle.html', context)
+    return render(request, 'tpe_app/admin1/ver_agenda_detalle.html', context)
 
 
 @rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -605,7 +605,7 @@ def editar_agenda_resultado(request, ag_id):
         'agenda': agenda,
     }
 
-    return render(request, 'tpe_app/agenda_resultado.html', context)
+    return render(request, 'tpe_app/admin1/agenda_resultado.html', context)
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')

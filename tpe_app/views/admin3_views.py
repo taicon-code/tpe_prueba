@@ -61,4 +61,4 @@ def admin3_dashboard(request):
         'total_res_sin_pdf': total_res_sin_pdf,
     }
 
-    return render(request, 'tpe_app/admin3_dashboard.html', context)
+    return render(request, 'tpe_app/admin3/admin3_dashboard.html', context)
