@@ -515,8 +515,46 @@
         </a>
 
         <hr class="sb-divider">
+        <span class="sb-group-label">Administrativo</span>
+
+        <a href="{% url 'admin1_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin1_dashboard' %}active{% endif %}">
+            <span class="lk-icon">📋</span>
+            <span class="lk-text">Admin1 (Agendador)</span>
+        </a>
+        <a href="{% url 'admin2_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin2_dashboard' %}active{% endif %}">
+            <span class="lk-icon">📁</span>
+            <span class="lk-text">Admin2 (Archivo)</span>
+        </a>
+        <a href="{% url 'admin3_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'admin3_dashboard' %}active{% endif %}">
+            <span class="lk-icon">📢</span>
+            <span class="lk-text">Admin3 (Notificador)</span>
+        </a>
+
+        <hr class="sb-divider">
+        <span class="sb-group-label">Actores Legales</span>
+
+        <a href="{% url 'abogado_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'abogado_dashboard' %}active{% endif %}">
+            <span class="lk-icon">⚖️</span>
+            <span class="lk-text">Abogados</span>
+        </a>
+        <a href="{% url 'vocal_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'vocal_dashboard' %}active{% endif %}">
+            <span class="lk-icon">🎖️</span>
+            <span class="lk-text">Vocales (Sesiones)</span>
+        </a>
+
+        <hr class="sb-divider">
         <span class="sb-group-label">Sistema</span>
 
+        <a href="{% url 'ayudante_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'ayudante_dashboard' %}active{% endif %}">
+            <span class="lk-icon">📝</span>
+            <span class="lk-text">Ayudante (Históricos)</span>
+        </a>
         <a href="{% url 'buscador_dashboard' %}"
            class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}">
             <span class="lk-icon">🔍</span>
