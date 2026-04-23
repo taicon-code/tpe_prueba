@@ -1,0 +1,170 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=5 %}
+
+    <div class="alert alert-success">
+        <strong>✓ Sumario cargado exitosamente</strong><br>
+        Se ha registrado completamente el sumario {{ sim.SIM_COD }} en el sistema.
+    </div>
+
+    <!-- Datos del SIM -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Sumario: {{ sim.SIM_COD }}</strong>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Tipo:</strong> {{ sim.SIM_TIPO }}</p>
+                    <p><strong>Fase:</strong> <span class="badge" style="background-color: {{ sim.get_fase_color }};">{{ sim.get_SIM_FASE_display }}</span></p>
+                    <p><strong>Fecha Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Resumen:</strong> {{ sim.SIM_RESUM }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Militares -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Militares ({{ sim.militares.count }})</strong>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for pm in sim.militares.all %}
+                    <div class="list-group-item">
+                        {{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}, {{ pm.PM_NOMBRE }} — CI: {{ pm.PM_CI }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Resoluciones -->
+    {% if resoluciones %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Resoluciones ({{ resoluciones.count }})</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Notificado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for res in resoluciones %}
+                        <tr>
+                            <td><strong>{{ res.RES_NUM }}</strong></td>
+                            <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if res.RES_INSTANCIA == 'PRIMERA' %}
+                                    <span class="badge bg-primary">RES</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">RR</span>
+                                {% endif %}
+                                {{ res.get_RES_TIPO_display|default:"---" }}
+                            </td>
+                            <td>
+                                {% if res.RES_FECNOT %}
+                                    <span class="badge bg-success">{{ res.RES_FECNOT|date:"d/m/Y" }}</span>
+                                {% else %}
+                                    <span class="text-muted">---</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Autos TPE -->
+    {% if autos_tpe %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Autos del TPE ({{ autos_tpe.count }})</strong>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for auto in autos_tpe %}
+                <div class="list-group-item">
+                    <strong>{{ auto.TPE_NUM }}</strong> — {{ auto.get_TPE_TIPO_display|default:"---" }}
+                    <br><small class="text-muted">Fecha: {{ auto.TPE_FEC|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recursos TSP (RAP y RAEE) -->
+    {% if recursos_tsp %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Recursos TSP ({{ recursos_tsp.count }})</strong>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for recurso in recursos_tsp %}
+                <div class="list-group-item">
+                    <strong>{{ recurso.TSP_NUM }}</strong>
+                    {% if recurso.TSP_INSTANCIA == 'APELACION' %}
+                        <span class="badge bg-info">RAP</span>
+                    {% else %}
+                        <span class="badge bg-secondary">RAEE</span>
+                    {% endif %}
+                    <br><small class="text-muted">Fecha: {{ recurso.TSP_FEC|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Autos TSP -->
+    {% if autos_tsp %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>Autos del TSP ({{ autos_tsp.count }})</strong>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for auto in autos_tsp %}
+                <div class="list-group-item">
+                    <strong>{{ auto.TSP_NUM }}</strong> — {{ auto.get_TSP_TIPO_display|default:"---" }}
+                    <br><small class="text-muted">Fecha: {{ auto.TSP_FEC|date:"d/m/Y" }}</small>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Botones de navegación -->
+    <div class="d-flex justify-content-between gap-2 mt-4">
+        <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
+            ← Volver al Dashboard
+        </a>
+        <div>
+            <a href="{% url 'detalles_sim' sim.pk %}" class="btn btn-outline-primary me-2">
+                👁 Ver en Buscador
+            </a>
+            <a href="{% url 'ayudante_wizard_paso1' %}" class="btn btn-success">
+                ➕ Registrar Otro SIM
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

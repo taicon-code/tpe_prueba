@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, CustodiaSIM, AGENDA, AUTOTPE, Resolucion, RecursoTSP
+from .models import SIM, PM, PM_SIM, ABOG, CustodiaSIM, AGENDA, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -821,4 +821,265 @@ class AUTOTPENotificacionForm(forms.ModelForm):
             'TPE_NOT': 'Notificado a (persona)',
             'TPE_TIPO_NOTIF': 'Tipo de Notificación',
         }
+
+
+# ============================================================================
+# FORMULARIOS PARA WIZARD DE INGRESO RÁPIDO — AYUDANTE
+# ============================================================================
+
+class WizardSIMForm(SIMForm):
+    SIM_FASE = forms.ChoiceField(
+        choices=[('', '---------')] + list(SIM.FASE_CHOICES),
+        required=False,
+        label='Fase del Sumario',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text='Seleccione la fase en que quedó este sumario histórico'
+    )
+
+    class Meta(SIMForm.Meta):
+        fields = SIMForm.Meta.fields + ['SIM_FASE']
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        fase = self.cleaned_data.get('SIM_FASE')
+        if fase:
+            obj.SIM_FASE = fase
+        if commit:
+            obj.save()
+        return obj
+
+
+class WizardRESForm(RESForm):
+    RES_TIPO_NOTIF = forms.ChoiceField(
+        choices=[('', 'Sin notificación aún')] + list(Resolucion.NOTIF_CHOICES),
+        required=False,
+        label='Tipo de Notificación',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    RES_NOT = forms.CharField(
+        max_length=100, required=False,
+        label='Notificado a',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre/Dirección/Periódico'})
+    )
+    RES_FECNOT = forms.DateField(
+        required=False,
+        label='Fecha de Notificación',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    RES_HORNOT = forms.TimeField(
+        required=False,
+        label='Hora de Notificación',
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
+    )
+
+    class Meta(RESForm.Meta):
+        fields = ['pm', 'RES_NUM', 'RES_FEC', 'RES_TIPO', 'RES_RESOL']
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.RES_INSTANCIA = 'PRIMERA'
+        obj.RES_TIPO_NOTIF = self.cleaned_data.get('RES_TIPO_NOTIF') or None
+        obj.RES_NOT = self.cleaned_data.get('RES_NOT') or None
+        obj.RES_FECNOT = self.cleaned_data.get('RES_FECNOT') or None
+        obj.RES_HORNOT = self.cleaned_data.get('RES_HORNOT') or None
+        if commit:
+            obj.save()
+        return obj
+
+
+class WizardRRForm(forms.ModelForm):
+    RES_TIPO_NOTIF = forms.ChoiceField(
+        choices=[('', 'Sin notificación aún')] + list(Resolucion.NOTIF_CHOICES),
+        required=False, label='Tipo de Notificación',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    RES_NOT = forms.CharField(
+        max_length=100, required=False, label='Notificado a',
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    RES_FECNOT = forms.DateField(
+        required=False, label='Fecha Notificación RR',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    RES_HORNOT = forms.TimeField(
+        required=False,
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
+    )
+
+    class Meta:
+        model = Resolucion
+        fields = ['RES_NUM', 'RES_FEC', 'RES_RESOL', 'RES_RESUM', 'RES_FECPRESEN']
+        widgets = {
+            'RES_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24', 'pattern': '[0-9]{1,4}/[0-9]{2}'}),
+            'RES_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'RES_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'RES_RESUM': forms.Select(attrs={'class': 'form-control'}),
+            'RES_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'RES_NUM': 'Número del RR',
+            'RES_FEC': 'Fecha del RR',
+            'RES_RESOL': 'Texto del RR',
+            'RES_RESUM': 'Resultado (PROCEDENCIA/IMPROCEDENCIA)',
+            'RES_FECPRESEN': 'Fecha de Presentación del Recurso',
+        }
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.RES_INSTANCIA = 'RECONSIDERACION'
+        obj.RES_TIPO_NOTIF = self.cleaned_data.get('RES_TIPO_NOTIF') or None
+        obj.RES_NOT = self.cleaned_data.get('RES_NOT') or None
+        obj.RES_FECNOT = self.cleaned_data.get('RES_FECNOT') or None
+        obj.RES_HORNOT = self.cleaned_data.get('RES_HORNOT') or None
+        if commit:
+            obj.save()
+        return obj
+
+
+class WizardAUTOTPEForm(AUTOTPEHistoricoForm):
+    TPE_TIPO_NOTIF = forms.ChoiceField(
+        choices=[('', 'Sin notificación aún')] + list(AUTOTPE.NOTIF_CHOICES),
+        required=False, label='Tipo de Notificación',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    TPE_NOT = forms.CharField(
+        max_length=100, required=False, label='Notificado a',
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    TPE_FECNOT = forms.DateField(
+        required=False, label='Fecha Notificación Auto',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    TPE_HORNOT = forms.TimeField(
+        required=False,
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
+    )
+
+    class Meta(AUTOTPEHistoricoForm.Meta):
+        fields = ['pm', 'TPE_NUM', 'TPE_FEC', 'TPE_TIPO', 'TPE_RESOL', 'TPE_MEMO_NUM', 'TPE_MEMO_FEC', 'TPE_MEMO_ENTREGA']
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.TPE_TIPO_NOTIF = self.cleaned_data.get('TPE_TIPO_NOTIF') or None
+        obj.TPE_NOT = self.cleaned_data.get('TPE_NOT') or None
+        obj.TPE_FECNOT = self.cleaned_data.get('TPE_FECNOT') or None
+        obj.TPE_HORNOT = self.cleaned_data.get('TPE_HORNOT') or None
+        if commit:
+            obj.save()
+        return obj
+
+
+class WizardRAPForm(RAPForm):
+    TSP_TIPO_NOTIF = forms.ChoiceField(
+        choices=[('', 'Sin notificación aún')] + list(RecursoTSP.NOTIF_CHOICES),
+        required=False, label='Tipo Notificación',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    TSP_NOT = forms.CharField(
+        max_length=100, required=False, label='Notificado a',
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    TSP_FECNOT = forms.DateField(
+        required=False, label='Fecha Notificación',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    TSP_HORNOT = forms.TimeField(
+        required=False,
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
+    )
+
+    class Meta(RAPForm.Meta):
+        fields = ['pm', 'resolucion', 'TSP_FECPRESEN', 'TSP_OFI', 'TSP_FECOFI', 'TSP_NUM', 'TSP_FEC', 'TSP_TIPO', 'TSP_RESOL']
+
+    def __init__(self, *args, sim=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if sim:
+            self.fields['pm'].queryset = sim.militares.all()
+            self.fields['resolucion'].queryset = Resolucion.objects.filter(
+                sim=sim, RES_INSTANCIA='RECONSIDERACION'
+            )
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.TSP_INSTANCIA = 'APELACION'
+        obj.TSP_TIPO_NOTIF = self.cleaned_data.get('TSP_TIPO_NOTIF') or None
+        obj.TSP_NOT = self.cleaned_data.get('TSP_NOT') or None
+        obj.TSP_FECNOT = self.cleaned_data.get('TSP_FECNOT') or None
+        obj.TSP_HORNOT = self.cleaned_data.get('TSP_HORNOT') or None
+        if commit:
+            obj.save()
+        return obj
+
+
+class WizardRAEEForm(RAEEForm):
+    TSP_TIPO_NOTIF = forms.ChoiceField(
+        choices=[('', 'Sin notificación aún')] + list(RecursoTSP.NOTIF_CHOICES),
+        required=False, label='Tipo Notificación',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    TSP_NOT = forms.CharField(
+        max_length=100, required=False, label='Notificado a',
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    TSP_FECNOT = forms.DateField(
+        required=False, label='Fecha Notificación',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    TSP_HORNOT = forms.TimeField(
+        required=False,
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
+    )
+
+    class Meta(RAEEForm.Meta):
+        fields = ['pm', 'recurso_origen', 'TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_RESUM']
+
+    def __init__(self, *args, sim=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if sim:
+            self.fields['pm'].queryset = sim.militares.all()
+            self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(
+                sim=sim, TSP_INSTANCIA='APELACION'
+            )
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.TSP_INSTANCIA = 'ACLARACION_ENMIENDA'
+        obj.TSP_TIPO_NOTIF = self.cleaned_data.get('TSP_TIPO_NOTIF') or None
+        obj.TSP_NOT = self.cleaned_data.get('TSP_NOT') or None
+        obj.TSP_FECNOT = self.cleaned_data.get('TSP_FECNOT') or None
+        obj.TSP_HORNOT = self.cleaned_data.get('TSP_HORNOT') or None
+        if commit:
+            obj.save()
+        return obj
+
+
+class WizardAUTOTSPForm(forms.ModelForm):
+    class Meta:
+        model = AUTOTSP
+        fields = ['TSP_NUM', 'TSP_FEC', 'TSP_TIPO', 'TSP_RESOL', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT']
+        widgets = {
+            'TSP_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/24', 'pattern': '[0-9]{1,4}/[0-9]{2}'}),
+            'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'TSP_TIPO': forms.Select(attrs={'class': 'form-control'}),
+            'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'TSP_TIPO_NOTIF': forms.Select(attrs={'class': 'form-control'}),
+            'TSP_NOT': forms.TextInput(attrs={'class': 'form-control'}),
+            'TSP_FECNOT': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'TSP_HORNOT': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        }
+        labels = {
+            'TSP_NUM': 'Número del Auto TSP',
+            'TSP_FEC': 'Fecha del Auto TSP',
+            'TSP_TIPO': 'Tipo de Auto TSP',
+            'TSP_RESOL': 'Texto del Auto TSP',
+            'TSP_TIPO_NOTIF': 'Tipo de Notificación',
+            'TSP_NOT': 'Notificado a',
+            'TSP_FECNOT': 'Fecha Notificación',
+            'TSP_HORNOT': 'Hora Notificación',
+        }
+
+    def __init__(self, *args, sim=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in ['TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT']:
+            self.fields[f].required = False
 

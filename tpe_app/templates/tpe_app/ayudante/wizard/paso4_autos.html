@@ -1,0 +1,314 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=4 %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Sección Auto TPE -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Auto del TPE</strong>
+                <div class="form-check form-switch ms-auto">
+                    <input class="form-check-input" type="checkbox" id="toggle-autotpe"
+                           name="guardar_autotpe" value="1"
+                           {% if autotpe_existente %}checked{% endif %}>
+                    <label class="form-check-label" for="toggle-autotpe">Registrar Auto TPE</label>
+                </div>
+            </div>
+            <div class="card-body" id="seccion-autotpe"
+                 style="{% if not autotpe_existente %}display:none{% endif %}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_NUM.id_for_label }}" class="form-label">{{ autotpe_form.TPE_NUM.label }}</label>
+                        {{ autotpe_form.TPE_NUM }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_FEC.id_for_label }}" class="form-label">{{ autotpe_form.TPE_FEC.label }}</label>
+                        {{ autotpe_form.TPE_FEC }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.pm.id_for_label }}" class="form-label">{{ autotpe_form.pm.label }}</label>
+                        {{ autotpe_form.pm }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_TIPO.id_for_label }}" class="form-label">{{ autotpe_form.TPE_TIPO.label }}</label>
+                        {{ autotpe_form.TPE_TIPO }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ autotpe_form.TPE_RESOL.id_for_label }}" class="form-label">{{ autotpe_form.TPE_RESOL.label }}</label>
+                        {{ autotpe_form.TPE_RESOL }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3">Memorándum (si corresponde)</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_MEMO_NUM.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_NUM.label }}</label>
+                        {{ autotpe_form.TPE_MEMO_NUM }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_MEMO_FEC.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_FEC.label }}</label>
+                        {{ autotpe_form.TPE_MEMO_FEC }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_MEMO_ENTREGA.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_ENTREGA.label }}</label>
+                        {{ autotpe_form.TPE_MEMO_ENTREGA }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3">Notificación (opcional)</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_TIPO_NOTIF.id_for_label }}" class="form-label">{{ autotpe_form.TPE_TIPO_NOTIF.label }}</label>
+                        {{ autotpe_form.TPE_TIPO_NOTIF }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_NOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_NOT.label }}</label>
+                        {{ autotpe_form.TPE_NOT }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_FECNOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_FECNOT.label }}</label>
+                        {{ autotpe_form.TPE_FECNOT }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_HORNOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_HORNOT.label }}</label>
+                        {{ autotpe_form.TPE_HORNOT }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección RAP (Recurso de Apelación) -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Recurso de Apelación (RAP)</strong>
+                <div class="form-check form-switch ms-auto">
+                    <input class="form-check-input" type="checkbox" id="toggle-rap"
+                           name="guardar_rap" value="1"
+                           {% if rap_existente %}checked{% endif %}>
+                    <label class="form-check-label" for="toggle-rap">Registrar RAP</label>
+                </div>
+            </div>
+            <div class="card-body" id="seccion-rap"
+                 style="{% if not rap_existente %}display:none{% endif %}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_FECPRESEN.id_for_label }}" class="form-label">{{ rap_form.TSP_FECPRESEN.label }}</label>
+                        {{ rap_form.TSP_FECPRESEN }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_OFI.id_for_label }}" class="form-label">{{ rap_form.TSP_OFI.label }}</label>
+                        {{ rap_form.TSP_OFI }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_FECOFI.id_for_label }}" class="form-label">{{ rap_form.TSP_FECOFI.label }}</label>
+                        {{ rap_form.TSP_FECOFI }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_TIPO.id_for_label }}" class="form-label">{{ rap_form.TSP_TIPO.label }}</label>
+                        {{ rap_form.TSP_TIPO }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_NUM.id_for_label }}" class="form-label">{{ rap_form.TSP_NUM.label }}</label>
+                        {{ rap_form.TSP_NUM }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_FEC.id_for_label }}" class="form-label">{{ rap_form.TSP_FEC.label }}</label>
+                        {{ rap_form.TSP_FEC }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ rap_form.TSP_RESOL.id_for_label }}" class="form-label">{{ rap_form.TSP_RESOL.label }}</label>
+                        {{ rap_form.TSP_RESOL }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3">Notificación (opcional)</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_TIPO_NOTIF.id_for_label }}" class="form-label">{{ rap_form.TSP_TIPO_NOTIF.label }}</label>
+                        {{ rap_form.TSP_TIPO_NOTIF }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_NOT.id_for_label }}" class="form-label">{{ rap_form.TSP_NOT.label }}</label>
+                        {{ rap_form.TSP_NOT }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_FECNOT.id_for_label }}" class="form-label">{{ rap_form.TSP_FECNOT.label }}</label>
+                        {{ rap_form.TSP_FECNOT }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.TSP_HORNOT.id_for_label }}" class="form-label">{{ rap_form.TSP_HORNOT.label }}</label>
+                        {{ rap_form.TSP_HORNOT }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección RAEE (Aclaración, Explicación y Enmienda) -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>RAEE (Aclaración, Explicación y Enmienda)</strong>
+                <div class="form-check form-switch ms-auto">
+                    <input class="form-check-input" type="checkbox" id="toggle-raee"
+                           name="guardar_raee" value="1"
+                           {% if raee_existente %}checked{% endif %}>
+                    <label class="form-check-label" for="toggle-raee">Registrar RAEE</label>
+                </div>
+            </div>
+            <div class="card-body" id="seccion-raee"
+                 style="{% if not raee_existente %}display:none{% endif %}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.TSP_NUM.id_for_label }}" class="form-label">{{ raee_form.TSP_NUM.label }}</label>
+                        {{ raee_form.TSP_NUM }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.TSP_FEC.id_for_label }}" class="form-label">{{ raee_form.TSP_FEC.label }}</label>
+                        {{ raee_form.TSP_FEC }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ raee_form.TSP_RESUM.id_for_label }}" class="form-label">{{ raee_form.TSP_RESUM.label }}</label>
+                        {{ raee_form.TSP_RESUM }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ raee_form.TSP_RESOL.id_for_label }}" class="form-label">{{ raee_form.TSP_RESOL.label }}</label>
+                        {{ raee_form.TSP_RESOL }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3">Notificación (opcional)</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.TSP_TIPO_NOTIF.id_for_label }}" class="form-label">{{ raee_form.TSP_TIPO_NOTIF.label }}</label>
+                        {{ raee_form.TSP_TIPO_NOTIF }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.TSP_NOT.id_for_label }}" class="form-label">{{ raee_form.TSP_NOT.label }}</label>
+                        {{ raee_form.TSP_NOT }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.TSP_FECNOT.id_for_label }}" class="form-label">{{ raee_form.TSP_FECNOT.label }}</label>
+                        {{ raee_form.TSP_FECNOT }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.TSP_HORNOT.id_for_label }}" class="form-label">{{ raee_form.TSP_HORNOT.label }}</label>
+                        {{ raee_form.TSP_HORNOT }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Auto TSP -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Auto del TSP</strong>
+                <div class="form-check form-switch ms-auto">
+                    <input class="form-check-input" type="checkbox" id="toggle-autotsp"
+                           name="guardar_autotsp" value="1"
+                           {% if autotsp_existente %}checked{% endif %}>
+                    <label class="form-check-label" for="toggle-autotsp">Registrar Auto TSP</label>
+                </div>
+            </div>
+            <div class="card-body" id="seccion-autotsp"
+                 style="{% if not autotsp_existente %}display:none{% endif %}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_NUM.id_for_label }}" class="form-label">{{ autotsp_form.TSP_NUM.label }}</label>
+                        {{ autotsp_form.TSP_NUM }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_FEC.id_for_label }}" class="form-label">{{ autotsp_form.TSP_FEC.label }}</label>
+                        {{ autotsp_form.TSP_FEC }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_TIPO.id_for_label }}" class="form-label">{{ autotsp_form.TSP_TIPO.label }}</label>
+                        {{ autotsp_form.TSP_TIPO }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ autotsp_form.TSP_RESOL.id_for_label }}" class="form-label">{{ autotsp_form.TSP_RESOL.label }}</label>
+                        {{ autotsp_form.TSP_RESOL }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3">Notificación (opcional)</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_TIPO_NOTIF.id_for_label }}" class="form-label">{{ autotsp_form.TSP_TIPO_NOTIF.label }}</label>
+                        {{ autotsp_form.TSP_TIPO_NOTIF }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_NOT.id_for_label }}" class="form-label">{{ autotsp_form.TSP_NOT.label }}</label>
+                        {{ autotsp_form.TSP_NOT }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_FECNOT.id_for_label }}" class="form-label">{{ autotsp_form.TSP_FECNOT.label }}</label>
+                        {{ autotsp_form.TSP_FECNOT }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotsp_form.TSP_HORNOT.id_for_label }}" class="form-label">{{ autotsp_form.TSP_HORNOT.label }}</label>
+                        {{ autotsp_form.TSP_HORNOT }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'ayudante_wizard_paso3' sim.pk %}" class="btn btn-outline-secondary">← Atrás</a>
+            <div>
+                <button type="submit" name="action" value="skip" class="btn btn-outline-primary me-2">
+                    Ir a Resumen →
+                </button>
+                <button type="submit" name="action" value="save" class="btn btn-primary">
+                    Guardar y Continuar →
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('toggle-autotpe').addEventListener('change', function() {
+    document.getElementById('seccion-autotpe').style.display = this.checked ? '' : 'none';
+});
+document.getElementById('toggle-rap').addEventListener('change', function() {
+    document.getElementById('seccion-rap').style.display = this.checked ? '' : 'none';
+});
+document.getElementById('toggle-raee').addEventListener('change', function() {
+    document.getElementById('seccion-raee').style.display = this.checked ? '' : 'none';
+});
+document.getElementById('toggle-autotsp').addEventListener('change', function() {
+    document.getElementById('seccion-autotsp').style.display = this.checked ? '' : 'none';
+});
+</script>
+{% endblock %}

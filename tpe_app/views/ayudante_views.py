@@ -8,13 +8,16 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.http import JsonResponse
+from django.urls import reverse
 from datetime import date
 from ..decorators import rol_requerido
 from ..models import (
-    SIM, PM, AUTOTPE, ABOG, VOCAL_TPE, Resolucion, RecursoTSP
+    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, ABOG, VOCAL_TPE, Resolucion, RecursoTSP
 )
 from ..forms import (
-    RESForm, RESNotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, AUTOTPENotificacionForm
+    RESForm, RESNotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, AUTOTPENotificacionForm,
+    PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm
 )
 
 
@@ -380,3 +383,328 @@ def ayudante_lista_res_sin_pdf(request):
     }
 
     return render(request, 'tpe_app/ayudante/lista_res_sin_pdf.html', context)
+
+
+# ============================================================================
+# WIZARD DE INGRESO RÁPIDO — 6 VISTAS NUEVAS
+# ============================================================================
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_buscar_sim(request):
+    """AJAX: busca SIM por código"""
+    codigo = (request.GET.get('q') or '').strip().upper()
+    if not codigo:
+        return JsonResponse({'found': False})
+    sim = SIM.objects.filter(SIM_COD=codigo).order_by('SIM_VERSION').first()
+    if sim:
+        return JsonResponse({
+            'found': True,
+            'sim_id': sim.pk,
+            'sim_cod': sim.SIM_COD,
+            'sim_resum': sim.SIM_RESUM[:100] if sim.SIM_RESUM else '',
+            'wizard_url': reverse('ayudante_wizard_paso2', kwargs={'sim_id': sim.pk}),
+        })
+    return JsonResponse({'found': False})
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_paso1(request):
+    """PASO 1 — Crear o seleccionar SIM + militares"""
+    if request.method == 'POST':
+        sim_existente_id = request.POST.get('sim_existente_id')
+        if sim_existente_id:
+            sim = get_object_or_404(SIM, pk=sim_existente_id)
+            messages.info(request, f'Usando SIM existente: {sim.SIM_COD}')
+            return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
+
+        form = WizardSIMForm(request.POST)
+        formset = PMSIMFormSet(request.POST, request.FILES)
+
+        if form.is_valid() and formset.is_valid():
+            try:
+                with transaction.atomic():
+                    sim = form.save()
+
+                    formset.instance = sim
+                    for inline_form in formset:
+                        if not inline_form.cleaned_data:
+                            continue
+                        if inline_form.cleaned_data.get('DELETE'):
+                            continue
+                        pm = inline_form.cleaned_data.get('pm')
+                        if pm:
+                            PM_SIM.objects.get_or_create(sim=sim, pm=pm)
+
+                messages.success(request, f'SIM {sim.SIM_COD} creado. Ahora agregue los militares.')
+                return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
+            except Exception as e:
+                messages.error(request, f'Error al guardar SIM: {str(e)}')
+        else:
+            messages.error(request, 'Por favor corrija los errores.')
+    else:
+        form = WizardSIMForm()
+        formset = PMSIMFormSet()
+
+    return render(request, 'tpe_app/ayudante/wizard/paso1_sim.html', {
+        'form': form,
+        'formset': formset,
+        'paso_actual': 1,
+        'total_pasos': 4,
+    })
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_paso2(request, sim_id):
+    """PASO 2 — Verificación/Edición de Militares"""
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'save')
+
+        if action == 'skip':
+            if sim.militares.exists():
+                return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
+            else:
+                messages.warning(request, 'Debe haber al menos un militar antes de continuar.')
+
+        elif action == 'save':
+            formset = PMSIMFormSet(request.POST, request.FILES, instance=sim)
+            if formset.is_valid():
+                try:
+                    with transaction.atomic():
+                        for inline_form in formset:
+                            if not inline_form.cleaned_data:
+                                continue
+                            if inline_form.cleaned_data.get('DELETE'):
+                                pm_sim_pk = inline_form.instance.pk
+                                if pm_sim_pk:
+                                    PM_SIM.objects.filter(pk=pm_sim_pk).delete()
+                                continue
+                            pm = inline_form.cleaned_data.get('pm')
+                            if pm:
+                                PM_SIM.objects.get_or_create(sim=sim, pm=pm)
+                    return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
+                except Exception as e:
+                    messages.error(request, f'Error: {str(e)}')
+            else:
+                messages.error(request, 'Por favor corrija los errores.')
+        formset = PMSIMFormSet(request.POST, request.FILES, instance=sim)
+    else:
+        formset = PMSIMFormSet(instance=sim)
+
+    militares_actuales = sim.militares.all()
+    return render(request, 'tpe_app/ayudante/wizard/paso2_pm.html', {
+        'sim': sim,
+        'formset': formset,
+        'militares_actuales': militares_actuales,
+        'paso_actual': 2,
+        'total_pasos': 4,
+    })
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_paso3(request, sim_id):
+    """PASO 3 — Primera Resolución + RR opcional"""
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    res_existente = Resolucion.objects.filter(sim=sim, RES_INSTANCIA='PRIMERA').first()
+    rr_existente = Resolucion.objects.filter(sim=sim, RES_INSTANCIA='RECONSIDERACION').first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'save')
+
+        if action == 'skip':
+            return redirect('ayudante_wizard_paso4', sim_id=sim.pk)
+
+        guardar_res = request.POST.get('guardar_res') == '1'
+        guardar_rr = request.POST.get('guardar_rr') == '1'
+
+        res_form = WizardRESForm(request.POST if guardar_res else None, instance=res_existente, prefix='res')
+        rr_form = WizardRRForm(request.POST if guardar_rr else None, instance=rr_existente, prefix='rr')
+
+        errores = False
+        try:
+            with transaction.atomic():
+                if guardar_res and res_form.is_valid():
+                    res = res_form.save(commit=False)
+                    res.sim = sim
+                    if not res.pm:
+                        res.pm = sim.militares.first()
+                    res.save()
+                    res_existente = res
+
+                    if sim.SIM_FASE not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'NOTIFICADO_1RA', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
+                        sim.SIM_FASE = '1RA_RESOLUCION'
+                        sim.save()
+
+                elif guardar_res and not res_form.is_valid():
+                    errores = True
+
+                if guardar_rr and res_existente:
+                    if rr_form.is_valid():
+                        rr = rr_form.save(commit=False)
+                        rr.sim = sim
+                        rr.pm = res_existente.pm
+                        rr.resolucion_origen = res_existente
+                        rr.save()
+
+                        if sim.SIM_FASE not in ['2DA_RESOLUCION', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
+                            sim.SIM_FASE = '2DA_RESOLUCION'
+                            sim.save()
+                    else:
+                        errores = True
+
+                if not errores:
+                    messages.success(request, 'Resoluciones guardadas correctamente.')
+                    return redirect('ayudante_wizard_paso4', sim_id=sim.pk)
+
+        except Exception as e:
+            messages.error(request, f'Error al guardar: {str(e)}')
+
+        if errores:
+            messages.error(request, 'Por favor corrija los errores.')
+
+    else:
+        res_form = WizardRESForm(instance=res_existente, prefix='res')
+        rr_form = WizardRRForm(instance=rr_existente, prefix='rr')
+
+    res_form.fields['pm'].queryset = sim.militares.all()
+
+    return render(request, 'tpe_app/ayudante/wizard/paso3_resoluciones.html', {
+        'sim': sim,
+        'res_form': res_form,
+        'rr_form': rr_form,
+        'res_existente': res_existente,
+        'rr_existente': rr_existente,
+        'paso_actual': 3,
+        'total_pasos': 4,
+    })
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_paso4(request, sim_id):
+    """PASO 4 — Auto TPE, RAP, RAEE, Auto TSP (todos opcionales)"""
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    autotpe_existente = AUTOTPE.objects.filter(sim=sim).first()
+    rap_existente = RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='APELACION').first()
+    raee_existente = RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='ACLARACION_ENMIENDA').first()
+    autotsp_existente = AUTOTSP.objects.filter(sim=sim).first()
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'save')
+
+        if action == 'skip':
+            return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
+
+        guardar_autotpe = request.POST.get('guardar_autotpe') == '1'
+        guardar_rap = request.POST.get('guardar_rap') == '1'
+        guardar_raee = request.POST.get('guardar_raee') == '1'
+        guardar_autotsp = request.POST.get('guardar_autotsp') == '1'
+
+        autotpe_form = WizardAUTOTPEForm(request.POST if guardar_autotpe else None, instance=autotpe_existente, prefix='autotpe')
+        rap_form = WizardRAPForm(request.POST if guardar_rap else None, instance=rap_existente, prefix='rap', sim=sim)
+        raee_form = WizardRAEEForm(request.POST if guardar_raee else None, instance=raee_existente, prefix='raee', sim=sim)
+        autotsp_form = WizardAUTOTSPForm(request.POST if guardar_autotsp else None, instance=autotsp_existente, prefix='autotsp')
+
+        errores = False
+        try:
+            with transaction.atomic():
+                if guardar_autotpe:
+                    if autotpe_form.is_valid():
+                        auto = autotpe_form.save(commit=False)
+                        auto.sim = sim
+                        if not auto.pm:
+                            auto.pm = sim.militares.first()
+                        auto.save()
+                        autotpe_existente = auto
+                    else:
+                        errores = True
+
+                if guardar_rap:
+                    if rap_form.is_valid():
+                        rap = rap_form.save(commit=False)
+                        rap.sim = sim
+                        rap.TSP_INSTANCIA = 'APELACION'
+                        if not rap.pm:
+                            rap.pm = sim.militares.first()
+                        rap.save()
+                        if sim.SIM_FASE not in ['ELEVADO_TSP', 'CONCLUIDO']:
+                            sim.SIM_FASE = 'ELEVADO_TSP'
+                            sim.save()
+                        rap_existente = rap
+                    else:
+                        errores = True
+
+                if guardar_raee:
+                    if raee_form.is_valid():
+                        raee = raee_form.save(commit=False)
+                        raee.sim = sim
+                        raee.TSP_INSTANCIA = 'ACLARACION_ENMIENDA'
+                        if not raee.pm:
+                            raee.pm = sim.militares.first()
+                        raee.save()
+                        raee_existente = raee
+                    else:
+                        errores = True
+
+                if guardar_autotsp:
+                    if autotsp_form.is_valid():
+                        autotsp = autotsp_form.save(commit=False)
+                        autotsp.sim = sim
+                        autotsp.save()
+                        autotsp_existente = autotsp
+                    else:
+                        errores = True
+
+                if not errores:
+                    messages.success(request, 'Documentos guardados correctamente.')
+                    return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
+
+        except Exception as e:
+            messages.error(request, f'Error al guardar: {str(e)}')
+
+        if errores:
+            messages.error(request, 'Por favor corrija los errores en los formularios activos.')
+
+    else:
+        autotpe_form = WizardAUTOTPEForm(instance=autotpe_existente, prefix='autotpe')
+        rap_form = WizardRAPForm(instance=rap_existente, prefix='rap', sim=sim)
+        raee_form = WizardRAEEForm(instance=raee_existente, prefix='raee', sim=sim)
+        autotsp_form = WizardAUTOTSPForm(instance=autotsp_existente, prefix='autotsp')
+
+    autotpe_form.fields['pm'].queryset = sim.militares.all()
+
+    return render(request, 'tpe_app/ayudante/wizard/paso4_autos.html', {
+        'sim': sim,
+        'autotpe_form': autotpe_form,
+        'rap_form': rap_form,
+        'raee_form': raee_form,
+        'autotsp_form': autotsp_form,
+        'autotpe_existente': autotpe_existente,
+        'rap_existente': rap_existente,
+        'raee_existente': raee_existente,
+        'autotsp_existente': autotsp_existente,
+        'paso_actual': 4,
+        'total_pasos': 4,
+    })
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_resumen(request, sim_id):
+    """Vista de resumen final del wizard — solo lectura"""
+    sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
+    resoluciones = Resolucion.objects.filter(sim=sim).order_by('RES_FEC')
+    autos_tpe = AUTOTPE.objects.filter(sim=sim).order_by('TPE_FEC')
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim).order_by('TSP_FEC')
+    autos_tsp = AUTOTSP.objects.filter(sim=sim).order_by('TSP_FEC')
+
+    return render(request, 'tpe_app/ayudante/wizard/resumen.html', {
+        'sim': sim,
+        'resoluciones': resoluciones,
+        'autos_tpe': autos_tpe,
+        'recursos_tsp': recursos_tsp,
+        'autos_tsp': autos_tsp,
+        'paso_actual': 5,
+        'total_pasos': 4,
+    })

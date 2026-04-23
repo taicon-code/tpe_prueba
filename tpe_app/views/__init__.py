@@ -55,6 +55,12 @@ from .ayudante_views import (
     ayudante_registrar_rap,
     ayudante_registrar_raee,
     ayudante_registrar_autotpe,
+    ayudante_wizard_paso1,
+    ayudante_wizard_paso2,
+    ayudante_wizard_paso3,
+    ayudante_wizard_paso4,
+    ayudante_wizard_resumen,
+    ayudante_wizard_buscar_sim,
 )
 from .ejecutoria_views import (
     pendientes_ejecutoria,

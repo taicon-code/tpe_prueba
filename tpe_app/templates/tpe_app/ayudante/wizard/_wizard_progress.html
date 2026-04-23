@@ -1,0 +1,27 @@
+{# Barra de progreso para el wizard — se incluye en todos los pasos #}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex align-items-center justify-content-between">
+            {% for i in "1234" %}
+            {% with step=forloop.counter %}
+            <div class="d-flex align-items-center {% if not forloop.last %}flex-grow-1{% endif %}">
+                <div class="rounded-circle d-flex align-items-center justify-content-center
+                    {% if step < paso_actual %}bg-success text-white
+                    {% elif step == paso_actual %}bg-primary text-white
+                    {% else %}bg-light text-muted border{% endif %}"
+                    style="width:36px;height:36px;min-width:36px;font-weight:700;">
+                    {% if step < paso_actual %}✓{% else %}{{ step }}{% endif %}
+                </div>
+                <span class="ms-2 small d-none d-md-inline
+                    {% if step == paso_actual %}fw-bold text-primary{% elif step < paso_actual %}text-success{% else %}text-muted{% endif %}">
+                    {% if step == 1 %}SIM{% elif step == 2 %}Militares{% elif step == 3 %}Resoluciones{% elif step == 4 %}Autos{% endif %}
+                </span>
+                {% if not forloop.last %}
+                <div class="flex-grow-1 mx-2" style="height:2px;background:{% if step < paso_actual %}#198754{% else %}#dee2e6{% endif %};"></div>
+                {% endif %}
+            </div>
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+</div>

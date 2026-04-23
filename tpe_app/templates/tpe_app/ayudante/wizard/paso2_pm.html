@@ -1,0 +1,109 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=2 %}
+
+    <div class="card mb-3">
+        <div class="card-header">Militares actuales en <strong>{{ sim.SIM_COD }}</strong></div>
+        <div class="card-body">
+            {% if militares_actuales %}
+                {% for pm in militares_actuales %}
+                    <span class="badge bg-info me-1 mb-1">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}, {{ pm.PM_NOMBRE }}</span>
+                {% endfor %}
+            {% else %}
+                <em class="text-muted">No hay militares aún.</em>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        <div class="card mb-3">
+            <div class="card-header"><strong>Agregar o modificar militares</strong></div>
+            <div class="card-body">
+                <div id="formset-container">
+                    {% for form_militar in formset %}
+                        <div class="formset-row card mb-2 p-3">
+                            <div class="row g-2">
+                                <div class="col-md-2">
+                                    <label>CI</label>
+                                    {{ form_militar.PM_CI }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Nombre</label>
+                                    {{ form_militar.PM_NOMBRE }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Paterno</label>
+                                    {{ form_militar.PM_PATERNO }}
+                                </div>
+                                <div class="col-md-2">
+                                    <label>Grado</label>
+                                    {{ form_militar.PM_GRADO }}
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    {{ form_militar.DELETE }}
+                                    <label class="ms-2">Eliminar</label>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="add-form" class="btn btn-success btn-sm mt-3">
+                    + Agregar Militar
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'ayudante_wizard_paso1' %}" class="btn btn-outline-secondary">← Atrás</a>
+            <div>
+                <button type="submit" name="action" value="skip" class="btn btn-outline-primary me-2">
+                    Continuar sin cambios →
+                </button>
+                <button type="submit" name="action" value="save" class="btn btn-primary">
+                    Guardar y Continuar →
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('add-form').addEventListener('click', function() {
+    const container = document.getElementById('formset-container');
+    const formCount = container.querySelectorAll('.formset-row').length;
+    const totalForms = document.querySelector('#id_pm_sim_set-TOTAL_FORMS');
+    const newFormIndex = parseInt(totalForms.value);
+
+    const firstForm = container.querySelector('.formset-row');
+    if (!firstForm) return;
+
+    const newForm = firstForm.cloneNode(true);
+    newForm.querySelectorAll('input[type="text"], select, input[type="date"], input[type="file"]').forEach(field => {
+        const name = field.getAttribute('name');
+        if (name) {
+            const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
+            field.setAttribute('name', newName);
+            field.setAttribute('id', `id_${newName}`);
+            field.value = '';
+        }
+    });
+
+    const deleteCheckbox = newForm.querySelector('input[type="checkbox"]');
+    if (deleteCheckbox) {
+        const delName = deleteCheckbox.getAttribute('name');
+        const newDelName = delName.replace(`-${formCount}`, `-${newFormIndex}`);
+        deleteCheckbox.setAttribute('name', newDelName);
+        deleteCheckbox.setAttribute('id', `id_${newDelName}`);
+        deleteCheckbox.checked = false;
+    }
+
+    container.appendChild(newForm);
+    totalForms.value = newFormIndex + 1;
+});
+</script>
+{% endblock %}

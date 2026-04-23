@@ -1,0 +1,199 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=1 %}
+
+    <!-- Búsqueda de SIM existente (AJAX) -->
+    <div class="card border-warning mb-3">
+        <div class="card-header bg-warning bg-opacity-10 text-dark">
+            <strong>¿El SIM ya existe?</strong>
+        </div>
+        <div class="card-body">
+            <div class="input-group mb-2">
+                <input type="text" id="buscar-sim-cod" class="form-control"
+                       placeholder="Ej: DJE-123/25 — ingrese el código para buscar">
+                <button class="btn btn-outline-secondary" type="button" id="btn-buscar-sim">
+                    Buscar
+                </button>
+            </div>
+            <div id="resultado-busqueda" class="d-none"></div>
+        </div>
+    </div>
+
+    <!-- Formulario de creación de SIM nuevo -->
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="sim_existente_id" id="sim-existente-id" value="">
+
+        <!-- Sección 1: Datos del SIM -->
+        <div class="card mb-3">
+            <div class="card-header"><strong>Paso 1 — Datos del Sumario (SIM)</strong></div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.SIM_COD.id_for_label }}" class="form-label">{{ form.SIM_COD.label }}</label>
+                        {{ form.SIM_COD }}
+                        {% if form.SIM_COD.errors %}
+                            <div class="invalid-feedback d-block">{{ form.SIM_COD.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.SIM_FECING.id_for_label }}" class="form-label">{{ form.SIM_FECING.label }}</label>
+                        {{ form.SIM_FECING }}
+                        {% if form.SIM_FECING.errors %}
+                            <div class="invalid-feedback d-block">{{ form.SIM_FECING.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ form.SIM_TIPO.id_for_label }}" class="form-label">{{ form.SIM_TIPO.label }}</label>
+                        {{ form.SIM_TIPO }}
+                        {% if form.SIM_TIPO.errors %}
+                            <div class="invalid-feedback d-block">{{ form.SIM_TIPO.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.SIM_FASE.id_for_label }}" class="form-label">{{ form.SIM_FASE.label }}</label>
+                        {{ form.SIM_FASE }}
+                        <small class="text-muted d-block mt-1">{{ form.SIM_FASE.help_text }}</small>
+                        {% if form.SIM_FASE.errors %}
+                            <div class="invalid-feedback d-block">{{ form.SIM_FASE.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ form.SIM_OBJETO.id_for_label }}" class="form-label">{{ form.SIM_OBJETO.label }}</label>
+                        {{ form.SIM_OBJETO }}
+                        {% if form.SIM_OBJETO.errors %}
+                            <div class="invalid-feedback d-block">{{ form.SIM_OBJETO.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <label for="{{ form.SIM_RESUM.id_for_label }}" class="form-label">{{ form.SIM_RESUM.label }}</label>
+                        {{ form.SIM_RESUM }}
+                        {% if form.SIM_RESUM.errors %}
+                            <div class="invalid-feedback d-block">{{ form.SIM_RESUM.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección 2: Militares (formset) -->
+        <div class="card mb-3">
+            <div class="card-header"><strong>Militares del Sumario</strong></div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                <div id="formset-container">
+                    {% for form_militar in formset %}
+                        <div class="formset-row card mb-2 p-3" data-form-index="{{ forloop.counter0 }}">
+                            <div class="row g-2">
+                                <div class="col-md-2">
+                                    <label>CI</label>
+                                    {{ form_militar.PM_CI }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Nombre</label>
+                                    {{ form_militar.PM_NOMBRE }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label>Paterno</label>
+                                    {{ form_militar.PM_PATERNO }}
+                                </div>
+                                <div class="col-md-2">
+                                    <label>Grado</label>
+                                    {{ form_militar.PM_GRADO }}
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    {{ form_militar.DELETE }}
+                                    <label class="ms-2">Eliminar</label>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="add-form" class="btn btn-success btn-sm mt-3">
+                    + Agregar Militar
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'ayudante_dashboard' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar y Continuar →</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// AJAX búsqueda de SIM existente
+document.getElementById('btn-buscar-sim').addEventListener('click', function() {
+    const cod = document.getElementById('buscar-sim-cod').value.trim().toUpperCase();
+    if (!cod) return;
+    fetch(`{% url 'ayudante_wizard_buscar_sim' %}?q=${encodeURIComponent(cod)}`)
+        .then(r => r.json())
+        .then(data => {
+            const div = document.getElementById('resultado-busqueda');
+            div.classList.remove('d-none');
+            if (data.found) {
+                div.innerHTML = `
+                  <div class="alert alert-success">
+                    <strong>SIM encontrado:</strong> ${data.sim_cod} — ${data.sim_resum}
+                    <a href="${data.wizard_url}" class="btn btn-sm btn-success ms-2">
+                      Continuar con este SIM →
+                    </a>
+                  </div>`;
+            } else {
+                div.innerHTML = `<div class="alert alert-info">SIM no encontrado. Complete el formulario para crear uno nuevo.</div>`;
+            }
+        });
+});
+
+// Formset JS: agregar/eliminar filas dinámicamente
+document.getElementById('add-form').addEventListener('click', function() {
+    const container = document.getElementById('formset-container');
+    const formCount = container.querySelectorAll('.formset-row').length;
+    const totalForms = document.querySelector('#id_pm_sim_set-TOTAL_FORMS');
+    const newFormIndex = parseInt(totalForms.value);
+
+    // Obtener la primera fila como template
+    const firstForm = container.querySelector('.formset-row');
+    if (!firstForm) return;
+
+    const newForm = firstForm.cloneNode(true);
+    newForm.querySelectorAll('input[type="text"], select, input[type="date"], input[type="file"]').forEach(field => {
+        const name = field.getAttribute('name');
+        if (name) {
+            const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
+            field.setAttribute('name', newName);
+            field.setAttribute('id', `id_${newName}`);
+            field.value = '';
+        }
+    });
+
+    // Actualizar checkbox de DELETE
+    const deleteCheckbox = newForm.querySelector('input[type="checkbox"]');
+    if (deleteCheckbox) {
+        const delName = deleteCheckbox.getAttribute('name');
+        const newDelName = delName.replace(`-${formCount}`, `-${newFormIndex}`);
+        deleteCheckbox.setAttribute('name', newDelName);
+        deleteCheckbox.setAttribute('id', `id_${newDelName}`);
+        deleteCheckbox.checked = false;
+    }
+
+    container.appendChild(newForm);
+    totalForms.value = newFormIndex + 1;
+
+    // Reasignar índices
+    container.querySelectorAll('.formset-row').forEach((row, idx) => {
+        row.setAttribute('data-form-index', idx);
+    });
+});
+</script>
+{% endblock %}
