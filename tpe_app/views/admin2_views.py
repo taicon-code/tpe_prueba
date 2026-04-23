@@ -204,7 +204,7 @@ def admin2_dashboard(request):
         'historial_sim': historial_sim,
     }
 
-    return render(request, 'tpe_app/admin2_dashboard.html', context)
+    return render(request, 'tpe_app/admin2/admin2_dashboard.html', context)
 
 
 # ============================================================
@@ -510,7 +510,7 @@ def ver_historial_custodia_sim(request, sim_id):
         'historial': historial,
     }
 
-    return render(request, 'tpe_app/ver_historial_custodia.html', context)
+    return render(request, 'tpe_app/admin2/ver_historial_custodia.html', context)
 
 
 # ============================================================

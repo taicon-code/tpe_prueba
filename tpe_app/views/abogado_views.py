@@ -14,7 +14,7 @@ def abogado_dashboard(request):
     # Si el abogado no está vinculado a ABOG, mostrar error
     if not perfil.abogado:
         context = {'error': 'Tu usuario no está vinculado a un registro de abogado'}
-        return render(request, 'tpe_app/dashboard_abogado.html', context)
+        return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
     
     # ✅ NUEVO v3.1: Sumarios CON CUSTODIA ACTIVA (que NO son solicitudes)
     # Obtener IDs de SIM donde el abogado tiene custodia activa
@@ -90,7 +90,7 @@ def abogado_dashboard(request):
         'total_pendientes_ejecutoria': len(pendientes_ej),
     }
 
-    return render(request, 'tpe_app/dashboard_abogado.html', context)
+    return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
 
 # ============================================================
 # ENTREGA DE CARPETA (Custodia)
