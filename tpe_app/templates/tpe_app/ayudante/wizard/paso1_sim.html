@@ -23,21 +23,44 @@
     </div>
 
     <!-- Formulario de creación de SIM nuevo -->
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST">
         {% csrf_token %}
         <input type="hidden" name="sim_existente_id" id="sim-existente-id" value="">
 
-        <!-- Sección 1: Datos del SIM -->
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            <strong>Por favor corrija los siguientes errores:</strong>
+            <ul class="mb-0 mt-1">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="card mb-3">
-            <div class="card-header"><strong>Paso 1 — Datos del Sumario (SIM)</strong></div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Paso 1 — Datos del Sumario (SIM)</strong>
+                <small class="text-muted">* Solo el Código SIM es obligatorio</small>
+            </div>
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label for="{{ form.SIM_COD.id_for_label }}" class="form-label">{{ form.SIM_COD.label }}</label>
                         {{ form.SIM_COD }}
+                        <small class="text-muted d-block mt-1">
+                            Formato: <strong>PREFIJO-NÚMERO/AÑO</strong> &nbsp;|&nbsp;
+                            Ej: DJE-123/25 &nbsp; SASJUR-25/25 &nbsp; SDISCAPE-86/25
+                        </small>
                         {% if form.SIM_COD.errors %}
                             <div class="invalid-feedback d-block">{{ form.SIM_COD.errors.0 }}</div>
                         {% endif %}
+                        <div id="sim-cod-error" class="invalid-feedback d-none"></div>
                     </div>
                     <div class="col-md-6">
                         <label for="{{ form.SIM_FECING.id_for_label }}" class="form-label">{{ form.SIM_FECING.label }}</label>
@@ -85,45 +108,6 @@
             </div>
         </div>
 
-        <!-- Sección 2: Militares (formset) -->
-        <div class="card mb-3">
-            <div class="card-header"><strong>Militares del Sumario</strong></div>
-            <div class="card-body">
-                {{ formset.management_form }}
-                <div id="formset-container">
-                    {% for form_militar in formset %}
-                        <div class="formset-row card mb-2 p-3" data-form-index="{{ forloop.counter0 }}">
-                            <div class="row g-2">
-                                <div class="col-md-2">
-                                    <label>CI</label>
-                                    {{ form_militar.PM_CI }}
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Nombre</label>
-                                    {{ form_militar.PM_NOMBRE }}
-                                </div>
-                                <div class="col-md-3">
-                                    <label>Paterno</label>
-                                    {{ form_militar.PM_PATERNO }}
-                                </div>
-                                <div class="col-md-2">
-                                    <label>Grado</label>
-                                    {{ form_militar.PM_GRADO }}
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    {{ form_militar.DELETE }}
-                                    <label class="ms-2">Eliminar</label>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-                <button type="button" id="add-form" class="btn btn-success btn-sm mt-3">
-                    + Agregar Militar
-                </button>
-            </div>
-        </div>
-
         <div class="d-flex justify-content-between mt-4">
             <a href="{% url 'ayudante_dashboard' %}" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary">Guardar y Continuar →</button>
@@ -155,45 +139,47 @@ document.getElementById('btn-buscar-sim').addEventListener('click', function() {
         });
 });
 
-// Formset JS: agregar/eliminar filas dinámicamente
-document.getElementById('add-form').addEventListener('click', function() {
-    const container = document.getElementById('formset-container');
-    const formCount = container.querySelectorAll('.formset-row').length;
-    const totalForms = document.querySelector('#id_pm_sim_set-TOTAL_FORMS');
-    const newFormIndex = parseInt(totalForms.value);
+// Validación y conversión a mayúsculas de SIM_COD
+const simCodInput = document.querySelector('#id_SIM_COD');
+const simCodError = document.getElementById('sim-cod-error');
 
-    // Obtener la primera fila como template
-    const firstForm = container.querySelector('.formset-row');
-    if (!firstForm) return;
+if (simCodInput) {
+    simCodInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
+        validateSimCod();
+    });
 
-    const newForm = firstForm.cloneNode(true);
-    newForm.querySelectorAll('input[type="text"], select, input[type="date"], input[type="file"]').forEach(field => {
-        const name = field.getAttribute('name');
-        if (name) {
-            const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
-            field.setAttribute('name', newName);
-            field.setAttribute('id', `id_${newName}`);
-            field.value = '';
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (!validateSimCod()) {
+            e.preventDefault();
+            simCodInput.focus();
         }
     });
+}
 
-    // Actualizar checkbox de DELETE
-    const deleteCheckbox = newForm.querySelector('input[type="checkbox"]');
-    if (deleteCheckbox) {
-        const delName = deleteCheckbox.getAttribute('name');
-        const newDelName = delName.replace(`-${formCount}`, `-${newFormIndex}`);
-        deleteCheckbox.setAttribute('name', newDelName);
-        deleteCheckbox.setAttribute('id', `id_${newDelName}`);
-        deleteCheckbox.checked = false;
+function validateSimCod() {
+    const valor = (simCodInput.value || '').trim();
+    const patron = /^[A-Z]+-\d{1,4}\/\d{2}$/;
+
+    simCodError.classList.add('d-none');
+    simCodError.textContent = '';
+    simCodInput.classList.remove('is-invalid');
+
+    if (!valor) return true;
+
+    if (!patron.test(valor)) {
+        simCodError.classList.remove('d-none');
+        simCodInput.classList.add('is-invalid');
+        if (!valor.includes('-')) {
+            simCodError.textContent = '⚠️ Agregue un guión: PREFIJO-NÚMERO/AÑO (ej: DJE-123/25)';
+        } else if (!valor.includes('/')) {
+            simCodError.textContent = '⚠️ Agregue la barra "/": PREFIJO-NÚMERO/AÑO (ej: DJE-123/25)';
+        } else {
+            simCodError.textContent = '⚠️ Formato inválido. Use: PREFIJO-NÚMERO/AÑO (ej: DJE-123/25)';
+        }
+        return false;
     }
-
-    container.appendChild(newForm);
-    totalForms.value = newFormIndex + 1;
-
-    // Reasignar índices
-    container.querySelectorAll('.formset-row').forEach((row, idx) => {
-        row.setAttribute('data-form-index', idx);
-    });
-});
+    return true;
+}
 </script>
 {% endblock %}

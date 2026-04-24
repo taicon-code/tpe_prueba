@@ -7,6 +7,26 @@
     <form method="POST">
         {% csrf_token %}
 
+        {% if autotpe_form.errors or rap_form.errors or raee_form.errors or autotsp_form.errors %}
+        <div class="alert alert-danger">
+            <strong>Corrija los errores antes de continuar:</strong>
+            <ul class="mb-0 mt-1">
+                {% for field in autotpe_form %}{% for error in field.errors %}
+                    <li><strong>Auto TPE — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for field in rap_form %}{% for error in field.errors %}
+                    <li><strong>RAP — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for field in raee_form %}{% for error in field.errors %}
+                    <li><strong>RAEE — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for field in autotsp_form %}{% for error in field.errors %}
+                    <li><strong>Auto TSP — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <!-- Sección Auto TPE -->
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -47,24 +67,6 @@
                     </div>
                 </div>
                 <hr class="my-3">
-                <h6 class="mb-3">Memorándum (si corresponde)</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_MEMO_NUM.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_NUM.label }}</label>
-                        {{ autotpe_form.TPE_MEMO_NUM }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_MEMO_FEC.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_FEC.label }}</label>
-                        {{ autotpe_form.TPE_MEMO_FEC }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_MEMO_ENTREGA.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_ENTREGA.label }}</label>
-                        {{ autotpe_form.TPE_MEMO_ENTREGA }}
-                    </div>
-                </div>
-                <hr class="my-3">
                 <h6 class="mb-3">Notificación (opcional)</h6>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -84,6 +86,24 @@
                     <div class="col-md-6">
                         <label for="{{ autotpe_form.TPE_HORNOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_HORNOT.label }}</label>
                         {{ autotpe_form.TPE_HORNOT }}
+                    </div>
+                </div>
+                <hr class="my-3">
+                <h6 class="mb-3">Memorándum (si corresponde)</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_MEMO_NUM.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_NUM.label }}</label>
+                        {{ autotpe_form.TPE_MEMO_NUM }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_MEMO_FEC.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_FEC.label }}</label>
+                        {{ autotpe_form.TPE_MEMO_FEC }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ autotpe_form.TPE_MEMO_ENTREGA.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_ENTREGA.label }}</label>
+                        {{ autotpe_form.TPE_MEMO_ENTREGA }}
                     </div>
                 </div>
             </div>
@@ -284,7 +304,12 @@
         </div>
 
         <div class="d-flex justify-content-between mt-4">
-            <a href="{% url 'ayudante_wizard_paso3' sim.pk %}" class="btn btn-outline-secondary">← Atrás</a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-house"></i> Inicio
+                </a>
+                <a href="{% url 'ayudante_wizard_paso3' sim.pk %}" class="btn btn-outline-secondary">← Atrás</a>
+            </div>
             <div>
                 <button type="submit" name="action" value="skip" class="btn btn-outline-primary me-2">
                     Ir a Resumen →

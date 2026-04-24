@@ -18,8 +18,8 @@ class SIMForm(forms.ModelForm):
             'SIM_COD': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ejemplo: DJE-123/25, SASJUR-25/25, SDISCAPE-86/25',
-                'pattern': '[A-Z]+-[0-9]{1,4}/[0-9]{2}',
-                'title': 'Formato: PREFIJO-NUM/AÑO (ej: DJE-95/25, SASJUR-25/25)'
+                'autocomplete': 'off',
+                'spellcheck': 'false'
             }),
             'SIM_FECING': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -547,7 +547,6 @@ class RESForm(forms.ModelForm):
             'RES_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 05/26',
-                'pattern': '[0-9]{1,4}/[0-9]{2}'
             }),
             'RES_FEC': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -627,7 +626,6 @@ class RAPForm(forms.ModelForm):
             'TSP_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 03/26',
-                'pattern': '[0-9]{1,4}/[0-9]{2}'
             }),
             'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
@@ -676,7 +674,6 @@ class RAEEForm(forms.ModelForm):
             'TSP_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 02/26',
-                'pattern': '[0-9]{1,4}/[0-9]{2}'
             }),
             'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
@@ -723,7 +720,6 @@ class AUTOTPEHistoricoForm(forms.ModelForm):
             'TPE_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 04/26',
-                'pattern': '[0-9]{1,4}/[0-9]{2}'
             }),
             'TPE_FEC': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -771,7 +767,6 @@ class AutoEjecutoriaForm(forms.ModelForm):
             'TPE_NUM': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ej: 07/26',
-                'pattern': '[0-9]{1,4}/[0-9]{2}',
             }),
             'TPE_FEC': forms.DateInput(attrs={
                 'class': 'form-control',
@@ -828,6 +823,44 @@ class AUTOTPENotificacionForm(forms.ModelForm):
 # ============================================================================
 
 class WizardSIMForm(SIMForm):
+    # Sin patrón HTML5 para evitar alertas del navegador
+    SIM_COD = forms.CharField(
+        label='Código del Sumario',
+        max_length=25,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ejemplo: DJE-123/25, SASJUR-25/25, SDISCAPE-86/25',
+            'autocomplete': 'off',
+            'spellcheck': 'false'
+        })
+    )
+
+    # Opcionales en el wizard para datos históricos
+    SIM_OBJETO = forms.CharField(
+        label='Objeto del Sumario',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'Establecer las circunstancias que motivaron...'
+        })
+    )
+
+    SIM_RESUM = forms.CharField(
+        label='Resumen',
+        max_length=200,
+        required=False,
+        widget=ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
+    )
+
+    SIM_TIPO = forms.ChoiceField(
+        label='Tipo de Sumario',
+        required=False,
+        choices=[('', '---------')] + list(SIM.TIPO_CHOICES),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+
     SIM_FASE = forms.ChoiceField(
         choices=[('', '---------')] + list(SIM.FASE_CHOICES),
         required=False,
@@ -841,6 +874,12 @@ class WizardSIMForm(SIMForm):
 
     def save(self, commit=True):
         obj = super().save(commit=False)
+        if not obj.SIM_OBJETO:
+            obj.SIM_OBJETO = ''
+        if not obj.SIM_RESUM:
+            obj.SIM_RESUM = ''
+        if not obj.SIM_TIPO:
+            obj.SIM_TIPO = 'DISCIPLINARIO'
         fase = self.cleaned_data.get('SIM_FASE')
         if fase:
             obj.SIM_FASE = fase
@@ -850,6 +889,12 @@ class WizardSIMForm(SIMForm):
 
 
 class WizardRESForm(RESForm):
+    RES_NUM = forms.CharField(
+        label='Número de Resolución',
+        max_length=10,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 05/26 (opcional)'})
+    )
     RES_TIPO_NOTIF = forms.ChoiceField(
         choices=[('', 'Sin notificación aún')] + list(Resolucion.NOTIF_CHOICES),
         required=False,
@@ -888,6 +933,12 @@ class WizardRESForm(RESForm):
 
 
 class WizardRRForm(forms.ModelForm):
+    RES_NUM = forms.CharField(
+        label='Número de RR',
+        max_length=10,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'})
+    )
     RES_TIPO_NOTIF = forms.ChoiceField(
         choices=[('', 'Sin notificación aún')] + list(Resolucion.NOTIF_CHOICES),
         required=False, label='Tipo de Notificación',
@@ -910,7 +961,7 @@ class WizardRRForm(forms.ModelForm):
         model = Resolucion
         fields = ['RES_NUM', 'RES_FEC', 'RES_RESOL', 'RES_RESUM', 'RES_FECPRESEN']
         widgets = {
-            'RES_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24', 'pattern': '[0-9]{1,4}/[0-9]{2}'}),
+            'RES_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'}),
             'RES_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'RES_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'RES_RESUM': forms.Select(attrs={'class': 'form-control'}),
@@ -1058,7 +1109,7 @@ class WizardAUTOTSPForm(forms.ModelForm):
         model = AUTOTSP
         fields = ['TSP_NUM', 'TSP_FEC', 'TSP_TIPO', 'TSP_RESOL', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT']
         widgets = {
-            'TSP_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/24', 'pattern': '[0-9]{1,4}/[0-9]{2}'}),
+            'TSP_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/24'}),
             'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'TSP_TIPO': forms.Select(attrs={'class': 'form-control'}),
             'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
@@ -1080,6 +1131,6 @@ class WizardAUTOTSPForm(forms.ModelForm):
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
-        for f in ['TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT']:
+        for f in self.fields:
             self.fields[f].required = False
 

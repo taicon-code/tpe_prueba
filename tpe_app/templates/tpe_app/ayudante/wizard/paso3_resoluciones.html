@@ -7,6 +7,20 @@
     <form method="POST">
         {% csrf_token %}
 
+        {% if res_form.errors or rr_form.errors %}
+        <div class="alert alert-danger">
+            <strong>Corrija los errores antes de continuar:</strong>
+            <ul class="mb-0 mt-1">
+                {% for field in res_form %}{% for error in field.errors %}
+                    <li><strong>RES — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for field in rr_form %}{% for error in field.errors %}
+                    <li><strong>RR — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <!-- Sección RES (Primera Resolución) -->
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -152,7 +166,12 @@
         </div>
 
         <div class="d-flex justify-content-between mt-4">
-            <a href="{% url 'ayudante_wizard_paso2' sim.pk %}" class="btn btn-outline-secondary">← Atrás</a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-house"></i> Inicio
+                </a>
+                <a href="{% url 'ayudante_wizard_paso2' sim.pk %}" class="btn btn-outline-secondary">← Atrás</a>
+            </div>
             <div>
                 <button type="submit" name="action" value="skip" class="btn btn-outline-primary me-2">
                     Omitir este paso →

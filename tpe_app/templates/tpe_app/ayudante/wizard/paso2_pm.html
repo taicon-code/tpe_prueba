@@ -32,21 +32,37 @@
                                     <label>CI</label>
                                     {{ form_militar.PM_CI }}
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label>Nombre</label>
                                     {{ form_militar.PM_NOMBRE }}
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label>Paterno</label>
                                     {{ form_militar.PM_PATERNO }}
+                                </div>
+                                <div class="col-md-2">
+                                    <label>Materno</label>
+                                    {{ form_militar.PM_MATERNO }}
                                 </div>
                                 <div class="col-md-2">
                                     <label>Grado</label>
                                     {{ form_militar.PM_GRADO }}
                                 </div>
-                                <div class="col-md-2 d-flex align-items-end">
+                                <div class="col-md-2">
+                                    <label>Arma</label>
+                                    {{ form_militar.PM_ARMA }}
+                                </div>
+                            </div>
+                            <div class="row g-2 mt-2">
+                                <div class="col-md-8">
+                                    <label>Especialidad</label>
+                                    {{ form_militar.PM_ESPEC }}
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger btn-sm w-100 delete-form-btn">
+                                        <i class="bi bi-trash"></i> Borrar Militar
+                                    </button>
                                     {{ form_militar.DELETE }}
-                                    <label class="ms-2">Eliminar</label>
                                 </div>
                             </div>
                         </div>
@@ -59,7 +75,12 @@
         </div>
 
         <div class="d-flex justify-content-between mt-4">
-            <a href="{% url 'ayudante_wizard_paso1' %}" class="btn btn-outline-secondary">← Atrás</a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-house"></i> Inicio
+                </a>
+                <a href="{% url 'ayudante_wizard_paso1' %}" class="btn btn-outline-secondary">← Atrás</a>
+            </div>
             <div>
                 <button type="submit" name="action" value="skip" class="btn btn-outline-primary me-2">
                     Continuar sin cambios →
@@ -104,6 +125,35 @@ document.getElementById('add-form').addEventListener('click', function() {
 
     container.appendChild(newForm);
     totalForms.value = newFormIndex + 1;
+
+    // Agregar listener al nuevo botón de borrar
+    attachDeleteButtonListener(newForm.querySelector('.delete-form-btn'));
+});
+
+// Función para manejar el click en botón "Borrar Militar"
+function attachDeleteButtonListener(btn) {
+    if (!btn) return;
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const row = this.closest('.formset-row');
+        const deleteCheckbox = row.querySelector('input[type="checkbox"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = !deleteCheckbox.checked;
+            // Cambiar color del botón si está marcado para eliminar
+            if (deleteCheckbox.checked) {
+                this.classList.add('disabled');
+                row.style.opacity = '0.6';
+            } else {
+                this.classList.remove('disabled');
+                row.style.opacity = '1';
+            }
+        }
+    });
+}
+
+// Agregar listeners a todos los botones de borrar existentes
+document.querySelectorAll('.delete-form-btn').forEach(btn => {
+    attachDeleteButtonListener(btn);
 });
 </script>
 {% endblock %}

@@ -409,7 +409,7 @@ def ayudante_wizard_buscar_sim(request):
 
 @rol_requerido('AYUDANTE')
 def ayudante_wizard_paso1(request):
-    """PASO 1 — Crear o seleccionar SIM + militares"""
+    """PASO 1 — Crear o seleccionar SIM (solo datos del sumario)"""
     if request.method == 'POST':
         sim_existente_id = request.POST.get('sim_existente_id')
         if sim_existente_id:
@@ -418,23 +418,11 @@ def ayudante_wizard_paso1(request):
             return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
 
         form = WizardSIMForm(request.POST)
-        formset = PMSIMFormSet(request.POST, request.FILES)
 
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             try:
                 with transaction.atomic():
                     sim = form.save()
-
-                    formset.instance = sim
-                    for inline_form in formset:
-                        if not inline_form.cleaned_data:
-                            continue
-                        if inline_form.cleaned_data.get('DELETE'):
-                            continue
-                        pm = inline_form.cleaned_data.get('pm')
-                        if pm:
-                            PM_SIM.objects.get_or_create(sim=sim, pm=pm)
-
                 messages.success(request, f'SIM {sim.SIM_COD} creado. Ahora agregue los militares.')
                 return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
             except Exception as e:
@@ -443,11 +431,9 @@ def ayudante_wizard_paso1(request):
             messages.error(request, 'Por favor corrija los errores.')
     else:
         form = WizardSIMForm()
-        formset = PMSIMFormSet()
 
     return render(request, 'tpe_app/ayudante/wizard/paso1_sim.html', {
         'form': form,
-        'formset': formset,
         'paso_actual': 1,
         'total_pasos': 4,
     })
@@ -480,9 +466,20 @@ def ayudante_wizard_paso2(request, sim_id):
                                 if pm_sim_pk:
                                     PM_SIM.objects.filter(pk=pm_sim_pk).delete()
                                 continue
+
+                            # Caso 1: PM ya existía en BD
                             pm = inline_form.cleaned_data.get('pm')
+
+                            # Caso 2: PM nuevo — crearlo con los datos del formulario
+                            if not pm:
+                                pm_data = inline_form.cleaned_data.get('pm_data')
+                                if pm_data:
+                                    pm = PM.objects.create(**pm_data)
+
                             if pm:
                                 PM_SIM.objects.get_or_create(sim=sim, pm=pm)
+
+                    messages.success(request, 'Militares guardados correctamente.')
                     return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
                 except Exception as e:
                     messages.error(request, f'Error: {str(e)}')
