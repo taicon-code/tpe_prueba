@@ -5,6 +5,7 @@ urlpatterns = [
     # Autenticación
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('cuenta/cambiar-password/', views.cambiar_password, name='cambiar_password'),
     
     # Dashboards por rol
     path('panel-admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),

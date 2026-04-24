@@ -631,6 +631,11 @@
 
         <!-- ── Sesión (todos los roles) ────────── -->
         <hr class="sb-divider">
+        <a href="{% url 'cambiar_password' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'cambiar_password' %}active{% endif %}">
+            <span class="lk-icon">🔑</span>
+            <span class="lk-text">Cambiar Contraseña</span>
+        </a>
         <a href="{% url 'logout' %}" class="sb-link">
             <span class="lk-icon">🚪</span>
             <span class="lk-text">Cerrar Sesión</span>

@@ -1,5 +1,6 @@
 # tpe_app/views/auth_views.py
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
@@ -55,3 +56,26 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'Sesión cerrada correctamente')
     return redirect('login')
+
+
+@login_required
+def cambiar_password(request):
+    if request.method == 'POST':
+        password_actual  = request.POST.get('password_actual', '')
+        password_nueva   = request.POST.get('password_nueva', '')
+        password_confirm = request.POST.get('password_confirm', '')
+
+        if not request.user.check_password(password_actual):
+            messages.error(request, 'La contraseña actual es incorrecta.')
+        elif len(password_nueva) < 8:
+            messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
+        elif password_nueva != password_confirm:
+            messages.error(request, 'La nueva contraseña y la confirmación no coinciden.')
+        else:
+            request.user.set_password(password_nueva)
+            request.user.save()
+            update_session_auth_hash(request, request.user)  # mantiene la sesión activa
+            messages.success(request, 'Contraseña cambiada correctamente.')
+            return redirect('cambiar_password')
+
+    return render(request, 'tpe_app/cambiar_password.html')

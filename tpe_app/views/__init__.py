@@ -1,5 +1,5 @@
 # tpe_app/views/__init__.py
-from .auth_views import login_view, logout_view
+from .auth_views import login_view, logout_view, cambiar_password
 from .admin_views import admin_dashboard, crear_usuario_con_rol
 from .abogado_views import abogado_dashboard, abogado_entregar_carpeta
 from .abogado_documentos_views import (
