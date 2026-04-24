@@ -343,6 +343,16 @@ class SIM(models.Model):
         ('MEMORANDUM_RETORNADO',     'Memorandum Retornado (Proceso Ejecutado)'),
     ]
 
+    # Jerarquía de estados: un estado nunca puede retroceder automáticamente
+    ESTADO_JERARQUIA = {
+        'PARA_AGENDA':          0,
+        'OBSERVADO':            0,
+        'PROCESO_EN_EL_TPE':    1,
+        'PROCESO_EN_EL_TSP':    2,
+        'PROCESO_CONCLUIDO_TPE': 3,
+        'PROCESO_EJECUTADO':    4,
+    }
+
     # Mapeo automático de FASE → ESTADO general
     FASE_A_ESTADO = {
         'PARA_AGENDA': 'PARA_AGENDA',
@@ -476,8 +486,13 @@ class SIM(models.Model):
         self.SIM_AUTOFINAL = self.SIM_AUTOFINAL.upper() if self.SIM_AUTOFINAL else self.SIM_AUTOFINAL
 
         # ✅ NUEVO v3.1: Mapear SIM_FASE → SIM_ESTADO automáticamente
+        # No retroceder: si el estado actual ya es superior, conservarlo
         if self.SIM_FASE and self.SIM_FASE in self.FASE_A_ESTADO:
-            self.SIM_ESTADO = self.FASE_A_ESTADO[self.SIM_FASE]
+            nuevo_estado = self.FASE_A_ESTADO[self.SIM_FASE]
+            nivel_actual = self.ESTADO_JERARQUIA.get(self.SIM_ESTADO, 0)
+            nivel_nuevo  = self.ESTADO_JERARQUIA.get(nuevo_estado, 0)
+            if nivel_nuevo >= nivel_actual:
+                self.SIM_ESTADO = nuevo_estado
 
         super().save(*args, **kwargs)
 
@@ -838,7 +853,7 @@ class AUTOTPE(models.Model):
     TPE_HORNOT = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
     # Memorándum (exclusivo TPE)
-    TPE_MEMO_NUM     = models.CharField(max_length=20, null=True, blank=True, verbose_name='N° Memorándum')
+    TPE_MEMO_NUM     = models.CharField(max_length=60, null=True, blank=True, verbose_name='N° Memorándum')
     TPE_MEMO_FEC     = models.DateField(null=True, blank=True, verbose_name='Fecha Memorándum')
     TPE_MEMO_ENTREGA = models.DateField(null=True, blank=True, verbose_name='Fecha Entrega Memorándum')
 
