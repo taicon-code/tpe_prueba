@@ -1,9 +1,23 @@
 # tpe_app/views/buscador_views.py
+import unicodedata
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Value
+from django.db.models.functions import Replace, Collate
 from ..decorators import rol_requerido
 from ..models import SIM, PM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, DocumentoAdjunto, CustodiaSIM
+
+
+def _normalizar(texto):
+    """Quita acentos y ñ para búsqueda flexible. 'alarcón' → 'ALARCON', 'siñani' → 'SINANI'."""
+    nfkd = unicodedata.normalize('NFKD', texto)
+    sin_acentos = ''.join(c for c in nfkd if not unicodedata.combining(c))
+    return sin_acentos.upper()
+
+
+def _campo_sin_n(campo):
+    """Reemplaza Ñ→N en el campo de BD para comparación. Los datos están en mayúsculas."""
+    return Replace(campo, Value('Ñ'), Value('N'))
 
 
 def _obtener_historial_completo(personal_id):
@@ -56,11 +70,20 @@ def buscador_dashboard(request):
     resultados_sim = []
 
     if query:
+        # Normalizamos el query: quitamos tildes y ñ → 'alarcón'→'ALARCON', 'siñani'→'SINANI'
+        q_norm = _normalizar(query)
+
+        # Buscamos con anotaciones que normalizan el campo en la BD (Ñ→N),
+        # y usamos collation accent-insensitive para que á=a, é=e, etc.
         resultados_pm = list(
-            PM.objects.filter(
-                Q(PM_NOMBRE__icontains=query) |
-                Q(PM_PATERNO__icontains=query) |
-                Q(PM_MATERNO__icontains=query)
+            PM.objects.annotate(
+                pat_norm=Collate(_campo_sin_n('PM_PATERNO'), 'utf8mb4_general_ci'),
+                nom_norm=Collate(_campo_sin_n('PM_NOMBRE'),  'utf8mb4_general_ci'),
+                mat_norm=Collate(_campo_sin_n('PM_MATERNO'), 'utf8mb4_general_ci'),
+            ).filter(
+                Q(pat_norm__icontains=q_norm) |
+                Q(nom_norm__icontains=q_norm) |
+                Q(mat_norm__icontains=q_norm)
             ).distinct()[:20]
         )
 
@@ -160,12 +183,29 @@ def upload_foto_pm(request, pm_id):
 def export_custodia_pdf(request, sim_id):
     """Descargar PDF del historial de custodia de un SIM (Solo Admin2)"""
     from django.http import HttpResponse
-    from reportlab.lib.pagesizes import A4, landscape
+    from django.utils import timezone as tz
+    from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch, cm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib import colors
-    from datetime import datetime
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    import os
+
+    # Registrar fuentes TrueType para soporte completo de acentos y ñ
+    _fonts_dir = r'C:\Windows\Fonts'
+    _arial      = os.path.join(_fonts_dir, 'arial.ttf')
+    _arial_bold = os.path.join(_fonts_dir, 'arialbd.ttf')
+    if os.path.exists(_arial):
+        pdfmetrics.registerFont(TTFont('Arial', _arial))
+        pdfmetrics.registerFont(TTFont('Arial-Bold', _arial_bold))
+        FONT_NORMAL = 'Arial'
+        FONT_BOLD   = 'Arial-Bold'
+    else:
+        # Fallback si no está Arial (Linux/Mac en producción)
+        FONT_NORMAL = 'Helvetica'
+        FONT_BOLD   = 'Helvetica-Bold'
 
     # Verificar que sea Admin2
     if not (hasattr(request.user, 'perfilusuario') and request.user.perfilusuario.rol == 'ADMIN2_ARCHIVO'):
@@ -175,47 +215,48 @@ def export_custodia_pdf(request, sim_id):
     sim = get_object_or_404(SIM, id=sim_id)
     custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abog').order_by('fecha_recepcion')
 
-    # Crear PDF con orientación horizontal
+    # Crear PDF en orientación vertical (portrait)
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="custodia_{sim.SIM_COD}_{datetime.now().strftime("%d%m%Y")}.pdf"'
+    now_local = tz.localtime(tz.now())
+    response['Content-Disposition'] = f'attachment; filename="custodia_{sim.SIM_COD}_{now_local.strftime("%d%m%Y")}.pdf"'
 
-    doc = SimpleDocTemplate(response, pagesize=landscape(A4), topMargin=0.4*inch, bottomMargin=0.4*inch,
-                            leftMargin=0.4*inch, rightMargin=0.4*inch)
+    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
+                            leftMargin=0.5*inch, rightMargin=0.5*inch)
     story = []
     styles = getSampleStyleSheet()
 
-    # Título
+    # Título (sin emoji para evitar caracteres mezclados en reportlab)
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=14,
+        fontSize=13,
         textColor=colors.HexColor('#185FA5'),
         spaceAfter=10,
         alignment=1
     )
-    story.append(Paragraph(f'📂 Historial de Custodia de Carpeta - {sim.SIM_COD}', title_style))
+    story.append(Paragraph(f'Historial de Custodia de Carpeta - {sim.SIM_COD}', title_style))
     story.append(Spacer(1, 0.15*inch))
 
-    # Información del SIM (más compacta)
+    # Información del SIM — ancho ajustado a portrait (A4 usable ≈ 7.17 in)
     info_data = [
-        ['Código', sim.SIM_COD],
+        ['Codigo', sim.SIM_COD],
         ['Tipo', sim.get_SIM_TIPO_display()],
         ['Estado', sim.get_SIM_ESTADO_display()],
-        ['Ingreso', sim.SIM_FECING.strftime('%d/%m/%Y') if sim.SIM_FECING else '—'],
+        ['Ingreso', sim.SIM_FECING.strftime('%d/%m/%Y') if sim.SIM_FECING else '-'],
     ]
-    info_table = Table(info_data, colWidths=[1.2*inch, 2.5*inch])
+    info_table = Table(info_data, colWidths=[1.4*inch, 5.77*inch])
     info_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#E8F4F8')),
         ('BACKGROUND', (1, 0), (1, -1), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (0, -1), FONT_BOLD),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
         ('LEFTPADDING', (0, 0), (-1, -1), 8),
         ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
     story.append(info_table)
     story.append(Spacer(1, 0.2*inch))
@@ -224,52 +265,69 @@ def export_custodia_pdf(request, sim_id):
     heading_style = ParagraphStyle(
         'SectionHead',
         parent=styles['Heading2'],
-        fontSize=11,
+        fontSize=10,
         textColor=colors.HexColor('#185FA5'),
-        spaceAfter=8,
+        spaceAfter=6,
     )
     story.append(Paragraph('Movimientos de Custodia', heading_style))
 
+    # Estilo para celdas con texto largo (permite salto de línea automático)
+    cell_style = ParagraphStyle(
+        'CellText',
+        parent=styles['Normal'],
+        fontName=FONT_NORMAL,
+        fontSize=8,
+        leading=10,
+        wordWrap='CJK',
+    )
+
+    # Anchos para portrait A4 (usable ≈ 18.46 cm)
+    # Fecha Recep | Custodio | Abogado | Estado | Fecha Entrega | Observacion
+    col_widths = [2.2*cm, 3.7*cm, 2.5*cm, 3.2*cm, 2.2*cm, 4.66*cm]
+
     if custodia_historial:
         custodia_data = [
-            ['Fecha Recep.', 'Custodio', 'Abogado', 'Estado', 'Fecha Entrega', 'Observación']
+            ['Fecha Recep.', 'Custodio', 'Abogado', 'Estado', 'Fecha Entrega', 'Observacion']
         ]
 
         for custodia in custodia_historial:
-            observacion = custodia.observacion if custodia.observacion else '—'
-            if len(observacion) > 50:
-                observacion = observacion[:47] + '...'
+            observacion = custodia.observacion if custodia.observacion else '-'
 
             custodia_data.append([
-                custodia.fecha_recepcion.strftime('%d/%m/%Y\n%H:%M'),
+                tz.localtime(custodia.fecha_recepcion).strftime('%d/%m/%Y\n%H:%M'),
                 custodia.get_tipo_custodio_display(),
-                custodia.abog.AB_PATERNO if custodia.abog else '—',
+                custodia.abog.AB_PATERNO if custodia.abog else '-',
                 custodia.get_estado_display(),
-                custodia.fecha_entrega.strftime('%d/%m/%Y\n%H:%M') if custodia.fecha_entrega else 'Activa',
-                observacion,
+                tz.localtime(custodia.fecha_entrega).strftime('%d/%m/%Y\n%H:%M') if custodia.fecha_entrega else 'Activa',
+                Paragraph(observacion, cell_style),
             ])
 
-        custodia_table = Table(custodia_data, colWidths=[1.3*cm, 2.2*cm, 1.8*cm, 1.8*cm, 1.3*cm, 4.5*cm])
+        custodia_table = Table(custodia_data, colWidths=col_widths)
 
         custodia_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#185FA5')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            # Cabecera: fondo blanco, texto negro en negrita (sin relleno azul)
+            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), FONT_BOLD),
             ('FONTSIZE', (0, 0), (-1, 0), 8),
             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
             ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
+            ('TOPPADDING', (0, 0), (-1, 0), 7),
+            # Línea inferior de la cabecera más gruesa para separar visualmente
+            ('LINEBELOW', (0, 0), (-1, 0), 1.2, colors.HexColor('#185FA5')),
+            # Filas de datos
             ('ALIGN', (0, 1), (4, -1), 'CENTER'),
             ('ALIGN', (5, 1), (5, -1), 'LEFT'),
             ('VALIGN', (0, 1), (-1, -1), 'TOP'),
             ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F7F9FB')]),
-            ('LEFTPADDING', (0, 0), (-1, -1), 6),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('FONTNAME', (0, 1), (-1, -1), FONT_NORMAL),
+            ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#CCCCCC')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
+            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ('TOPPADDING', (0, 1), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
         ]))
 
         story.append(custodia_table)
@@ -285,7 +343,7 @@ def export_custodia_pdf(request, sim_id):
         textColor=colors.HexColor('#999999'),
         alignment=0,
     )
-    generated_time = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+    generated_time = now_local.strftime('%d/%m/%Y %H:%M:%S')
     story.append(Paragraph(f'Generado: {generated_time}', pie_style))
 
     doc.build(story)
