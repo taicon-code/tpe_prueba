@@ -26,7 +26,7 @@ def admin1_dashboard(request):
         return redirect('admin2_dashboard')
 
     # Si es Admin3, redirigir a su dashboard específico
-    if perfil.rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR']:
+    if perfil.rol == 'ADMIN3_NOTIFICADOR':
         return redirect('admin3_dashboard')
 
     # Si no, es Admin1 o ADMINISTRATIVO - mostrar dashboard

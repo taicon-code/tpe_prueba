@@ -8,7 +8,7 @@ from ..models import Resolucion, AUTOTPE, DocumentoAdjunto
 # DASHBOARD ADMIN3 (NOTIFICADOR)
 # ============================================================
 
-@rol_requerido('ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN3_NOTIFICADOR')
 def admin3_dashboard(request):
     """Dashboard para Admin3 - Notificaciones de documentos (también accesible para Admin1)"""
 

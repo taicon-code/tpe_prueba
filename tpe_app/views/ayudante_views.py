@@ -147,7 +147,7 @@ def ayudante_registrar_res(request):
     return render(request, 'tpe_app/ayudante/registrar_res.html', context)
 
 
-@rol_requerido('AYUDANTE', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('AYUDANTE', 'ADMIN1_AGENDADOR', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_notificacion(request, res_id):
     """Registrar la notificación de una RES existente"""
 
@@ -165,7 +165,7 @@ def ayudante_registrar_notificacion(request, res_id):
                     )
                     # Redirigir según el rol del usuario
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
-                    if rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR', 'ADMIN1', 'ADMIN1_AGENDADOR']:
+                    if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
                     else:
                         return redirect('ayudante_lista_res')
@@ -280,7 +280,7 @@ def ayudante_registrar_autotpe(request):
     return render(request, 'tpe_app/ayudante/registrar_autotpe.html', context)
 
 
-@rol_requerido('AYUDANTE', 'ADMIN1', 'ADMIN1_AGENDADOR', 'ADMIN3', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('AYUDANTE', 'ADMIN1_AGENDADOR', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_notificacion_rr(request, rr_id):
     """Registrar la notificación de un RR existente"""
 
@@ -299,7 +299,7 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
                 )
                 # Redirigir según el rol del usuario
                 rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
-                if rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR', 'ADMIN1', 'ADMIN1_AGENDADOR']:
+                if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                     return redirect('admin3_dashboard')
                 else:
                     return redirect('ayudante_dashboard')
@@ -343,7 +343,7 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
                     )
                     # Redirigir según el rol del usuario
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
-                    if rol in ['ADMIN3', 'ADMIN3_NOTIFICADOR', 'ADMIN1', 'ADMIN1_AGENDADOR']:
+                    if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
                     else:
                         return redirect('ayudante_dashboard')

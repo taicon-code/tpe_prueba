@@ -40,7 +40,7 @@ def asesor_jefe_dashboard(request):
     resumen = {
         'para_agenda': SIM.objects.filter(SIM_ESTADO='PARA_AGENDA').count(),
         'en_proceso': SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TPE').count(),
-        'en_apelacion': SIM.objects.filter(SIM_ESTADO='EN_APELACION_TSP').count(),
+        'en_apelacion': SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TSP').count(),
         'concluido': SIM.objects.filter(SIM_ESTADO='PROCESO_CONCLUIDO_TPE').count(),
     }
 
