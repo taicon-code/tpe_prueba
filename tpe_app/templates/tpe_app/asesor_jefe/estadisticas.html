@@ -1,0 +1,271 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Estadísticas - Asesor Jefe{% endblock %}
+{% block navbar_title %}📈 Estadísticas del Tribunal{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: 0.875rem;
+        margin-bottom: 1.25rem;
+    }
+    .back-link:hover { color: #1e3c72; }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-top: 2rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: #fff;
+        border-left: 4px solid #1e3c72;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e3c72;
+    }
+
+    .chart-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .chart-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+
+    .chart-label {
+        min-width: 100px;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .chart-bar-container {
+        flex: 1;
+        height: 30px;
+        background: #f3f4f6;
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+    }
+
+    .chart-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #1e3c72, #2a5298);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 0.75rem;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+    .chart-value {
+        min-width: 50px;
+        text-align: right;
+        font-weight: 600;
+        color: #1e3c72;
+    }
+
+    .tipo-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .tipo-item {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .tipo-count {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 0.5rem;
+    }
+
+    .tipo-name {
+        font-size: 0.9rem;
+        color: #6b7280;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+</style>
+
+<a href="{% url 'asesor_jefe_dashboard' %}" class="back-link">← Volver al Dashboard</a>
+
+<div class="page-header">
+    <h1 class="page-title">📈 Estadísticas Generales del Tribunal</h1>
+    <p style="color: #6b7280;">Información consolidada del sistema</p>
+</div>
+
+<!-- ── TOTALES GENERALES ──────────────────────────── -->
+<h2 class="section-title">📊 Sumarios por Estado</h2>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Pendiente Agendar</div>
+        <div class="stat-value">{{ sims_por_estado.PARA_AGENDA }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">En Proceso</div>
+        <div class="stat-value">{{ sims_por_estado.PROCESO_EN_EL_TPE }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">En Apelación</div>
+        <div class="stat-value">{{ sims_por_estado.EN_APELACION_TSP }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Concluidos</div>
+        <div class="stat-value">{{ sims_por_estado.PROCESO_CONCLUIDO_TPE }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Sumarios</div>
+        <div class="stat-value">{{ total_sims }}</div>
+    </div>
+</div>
+
+<!-- ── RESOLUCIONES ──────────────────────────── -->
+<h2 class="section-title">⚖️ Resoluciones del Tribunal</h2>
+<div class="chart-card">
+    <div class="chart-row">
+        <span class="chart-label">Total Emitidas:</span>
+        <div class="chart-bar-container" style="max-width: 200px;">
+            <div class="chart-bar" style="width: 100%;">{{ total_res }}</div>
+        </div>
+        <span class="chart-value">{{ total_res }}</span>
+    </div>
+    <div class="chart-row">
+        <span class="chart-label">Notificadas:</span>
+        <div class="chart-bar-container" style="max-width: 200px;">
+            <div class="chart-bar" style="width: {% widthratio res_notificadas total_res 100 %}%;">
+                {% if res_notificadas > 0 %}{{ res_notificadas }}{% endif %}
+            </div>
+        </div>
+        <span class="chart-value">{{ res_notificadas }}/{{ total_res }}</span>
+    </div>
+</div>
+
+<!-- ── AUTOS TPE ──────────────────────────── -->
+<h2 class="section-title">📜 Autos del Tribunal</h2>
+{% if autos_por_tipo %}
+<div class="chart-card">
+    <div class="chart-title">Distribución por Tipo</div>
+    <div class="tipo-list">
+    {% for tipo, count in autos_por_tipo.items %}
+        <div class="tipo-item">
+            <div class="tipo-count">{{ count }}</div>
+            <div class="tipo-name">{{ tipo|title }}</div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% else %}
+<p style="color: #9ca3af;">No hay autos registrados aún</p>
+{% endif %}
+
+<!-- ── TENDENCIA MENSUAL ──────────────────────────── -->
+<h2 class="section-title">📅 Actividad Mensual (últimos 12 meses)</h2>
+<div class="chart-card">
+    {% for mes_data in estadisticas_mensuales %}
+    <div style="margin-bottom: 2rem;">
+        <h4 style="font-weight: 600; color: #374151; margin-bottom: 0.75rem;">{{ mes_data.mes }}</h4>
+        <div class="chart-row">
+            <span class="chart-label">Sumarios:</span>
+            <div class="chart-bar-container">
+                {% if mes_data.sims > 0 %}
+                <div class="chart-bar" style="width: {% widthratio mes_data.sims 10 100 %}%;">{{ mes_data.sims }}</div>
+                {% else %}
+                <div style="color: #9ca3af; padding-left: 0.5rem;">—</div>
+                {% endif %}
+            </div>
+            <span class="chart-value">{{ mes_data.sims }}</span>
+        </div>
+        <div class="chart-row">
+            <span class="chart-label">Resoluciones:</span>
+            <div class="chart-bar-container">
+                {% if mes_data.resoluciones > 0 %}
+                <div class="chart-bar" style="width: {% widthratio mes_data.resoluciones 10 100 %}%; background: linear-gradient(90deg, #059669, #10b981);">{{ mes_data.resoluciones }}</div>
+                {% else %}
+                <div style="color: #9ca3af; padding-left: 0.5rem;">—</div>
+                {% endif %}
+            </div>
+            <span class="chart-value">{{ mes_data.resoluciones }}</span>
+        </div>
+        <div class="chart-row">
+            <span class="chart-label">Autos:</span>
+            <div class="chart-bar-container">
+                {% if mes_data.autos > 0 %}
+                <div class="chart-bar" style="width: {% widthratio mes_data.autos 10 100 %}%; background: linear-gradient(90deg, #dc2626, #ef4444);">{{ mes_data.autos }}</div>
+                {% else %}
+                <div style="color: #9ca3af; padding-left: 0.5rem;">—</div>
+                {% endif %}
+            </div>
+            <span class="chart-value">{{ mes_data.autos }}</span>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

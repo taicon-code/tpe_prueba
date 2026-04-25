@@ -10,11 +10,12 @@ Sistema de gestión de **Sumarios Informativos Militares (SIM)** del
 **Tribunal de Personal del Ejército (TPE)** de Bolivia.
 Tecnología: Django + MySQL + Bootstrap 5.
 
-**VERSIÓN ACTUAL: v3.3** (Abril 2026)
+**VERSIÓN ACTUAL: v3.4** (Abril 2026)
 - v3.0: Rediseño completo (Admin1/2/3, Abogados diferenciados)
 - v3.1: Custodia de carpetas entre actores
 - v3.2: Gestión de agendas (Admin1)
 - v3.3: Rol AYUDANTE, Ejecutoria, mejoras en Buscador (v3.3.1)
+- v3.4: Votos y Asistencia del tribunal (Secretario de Actas), Rol ASESOR_JEFE, Miembros TPE
 
 ---
 
@@ -127,7 +128,7 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 | **ABOG1**      | `abogado_views.py` | Crea dictámenes, resoluciones, autos | Trabajo legal principal |
 | **ABOG2**      | `abogado_views.py` | Crea autos sin agenda previa (Excusa, Ejecutoria) | Autos antes de sesión |
 | **ABOG3**      | `abogado_views.py` | Confirma entrega de carpetas, suscribe autos | Recibe y valida |
-| **VOCAL**      | `vocal_views.py` | Secretario de Actas: confirma/modifica dictámenes | Sesiones del tribunal |
+| **VOCAL**      | `vocal_views.py` | Secretario de Actas: modifica dictámenes según votos, registra votos y asistencia de vocales, comunica resultado a abogados | Sesiones del tribunal |
 | **AYUDANTE**   | `ayudante_views.py` | Registra resoluciones históricas, notificaciones, RAEE | Base de datos |
 | **BUSCADOR**   | `buscador_views.py` | Consulta historial de personal (público) | Reportes |
 

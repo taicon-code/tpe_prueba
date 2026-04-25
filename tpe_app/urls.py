@@ -29,6 +29,13 @@ urlpatterns = [
     path('vocal/dashboard/', views.vocal_dashboard, name='vocal_dashboard'),
     path('vocal/agenda/<int:ag_id>/', views.vocal_agenda_detalle, name='vocal_agenda_detalle'),
     path('vocal/dictamen/<int:dic_id>/confirmar/', views.vocal_confirmar_dictamen, name='vocal_confirmar_dictamen'),
+    path('vocal/agenda/<int:ag_id>/asistencia/', views.vocal_registrar_asistencia, name='vocal_registrar_asistencia'),
+    path('vocal/dictamen/<int:dic_id>/votos/', views.vocal_registrar_votos, name='vocal_registrar_votos'),
+
+    # ✅ NUEVO: Asesor Jefe - Supervisor del sistema
+    path('asesor-jefe/dashboard/', views.asesor_jefe_dashboard, name='asesor_jefe_dashboard'),
+    path('asesor-jefe/agendas/', views.asesor_jefe_agendas, name='asesor_jefe_agendas'),
+    path('asesor-jefe/estadisticas/', views.asesor_jefe_estadisticas, name='asesor_jefe_estadisticas'),
 
     # ✅ NUEVO: Ayudante - Registro de datos históricos
     path('ayudante/', views.ayudante_dashboard, name='ayudante_dashboard'),

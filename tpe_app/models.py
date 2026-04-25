@@ -261,6 +261,8 @@ class VOCAL_TPE(models.Model):
         ('VICEPRESIDENTE',   'Vicepresidente'),
         ('VOCAL',            'Vocal'),
         ('SECRETARIO_ACTAS', 'Secretario de Actas'),
+        ('ASESOR_JEFE',      'Asesor Jurídico Supervisor'),
+        ('RELATOR',          'Vocal Relator'),
     ]
 
     pm     = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
@@ -770,6 +772,19 @@ class DICTAMEN(models.Model):
         verbose_name='Fecha de confirmación'
     )
 
+    # ✅ NUEVO v3.4: Resultado del tribunal tras votación de vocales
+    resultado_tribunal = models.CharField(
+        max_length=15,
+        choices=[
+            ('PROCEDENTE',   'Procedente'),
+            ('IMPROCEDENTE', 'Improcedente'),
+            ('MIXTO',        'Votos divididos'),
+        ],
+        null=True,
+        blank=True,
+        verbose_name='Resultado del tribunal'
+    )
+
     class Meta:
         db_table = 'dictamen'
         verbose_name = 'Dictamen'
@@ -783,6 +798,66 @@ class DICTAMEN(models.Model):
         self.DIC_NUM   = self.DIC_NUM.upper()   if self.DIC_NUM   else self.DIC_NUM
         self.DIC_CONCL = self.DIC_CONCL.upper() if self.DIC_CONCL else self.DIC_CONCL
         super().save(*args, **kwargs)
+
+
+# ============================================================
+# MODELO 4B: VotoVocal — Voto de cada vocal en un dictamen
+# ============================================================
+class VotoVocal(models.Model):
+    """Registro de voto de un vocal en un dictamen"""
+
+    VOTO_CHOICES = [
+        ('APRUEBA',    'Aprueba / Procedente'),
+        ('RECHAZA',    'Rechaza / Improcedente'),
+        ('ABSTIENE',   'Se abstiene'),
+        ('AUSENTE',    'Ausente en sesión'),
+    ]
+
+    dictamen      = models.ForeignKey(DICTAMEN, on_delete=models.CASCADE, related_name='votos')
+    vocal         = models.ForeignKey(VOCAL_TPE, on_delete=models.PROTECT, related_name='votos_emitidos')
+    voto          = models.CharField(max_length=15, choices=VOTO_CHOICES)
+    observacion   = models.TextField(null=True, blank=True)
+    registrado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table          = 'voto_vocal'
+        verbose_name      = 'Voto del Vocal'
+        verbose_name_plural = 'Votos de Vocales'
+        unique_together   = ('dictamen', 'vocal')
+        ordering          = ['vocal__cargo', 'vocal__pm__PM_PATERNO']
+
+    def __str__(self):
+        return f"{self.vocal} → {self.get_voto_display()} en Dictamen {self.dictamen.DIC_NUM}"
+
+
+# ============================================================
+# MODELO 4C: AsistenciaVocal — Asistencia de vocales a sesiones
+# ============================================================
+class AsistenciaVocal(models.Model):
+    """Registro de asistencia de vocales a cada sesión/agenda"""
+
+    ESTADO_CHOICES = [
+        ('PRESENTE',  'Presente'),
+        ('AUSENTE',   'Ausente'),
+        ('EXCUSADO',  'Excusado'),
+    ]
+
+    agenda        = models.ForeignKey(AGENDA, on_delete=models.CASCADE, related_name='asistencias')
+    vocal         = models.ForeignKey(VOCAL_TPE, on_delete=models.PROTECT, related_name='asistencias')
+    estado        = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='PRESENTE')
+    justificacion = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table          = 'asistencia_vocal'
+        verbose_name      = 'Asistencia a Sesión'
+        verbose_name_plural = 'Asistencias a Sesiones'
+        unique_together   = ('agenda', 'vocal')
+        ordering          = ['vocal__cargo', 'vocal__pm__PM_PATERNO']
+
+    def __str__(self):
+        return f"{self.vocal} en {self.agenda.AG_NUM}: {self.get_estado_display()}"
+
+
 # ============================================================
 # MODELO 5: AUTOTPE — Autos del Tribunal de Personal del Ejército
 # ============================================================
@@ -1261,6 +1336,7 @@ class PerfilUsuario(models.Model):
 
         # Tribunal
         ('VOCAL_TPE',                 'Vocal TPE (Secretario de Actas)'),
+        ('ASESOR_JEFE',               'Asesor Jefe (Supervisor de Procesos)'),
         ('ASESOR_JURIDICO',           'Asesor Jurídico del DPTO-I'),
 
         # Legado (mantener compatibilidad)

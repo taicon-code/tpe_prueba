@@ -44,7 +44,7 @@
         {% if custodia_actual %}
             <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0.5rem;">
                 <p style="margin: 0.5rem 0; font-weight: 600; color: #92400e;">
-                    🎯 La carpeta está en: <strong>{{ custodia_actual.tipo_custodio_display }}</strong>
+                    🎯 La carpeta está en: <strong>{{ custodia_actual.get_tipo_custodio_display }}</strong>
                 </p>
                 {% if custodia_actual.abog %}
                     <p style="margin: 0.5rem 0; color: #92400e;">
@@ -99,7 +99,7 @@
                         {{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}
                     </td>
                     <td style="font-weight: 600;">
-                        {{ custodia.tipo_custodio_display }}
+                        {{ custodia.get_tipo_custodio_display }}
                         {% if custodia == custodia_actual %}
                             <span style="background: #fbbf24; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">ACTUAL</span>
                         {% endif %}
@@ -113,7 +113,7 @@
                     </td>
                     <td>
                         {% if custodia.estado == 'RECIBIDA_CONFORME' %}
-                            <span class="badge badge-green">Activa</span>
+                            <span class="badge badge-green">Radicada</span>
                         {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
                             <span class="badge badge-orange">Pendiente</span>
                         {% else %}

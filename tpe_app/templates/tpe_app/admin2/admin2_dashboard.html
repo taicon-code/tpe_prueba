@@ -126,7 +126,7 @@
                             {% if custodia.fecha_entrega %}
                                 {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
                             {% else %}
-                                <span style="color: #f97316; font-weight: 600;">↔ Activa</span>
+                                <span style="color: #f97316; font-weight: 600;">📍 Radicado en<br/>{{ custodia.get_tipo_custodio_display }}</span>
                             {% endif %}
                         </td>
                         <td style="font-size: 0.85rem;">

@@ -48,9 +48,15 @@ def ayudante_dashboard(request):
 
     # Contadores
     total_sim = SIM.objects.count()
+    total_pm = PM.objects.count()
     total_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
+    total_res_sin_notif = Resolucion.objects.filter(
+        RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=True
+    ).count()
     total_rr = Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION').count()
     total_rap = RecursoTSP.objects.filter(TSP_INSTANCIA='APELACION').count()
+    total_autotpe = AUTOTPE.objects.count()
+    total_autotpe_sin_notif = AUTOTPE.objects.filter(TPE_FECNOT__isnull=True).count()
 
     context = {
         'ultimos_sim': ultimos_sim,
@@ -58,9 +64,13 @@ def ayudante_dashboard(request):
         'res_sin_pdf': res_sin_pdf,
         'total_res_sin_pdf': total_res_sin_pdf,
         'total_sim': total_sim,
+        'total_pm': total_pm,
         'total_res': total_res,
+        'total_res_sin_notif': total_res_sin_notif,
         'total_rr': total_rr,
         'total_rap': total_rap,
+        'total_autotpe': total_autotpe,
+        'total_autotpe_sin_notif': total_autotpe_sin_notif,
     }
 
     return render(request, 'tpe_app/ayudante/dashboard.html', context)
