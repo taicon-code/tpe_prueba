@@ -13,7 +13,15 @@ from .abogado_documentos_views import (
     abogado_confirmar_recepcion,
     abogado_devolver_carpeta,
 )
-from .buscador_views import buscador_dashboard, upload_foto_pm, detalles_sim, export_custodia_pdf
+from .buscador_views import (
+    buscador_dashboard,
+    busqueda_por_lotes,
+    upload_foto_pm,
+    detalles_sim,
+    export_custodia_pdf,
+    export_batch_pdf,
+    export_batch_excel,
+)
 from .admin1_views import (
     admin1_dashboard,
     registrar_sumario,

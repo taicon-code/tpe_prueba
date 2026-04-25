@@ -1,0 +1,384 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Búsqueda por Lotes - TPE Sistema{% endblock %}
+{% block navbar_title %}📋 Búsqueda por Lotes{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Búsqueda Individual</span>
+    </a>
+    <a href="{% url 'busqueda_lotes' %}" class="sb-link active">
+        <span class="lk-icon">📋</span>
+        <span class="lk-text">Búsqueda por Lotes</span>
+    </a>
+    <hr class="sb-divider">
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<style>
+  .lotes-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .header-section {
+    background: linear-gradient(135deg, #185FA5 0%, #1a3a52 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: #fff;
+  }
+
+  .header-section h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .header-section p {
+    font-size: 0.95rem;
+    opacity: 0.85;
+    margin: 0;
+  }
+
+  .form-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .form-section h2 {
+    color: #185FA5;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #185FA5;
+    padding-bottom: 0.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 150px;
+    box-sizing: border-box;
+  }
+
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #185FA5;
+    box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.1);
+  }
+
+  .form-help {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.5rem;
+    background: #f9fafb;
+    padding: 0.75rem;
+    border-left: 3px solid #f59e0b;
+    border-radius: 4px;
+  }
+
+  .form-help strong {
+    color: #333;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    background: #185FA5;
+    color: #fff;
+  }
+
+  .btn-primary:hover {
+    background: #0d3b6f;
+  }
+
+  .btn-secondary {
+    background: #f59e0b;
+    color: #1a1a1a;
+  }
+
+  .btn-secondary:hover {
+    background: #d97706;
+  }
+
+  .btn-export-pdf {
+    background: #3b82f6;
+    color: #fff;
+  }
+
+  .btn-export-pdf:hover {
+    background: #2563eb;
+  }
+
+  .btn-export-excel {
+    background: #10b981;
+    color: #fff;
+  }
+
+  .btn-export-excel:hover {
+    background: #059669;
+  }
+
+  .results-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .results-section h2 {
+    color: #185FA5;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #185FA5;
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .result-count {
+    background: #e8f0fe;
+    color: #185FA5;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .military-card {
+    background: #f9fafb;
+    border-left: 4px solid #185FA5;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 6px;
+  }
+
+  .military-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .military-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #185FA5;
+  }
+
+  .military-grado {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+  }
+
+  .military-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .military-info-item {
+    font-size: 0.85rem;
+  }
+
+  .military-info-label {
+    font-weight: 600;
+    color: #185FA5;
+  }
+
+  .military-sims {
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  .military-sims strong {
+    color: #185FA5;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+  }
+
+  .empty-state p {
+    font-size: 0.95rem;
+    margin: 0.5rem 0;
+  }
+
+  .success-message {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+
+  .error-message {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+</style>
+
+<div class="lotes-container">
+
+  <div class="header-section">
+    <h1>📋 Reporte de Antecedentes por Lotes</h1>
+    <p>Ingresa una lista de militares para generar reportes en PDF o Excel</p>
+  </div>
+
+  <div class="form-section">
+    <h2>Ingresa Lista de Militares</h2>
+
+    <form method="POST" action="">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="lista_apellidos">Apellidos (Paterno, Materno) — uno por línea</label>
+        <textarea id="lista_apellidos" name="lista_apellidos" placeholder="VARGAS, FLORES&#10;RODRIGUEZ, LOPEZ&#10;GUTIERREZ, SANTOS"></textarea>
+        <div class="form-help">
+          <strong>Formato:</strong> APELLIDO_PATERNO, APELLIDO_MATERNO (separados por coma)<br>
+          Una línea por militar. Ejemplo:<br>
+          VARGAS, FLORES<br>
+          RODRIGUEZ, LOPEZ
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="submit" name="action" value="buscar" class="btn btn-primary">🔍 Buscar Militares</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- RESULTADOS -->
+  {% if militares_encontrados %}
+  <div class="results-section">
+    <h2>
+      ✅ Militares Encontrados
+      <span class="result-count">{{ militares_encontrados|length }}</span>
+    </h2>
+
+    <!-- BOTONES DE EXPORTACIÓN -->
+    <div class="button-group">
+      <form method="POST" action="{% url 'export_batch_pdf' %}" style="display: inline;">
+        {% csrf_token %}
+        <input type="hidden" name="lista_apellidos" value="{{ request.POST.lista_apellidos }}">
+        <button type="submit" class="btn btn-export-pdf">📄 Descargar PDF</button>
+      </form>
+
+      <form method="POST" action="{% url 'export_batch_excel' %}" style="display: inline;">
+        {% csrf_token %}
+        <input type="hidden" name="lista_apellidos" value="{{ request.POST.lista_apellidos }}">
+        <button type="submit" class="btn btn-export-excel">📊 Descargar Excel</button>
+      </form>
+    </div>
+
+    <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e5e7eb;">
+
+    <!-- LISTADO DE MILITARES -->
+    {% for mil in militares_encontrados %}
+    <div class="military-card">
+      <div class="military-header">
+        <div>
+          <div class="military-name">{{ mil.personal.PM_NOMBRE }} {{ mil.personal.PM_PATERNO }} {{ mil.personal.PM_MATERNO }}</div>
+          <div class="military-grado">{{ mil.personal.get_PM_GRADO_display }}</div>
+        </div>
+      </div>
+
+      <div class="military-info">
+        <div class="military-info-item">
+          <span class="military-info-label">Arma:</span> {{ mil.personal.get_PM_ARMA_display|default:"—" }}
+        </div>
+        <div class="military-info-item">
+          <span class="military-info-label">Escalafón:</span> {{ mil.personal.get_PM_ESCALAFON_display|default:"—" }}
+        </div>
+        <div class="military-info-item">
+          <span class="military-info-label">Estado:</span> {{ mil.personal.get_PM_ESTADO_display }}
+        </div>
+      </div>
+
+      <div class="military-sims">
+        <strong>Sumarios:</strong> {{ mil.historial.sumarios.count }}<br>
+        {% for sim in mil.historial.sumarios %}
+          • {{ sim.SIM_COD }} ({{ sim.get_SIM_ESTADO_display }})<br>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+  </div>
+
+  {% elif request.method == 'POST' %}
+
+  <div class="error-message">
+    ⚠️ No se encontraron militares con los datos proporcionados. Verifica los apellidos.
+  </div>
+
+  {% else %}
+
+  <div class="empty-state">
+    <p>Ingresa una lista de militares para comenzar</p>
+  </div>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}

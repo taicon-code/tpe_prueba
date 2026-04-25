@@ -92,6 +92,11 @@ urlpatterns = [
     path('buscador/sim/<int:sim_id>/custodia/pdf/', views.export_custodia_pdf, name='export_custodia_pdf'),
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),
 
+    # ✅ NUEVO v3.5: Búsqueda por lotes y exportación
+    path('buscador/lotes/', views.busqueda_por_lotes, name='busqueda_lotes'),
+    path('buscador/lotes/exportar/pdf/', views.export_batch_pdf, name='export_batch_pdf'),
+    path('buscador/lotes/exportar/excel/', views.export_batch_excel, name='export_batch_excel'),
+
     # Exportación de historial (desde buscador_dashboard)
     path('buscador/dashboard/<int:personal_id>/exportar/pdfs/', views.export_person_pdfs_zip, name='export_pdfs_zip'),
     path('buscador/dashboard/<int:personal_id>/exportar/excel/', views.export_person_excel, name='export_excel'),

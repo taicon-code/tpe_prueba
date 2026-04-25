@@ -152,6 +152,403 @@ def detalles_sim(request, sim_id):
     return render(request, 'tpe_app/buscador/detalles_sim.html', context)
 
 
+def busqueda_por_lotes(request):
+    """Vista para búsqueda y reporte por lotes de múltiples militares por AP + AM"""
+    militares_encontrados = []
+
+    if request.method == 'POST':
+        lista_apellidos = request.POST.get('lista_apellidos', '').strip()
+
+        if lista_apellidos:
+            # Procesar cada línea como "APELLIDO_PATERNO, APELLIDO_MATERNO"
+            lineas = [l.strip() for l in lista_apellidos.split('\n') if l.strip()]
+
+            for linea in lineas:
+                partes = [p.strip() for p in linea.split(',')]
+                if len(partes) >= 2:
+                    ap = partes[0].upper()
+                    am = partes[1].upper()
+
+                    # Buscar militar con este AP y AM
+                    pm = PM.objects.filter(
+                        PM_PATERNO__iexact=ap,
+                        PM_MATERNO__iexact=am
+                    ).first()
+
+                    if pm:
+                        # Obtener historial del militar
+                        historial = _obtener_historial_completo(pm.pm_id)
+                        if historial:
+                            militares_encontrados.append({
+                                'personal': pm,
+                                'historial': historial,
+                            })
+
+    context = {
+        'militares_encontrados': militares_encontrados,
+    }
+    return render(request, 'tpe_app/buscador/busqueda_lotes.html', context)
+
+
+def export_batch_pdf(request):
+    """Genera PDF con tabla compacta de múltiples militares"""
+    from django.http import HttpResponse
+    from io import BytesIO
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from datetime import datetime
+
+    # Registrar fuente Arial desde Windows
+    try:
+        pdfmetrics.getFont('Arial-Bold')
+    except KeyError:
+        pdfmetrics.registerFont(TTFont('Arial',      'C:/Windows/Fonts/arial.ttf'))
+        pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:/Windows/Fonts/arialbd.ttf'))
+
+    lista_apellidos = request.POST.get('lista_apellidos', '').strip()
+
+    if not lista_apellidos:
+        return HttpResponse("No se proporcionó lista de militares", status=400)
+
+    militares = []
+    lineas = [l.strip() for l in lista_apellidos.split('\n') if l.strip()]
+
+    for linea in lineas:
+        partes = [p.strip() for p in linea.split(',')]
+        if len(partes) >= 2:
+            ap = partes[0].upper()
+            am = partes[1].upper()
+
+            pm = PM.objects.filter(
+                PM_PATERNO__iexact=ap,
+                PM_MATERNO__iexact=am
+            ).first()
+
+            if pm:
+                historial = _obtener_historial_completo(pm.pm_id)
+                if historial:
+                    militares.append({
+                        'personal': pm,
+                        'historial': historial,
+                    })
+
+    if not militares:
+        return HttpResponse("No se encontraron militares con los datos proporcionados", status=404)
+
+    buffer = BytesIO()
+    page_w, _ = letter
+    margin = 0.5 * inch
+
+    def _estilo(nombre, fuente='Helvetica', tamaño=9, alineacion=TA_LEFT,
+                negrita=False, color=colors.black, espacio_antes=0, espacio_despues=2,
+                interlinea=11, sangria=0):
+        fn = (fuente + '-Bold') if negrita else fuente
+        return ParagraphStyle(nombre, fontName=fn, fontSize=tamaño,
+                              alignment=alineacion, textColor=color,
+                              spaceBefore=espacio_antes, spaceAfter=espacio_despues,
+                              leading=interlinea, leftIndent=sangria)
+
+    s_inst1   = _estilo('inst1',  fuente='Arial', tamaño=10, alineacion=TA_LEFT, negrita=True, espacio_despues=1, interlinea=9)
+    s_inst2   = _estilo('inst2',  fuente='Arial', tamaño=10, alineacion=TA_LEFT, negrita=True, espacio_despues=1, interlinea=9, sangria=15)
+    s_pais    = _estilo('pais',   fuente='Arial', tamaño=10, alineacion=TA_LEFT, negrita=True, espacio_despues=6, interlinea=9, sangria=70)
+    s_seccion = _estilo('secc',   fuente='Arial', tamaño=14, alineacion=TA_CENTER, negrita=True, espacio_antes=6, espacio_despues=4, interlinea=17)
+    s_th = _estilo('th', tamaño=7, alineacion=TA_CENTER, negrita=True, color=colors.black)
+    s_td = _estilo('td', tamaño=7, interlinea=9)
+    s_td_c = _estilo('tdc', tamaño=7, alineacion=TA_CENTER, interlinea=9)
+
+    doc = SimpleDocTemplate(
+        buffer, pagesize=letter,
+        leftMargin=margin, rightMargin=margin,
+        topMargin=0.55 * inch, bottomMargin=0.75 * inch,
+    )
+    usable_w = page_w - 2 * margin
+    story = []
+
+    # ── ENCABEZADO INSTITUCIONAL ─────────────────────────────────────────────
+    story.append(Paragraph("COMANDO GENERAL DEL EJÉRCITO", s_inst1))
+    story.append(Paragraph("DEPARTAMENTO I - PERSONAL", s_inst2))
+    story.append(Paragraph("<u>BOLIVIA</u>", s_pais))
+
+    # ── REPORTE POR LOTES ─────────────────────────────────────────────────
+    story.append(Paragraph("<u>ANTECEDENTES DISCIPLINARIOS TRATADOS POR EL TRIBUNAL DE PERSONAL DEL EJÉRCITO</u>", s_seccion))
+    story.append(Spacer(1, 6))
+
+    # Pie de página
+    nombre_usuario = request.user.get_full_name() or request.user.username
+    grado_usuario = ""
+    espec_usuario = ""
+    if request.user.is_authenticated:
+        try:
+            perfil = request.user.perfilusuario
+            if perfil.abogado:
+                grado_usuario = perfil.abogado.AB_GRADO or ""
+                espec_usuario = perfil.abogado.AB_ARMA or ""
+            elif perfil.vocal and perfil.vocal.pm:
+                grado_usuario = perfil.vocal.pm.get_PM_GRADO_display() or ""
+                espec_usuario = perfil.vocal.pm.get_PM_ARMA_display() or ""
+        except Exception:
+            pass
+
+    partes_pie = [p for p in [grado_usuario, nombre_usuario.upper(), espec_usuario] if p]
+    texto_impreso = "  ".join(partes_pie)
+
+    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+    hora_hoy  = datetime.now().strftime("%H:%M")
+
+    def _pie_pagina(canv, doc):
+        canv.saveState()
+        canv.setStrokeColor(colors.lightgrey)
+        canv.setLineWidth(0.5)
+        canv.line(margin, 0.52 * inch, page_w - margin, 0.52 * inch)
+        canv.setFont('Helvetica', 6.5)
+        canv.setFillColor(colors.grey)
+        texto_pie = (f"Impreso por: {texto_impreso}   |   "
+                     f"{fecha_hoy}  {hora_hoy}   |   Pág. {doc.page}")
+        canv.drawCentredString(page_w / 2, 0.33 * inch, texto_pie)
+        canv.restoreState()
+
+    # Construir tabla con todos los militares
+    # Ancho distribuido: GRADO=8% | NOMBRES=15% | AP=15% | AM=15% | SIM=10% | OBJETO=18% | ACTUADOS=12% | ESTADO=7%
+    col_widths = [usable_w * p for p in (0.08, 0.15, 0.15, 0.15, 0.10, 0.18, 0.12, 0.07)]
+
+    filas = [[
+        Paragraph('GRADO', s_th),
+        Paragraph('NOMBRES', s_th),
+        Paragraph('APELLIDO PATERNO', s_th),
+        Paragraph('APELLIDO MATERNO', s_th),
+        Paragraph('SIM', s_th),
+        Paragraph('OBJETO', s_th),
+        Paragraph('ACTUADOS', s_th),
+        Paragraph('ESTADO', s_th),
+    ]]
+
+    for mil in militares:
+        pm = mil['personal']
+        hist = mil['historial']
+
+        for sim in hist['sumarios']:
+            # Obtener actuados para este SIM
+            actuados_list = []
+            contador = 1
+            numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
+
+            # Resoluciones (RES)
+            for res in hist['resoluciones'].filter(sim=sim):
+                fecha_str = res.RES_FEC.strftime('%d/%m/%y') if res.RES_FEC else 'S/F'
+                resolutiva = res.RES_RESOL if res.RES_RESOL else 'N/A'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} RES {res.RES_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                contador += 1
+
+            # Segundas Resoluciones (RR)
+            for rr in hist['segundas_resoluciones'].filter(sim=sim):
+                fecha_str = rr.RES_FEC.strftime('%d/%m/%y') if rr.RES_FEC else 'S/F'
+                resolutiva = rr.RES_RESOL if rr.RES_RESOL else 'N/A'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} RR {rr.RES_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                contador += 1
+
+            # Autos TPE
+            for auto in hist['autos_tpe'].filter(sim=sim):
+                fecha_str = auto.TPE_FEC.strftime('%d/%m/%y') if auto.TPE_FEC else 'S/F'
+                resolutiva = auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} AUTO {auto.TPE_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                contador += 1
+
+            # Recursos de Apelación (RAP)
+            for rap in hist['recursos_apelacion'].filter(sim=sim):
+                fecha_str = rap.TSP_FEC.strftime('%d/%m/%y') if rap.TSP_FEC else 'S/F'
+                resolutiva = rap.get_TSP_INSTANCIA_display() if rap.TSP_INSTANCIA else 'Recurso de Apelación'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} RAP {rap.TSP_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                contador += 1
+
+            # Unir todo con HTML y remover último <br/><br/>
+            actuados_str = ''.join(actuados_list) if actuados_list else 'PENDIENTE'
+            if actuados_str.endswith('<br/><br/>'):
+                actuados_str = actuados_str[:-10]  # Remover último <br/><br/>
+
+            objeto_completo = sim.SIM_OBJETO or 'N/A'
+
+            filas.append([
+                Paragraph(pm.get_PM_GRADO_display() or 'N/A', s_td_c),
+                Paragraph(pm.PM_NOMBRE or 'N/A', s_td),
+                Paragraph(pm.PM_PATERNO or 'N/A', s_td),
+                Paragraph(pm.PM_MATERNO or 'N/A', s_td),
+                Paragraph(sim.SIM_COD or 'N/A', s_td_c),
+                Paragraph(objeto_completo, s_td),
+                Paragraph(actuados_str, s_td),
+                Paragraph(sim.get_SIM_ESTADO_display() or 'N/A', s_td_c),
+            ])
+
+    tabla = Table(filas, colWidths=col_widths, repeatRows=1)
+    tabla.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+        ('INNERGRID', (0, 0), (-1, -1), 0.3, colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.white),
+        ('LINEBELOW', (0, 0), (-1, 0), 0.8, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+    ]))
+
+    story.append(tabla)
+
+    doc.build(story, onFirstPage=_pie_pagina, onLaterPages=_pie_pagina)
+    buffer.seek(0)
+
+    fecha_export = datetime.now().strftime("%d-%m-%Y")
+    filename = f"ANTECEDENTES_LOTE_{fecha_export}.pdf"
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def export_batch_excel(request):
+    """Genera Excel con tabla de múltiples militares"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from django.http import HttpResponse
+    from datetime import datetime
+
+    lista_apellidos = request.POST.get('lista_apellidos', '').strip()
+
+    if not lista_apellidos:
+        return HttpResponse("No se proporcionó lista de militares", status=400)
+
+    militares = []
+    lineas = [l.strip() for l in lista_apellidos.split('\n') if l.strip()]
+
+    for linea in lineas:
+        partes = [p.strip() for p in linea.split(',')]
+        if len(partes) >= 2:
+            ap = partes[0].upper()
+            am = partes[1].upper()
+
+            pm = PM.objects.filter(
+                PM_PATERNO__iexact=ap,
+                PM_MATERNO__iexact=am
+            ).first()
+
+            if pm:
+                historial = _obtener_historial_completo(pm.pm_id)
+                if historial:
+                    militares.append({
+                        'personal': pm,
+                        'historial': historial,
+                    })
+
+    if not militares:
+        return HttpResponse("No se encontraron militares con los datos proporcionados", status=404)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "ANTECEDENTES"
+
+    # Encabezados
+    headers = ['GRADO', 'NOMBRES', 'APELLIDO PATERNO', 'APELLIDO MATERNO', 'SIM', 'OBJETO', 'ACTUADOS', 'ESTADO']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF", size=10)
+        cell.fill = PatternFill(start_color="185FA5", end_color="185FA5", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    row_idx = 2
+
+    for mil in militares:
+        pm = mil['personal']
+        hist = mil['historial']
+
+        for sim in hist['sumarios']:
+            actuados_list = []
+            contador = 1
+            numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
+
+            # Resoluciones (RES)
+            for res in hist['resoluciones'].filter(sim=sim):
+                fecha_str = res.RES_FEC.strftime('%d/%m/%y') if res.RES_FEC else 'S/F'
+                resolutiva = res.RES_RESOL if res.RES_RESOL else 'N/A'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} RES {res.RES_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                contador += 1
+
+            # Segundas Resoluciones (RR)
+            for rr in hist['segundas_resoluciones'].filter(sim=sim):
+                fecha_str = rr.RES_FEC.strftime('%d/%m/%y') if rr.RES_FEC else 'S/F'
+                resolutiva = rr.RES_RESOL if rr.RES_RESOL else 'N/A'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} RR {rr.RES_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                contador += 1
+
+            # Autos TPE
+            for auto in hist['autos_tpe'].filter(sim=sim):
+                fecha_str = auto.TPE_FEC.strftime('%d/%m/%y') if auto.TPE_FEC else 'S/F'
+                resolutiva = auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} AUTO {auto.TPE_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                contador += 1
+
+            # Recursos de Apelación (RAP)
+            for rap in hist['recursos_apelacion'].filter(sim=sim):
+                fecha_str = rap.TSP_FEC.strftime('%d/%m/%y') if rap.TSP_FEC else 'S/F'
+                resolutiva = rap.get_TSP_INSTANCIA_display() if rap.TSP_INSTANCIA else 'Recurso de Apelación'
+                num_circulo = numeros_circulos[min(contador - 1, 9)]
+                actuados_list.append(f"{num_circulo} RAP {rap.TSP_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                contador += 1
+
+            # Unir todo
+            actuados_str = ''.join(actuados_list) if actuados_list else 'PENDIENTE'
+            # Remover último salto de línea si existe
+            actuados_str = actuados_str.rstrip('\n')
+
+            ws.cell(row=row_idx, column=1, value=pm.get_PM_GRADO_display() or 'N/A')
+            ws.cell(row=row_idx, column=2, value=pm.PM_NOMBRE or 'N/A')
+            ws.cell(row=row_idx, column=3, value=pm.PM_PATERNO or 'N/A')
+            ws.cell(row=row_idx, column=4, value=pm.PM_MATERNO or 'N/A')
+            ws.cell(row=row_idx, column=5, value=sim.SIM_COD or 'N/A')
+            ws.cell(row=row_idx, column=6, value=sim.SIM_OBJETO or 'N/A')
+            ws.cell(row=row_idx, column=7, value=actuados_str)
+            ws.cell(row=row_idx, column=8, value=sim.get_SIM_ESTADO_display() or 'N/A')
+
+            row_idx += 1
+
+    # Ajustar anchos
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 18
+    ws.column_dimensions['D'].width = 18
+    ws.column_dimensions['E'].width = 10
+    ws.column_dimensions['F'].width = 28
+    ws.column_dimensions['G'].width = 15
+    ws.column_dimensions['H'].width = 12
+
+    fecha_export = datetime.now().strftime("%Y-%m-%d")
+    excel_filename = f"ANTECEDENTES_LOTE_{fecha_export}.xlsx"
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{excel_filename}"'
+    return response
+
+
 def upload_foto_pm(request, pm_id):
     """Subir o reemplazar la foto de un Personal Militar"""
     pm = get_object_or_404(PM, pk=pm_id)
