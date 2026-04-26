@@ -10,12 +10,15 @@ Sistema de gestión de **Sumarios Informativos Militares (SIM)** del
 **Tribunal de Personal del Ejército (TPE)** de Bolivia.
 Tecnología: Django + MySQL + Bootstrap 5.
 
-**VERSIÓN ACTUAL: v3.4** (Abril 2026)
+**VERSIÓN ACTUAL: v4.0** (Abril 2026)
 - v3.0: Rediseño completo (Admin1/2/3, Abogados diferenciados)
 - v3.1: Custodia de carpetas entre actores
 - v3.2: Gestión de agendas (Admin1)
-- v3.3: Rol AYUDANTE, Ejecutoria, mejoras en Buscador (v3.3.1)
-- v3.4: Votos y Asistencia del tribunal (Secretario de Actas), Rol ASESOR_JEFE, Miembros TPE
+- v3.3: Rol AYUDANTE, Ejecutoria, mejoras en Buscador
+- v3.4: Votos y Asistencia del tribunal, Rol ASESOR_JEFE, Miembros TPE
+- v3.5: Búsqueda por lotes de antecedentes militares
+- v3.5.1: Grado histórico por sumario, año de egreso y cálculo automático de ascensos
+- **v4.0: Estandarización completa de nombres de campos a snake_case (sin prefijos), auditoría de seguridad, índices y correcciones de integridad**
 
 ---
 
@@ -32,19 +35,19 @@ Tecnología: Django + MySQL + Bootstrap 5.
    → El Secretario de Actas confirma/modifica el dictamen
          ↓
 5. El Tribunal resuelve. Puede emitir:
-   ├── RES   (Primera Resolución TPE)      ← caso disciplinario normal
-   └── AUTOTPE (Auto TPE)                  ← sobreseído, nulidad, excusa, etc.
+   ├── Resolucion (Primera Resolución TPE)   ← caso disciplinario normal
+   └── AUTOTPE (Auto TPE)                    ← sobreseído, nulidad, excusa, etc.
          ↓
 6. Si el implicado apela:
-   ├── RR    (Recurso de Reconsideración)  ← ante el TPE
+   ├── RR    (Recurso de Reconsideración)  ← ante el TPE  [instancia='RECONSIDERACION']
    │         ↓
-   │   RES2 (Segunda Resolución)
+   │   Resolucion (Segunda Resolución)    [instancia='RECONSIDERACION']
    │         ↓
    └── RAP   (Recurso de Apelación al TSP) ← ante el Tribunal Supremo Policial
-             ↓
+             ↓  [RecursoTSP, instancia='APELACION']
          AUTOTSP (Auto del TSP: confirma/revoca/modifica)
              ↓
-         RAEE  (Aclaración, Explicación y Enmienda — si procede)
+         RAEE  (Aclaración, Explicación y Enmienda — RecursoTSP, instancia='ACLARACION_ENMIENDA')
              ↓
          AUTOTPE de Ejecutoria o Cumplimiento
 ```
@@ -58,8 +61,8 @@ muchos campos pueden ser `null`. El sistema debe tolerarlo sin errores.
 
 | Documento | Plazo | Campo calculado automáticamente |
 |-----------|-------|----------------------------------|
-| RR        | 15 días hábiles desde `RR_FECPRESEN` | `RR_FECLIMITE` |
-| RAP       | 3 días hábiles desde `RAP_FECOFI`    | `RAP_FECLIMITE` |
+| RR (Reconsideración) | 15 días hábiles desde `fecha_presentacion` | `fecha_limite` en Resolucion |
+| RAP (Apelación TSP)  | 3 días hábiles desde `fecha_oficio`        | `fecha_limite` en RecursoTSP |
 
 La función `add_business_days(fecha, dias)` en `models.py` calcula días hábiles
 excluyendo fines de semana y feriados de Bolivia 2026.
@@ -70,12 +73,12 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 ### Tabla central y actores
 
-| Modelo       | Tabla BD      | PK Python   | PK en BD | Descripción |
-|--------------|---------------|-------------|----------|-------------|
-| `PM`         | `pm`          | `pm_id`     | `id`     | Personal Militar |
-| `ABOG`       | `abog`        | `abog_id`   | `id`     | Abogados del Tribunal |
-| `VOCAL_TPE`  | `vocal_tpe`   | `id`        | `id`     | Vocales (Presidente, Vicepresidente, Vocal, Secretario de Actas) |
-| `SIM`        | `sim`         | `id`        | `id`     | Sumario Informativo Militar (tabla central) |
+| Modelo       | Tabla BD      | PK    | Descripción |
+|--------------|---------------|-------|-------------|
+| `PM`         | `pm`          | `id`  | Personal Militar |
+| `ABOG`       | `abog`        | `id`  | Abogados del Tribunal |
+| `VOCAL_TPE`  | `vocal_tpe`   | `id`  | Vocales (Presidente, Vicepresidente, Vocal, Secretario de Actas) |
+| `SIM`        | `sim`         | `id`  | Sumario Informativo Militar (tabla central) |
 
 ### Tablas puente (relaciones N:M)
 
@@ -86,139 +89,99 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 ### Documentos generados por el proceso
 
-| Modelo      | Tabla BD   | Descripción |
-|-------------|------------|-------------|
-| `AGENDA`    | `agenda`   | Sesión del tribunal (ordinaria/extraordinaria) |
-| `DICTAMEN`  | `dictamen` | Dictamen del abogado en una agenda para un SIM |
-| `RES`       | `res`      | Primera Resolución del TPE |
-| `RR`        | `rr`       | Recurso de Reconsideración (Segunda Resolución) |
-| `AUTOTPE`   | `autotpe`  | Auto del TPE (sobreseído, nulidad, excusa, ejecutoria, etc.) |
-| `RAP`       | `rap`      | Recurso de Apelación al TSP |
-| `AUTOTSP`   | `autotsp`  | Auto del TSP (respuesta a la apelación) |
-| `RAEE`      | `raee`     | Recurso de Aclaración, Explicación y Enmienda |
+| Modelo         | Tabla BD          | Descripción |
+|----------------|-------------------|-------------|
+| `AGENDA`       | `agenda`          | Sesión del tribunal (ordinaria/extraordinaria) |
+| `DICTAMEN`     | `dictamen`        | Dictamen del abogado en una agenda para un SIM |
+| `Resolucion`   | `resolucion`      | Primera Resolución (instancia='PRIMERA') y RR (instancia='RECONSIDERACION') |
+| `AUTOTPE`      | `autotpe`         | Auto del TPE (sobreseído, nulidad, excusa, ejecutoria, etc.) |
+| `RecursoTSP`   | `recurso_tsp`     | Recurso Apelación (instancia='APELACION') y RAEE (instancia='ACLARACION_ENMIENDA') |
+| `AUTOTSP`      | `autotsp`         | Auto del TSP (respuesta a la apelación) |
 | `DocumentoAdjunto` | `documentos_adjuntos` | PDFs escaneados adjuntos a cualquier tabla |
 
 ---
 
-## Convenciones de nombres en los campos
+## Convenciones de nombres (v4.0 — IMPORTANTE)
 
+### Campos en BD
+- Todos los campos usan **snake_case sin prefijos de tabla** (estándar Django).
+- Ejemplos: `sim.codigo`, `pm.grado`, `pm.paterno`, `agenda.fecha_prog`, `resolucion.numero`
+- NO existe `SIM_COD`, `PM_GRADO`, `AG_FECPROG` ni ningún prefijo en mayúscula.
+
+### Datos almacenados
 - Todos los campos de texto se guardan en **MAYÚSCULAS** (el método `save()` de cada modelo lo hace automáticamente).
-- Prefijos por modelo:
-  - `PM_*` → Personal Militar
-  - `AB_*` → Abogado
-  - `SIM_*` → Sumario
-  - `AG_*` → Agenda
-  - `DIC_*` → Dictamen
-  - `RES_*` → Resolución
-  - `RR_*` → Recurso Reconsideración
-  - `TPE_*` → Auto TPE
-  - `RAP_*` → Recurso Apelación
-  - `TSP_*` → Auto TSP
-  - `RAE_*` → RAEE
+
+### Campos clave por modelo (referencia rápida)
+
+| Modelo | Campos principales |
+|--------|-------------------|
+| `PM` | `ci`, `escalafon`, `grado`, `arma`, `especialidad`, `nombre`, `paterno`, `materno`, `estado`, `anio_promocion`, `no_ascendio`, `foto` |
+| `ABOG` | `ci`, `grado`, `arma`, `especialidad`, `nombre`, `paterno`, `materno` |
+| `SIM` | `codigo`, `version`, `origen` (FK self), `motivo_reapertura`, `fecha_ingreso`, `estado`, `fase`, `objeto`, `resumen`, `auto_final`, `tipo` |
+| `PM_SIM` | `pm`, `sim`, `grado_en_fecha` |
+| `AGENDA` | `numero`, `tipo`, `estado`, `fecha_prog`, `fecha_real` |
+| `DICTAMEN` | `sim`, `agenda`, `abog`, `pm`, `secretario`, `numero`, `conclusion`, `conclusion_secretario`, `fecha_confirmacion` |
+| `Resolucion` | `instancia`, `sim`, `abog`, `agenda`, `pm`, `dictamen`, `resolucion_origen`, `numero`, `fecha`, `texto`, `tipo`, `resumen`, `fecha_presentacion`, `fecha_limite`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
+| `AUTOTPE` | `sim`, `abog`, `agenda`, `pm`, `resolucion`, `recurso_tsp`, `numero`, `fecha`, `texto`, `tipo`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif`, `memo_numero`, `memo_fecha`, `memo_fecha_entrega` |
+| `RecursoTSP` | `instancia`, `sim`, `abog`, `pm`, `resolucion`, `recurso_origen`, `fecha_presentacion`, `numero_oficio`, `fecha_oficio`, `fecha_limite`, `tipo`, `numero`, `fecha`, `texto`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
+| `DocumentoAdjunto` | `tabla`, `registro_id`, `tipo`, `archivo`, `nombre`, `fecha_registro` |
 
 ---
 
-## Roles de usuario del sistema (ACTUAL v3.3)
+## Roles de usuario del sistema
 
-| Rol            | Vista principal | Responsabilidades | Flujo |
-|----------------|-----------------|-------------------|-------|
-| **ADMIN1**     | `admin1_views.py` | Ingresa SIM, asigna abogados, crea agendas, ordena ejecutoria | Inicio del proceso |
-| **ADMIN2**     | `admin2_views.py` | Gestiona custodia/entrega de carpetas entre actores | Control de trazabilidad |
-| **ADMIN3**     | `admin3_views.py` | Envía notificaciones a terceros | Comunicaciones |
-| **ABOG1**      | `abogado_views.py` | Crea dictámenes, resoluciones, autos | Trabajo legal principal |
-| **ABOG2**      | `abogado_views.py` | Crea autos sin agenda previa (Excusa, Ejecutoria) | Autos antes de sesión |
-| **ABOG3**      | `abogado_views.py` | Confirma entrega de carpetas, suscribe autos | Recibe y valida |
-| **VOCAL**      | `vocal_views.py` | Secretario de Actas: modifica dictámenes según votos, registra votos y asistencia de vocales, comunica resultado a abogados | Sesiones del tribunal |
-| **AYUDANTE**   | `ayudante_views.py` | Registra resoluciones históricas, notificaciones, RAEE | Base de datos |
-| **BUSCADOR**   | `buscador_views.py` | Consulta historial de personal (público) | Reportes |
+| Rol            | Vista principal | Responsabilidades |
+|----------------|-----------------|-------------------|
+| **ADMIN1**     | `admin1_views.py` | Ingresa SIM, asigna abogados, crea agendas, ordena ejecutoria |
+| **ADMIN2**     | `admin2_views.py` | Gestiona custodia/entrega de carpetas entre actores |
+| **ADMIN3**     | `admin3_views.py` | Envía notificaciones a terceros |
+| **ABOG1**      | `abogado_views.py` | Crea dictámenes, resoluciones, autos |
+| **ABOG2**      | `abogado_views.py` | Crea autos sin agenda previa (Excusa, Ejecutoria) |
+| **ABOG3**      | `abogado_views.py` | Confirma entrega de carpetas, suscribe autos |
+| **VOCAL**      | `vocal_views.py` | Secretario de Actas: modifica dictámenes, registra votos y asistencia |
+| **ASESOR_JEFE**| `asesor_jefe_views.py` | Monitoreo de agendas y estadísticas (solo lectura) |
+| **AYUDANTE**   | `ayudante_views.py` | Registra resoluciones históricas, notificaciones, RAEE |
+| **BUSCADOR**   | `buscador_views.py` | Consulta historial de personal (requiere login) |
+
+### Seguridad de vistas
+- Todas las vistas usan `@rol_requerido` o `@login_required` (decorators.py).
+- `buscador_views.py` y `export_views.py`: todas las vistas tienen `@login_required`.
+- Ninguna vista es pública — el buscador también requiere autenticación.
 
 ---
 
-## Flujo de Custodia de Carpetas (v3.3 — CORRECCIONES IMPORTANTES)
+## Flujo de Custodia de Carpetas
 
 El sistema controla la **trazabilidad** de carpetas entre actores mediante `CustodiaSIM`.
 
 ### Modelo CustodiaSIM — Campos clave:
-- `SIM_FASE`: PARA_DICTAMEN, PARA_AGENDA, PARA_RESOLUCION, EN_APELACION, PARA_EJECUTORIA
+- `fase` (en SIM): PARA_DICTAMEN, PARA_AGENDA, PARA_RESOLUCION, EN_APELACION, PARA_EJECUTORIA
 - `estado`: **ACTIVA** (en poder del custodio), **PENDIENTE_CONFIRMACION** (entregada, aguardando confirmación)
 - `tipo_custodio`: ADMIN2_ARCHIVO, ABOG_ASESOR, ABOG_RR, ABOG_AUTOS, VOCAL_SESION, ADMIN1_AGENDADOR
-- `custodio_a`: FK a PM (si es abogado/vocal) o NULL (si es admin)
-
-### ⚠️ CORRECCIÓN v3.3: Flujo correcto de Admin2 (IMPORTANTE)
 
 **Regla cardinal:** Admin2 **SIEMPRE** crea la custodia cuando **ENTREGA**. NO cuando se registra o agenda.
 
-#### Paso 1: SIM Ingresa
+### Flujo resumido:
 ```
-ADMIN1: Registra SIM → estado=PARA_AGENDA
-ADMIN2: Recibe SIM → crea CustodiaSIM(tipo_custodio='ADMIN2_ARCHIVO', estado='ACTIVA')
-```
-
-#### Paso 2: AGENDA y ASIGNACIÓN
-```
-ADMIN1: Programa AGENDA para SIM
-ADMIN1: Asigna abogados (crea ABOG_SIM para cada abogado)
-SIM: SIM_ESTADO='PROCESO_EN_EL_TPE'
-ADMIN2: VE EN DASHBOARD que el SIM está agendado
-```
-
-#### Paso 3: ADMIN2 ENTREGA AL ABOGADO
-```
-ADMIN2 (Dashboard):
-  ① Selecciona SIM pendiente
-  ② Elige ABOGADO (consulta ABOG_SIM para ver quién está asignado)
-  ③ Hace clic "Entregar Carpeta"
-  
-SISTEMA AUTOMÁTICO:
-  ① Cierra custodia ADMIN2_ARCHIVO (fecha_entrega=now())
-  ② Crea NEW custodia: CustodiaSIM(
-       tipo_custodio='ABOG_ASESOR',
-       abog=abogado_seleccionado,
-       estado='PENDIENTE_CONFIRMACION'  ← CLAVE: No está confirmada aún
-     )
-  ③ ABOGADO ve SIM en su dashboard (asignado + custodia pendiente)
-```
-
-#### Paso 4: ABOGADO CONFIRMA RECEPCIÓN
-```
-ABOGADO (Dashboard):
-  ① Ve custodia PENDIENTE_CONFIRMACION en su SIM
-  ② Hace clic "Confirmar Recepción"
-  
-SISTEMA:
-  ① Cambia custodia.estado='ACTIVA'
-  ② Ahora abogado puede crear DICTAMEN
-```
-
-#### Paso 5: ABOGADO DEVUELVE A ADMIN2
-```
-ABOGADO (después de crear Dictamen/RES):
-  ① Hace clic "Devolver Carpeta"
-  
-SISTEMA:
-  ① Cierra custodia del abogado (fecha_entrega=now())
-  ② Crea NEW custodia: CustodiaSIM(tipo_custodio='ADMIN2_ARCHIVO', estado='ACTIVA')
-  ③ ADMIN2 ve SIM nuevamente en su poder
-```
-
-#### Paso 6: ADMIN2 ENTREGA A VOCAL (para sesión)
-```
-ADMIN2: Entrega carpeta al Secretario de Actas (VOCAL)
-SISTEMA: Crea custodia con tipo_custodio='VOCAL_SESION', estado='PENDIENTE_CONFIRMACION'
-VOCAL: Confirma recepción, sesiona, confirma Dictamen
-VOCAL: Devuelve a ADMIN2
+ADMIN1 registra SIM → ADMIN2 recibe (CustodiaSIM ACTIVA)
+    ↓
+ADMIN2 entrega a ABOGADO (estado='PENDIENTE_CONFIRMACION')
+    ↓
+ABOGADO confirma recepción (estado='ACTIVA') → puede crear DICTAMEN
+    ↓
+ABOGADO devuelve a ADMIN2 → ADMIN2 entrega a VOCAL (sesión)
+    ↓
+VOCAL devuelve a ADMIN2 → ciclo continúa según resolución
 ```
 
 ### Dashboard de ADMIN2 (3 secciones):
-1. **📁 Carpetas en su poder** → `estado='ACTIVA'` (confirmadas)
-2. **⏳ Pendiente confirmar recepción** → `estado='PENDIENTE_CONFIRMACION'` (entregadas pero no confirmadas aún)
-3. **🔄 Carpetas prestadas** → Custodia de otros actores activas en ese momento
+1. Carpetas en su poder → `estado='ACTIVA'`
+2. Pendiente confirmar recepción → `estado='PENDIENTE_CONFIRMACION'`
+3. Carpetas prestadas → Custodias activas de otros actores
 
 ---
 
-## Flujo de Ejecutoria (v3.3.1)
-
-Nuevas resoluciones pueden generar **Autos de Ejecutoria**:
+## Flujo de Ejecutoria
 
 ```
 ADMIN1: "Entregar para Ejecutoria" (botón en RES)
@@ -226,36 +189,36 @@ ADMIN1: "Entregar para Ejecutoria" (botón en RES)
 ADMIN2: confirma entrega a ABOG2
     ↓
 ABOG2: crea Auto de Ejecutoria (sin agenda previa)
-    → SIM_FASE = 'EN_EJECUTORIA' (pendiente de notificación)
+    → sim.fase = 'EN_EJECUTORIA'
     ↓
-ADMIN3: notifica Auto de Ejecutoria (TPE_FECNOT)
-    → SIM_FASE = 'EJECUTORIA_NOTIFICADA'
+ADMIN3: notifica Auto → sim.fase = 'EJECUTORIA_NOTIFICADA'
     ↓
-ADMIN1 (dashboard): ve lista y hace clic "Ordenar Archivo a SPRODA"
-    → SIM_FASE = 'PENDIENTE_ARCHIVO'
+ADMIN1: "Ordenar Archivo a SPRODA" → sim.fase = 'PENDIENTE_ARCHIVO'
     ↓
-ADMIN2: realiza archivo a SPRODA + copias a secciones (si corresponde)
-         confirma en su dashboard "Confirmar Archivo SPRODA"
-    → SIM_FASE = 'CONCLUIDO' → SIM_ESTADO = 'PROCESO_CONCLUIDO_TPE'
+ADMIN2: confirma archivo → sim.fase = 'CONCLUIDO' → sim.estado = 'PROCESO_CONCLUIDO_TPE'
     ↓
-Si hay memorándum (TPE_MEMO_NUM): ADMIN2 registra retorno cuando vuelva
-    → SIM_ESTADO = 'PROCESO_EJECUTADO'
+Si hay memorándum (autotpe.memo_numero): ADMIN2 registra retorno
+    → sim.estado = 'PROCESO_EJECUTADO'
 ```
 
-**Nota:** Los Autos de Ejecutoria NO requieren agenda previa
-(a diferencia de RES que sí la requieren)
+Los Autos de Ejecutoria NO requieren agenda previa (a diferencia de RES).
 
 ---
 
 ## Numeración automática de documentos
 
 El sistema genera números automáticamente con formato `NN/AA` (ej: `05/26`).
-- Dictamen: `DIC_NUM`
-- Resolución: `RES_NUM`
-- RR: `RR_NUM`
-- Auto TPE: `TPE_NUM`
 
-La lógica de numeración está en las vistas correspondientes, no en los modelos.
+| Documento | Campo | Función |
+|-----------|-------|---------|
+| Dictamen | `dictamen.numero` | en la vista al crear |
+| Resolución | `resolucion.numero` | `next_resolucion_num()` en models.py |
+| Recurso TSP | `recurso_tsp.numero` | `next_recurso_tsp_num()` en models.py |
+| Auto TPE | `autotpe.numero` | en la vista al crear |
+
+Las funciones usan `select_for_update()` dentro de `transaction.atomic()` para evitar duplicados concurrentes.
+
+**Restricción BD:** `Resolucion` tiene `unique_together = [('numero', 'instancia')]` — no puede repetirse el mismo número dentro de la misma instancia (PRIMERA o RECONSIDERACION).
 
 ---
 
@@ -279,54 +242,28 @@ INF. | CAB. | ART. | ING. | COM. | INT. | SAN. | TGRAFO. | AV. | MÚS.
 
 ---
 
-## Estados del SIM — CORRECCIONES IMPORTANTES (v3.3)
+## Estados del SIM
 
-| Estado | Significado | Transición | Disparado por |
-|--------|-------------|-----------|---|
-| `PARA_AGENDA` | SIM ingresa al TPE, pendiente ser agendado. ⚠️ **ESTADO INICIAL** | ADMIN1 registra SIM | ADMIN1 |
-| `PROCESO_EN_EL_TPE` | SIM fue agendado en una AGENDA. Abogado está trabajando (Dictamen/RES). | `PARA_AGENDA` → `PROCESO_EN_EL_TPE` | ADMIN1 cuando lo agenda + asigna abogados |
-| `EN_APELACION_TSP` | Se emitió RAP (Recurso de Apelación). El caso subió al TSP. | Cuando se crea `RAP` para el SIM | ABOGADO cuando registra RAP o AYUDANTE |
-| `PROCESO_CONCLUIDO_TPE` | Auto de Ejecutoria notificado Y archivado en SPRODA. Admin2 confirmó el archivo. | `PROCESO_EN_EL_TPE` → `PROCESO_CONCLUIDO_TPE` | ADMIN2 al confirmar archivo SPRODA (`SIM_FASE='CONCLUIDO'`) |
-| `PROCESO_EJECUTADO` | Memorándum del Auto de Ejecutoria retornó (si correspondía). Proceso totalmente terminado. | `PROCESO_CONCLUIDO_TPE` → `PROCESO_EJECUTADO` | ADMIN2 registra retorno de memorándum |
-| `OBSERVADO` | ⚠️ **RARO, evitar**: Sumario con observaciones pendientes. Requiere corrección. | Flujo poco común | Correcciones manuales |
+| Estado | Significado | Disparado por |
+|--------|-------------|---------------|
+| `PARA_AGENDA` | **Estado inicial**. SIM ingresa al TPE, pendiente ser agendado | ADMIN1 registra SIM |
+| `PROCESO_EN_EL_TPE` | SIM agendado. Abogado trabajando | ADMIN1 al agendar + asignar ABOG |
+| `EN_APELACION_TSP` | Se registró RAP. El caso subió al TSP | ABOGADO o AYUDANTE al crear RecursoTSP |
+| `PROCESO_CONCLUIDO_TPE` | Ejecutoria notificada Y archivada en SPRODA | ADMIN2 al confirmar archivo SPRODA |
+| `PROCESO_EJECUTADO` | Memorándum retornó. Proceso totalmente terminado | ADMIN2 al registrar retorno de memo |
+| `OBSERVADO` | Raro. Sumario con observaciones pendientes | Correcciones manuales |
 
-### ⚠️ Correcciones de lógica de estados:
-
-1. **NO hay transición directa** `PARA_AGENDA` → `CONCLUIDO`
-   - El SIM debe pasar por `PROCESO_EN_EL_TPE` primero
-   - Esto requiere: AGENDA + DICTAMEN + RES/AUTOTPE + EJECUCIÓN
-
-2. **`PARA_AGENDA` es el ÚNICO estado inicial**
-   - Cuando ADMIN1 registra un SIM nuevo, SIEMPRE comienza aquí
-   - SIM_ESTADO='PARA_AGENDA' en el modelo
-
-3. **`PROCESO_EN_EL_TPE` se activa cuando:**
-   - ✅ ADMIN1 crea AGENDA para el SIM
-   - ✅ ADMIN1 asigna al menos 1 ABOG a ese SIM (tabla ABOG_SIM)
-   - ✅ El sistema cambia automáticamente a `PROCESO_EN_EL_TPE`
-
-4. **`EN_APELACION_TSP` se activa solo si:**
-   - ✅ Se registra un RAP para ese SIM (tabla RAP)
-   - Si hay RR pero NO RAP → sigue en `PROCESO_EN_EL_TPE`
-   - Si hay RAP → automáticamente pasa a `EN_APELACION_TSP`
-
-5. **`CONCLUIDO` se activa solo cuando:**
-   - ✅ Se emite RES (Primera Resolución) O AUTOTPE (Auto)
-   - ✅ Se crea Auto de EJECUTORIA (paso final del proceso)
-   - ✅ VOCAL firma el Auto de Ejecutoria
-   - Entonces: SIM_ESTADO='CONCLUIDO'
-
-### Visualización en dashboards:
-- Color **AZUL** (`PARA_AGENDA`): Sumarios nuevos sin agendar
-- Color **AMARILLO** (`PROCESO_EN_EL_TPE`): Sumarios activos en el tribunal
-- Color **ROJO** (`EN_APELACION_TSP`): Sumarios apelados ante TSP
-- Color **GRIS** (`CONCLUIDO`): Casos terminados (archivados)
+### Colores en dashboards:
+- Azul: `PARA_AGENDA`
+- Amarillo: `PROCESO_EN_EL_TPE`
+- Rojo: `EN_APELACION_TSP`
+- Gris: `PROCESO_CONCLUIDO_TPE` / `PROCESO_EJECUTADO`
 
 ---
 
-## Tipos de Resolución (RES_TIPO)
+## Tipos de Resolución (`resolucion.tipo`)
 
-Incluye: ARCHIVO_OBRADOS, ADMINISTRATIVO, SANCIONES_DISCIPLINARIAS,
+ARCHIVO_OBRADOS, ADMINISTRATIVO, SANCIONES_DISCIPLINARIAS,
 SANCION_ARRESTO, SANCION_LETRA_B, SANCION_RETIRO_OBLIGATORIO, SANCION_BAJA,
 SOLICITUD_LETRA_D, SOLICITUD_LICENCIA_MAXIMA, SOLICITUD_ASCENSO,
 SOLICITUD_RESTITUCION_ANTIGUEDAD, SOLICITUD_RESTITUCION_DE_DERECHOS_PROFESIONALES,
@@ -334,7 +271,7 @@ SOLICITUD_ART_114, SOLICITUD_ART_117, SOLICITUD_ART_118, OTRO.
 
 ---
 
-## Tipos de Auto TPE (TPE_TIPO)
+## Tipos de Auto TPE (`autotpe.tipo`)
 
 SOBRESEIDO | NULIDAD_OBRADOS | SANCION_ARRESTO | SANCION_LETRA_B |
 SANCION_RETIRO_OBLIGATORIO | AUTO_CUMPLIMIENTO | AUTO_EJECUTORIA |
@@ -342,38 +279,72 @@ AUTO_EXCUSA | AUTO_RECHAZO_RECURSO
 
 ---
 
-## Buscador (v3.3.1) — Reportes de Historial
+## Grados Históricos y Años de Servicio (v3.5.1)
 
-**Cambios recientes:**
-- **PDF directo** (no ZIP): Reporte unificado con toda la información
-- **Estadísticas simplificadas**: Solo Sumarios, Resoluciones, Autos TPE
-- **Actuados por Sumario**: Vista detallada de cada documento:
-  - Nº Resolución + link descarga
-  - Fecha, Tipo, Notificación
-  - Auto TPE: Disposición, Notificación, Memorandum
-  - Objeto completo del sumario (no truncado)
+El sistema distingue dos conceptos de grado:
 
-**Archivos:** `buscador_views.py`, `dashboard_buscador.html`, `export_views.py`
+- **`pm.grado`**: grado **actual** del militar. Editable desde `/ayudante/pm/<id>/editar/`.
+- **`pm_sim.grado_en_fecha`**: grado que tenía el militar **al momento de ese sumario**. Extraído del documento escaneado, no cambia.
+
+### Campos de PM para carrera
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `anio_promocion` | IntegerField | Año de egreso (ej: `2000`). Base para todos los cálculos. |
+| `no_ascendio` | BooleanField | Marcar cuando el militar no ascendió al grado que le correspondía. |
+
+### Propiedades calculadas (sin columna en BD)
+
+```python
+pm.años_servicio             # año_actual - anio_promocion
+pm.grado_esperado            # grado según escalafón y años (None si no_ascendio=True)
+pm.estado_carrera_calculado  # ACTIVO / SERVICIO ACTIVO / LETRA A / SERVICIO PASIVO
+```
+
+### Tabla de ascensos (regla: N años completos + 1 día)
+
+| Sargentos / Suboficiales | Año | Oficiales | Año |
+|--------------------------|-----|-----------|-----|
+| SGTO. INCL. | 0  | SBTTE. | 0  |
+| SGTO. 2DO.  | 4  | TTE.   | 6  |
+| SGTO. 1RO.  | 7  | CAP.   | 11 |
+| SOF. INCL.  | 11 | MY.    | 16 |
+| SOF. 2DO.   | 16 | TCNL.  | 21 |
+| SOF. 1RO.   | 21 | CNL.   | 26 |
+| SOF. MY.    | 26 | GRAL. (postulación) | 31 |
+| SOF. MTRE. (si califica) | 31 | | |
 
 ---
 
-## Correcciones importantes ya aplicadas
+## Buscador — Reportes de Historial
 
-1. **SIM_FECTPE → SIM_FECING**: El campo de fecha se renombró correctamente.
-2. **id_abog sacado de SIM**: El abogado NO va directo en el SIM, va en `ABOG_SIM` (tabla puente).
-3. **Secretario de Actas**: Se agregó como cargo en `VOCAL_TPE` y como FK en `DICTAMEN`.
-4. **DICTAMEN tiene FK a PM**: Para mostrar el nombre del implicado (no del abogado).
-5. **RR y AUTOTPE tienen FK a ABOG**: El abogado puede ser diferente en cada documento.
-6. **Todos los textos en MAYÚSCULAS**: El método `save()` de cada modelo lo hace automáticamente.
-7. **Grados y armas en MAYÚSCULAS**: Importación masiva con Excel (`generar_plantilla_historico.py`).
-8. **Custodia v3**: Sistema completo de trazabilidad entre Admin2, Abogados, Vocales.
-9. **Ejecutoria**: Autos sin agenda previa, flujo simplificado para conclusión.
-10. **AUTOTSP/RecursoTSP**: Mantienen para compatibilidad histórica pero NO se muestran en estadísticas.
-11. **Admin nativo de Django (Abril 21 2026)**: Se restauró el panel de admin al estilo Django estándar (removidas personalizaciones de admin.py y desactivado admin_custom.css). El dashboard `/panel-admin/dashboard/` sigue siendo el panel principal personalizado del sistema.
+- Requiere `@login_required` (no es público).
+- **PDF directo** (no ZIP): Reporte unificado con toda la información del militar.
+- **Búsqueda por lotes**: múltiples militares por apellido paterno + materno.
+- **Exportación**: PDF individual, Excel individual, PDF lote, Excel lote.
+- El historial usa `PM.objects.get(id=personal_id)` y `SIM.objects.filter(militares__id=personal_id)`.
+
+**Archivos:** `buscador_views.py`, `export_views.py`, `dashboard_buscador.html`
 
 ---
 
-## Pendientes / Mejoras Futuras (actualizar al completar)
+## Correcciones y decisiones de diseño aplicadas (historial)
+
+1. **v4.0 — Estandarización snake_case**: Todos los campos renombrados de `PREFIJO_CAMPO` a `campo`. Ejemplo: `PM_GRADO` → `grado`, `SIM_COD` → `codigo`, `AG_FECPROG` → `fecha_prog`. Las 28 migraciones antiguas fueron eliminadas y se creó una sola `0001_initial` limpia.
+2. **v4.0 — Seguridad**: Todas las vistas de buscador y exportación protegidas con `@login_required`. `DEBUG` default cambiado a `False`. `ALLOWED_HOSTS` con fallback.
+3. **v4.0 — Integridad**: `max_length` de nombre/paterno/materno aumentado de 25→50; especialidad 15→30. `ABOG.ci` ahora `unique=True`. Índices en `SIM.estado`, `SIM.fase`, `SIM.fecha_ingreso`, `PM.paterno`. `Resolucion` tiene `unique_together = [('numero', 'instancia')]`. `resolucion_origen` FK cambiada de CASCADE a PROTECT.
+4. **v4.0 — Bug fix**: `_obtener_historial_completo()` usaba `pm_id=` (incorrecto) → corregido a `id=`.
+5. **Campo `TSP_RESUM` eliminado** del modelo RecursoTSP.
+6. **Admin nativo de Django**: Panel al estilo Django estándar. Dashboard `/panel-admin/dashboard/` es el panel principal del sistema.
+7. **Abogado NO va en SIM**: Va en `ABOG_SIM` (tabla puente).
+8. **DICTAMEN tiene FK a PM**: Para mostrar el nombre del implicado.
+9. **Todos los textos en MAYÚSCULAS**: El método `save()` de cada modelo lo hace automáticamente.
+10. **Reaperturas de SIM**: `sim.version` (int), `sim.origen` (FK self, PROTECT), `sim.motivo_reapertura` para manejar reaperturas tras nulidad.
+11. **Memorándum ejecutoria**: `autotpe.memo_numero`, `autotpe.memo_fecha`, `autotpe.memo_fecha_entrega`. Al registrar retorno → `sim.estado = 'PROCESO_EJECUTADO'`.
+
+---
+
+## Pendientes / Mejoras Futuras
 
 ### Buscador
 - [ ] Dashboard buscador: mostrar filtro por fecha de ingreso del SIM
@@ -382,36 +353,31 @@ AUTO_EXCUSA | AUTO_RECHAZO_RECURSO
 
 ### Modelos y Base de Datos
 - [ ] Agregar arma LOGÍSTICA en `ARMA_CHOICES` de PM
-- [ ] Campo `SIM_CAUSA_ESPECIFICA` para detallar causa más allá del tipo
+- [ ] Campo `causa_especifica` en SIM para detallar causa más allá del tipo
 
 ### Dashboards
 - [ ] Dashboard Abogado: mostrar todos los militares implicados en cada sumario
 - [ ] Dashboard Admin1: vista de "Sumarios Pendientes de Ejecutoria"
 - [ ] Dashboard Admin2: Indicador de "Carpetas con Demora en Entrega"
 
-### Documentación
-- [ ] Crear manual de usuario para cada rol
-- [ ] Documentar campos calculados automáticamente (plazos, numeración)
-- [ ] Guía de migración de datos históricos con `generar_plantilla_historico.py`
-
 ### Mejoras en Flujo
 - [ ] Notificación automática cuando demora custodia > 7 días
 - [ ] Recordatorio de plazos legales (RR, RAP)
-- [ ] Auditoria: registrar quién cambió qué y cuándo
+- [ ] Auditoría: registrar quién cambió qué y cuándo
 
 ---
 
-## Estructura de archivos clave (v3.3)
+## Estructura de archivos clave
 
 ```
 TPEsystem/
-├── CLAUDE.md                          ← ESTE ARCHIVO (memoria actual)
+├── CLAUDE.md                          ← ESTE ARCHIVO
 ├── TO_DO.py                           ← Lista de tareas pendientes
-├── EJEMPLOS_CONSULTAS.txt
 ├── tpe_app/
-│   ├── models.py                      ← Modelos: PM, SIM, AUTOTPE, DICTAMEN, Resolucion, etc.
-│   ├── forms.py                       ← Formularios (creación de SIM, Resoluciones, etc.)
-│   ├── urls.py                        ← Rutas: admin1/, admin2/, admin3/, abogado/, vocal/, buscador/, ayudante/
+│   ├── models.py                      ← Modelos: PM, SIM, AUTOTPE, Resolucion, RecursoTSP, etc.
+│   ├── forms.py                       ← Formularios (SIM, Resoluciones, Autos, Wizards)
+│   ├── urls.py                        ← Rutas por rol
+│   ├── decorators.py                  ← @rol_requerido para control de acceso
 │   ├── views/
 │   │   ├── admin1_views.py            ← Ingresa SIM, asigna abogados, crea agendas
 │   │   ├── admin2_views.py            ← Custodia: entrega/recepción de carpetas
@@ -419,40 +385,43 @@ TPEsystem/
 │   │   ├── abogado_views.py           ← Dictámenes, Resoluciones, Autos (ABOG1/2/3)
 │   │   ├── abogado_documentos_views.py ← Crear RES, RR, AUTOTPE, Auto Excusa, Ejecutoria
 │   │   ├── vocal_views.py             ← Confirmar dictámenes (Secretario de Actas)
-│   │   ├── buscador_views.py          ← Historial personal (reportes PDF/Excel)
+│   │   ├── asesor_jefe_views.py       ← Dashboard supervisor (solo lectura)
+│   │   ├── buscador_views.py          ← Historial personal (requiere @login_required)
 │   │   ├── ayudante_views.py          ← Registrar RES/RR/RAP/RAEE históricas
-│   │   ├── export_views.py            ← PDF y Excel del buscador
+│   │   ├── export_views.py            ← PDF y Excel del buscador (requiere @login_required)
 │   │   ├── ejecutoria_views.py        ← Auto de Ejecutoria
-│   │   ├── auth_views.py              ← Login/Logout
+│   │   └── auth_views.py              ← Login/Logout
 │   ├── templates/
 │   │   ├── dashboard_*.html           ← Dashboards por rol
-│   │   ├── dashboard_buscador.html    ← Buscador con actuados por sumario
-│   │   └── ... (otros templates)
-│   ├── migrations/                    ← Cambios de BD (Django)
-│   ├── queries/
-│   │   └── historial_personal.py      ← Consultas ORM reutilizables
-│   └── decorators.py                  ← @rol_requerido para control de acceso
+│   │   └── buscador/                  ← Templates del buscador
+│   ├── migrations/
+│   │   ├── 0001_initial.py            ← Esquema completo limpio (v4.0)
+│   │   └── 0002_*.py                  ← Mejoras de integridad (índices, max_length, constraints)
+│   └── queries/
+│       └── historial_personal.py      ← Consultas ORM reutilizables
 ├── config/
-│   └── settings.py                    ← Configuración Django, BD, SECRET_KEY
-├── requirements.txt
-└── manage.py                          ← Django CLI
+│   └── settings.py                    ← Django config. DEBUG default=False. ALLOWED_HOSTS con fallback.
+├── .env                               ← Credenciales (no subir a Git)
+└── manage.py
 ```
 
 **Accesos rápidos por rol:**
-- **ADMIN1**: `admin1_dashboard` (urls.py:24)
-- **ADMIN2**: `admin2_dashboard` (urls.py:25)
-- **ADMIN3**: `admin3_dashboard` (urls.py:26)
-- **ABOG**: `abogado_dashboard` (urls.py:12)
-- **VOCAL**: `vocal_dashboard` (urls.py:29)
-- **AYUDANTE**: `ayudante_dashboard` (urls.py:34)
-- **BUSCADOR**: `buscador_dashboard` (urls.py:23)
+- **ADMIN1**: `admin1_dashboard`
+- **ADMIN2**: `admin2_dashboard`
+- **ADMIN3**: `admin3_dashboard`
+- **ABOG**: `abogado_dashboard`
+- **VOCAL**: `vocal_dashboard`
+- **ASESOR_JEFE**: `asesor_jefe_dashboard`
+- **AYUDANTE**: `ayudante_dashboard`
+- **BUSCADOR**: `buscador_dashboard`
 
 ---
 
 ## Notas de desarrollo
 
-- Base de datos: MySQL (configurada en settings.py, credenciales en .env)
+- Base de datos: MySQL (credenciales en .env — DB: `db_sumarios_militares`, usuario: `root`)
 - ORM: siempre usar Django ORM, nunca SQL crudo
 - Las migraciones van en `tpe_app/migrations/`
 - Para importación masiva de datos: usar `generar_plantilla_historico.py` → genera Excel
 - Feriados Bolivia 2026 ya configurados en `models.py` para cálculo de días hábiles
+- Superusuario inicial: `admin` / `admin123` (cambiar en producción)
