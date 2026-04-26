@@ -26,7 +26,7 @@ from openpyxl import load_workbook
 from tpe_app.models import (
     PM, SIM, PM_SIM, AGENDA, AUTOTPE,
     AUTOTSP, DICTAMEN, ABOG_SIM,
-    Resolucion, RecursoTSP,
+    Resolucion, RecursoTSP, Notificacion,
 )
 
 
@@ -583,7 +583,7 @@ class Command(BaseCommand):
                 continue
 
             fec_notif = parsear_fecha(row[8]) if not es_vacio(row[8]) else None
-            _, creada = Resolucion.objects.get_or_create(
+            res, creada = Resolucion.objects.get_or_create(
                 sim=sim,
                 instancia='PRIMERA',
                 numero=truncar(res_num, 15),
@@ -592,11 +592,15 @@ class Command(BaseCommand):
                     'texto': resol or desc or 'SIN TEXTO',
                     'tipo': tipo_res(resol, desc),
                     'agenda': ag,
-                    'fecha_notif': fec_notif,
                 },
             )
             if creada:
                 self.stats['res'] += 1
+                if fec_notif:
+                    Notificacion.objects.get_or_create(
+                        resolucion=res,
+                        defaults={'tipo': 'FIRMA', 'fecha': fec_notif},
+                    )
 
     # ── Hoja AUTOS ───────────────────────────────────────────────────────────
     def _importar_autos(self, ws):
@@ -798,11 +802,11 @@ class Command(BaseCommand):
             _, creada = RecursoTSP.objects.get_or_create(
                 sim=sim,
                 instancia='APELACION',
-                fechaPRESEN=fec_pres,
+                fecha_presentacion=fec_pres,
                 defaults={
                     'resolucion': rr_obj,
                     'numero_oficio': ofi_num,
-                    'fechaOFI': ofi_fec,
+                    'fecha_oficio': ofi_fec,
                     'texto': resol,
                 },
             )

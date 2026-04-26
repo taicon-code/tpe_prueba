@@ -24,7 +24,7 @@ from datetime import date
 from tpe_app.models import (
     PM, ABOG, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
     AGENDA, DICTAMEN, AUTOTPE, AUTOTSP,
-    Resolucion, RecursoTSP,
+    Resolucion, RecursoTSP, Notificacion,
     PerfilUsuario,
 )
 
@@ -247,19 +247,19 @@ class Command(BaseCommand):
                 tipo='SANCION_ARRESTO',
                 texto='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: SANCIONAR AL MY. ROBERTO FLORES CONDORI CON 60 DIAS DE ARRESTO.',
                 abog=abog2, agenda=agenda1, dictamen=dic3, pm=pm_my,
-                tipo_notif='FIRMA',
-                notif_a='MY. ROBERTO FLORES CONDORI',
-                fecha_notif=date(2026, 2, 21),
             ))
+        Notificacion.objects.get_or_create(resolucion=res3, defaults=dict(
+            tipo='FIRMA', notificado_a='MY. ROBERTO FLORES CONDORI', fecha=date(2026, 2, 21)
+        ))
         # Auto de ejecutoria (caso terminado sin apelación)
-        AUTOTPE.objects.get_or_create(sim=sim3, tipo='AUTO_EJECUTORIA', defaults=dict(
+        auto3, _ = AUTOTPE.objects.get_or_create(sim=sim3, tipo='AUTO_EJECUTORIA', defaults=dict(
             numero='08/26',
             fecha=date(2026, 3, 15),
             texto='SE DECLARA EJECUTORIADA LA RESOLUCION NRO. 15/26 DEL TRIBUNAL DE PERSONAL.',
             abog=abog2, agenda=agenda2, pm=pm_my, resolucion=res3,
-            tipo_notif='FIRMA',
-            notif_a='MY. ROBERTO FLORES CONDORI',
-            fecha_notif=date(2026, 3, 16),
+        ))
+        Notificacion.objects.get_or_create(autotpe=auto3, defaults=dict(
+            tipo='FIRMA', notificado_a='MY. ROBERTO FLORES CONDORI', fecha=date(2026, 3, 16)
         ))
         self.stdout.write('   📌 Escenario 3: DJE-003/26 → CONCLUIDO (RES + AUTO EJECUTORIA)')
 
@@ -295,10 +295,10 @@ class Command(BaseCommand):
                 tipo='SANCION_LETRA_B',
                 texto='EL TRIBUNAL RESUELVE: SANCIONAR AL TCNL. MARIO GUTIERREZ LOPEZ CON LETRA B (PERDIDA DE ANTIGUEDAD).',
                 abog=abog1, agenda=agenda1, dictamen=dic4, pm=pm_tcnl,
-                tipo_notif='CEDULON',
-                notif_a='TCNL. MARIO GUTIERREZ LOPEZ',
-                fecha_notif=date(2026, 2, 3),
             ))
+        Notificacion.objects.get_or_create(resolucion=res4, defaults=dict(
+            tipo='CEDULON', notificado_a='TCNL. MARIO GUTIERREZ LOPEZ', fecha=date(2026, 2, 3)
+        ))
         rr4, _ = Resolucion.objects.get_or_create(
             sim=sim4, instancia='RECONSIDERACION', resolucion_origen=res4,
             defaults=dict(
@@ -343,10 +343,10 @@ class Command(BaseCommand):
                 tipo='SANCION_RETIRO_OBLIGATORIO',
                 texto='EL TRIBUNAL RESUELVE: SANCIONAR AL CNL. CARLOS MENDOZA TORREZ CON RETIRO OBLIGATORIO.',
                 abog=abog2, agenda=agenda1, dictamen=dic5, pm=pm_cnl,
-                tipo_notif='EDICTO',
-                notif_a='PERIODICO LA RAZON',
-                fecha_notif=date(2025, 12, 15),
             ))
+        Notificacion.objects.get_or_create(resolucion=res5, defaults=dict(
+            tipo='EDICTO', notificado_a='PERIODICO LA RAZON', fecha=date(2025, 12, 15)
+        ))
         rr5, _ = Resolucion.objects.get_or_create(
             sim=sim5, instancia='RECONSIDERACION', resolucion_origen=res5,
             defaults=dict(
@@ -360,9 +360,9 @@ class Command(BaseCommand):
         rap5, _ = RecursoTSP.objects.get_or_create(
             sim=sim5, instancia='APELACION', resolucion=rr5,
             defaults=dict(
-                fechaPRESEN=date(2026, 1, 15),
+                fecha_presentacion=date(2026, 1, 15),
                 numero_oficio='OFI-012/26',
-                fechaOFI=date(2026, 1, 16),
+                fecha_oficio=date(2026, 1, 16),
                 pm=pm_cnl,
             ))
         self.stdout.write('   📌 Escenario 5: DJE-005/26 → EN APELACION TSP (RES + RR + RAP)')
@@ -392,14 +392,14 @@ class Command(BaseCommand):
                 fecha_confirmacion=date(2026, 2, 5),
             )
         )
-        AUTOTPE.objects.get_or_create(sim=sim6, tipo='SOBRESEIDO', defaults=dict(
+        auto6, _ = AUTOTPE.objects.get_or_create(sim=sim6, tipo='SOBRESEIDO', defaults=dict(
             numero='03/26',
             fecha=date(2026, 2, 10),
             texto='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: DECLARAR SOBRESEIDO EL PROCESO SUMARIO CONTRA SOF. 1RO. HUGO MAMANI CHOQUE POR INSUFICIENCIA PROBATORIA.',
             abog=abog2, agenda=agenda2, pm=pm_sof,
-            tipo_notif='FIRMA',
-            notif_a='SOF. 1RO. HUGO MAMANI CHOQUE',
-            fecha_notif=date(2026, 2, 11),
+        ))
+        Notificacion.objects.get_or_create(autotpe=auto6, defaults=dict(
+            tipo='FIRMA', notificado_a='SOF. 1RO. HUGO MAMANI CHOQUE', fecha=date(2026, 2, 11)
         ))
         self.stdout.write('   📌 Escenario 6: DJE-006/26 → CONCLUIDO (SOBRESEÍDO)')
 
@@ -435,10 +435,10 @@ class Command(BaseCommand):
                 tipo='SOLICITUD_ASCENSO',
                 texto='EL TRIBUNAL RESUELVE: APROBAR LA SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR DE MY. ANA MARIA GARCIA RIOS.',
                 abog=abog1, agenda=agenda3, dictamen=dic7, pm=pm_my2,
-                tipo_notif='FIRMA',
-                notif_a='MY. ANA MARIA GARCIA RIOS',
-                fecha_notif=date(2026, 3, 16),
             ))
+        Notificacion.objects.get_or_create(resolucion=res7, defaults=dict(
+            tipo='FIRMA', notificado_a='MY. ANA MARIA GARCIA RIOS', fecha=date(2026, 3, 16)
+        ))
         self.stdout.write('   📌 Escenario 7: SLC-001/26 → CONCLUIDO (SOLICITUD ASCENSO aprobada)')
 
         # ── RESUMEN FINAL ─────────────────────────────────────────────────────

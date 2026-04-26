@@ -26,6 +26,7 @@ from openpyxl import load_workbook
 from tpe_app.models import (
     PM, SIM, PM_SIM,
     AUTOTPE, Resolucion, RecursoTSP,
+    Notificacion, Memorandum,
 )
 
 
@@ -410,7 +411,7 @@ class Command(BaseCommand):
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                _, creado = Resolucion.objects.get_or_create(
+                res, creado = Resolucion.objects.get_or_create(
                     sim=sim,
                     instancia='PRIMERA',
                     numero=res_num.upper(),
@@ -418,13 +419,17 @@ class Command(BaseCommand):
                         fecha=res_fec,
                         tipo=res_tipo,
                         texto=res_res.upper(),
-                        tipo_notif=_str(fila.get("tipo_notif")),
-                        notif_a=_str(fila.get("notif_a")),
-                        fecha_notif=_parse_fecha(fila.get("fecha_notif")),
-                        hora_notif=_parse_hora(fila.get("hora_notif")),
                     ),
                 )
                 if creado:
+                    t = _str(fila.get("tipo_notif"))
+                    if t:
+                        Notificacion.objects.get_or_create(resolucion=res, defaults=dict(
+                            tipo=t,
+                            notificado_a=_str(fila.get("notif_a")) or '',
+                            fecha=_parse_fecha(fila.get("fecha_notif")),
+                            hora=_parse_hora(fila.get("hora_notif")),
+                        ))
                     self._registrar_ok(hoja)
                 else:
                     self._registrar_skip(hoja, num_fila, f"{cod}/{res_num}: ya existe")
@@ -467,7 +472,7 @@ class Command(BaseCommand):
                 ).exists():
                     self._registrar_skip(hoja, num_fila, f"{cod}: RR ya existe para {res_num}"); continue
 
-                Resolucion.objects.create(
+                rr = Resolucion.objects.create(
                     sim=sim,
                     instancia='RECONSIDERACION',
                     resolucion_origen=res,
@@ -476,11 +481,15 @@ class Command(BaseCommand):
                     fecha=_parse_fecha(fila.get("RR_FEC")),
                     texto=(_str(fila.get("RR_RESOL")) or "").upper() or None,
                     resumen=((_str(fila.get("RR_RESUM")) or "")[:20]) or None,
-                    tipo_notif=_str(fila.get("RR_TIPO_NOTIF")),
-                    notif_a=_str(fila.get("RR_NOT")),
-                    fecha_notif=_parse_fecha(fila.get("RR_FECNOT")),
-                    hora_notif=_parse_hora(fila.get("RR_HORNOT")),
                 )
+                t = _str(fila.get("RR_TIPO_NOTIF"))
+                if t:
+                    Notificacion.objects.create(
+                        resolucion=rr, tipo=t,
+                        notificado_a=_str(fila.get("RR_NOT")) or '',
+                        fecha=_parse_fecha(fila.get("RR_FECNOT")),
+                        hora=_parse_hora(fila.get("RR_HORNOT")),
+                    )
                 self._registrar_ok(hoja)
             except Exception as exc:
                 self._registrar_error(hoja, num_fila, exc)
@@ -503,21 +512,25 @@ class Command(BaseCommand):
                 if RecursoTSP.objects.filter(sim=sim, instancia='APELACION').exists():
                     self._registrar_skip(hoja, num_fila, f"{cod}: RAP ya existe"); continue
 
-                RecursoTSP.objects.create(
+                rap = RecursoTSP.objects.create(
                     sim=sim,
                     instancia='APELACION',
-                    fechaPRESEN=_parse_fecha(fila.get("RAP_FECPRESEN")),
+                    fecha_presentacion=_parse_fecha(fila.get("RAP_FECPRESEN")),
                     numero_oficio=_str(fila.get("RAP_OFI")),
-                    fechaOFI=_parse_fecha(fila.get("RAP_FECOFI")),
+                    fecha_oficio=_parse_fecha(fila.get("RAP_FECOFI")),
                     numero=_str(fila.get("RAP_NUM")),
                     fecha=_parse_fecha(fila.get("RAP_FEC")),
                     tipo=_str(fila.get("RAP_TIPO")),
                     texto=(_str(fila.get("RAP_RESOL")) or "").upper() or None,
-                    tipo_notif=_str(fila.get("RAP_TIPO_NOTIF")),
-                    notif_a=_str(fila.get("RAP_NOT")),
-                    fecha_notif=_parse_fecha(fila.get("RAP_FECNOT")),
-                    hora_notif=_parse_hora(fila.get("RAP_HORNOT")),
                 )
+                t = _str(fila.get("RAP_TIPO_NOTIF"))
+                if t:
+                    Notificacion.objects.create(
+                        recurso_tsp=rap, tipo=t,
+                        notificado_a=_str(fila.get("RAP_NOT")) or '',
+                        fecha=_parse_fecha(fila.get("RAP_FECNOT")),
+                        hora=_parse_hora(fila.get("RAP_HORNOT")),
+                    )
                 self._registrar_ok(hoja)
             except Exception as exc:
                 self._registrar_error(hoja, num_fila, exc)
@@ -537,20 +550,29 @@ class Command(BaseCommand):
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                AUTOTPE.objects.create(
+                auto = AUTOTPE.objects.create(
                     sim=sim,
                     numero=_str(fila.get("numero")),
                     fecha=_parse_fecha(fila.get("fecha")),
                     tipo=_str(fila.get("tipo")),
                     texto=(_str(fila.get("texto")) or "").upper() or None,
-                    tipo_notif=_str(fila.get("tipo_notif")),
-                    notif_a=_str(fila.get("notif_a")),
-                    fecha_notif=_parse_fecha(fila.get("fecha_notif")),
-                    hora_notif=_parse_hora(fila.get("hora_notif")),
-                    memo_numero=_str(fila.get("memo_numero")),
-                    memo_fecha=_parse_fecha(fila.get("memo_fecha")),
-                    memo_fecha_entrega=_parse_fecha(fila.get("memo_fecha_entrega")),
                 )
+                t = _str(fila.get("tipo_notif"))
+                if t:
+                    Notificacion.objects.create(
+                        autotpe=auto, tipo=t,
+                        notificado_a=_str(fila.get("notif_a")) or '',
+                        fecha=_parse_fecha(fila.get("fecha_notif")),
+                        hora=_parse_hora(fila.get("hora_notif")),
+                    )
+                memo_num = _str(fila.get("memo_numero"))
+                if memo_num:
+                    Memorandum.objects.create(
+                        autotpe=auto,
+                        numero=memo_num,
+                        fecha=_parse_fecha(fila.get("memo_fecha")),
+                        fecha_entrega=_parse_fecha(fila.get("memo_fecha_entrega")),
+                    )
                 self._registrar_ok(hoja)
             except Exception as exc:
                 self._registrar_error(hoja, num_fila, exc)
@@ -570,18 +592,22 @@ class Command(BaseCommand):
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                RecursoTSP.objects.create(
+                raee = RecursoTSP.objects.create(
                     sim=sim,
                     instancia='ACLARACION_ENMIENDA',
                     numero=_str(fila.get("RAE_NUM")),
                     fecha=_parse_fecha(fila.get("RAE_FEC")),
                     texto=(_str(fila.get("RAE_RESOL")) or "").upper() or None,
                     resumen=(_str(fila.get("RAE_RESUM")) or "")[:200] or None,
-                    tipo_notif=_str(fila.get("RAE_TIPO_NOTIF")),
-                    notif_a=_str(fila.get("RAE_NOT")),
-                    fecha_notif=_parse_fecha(fila.get("RAE_FECNOT")),
-                    hora_notif=_parse_hora(fila.get("RAE_HORNOT")),
                 )
+                t = _str(fila.get("RAE_TIPO_NOTIF"))
+                if t:
+                    Notificacion.objects.create(
+                        recurso_tsp=raee, tipo=t,
+                        notificado_a=_str(fila.get("RAE_NOT")) or '',
+                        fecha=_parse_fecha(fila.get("RAE_FECNOT")),
+                        hora=_parse_hora(fila.get("RAE_HORNOT")),
+                    )
                 self._registrar_ok(hoja)
             except Exception as exc:
                 self._registrar_error(hoja, num_fila, exc)

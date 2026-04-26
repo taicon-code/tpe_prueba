@@ -1120,6 +1120,18 @@ class Notificacion(models.Model):
 
     def save(self, *args, **kwargs):
         self.notificado_a = self.notificado_a.upper() if self.notificado_a else self.notificado_a
+        vinculados = sum([
+            bool(self.resolucion_id),
+            bool(self.autotpe_id),
+            bool(self.autotsp_id),
+            bool(self.recurso_tsp_id),
+        ])
+        if vinculados != 1:
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                f'Notificacion debe estar vinculada a exactamente un documento '
+                f'(resolucion, autotpe, autotsp o recurso_tsp). Actualmente: {vinculados}.'
+            )
         super().save(*args, **kwargs)
 
 

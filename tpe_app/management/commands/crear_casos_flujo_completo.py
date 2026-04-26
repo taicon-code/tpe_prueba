@@ -29,7 +29,7 @@ from datetime import date, timedelta
 from tpe_app.models import (
     PM, ABOG, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
     AGENDA, DICTAMEN, AUTOTPE, CustodiaSIM,
-    Resolucion, RecursoTSP,
+    Resolucion, RecursoTSP, Notificacion,
     PerfilUsuario, add_business_days
 )
 
@@ -292,18 +292,18 @@ class Command(BaseCommand):
             instancia='PRIMERA', numero='01/26', fecha=date(2026, 4, 23),
             tipo='SOLICITUD_ASCENSO',
             texto=f'APROBADO ASCENSO DE {pm1.grado} {pm1.paterno}',
-            tipo_notif='FIRMA', notif_a=f'{pm1.grado} {pm1.paterno}',
-            fecha_notif=date(2026, 4, 24)
         )
+        Notificacion.objects.create(resolucion=res1, tipo='FIRMA',
+            notificado_a=f'{pm1.grado} {pm1.paterno}', fecha=date(2026, 4, 24))
 
         res2 = Resolucion.objects.create(
             sim=sim, pm=pm2, abog=abog2, agenda=agendas['ag1'], dictamen=dic2,
             instancia='PRIMERA', numero='02/26', fecha=date(2026, 4, 23),
             tipo='SOLICITUD_ASCENSO',
             texto=f'DENEGADA SOLICITUD ASCENSO {pm2.grado} {pm2.paterno}',
-            tipo_notif='FIRMA', notif_a=f'{pm2.grado} {pm2.paterno}',
-            fecha_notif=date(2026, 4, 24)
         )
+        Notificacion.objects.create(resolucion=res2, tipo='FIRMA',
+            notificado_a=f'{pm2.grado} {pm2.paterno}', fecha=date(2026, 4, 24))
         self.stdout.write(f'   > RES 01/26 (PROCEDENTE) y 02/26 (IMPROCEDENTE)')
 
         auto = AUTOTPE.objects.create(
@@ -311,9 +311,9 @@ class Command(BaseCommand):
             tipo='AUTO_EJECUTORIA', numero='01/26',
             fecha=date(2026, 4, 25),
             texto='EJECUTORIADA RESOLUCION 01/26 ASCENSO APROBADO',
-            tipo_notif='FIRMA', notif_a=f'{pm1.grado} {pm1.paterno}',
-            fecha_notif=date(2026, 4, 26)
         )
+        Notificacion.objects.create(autotpe=auto, tipo='FIRMA',
+            notificado_a=f'{pm1.grado} {pm1.paterno}', fecha=date(2026, 4, 26))
         self.stdout.write(f'   > Auto de Ejecutoria 01/26')
 
         sim.estado = 'CONCLUIDO'
@@ -358,9 +358,9 @@ class Command(BaseCommand):
             tipo='AUTO_EJECUTORIA', numero='02/26',
             fecha=date(2026, 3, 25),
             texto='AUTO DE EJECUCION DE OFICIO - SOBRESEIMIENTO PREVENTIVO',
-            tipo_notif='FIRMA', notif_a=f'{pm.grado} {pm.paterno}',
-            fecha_notif=date(2026, 3, 26)
         )
+        Notificacion.objects.create(autotpe=auto, tipo='FIRMA',
+            notificado_a=f'{pm.grado} {pm.paterno}', fecha=date(2026, 3, 26))
         self.stdout.write(f'   > Auto de Ejecutoria 02/26 (directo, sin RES)')
 
         CustodiaSIM.objects.create(
@@ -433,27 +433,27 @@ class Command(BaseCommand):
             instancia='PRIMERA', numero='03/26', fecha=date(2026, 3, 20),
             tipo='ADMINISTRATIVO',
             texto=f'SANCION ADMINISTRATIVA A {pm1.grado} {pm1.paterno} - 30 DIAS',
-            tipo_notif='FIRMA', notif_a=f'{pm1.grado} {pm1.paterno}',
-            fecha_notif=date(2026, 3, 21)
         )
+        Notificacion.objects.create(resolucion=res1, tipo='FIRMA',
+            notificado_a=f'{pm1.grado} {pm1.paterno}', fecha=date(2026, 3, 21))
 
         res2 = Resolucion.objects.create(
             sim=sim, pm=pm2, abog=abog1, agenda=agendas['ag2'], dictamen=dic2,
             instancia='PRIMERA', numero='04/26', fecha=date(2026, 3, 20),
             tipo='SANCION_RETIRO_OBLIGATORIO',
             texto=f'SANCION RETIRO OBLIGATORIO A {pm2.grado} {pm2.paterno}',
-            tipo_notif='FIRMA', notif_a=f'{pm2.grado} {pm2.paterno}',
-            fecha_notif=date(2026, 3, 21)
         )
+        Notificacion.objects.create(resolucion=res2, tipo='FIRMA',
+            notificado_a=f'{pm2.grado} {pm2.paterno}', fecha=date(2026, 3, 21))
 
         res3 = Resolucion.objects.create(
             sim=sim, pm=pm3, abog=abog2, agenda=agendas['ag2'], dictamen=dic3,
             instancia='PRIMERA', numero='05/26', fecha=date(2026, 3, 20),
             tipo='SANCION_LETRA_B',
             texto=f'SANCION LETRA B A {pm3.grado} {pm3.paterno}',
-            tipo_notif='FIRMA', notif_a=f'{pm3.grado} {pm3.paterno}',
-            fecha_notif=date(2026, 3, 21)
         )
+        Notificacion.objects.create(resolucion=res3, tipo='FIRMA',
+            notificado_a=f'{pm3.grado} {pm3.paterno}', fecha=date(2026, 3, 21))
         self.stdout.write(f'   > RES 03/26, 04/26, 05/26 emitidas')
 
         auto1 = AUTOTPE.objects.create(
@@ -461,9 +461,9 @@ class Command(BaseCommand):
             tipo='AUTO_EJECUTORIA', numero='03/26',
             fecha=date(2026, 4, 5),
             texto=f'EJECUTORIADA RESOLUCION 03/26 CONTRA {pm1.grado} {pm1.paterno}',
-            tipo_notif='FIRMA', notif_a=f'{pm1.grado} {pm1.paterno}',
-            fecha_notif=date(2026, 4, 6)
         )
+        Notificacion.objects.create(autotpe=auto1, tipo='FIRMA',
+            notificado_a=f'{pm1.grado} {pm1.paterno}', fecha=date(2026, 4, 6))
         self.stdout.write(f'   > PM1: CONFORMADO - RES 03/26 > Auto > CONCLUIDO')
 
         rr2 = Resolucion.objects.create(
@@ -486,9 +486,9 @@ class Command(BaseCommand):
         rap3 = RecursoTSP.objects.create(
             sim=sim, pm=pm3, abog=abog2, resolucion=rr3,
             instancia='APELACION',
-            fechaPRESEN=date(2026, 4, 8),
+            fecha_presentacion=date(2026, 4, 8),
             numero_oficio='OFI-FLUJO-001/26',
-            fechaOFI=date(2026, 4, 9)
+            fecha_oficio=date(2026, 4, 9)
         )
 
         sim.estado = 'EN_APELACION_TSP'
