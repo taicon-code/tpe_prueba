@@ -413,6 +413,8 @@ class SIM(models.Model):
     motivo_reapertura  = models.CharField(max_length=30, choices=MOTIVO_REAPERTURA_CHOICES,
                             null=True, blank=True, verbose_name='Motivo de Reapertura')
     fecha_ingreso      = models.DateField(null=True, blank=True, db_index=True, verbose_name='Fecha de Ingreso al TPE')
+    numero_carpeta     = models.IntegerField(null=True, blank=True, verbose_name='N° Carpeta Física',
+                            help_text='Número de ubicación física de la carpeta en el archivo (ej: 40–250)')
     estado             = models.CharField(max_length=30, choices=ESTADO_CHOICES,
                             default='PARA_AGENDA', db_index=True, verbose_name='Estado')
     fase               = models.CharField(max_length=30, choices=FASE_CHOICES,

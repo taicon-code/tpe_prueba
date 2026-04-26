@@ -10,7 +10,7 @@ class SIMForm(forms.ModelForm):
 
     class Meta:
         model = SIM
-        fields = ['codigo', 'fecha_ingreso', 'tipo', 'objeto', 'resumen', 'auto_final']
+        fields = ['codigo', 'fecha_ingreso', 'numero_carpeta', 'tipo', 'objeto', 'resumen', 'auto_final']
         widgets = {
             'codigo': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -19,6 +19,11 @@ class SIMForm(forms.ModelForm):
                 'spellcheck': 'false'
             }),
             'fecha_ingreso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'numero_carpeta': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 85',
+                'min': '1',
+            }),
             'tipo': forms.Select(attrs={'class': 'form-control'}),
             'objeto': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -33,12 +38,13 @@ class SIMForm(forms.ModelForm):
             }),
         }
         labels = {
-            'codigo':       'Código del Sumario',
-            'fecha_ingreso': 'Fecha de Ingreso al TPE',
-            'tipo':         'Tipo de Sumario',
-            'objeto':       'Objeto del Sumario',
-            'resumen':      'Resumen',
-            'auto_final':   'Auto Final / Dictamen',
+            'codigo':          'Código del Sumario',
+            'fecha_ingreso':   'Fecha de Ingreso al TPE',
+            'numero_carpeta':  'N° Carpeta Física',
+            'tipo':            'Tipo de Sumario',
+            'objeto':          'Objeto del Sumario',
+            'resumen':         'Resumen',
+            'auto_final':      'Auto Final / Dictamen',
         }
 
     def clean_codigo(self):

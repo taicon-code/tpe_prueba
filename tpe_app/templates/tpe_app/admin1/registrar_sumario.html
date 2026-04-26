@@ -19,7 +19,7 @@
     <div class="card">
         <h2>📄 Datos del Sumario</h2>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
             <div>
                 <label class="field-label">{{ form.codigo.label }}</label>
                 {{ form.codigo }}
@@ -30,6 +30,12 @@
                 <label class="field-label">{{ form.fecha_ingreso.label }}</label>
                 {{ form.fecha_ingreso }}
                 {% if form.fecha_ingreso.errors %}<div class="field-error">{{ form.fecha_ingreso.errors.0 }}</div>{% endif %}
+            </div>
+            <div>
+                <label class="field-label">{{ form.numero_carpeta.label }}</label>
+                {{ form.numero_carpeta }}
+                {% if form.numero_carpeta.errors %}<div class="field-error">{{ form.numero_carpeta.errors.0 }}</div>{% endif %}
+                <small class="field-hint">Número de ubicación física de la carpeta</small>
             </div>
         </div>
 
@@ -100,7 +106,7 @@
                     </div>
                 </div>
 
-                <!-- Fila 2: Nombre + Paterno + Materno + Foto + Eliminar -->
+                <!-- Fila 2: Nombre + Paterno + Materno + Año Egreso + Foto + Eliminar -->
                 <div class="militar-row-bottom">
                     <div>
                         <label class="field-label-sm">{{ mform.nombre.label }}</label>
@@ -115,6 +121,10 @@
                     <div>
                         <label class="field-label-sm">{{ mform.materno.label }}</label>
                         {{ mform.materno }}
+                    </div>
+                    <div>
+                        <label class="field-label-sm">{{ mform.anio_promocion.label }}</label>
+                        {{ mform.anio_promocion }}
                     </div>
                     <div>
                         <label class="field-label-sm">📷 {{ mform.foto.label }}</label>
@@ -173,6 +183,10 @@
                     <div>
                         <label class="field-label-sm">{{ formset.empty_form.materno.label }}</label>
                         {{ formset.empty_form.materno }}
+                    </div>
+                    <div>
+                        <label class="field-label-sm">{{ formset.empty_form.anio_promocion.label }}</label>
+                        {{ formset.empty_form.anio_promocion }}
                     </div>
                     <div>
                         <label class="field-label-sm">📷 {{ formset.empty_form.foto.label }}</label>
@@ -260,7 +274,7 @@
     }
     .militar-row-bottom {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1.2fr auto;
+        grid-template-columns: 1fr 1fr 1fr 0.8fr 1.2fr auto;
         gap: 0.75rem;
         align-items: end;
     }

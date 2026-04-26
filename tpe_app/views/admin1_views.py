@@ -206,13 +206,21 @@ def registrar_sumario(request):
                                         nombre=pm_data.get('nombre'),
                                         paterno=pm_data.get('paterno'),
                                         materno=pm_data.get('materno'),
+                                        anio_promocion=pm_data.get('anio_promocion'),
+                                        no_ascendio=pm_data.get('no_ascendio', False),
                                         estado='ACTIVO',
                                     )
                                 else:
-                                    # Actualizar especialidad si ya existe
+                                    # Actualizar campos complementarios si el PM ya existe
+                                    update_fields = []
                                     if pm_data.get('especialidad'):
                                         pm.especialidad = pm_data['especialidad']
-                                        pm.save(update_fields=['especialidad'])
+                                        update_fields.append('especialidad')
+                                    if pm_data.get('anio_promocion') and not pm.anio_promocion:
+                                        pm.anio_promocion = pm_data['anio_promocion']
+                                        update_fields.append('anio_promocion')
+                                    if update_fields:
+                                        pm.save(update_fields=update_fields)
 
                             # Guardar foto si se subió para este militar
                             foto = request.FILES.get(f'pm_sim_set-{i}-foto')
