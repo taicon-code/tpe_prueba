@@ -62,12 +62,20 @@ def _obtener_estado_actual(personal_id):
 def buscador_dashboard(request):
     """Dashboard para búsqueda unificada - búsqueda por código SIM, nombre, apellido paterno, materno"""
 
-    query = request.GET.get('q', '').strip()
+    query     = request.GET.get('q', '').strip()
+    promocion = request.GET.get('promocion', '').strip()
     personal_seleccionado = None
     historial = None
     estado = None
     resultados_pm = []
     resultados_sim = []
+
+    # Búsqueda por año de promoción (lista todos los militares de esa promoción)
+    if promocion and promocion.isdigit():
+        resultados_pm = list(
+            PM.objects.filter(PM_PROMOCION=int(promocion))
+            .order_by('PM_PATERNO', 'PM_NOMBRE')
+        )
 
     if query:
         # Normalizamos el query: quitamos tildes y ñ → 'alarcón'→'ALARCON', 'siñani'→'SINANI'
@@ -103,6 +111,7 @@ def buscador_dashboard(request):
 
     context = {
         'query': query,
+        'promocion': promocion,
         'resultados_pm': resultados_pm,
         'resultados_sim': resultados_sim,
         'total_pm': len(resultados_pm),

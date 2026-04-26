@@ -110,6 +110,39 @@ def get_pendientes_ejecutoria():
     return por_res, por_rr
 
 
+def calcular_grado_esperado(anio_promocion, escalafon, anio_referencia=None):
+    """Retorna el grado que debería tener un militar según años de servicio y escalafón.
+    Regla: debe completar N años enteros; el día 1 del año N+1 ostenta el grado superior.
+    """
+    if not anio_promocion or not escalafon:
+        return None
+    if anio_referencia is None:
+        from datetime import datetime
+        anio_referencia = datetime.now().year
+    años = anio_referencia - anio_promocion
+
+    if escalafon in ('GENERAL', 'OFICIAL SUPERIOR', 'OFICIAL SUBALTERNO'):
+        if años < 6:    return 'SBTTE.'
+        elif años < 11: return 'TTE.'
+        elif años < 16: return 'CAP.'
+        elif años < 21: return 'MY.'
+        elif años < 26: return 'TCNL.'
+        elif años < 31: return 'CNL.'
+        else:           return 'GRAL. BRIG.'
+
+    elif escalafon in ('SUBOFICIAL', 'SARGENTO'):
+        if años < 4:    return 'SGTO. INCL.'
+        elif años < 7:  return 'SGTO. 2DO.'
+        elif años < 11: return 'SGTO. 1RO.'
+        elif años < 16: return 'SOF. INCL.'
+        elif años < 21: return 'SOF. 2DO.'
+        elif años < 26: return 'SOF. 1RO.'
+        elif años < 31: return 'SOF. MY.'
+        else:           return 'SOF. MTRE.'
+
+    return None
+
+
 # ============================================================
 # MODELO 1: PM — Personal Militar
 # ============================================================
@@ -183,27 +216,31 @@ class PM(models.Model):
         ('MÚS.',          'MÚS.'),
     ]
     ESTADO_CHOICES = [
-        ('ACTIVO',         'ACTIVO'),
-        ('RETIRO OBLIGATORIO', 'RETIRO OBLIGATORIO'),
-        ('RESERVA ACTIVA', 'RESERVA ACTIVA'),
-        ('BAJA',           'BAJA'),
-        ('FALLECIDO',      'FALLECIDO'),
-        ('NO HABIDO',      'NO HABIDO'),
-        ('OTRO',           'OTRO'),
+        ('ACTIVO',              'ACTIVO'),
+        ('SERVICIO ACTIVO',     'SERVICIO ACTIVO'),
+        ('LETRA A',             'LETRA A'),
+        ('SERVICIO PASIVO',     'SERVICIO PASIVO'),
+        ('RETIRO OBLIGATORIO',  'RETIRO OBLIGATORIO'),
+        ('RESERVA ACTIVA',      'RESERVA ACTIVA'),
+        ('BAJA',                'BAJA'),
+        ('FALLECIDO',           'FALLECIDO'),
+        ('NO HABIDO',           'NO HABIDO'),
+        ('OTRO',                'OTRO'),
     ]
 
-    pm_id        = models.BigAutoField(primary_key=True, db_column='id')
-    PM_CI        = models.DecimalField(max_digits=13, decimal_places=0, unique=True, null=True, blank=True, verbose_name='Cédula de Identidad')
-    PM_ESCALAFON = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
-    PM_GRADO     = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado')
-    PM_ARMA      = models.CharField(max_length=20, choices=ARMA_CHOICES,      null=True, blank=True, verbose_name='Arma')
-    PM_ESPEC     = models.CharField(max_length=15, null=True, blank=True, verbose_name='Especialidad')
-    PM_NOMBRE    = models.CharField(max_length=25, verbose_name='Nombre')
-    PM_PATERNO   = models.CharField(max_length=25, verbose_name='Apellido Paterno')
-    PM_MATERNO   = models.CharField(max_length=25, null=True, blank=True, verbose_name='Apellido Materno')
-    PM_ESTADO    = models.CharField(max_length=25, choices=ESTADO_CHOICES, default='ACTIVO', verbose_name='Estado')
-    PM_PROMOCION = models.DateField(null=True, blank=True, verbose_name='Fecha de Promoción')
-    PM_FOTO      = models.ImageField(upload_to='fotos_pm/', null=True, blank=True, verbose_name='Foto')
+    pm_id           = models.BigAutoField(primary_key=True, db_column='id')
+    PM_CI           = models.DecimalField(max_digits=13, decimal_places=0, unique=True, null=True, blank=True, verbose_name='Cédula de Identidad')
+    PM_ESCALAFON    = models.CharField(max_length=20, choices=ESCALAFON_CHOICES, null=True, blank=True, verbose_name='Escalafón')
+    PM_GRADO        = models.CharField(max_length=20, choices=GRADO_CHOICES,     null=True, blank=True, verbose_name='Grado Actual')
+    PM_ARMA         = models.CharField(max_length=20, choices=ARMA_CHOICES,      null=True, blank=True, verbose_name='Arma')
+    PM_ESPEC        = models.CharField(max_length=15, null=True, blank=True, verbose_name='Especialidad')
+    PM_NOMBRE       = models.CharField(max_length=25, verbose_name='Nombre')
+    PM_PATERNO      = models.CharField(max_length=25, verbose_name='Apellido Paterno')
+    PM_MATERNO      = models.CharField(max_length=25, null=True, blank=True, verbose_name='Apellido Materno')
+    PM_ESTADO       = models.CharField(max_length=25, choices=ESTADO_CHOICES, default='ACTIVO', verbose_name='Estado')
+    PM_PROMOCION    = models.IntegerField(null=True, blank=True, verbose_name='Año de Egreso')
+    PM_NO_ASCENDIO  = models.BooleanField(default=False, verbose_name='No ascendió al grado correspondiente')
+    PM_FOTO         = models.ImageField(upload_to='fotos_pm/', null=True, blank=True, verbose_name='Foto')
 
     class Meta:
         db_table            = 'pm'
@@ -213,12 +250,45 @@ class PM(models.Model):
 
     def __str__(self):
         return f"{self.get_PM_GRADO_display()} {self.PM_NOMBRE} {self.PM_PATERNO}"
+
     def save(self, *args, **kwargs):
         self.PM_NOMBRE  = self.PM_NOMBRE.upper()  if self.PM_NOMBRE  else self.PM_NOMBRE
         self.PM_PATERNO = self.PM_PATERNO.upper() if self.PM_PATERNO else self.PM_PATERNO
         self.PM_MATERNO = self.PM_MATERNO.upper() if self.PM_MATERNO else self.PM_MATERNO
         self.PM_ESPEC   = self.PM_ESPEC.upper()   if self.PM_ESPEC   else self.PM_ESPEC
         super().save(*args, **kwargs)
+
+    @property
+    def años_servicio(self):
+        if not self.PM_PROMOCION:
+            return None
+        from datetime import datetime
+        return datetime.now().year - self.PM_PROMOCION
+
+    @property
+    def grado_esperado(self):
+        """Grado que debería tener según su año de egreso y escalafón."""
+        if self.PM_NO_ASCENDIO or not self.PM_PROMOCION or not self.PM_ESCALAFON:
+            return None
+        return calcular_grado_esperado(self.PM_PROMOCION, self.PM_ESCALAFON)
+
+    @property
+    def estado_carrera_calculado(self):
+        """Estado de carrera según años de servicio."""
+        años = self.años_servicio
+        if años is None:
+            return None
+        if años < 30:
+            return 'ACTIVO'
+        elif años < 35:
+            # Generales y SOF. MTRE. que ascendieron permanecen ACTIVO hasta el año 35
+            es_tope = (self.PM_GRADO in ('GRAL. EJTO.', 'GRAL. DIV.', 'GRAL. BRIG.', 'SOF. MTRE.')
+                       and not self.PM_NO_ASCENDIO)
+            return 'ACTIVO' if es_tope else 'SERVICIO ACTIVO'
+        elif años == 35:
+            return 'LETRA A'
+        else:
+            return 'SERVICIO PASIVO'
 
 # ============================================================
 # MODELO 2: ABOG — Abogados del Tribunal
@@ -503,8 +573,13 @@ class SIM(models.Model):
 # ============================================================
 class PM_SIM(models.Model):
 
-    sim = models.ForeignKey(SIM, on_delete=models.CASCADE,  verbose_name='Sumario')
-    pm  = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Militar')
+    sim                  = models.ForeignKey(SIM, on_delete=models.CASCADE,  verbose_name='Sumario')
+    pm                   = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Militar')
+    PMSIM_GRADO_EN_FECHA = models.CharField(
+        max_length=20, choices=PM.GRADO_CHOICES,
+        null=True, blank=True,
+        verbose_name='Grado al momento del sumario'
+    )
 
     class Meta:
         db_table            = 'pm_sim'

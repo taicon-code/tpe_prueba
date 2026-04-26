@@ -75,6 +75,7 @@ from .ayudante_views import (
     ayudante_wizard_paso4,
     ayudante_wizard_resumen,
     ayudante_wizard_buscar_sim,
+    ayudante_editar_pm,
 )
 from .ejecutoria_views import (
     pendientes_ejecutoria,

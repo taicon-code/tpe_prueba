@@ -27,44 +27,71 @@
                 <div id="formset-container">
                     {% for form_militar in formset %}
                         <div class="formset-row card mb-2 p-3">
+
+                            {{ form_militar.non_field_errors }}
+
                             <div class="row g-2">
                                 <div class="col-md-2">
-                                    <label>CI</label>
+                                    <label class="form-label">CI</label>
                                     {{ form_militar.PM_CI }}
                                 </div>
                                 <div class="col-md-2">
-                                    <label>Nombre</label>
+                                    <label class="form-label">Nombre</label>
                                     {{ form_militar.PM_NOMBRE }}
                                 </div>
                                 <div class="col-md-2">
-                                    <label>Paterno</label>
+                                    <label class="form-label">Paterno</label>
                                     {{ form_militar.PM_PATERNO }}
                                 </div>
                                 <div class="col-md-2">
-                                    <label>Materno</label>
+                                    <label class="form-label">Materno</label>
                                     {{ form_militar.PM_MATERNO }}
                                 </div>
                                 <div class="col-md-2">
-                                    <label>Grado</label>
-                                    {{ form_militar.PM_GRADO }}
+                                    <label class="form-label">Escalafón</label>
+                                    {{ form_militar.PM_ESCALAFON }}
                                 </div>
                                 <div class="col-md-2">
-                                    <label>Arma</label>
+                                    <label class="form-label">Arma</label>
                                     {{ form_militar.PM_ARMA }}
                                 </div>
                             </div>
-                            <div class="row g-2 mt-2">
-                                <div class="col-md-8">
-                                    <label>Especialidad</label>
+
+                            <div class="row g-2 mt-1">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold text-success">
+                                        Grado en el Sumario
+                                        <small class="text-muted fw-normal d-block">El que dice el documento</small>
+                                    </label>
+                                    {{ form_militar.PMSIM_GRADO_EN_FECHA }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Año de Egreso</label>
+                                    {{ form_militar.PM_PROMOCION }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Especialidad</label>
                                     {{ form_militar.PM_ESPEC }}
                                 </div>
-                                <div class="col-md-4 d-flex align-items-end">
+                                <div class="col-md-2 d-flex align-items-end">
                                     <button type="button" class="btn btn-danger btn-sm w-100 delete-form-btn">
-                                        <i class="bi bi-trash"></i> Borrar Militar
+                                        <i class="bi bi-trash"></i> Borrar
                                     </button>
-                                    {{ form_militar.DELETE }}
+                                    <div style="display:none;">{{ form_militar.DELETE }}</div>
                                 </div>
                             </div>
+
+                            <div class="row g-2 mt-1">
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        {{ form_militar.PM_NO_ASCENDIO }}
+                                        <label class="form-check-label text-warning fw-semibold">
+                                            No ascendió al grado correspondiente a su año de egreso
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     {% endfor %}
                 </div>
@@ -104,7 +131,7 @@ document.getElementById('add-form').addEventListener('click', function() {
     if (!firstForm) return;
 
     const newForm = firstForm.cloneNode(true);
-    newForm.querySelectorAll('input[type="text"], select, input[type="date"], input[type="file"]').forEach(field => {
+    newForm.querySelectorAll('input[type="text"], input[type="number"], select, input[type="date"], input[type="file"]').forEach(field => {
         const name = field.getAttribute('name');
         if (name) {
             const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
@@ -114,14 +141,16 @@ document.getElementById('add-form').addEventListener('click', function() {
         }
     });
 
-    const deleteCheckbox = newForm.querySelector('input[type="checkbox"]');
-    if (deleteCheckbox) {
-        const delName = deleteCheckbox.getAttribute('name');
-        const newDelName = delName.replace(`-${formCount}`, `-${newFormIndex}`);
-        deleteCheckbox.setAttribute('name', newDelName);
-        deleteCheckbox.setAttribute('id', `id_${newDelName}`);
-        deleteCheckbox.checked = false;
-    }
+    // Resetear todos los checkboxes (DELETE y PM_NO_ASCENDIO)
+    newForm.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        const name = cb.getAttribute('name');
+        if (name) {
+            const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
+            cb.setAttribute('name', newName);
+            cb.setAttribute('id', `id_${newName}`);
+            cb.checked = false;
+        }
+    });
 
     container.appendChild(newForm);
     totalForms.value = newFormIndex + 1;

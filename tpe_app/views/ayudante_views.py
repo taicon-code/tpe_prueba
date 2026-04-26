@@ -487,7 +487,11 @@ def ayudante_wizard_paso2(request, sim_id):
                                     pm = PM.objects.create(**pm_data)
 
                             if pm:
-                                PM_SIM.objects.get_or_create(sim=sim, pm=pm)
+                                grado_fecha = inline_form.cleaned_data.get('pmsim_grado_en_fecha') or None
+                                pm_sim, _ = PM_SIM.objects.get_or_create(sim=sim, pm=pm)
+                                if grado_fecha:
+                                    pm_sim.PMSIM_GRADO_EN_FECHA = grado_fecha
+                                    pm_sim.save(update_fields=['PMSIM_GRADO_EN_FECHA'])
 
                     messages.success(request, 'Militares guardados correctamente.')
                     return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
@@ -714,4 +718,54 @@ def ayudante_wizard_resumen(request, sim_id):
         'autos_tsp': autos_tsp,
         'paso_actual': 5,
         'total_pasos': 4,
+    })
+
+
+# ============================================================================
+# EDICIÓN DE PERSONAL MILITAR — Grado actual, año de egreso, no ascendió
+# ============================================================================
+
+@rol_requerido('AYUDANTE', 'ADMIN1_AGENDADOR')
+def ayudante_editar_pm(request, pm_id):
+    """Permite al Ayudante actualizar grado actual, año de egreso y estado de ascenso."""
+    pm = get_object_or_404(PM, pm_id=pm_id)
+
+    if request.method == 'POST':
+        grado      = request.POST.get('PM_GRADO') or None
+        escalafon  = request.POST.get('PM_ESCALAFON') or None
+        estado     = request.POST.get('PM_ESTADO') or pm.PM_ESTADO
+        promocion  = request.POST.get('PM_PROMOCION') or None
+        no_asc     = request.POST.get('PM_NO_ASCENDIO') == 'on'
+
+        if promocion:
+            try:
+                promocion = int(promocion)
+                if not (1950 <= promocion <= 2100):
+                    messages.error(request, 'Año de egreso fuera de rango (1950-2100).')
+                    promocion = pm.PM_PROMOCION
+            except ValueError:
+                messages.error(request, 'Año de egreso inválido.')
+                promocion = pm.PM_PROMOCION
+        else:
+            promocion = None
+
+        pm.PM_GRADO       = grado
+        pm.PM_ESCALAFON   = escalafon
+        pm.PM_ESTADO      = estado
+        pm.PM_PROMOCION   = promocion
+        pm.PM_NO_ASCENDIO = no_asc
+        pm.save(update_fields=['PM_GRADO', 'PM_ESCALAFON', 'PM_ESTADO', 'PM_PROMOCION', 'PM_NO_ASCENDIO'])
+
+        messages.success(request, f'Datos de {pm.PM_NOMBRE} {pm.PM_PATERNO} actualizados.')
+        next_url = request.POST.get('next') or request.GET.get('next') or 'ayudante_dashboard'
+        return redirect(next_url)
+
+    return render(request, 'tpe_app/ayudante/editar_pm.html', {
+        'pm': pm,
+        'grado_choices': PM.GRADO_CHOICES,
+        'escalafon_choices': PM.ESCALAFON_CHOICES,
+        'estado_choices': PM.ESTADO_CHOICES,
+        'grado_esperado': pm.grado_esperado,
+        'estado_calculado': pm.estado_carrera_calculado,
+        'años_servicio': pm.años_servicio,
     })

@@ -453,8 +453,16 @@
       <button type="submit">Buscar</button>
     </form>
 
+    <form method="GET" action="" class="search-box mt-2" style="max-width: 360px;">
+      <input type="number" name="promocion" value="{{ promocion }}"
+             placeholder="Año de egreso: Ej: 2000" min="1950" max="2100"
+             style="border-radius: 6px 0 0 6px;">
+      <button type="submit" style="background:#6366f1;">Buscar Promoción</button>
+    </form>
+
     <div class="search-info">
-      💡 Búsqueda rápida: CI exacto, nombre, apellido, o código DJE
+      Búsqueda rápida: CI exacto, nombre, apellido, o código DJE &nbsp;|&nbsp;
+      Búsqueda por promoción: todos los militares de un año de egreso
     </div>
   </div>
 </div>
@@ -494,6 +502,34 @@
             <span class="dato-label">Estado:</span>
             <span class="dato-valor">{{ personal_seleccionado.get_PM_ESTADO_display }}</span>
           </div>
+          {% if personal_seleccionado.PM_PROMOCION %}
+          <div class="dato-item">
+            <span class="dato-label">Año de Egreso:</span>
+            <span class="dato-valor">{{ personal_seleccionado.PM_PROMOCION }}
+              {% if personal_seleccionado.años_servicio %}
+                <small class="text-muted">({{ personal_seleccionado.años_servicio }} años de servicio)</small>
+              {% endif %}
+            </span>
+          </div>
+          {% endif %}
+          {% if personal_seleccionado.grado_esperado %}
+          <div class="dato-item">
+            <span class="dato-label">Grado esperado:</span>
+            <span class="dato-valor">
+              {{ personal_seleccionado.grado_esperado }}
+              {% if personal_seleccionado.PM_NO_ASCENDIO %}
+                <span class="badge bg-warning text-dark ms-1">No ascendió</span>
+              {% elif personal_seleccionado.PM_GRADO != personal_seleccionado.grado_esperado %}
+                <span class="badge bg-secondary ms-1">Pendiente verificar</span>
+              {% endif %}
+            </span>
+          </div>
+          {% elif personal_seleccionado.PM_NO_ASCENDIO %}
+          <div class="dato-item">
+            <span class="dato-label">Ascenso:</span>
+            <span class="dato-valor"><span class="badge bg-warning text-dark">No ascendió al grado correspondiente</span></span>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -502,11 +538,17 @@
   <!-- EXPORT BUTTONS -->
   <div class="export-buttons">
     <a href="{% url 'export_pdfs_zip' personal_seleccionado.pm_id %}" class="btn-export btn-export-pdf" style="background: #3b82f6; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-      📄 Descargar Reporte PDF
+      Descargar Reporte PDF
     </a>
     <a href="{% url 'export_excel' personal_seleccionado.pm_id %}" class="btn-export btn-export-excel" style="background: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-      📊 Descargar Excel
+      Descargar Excel
     </a>
+    {% if request.user.perfilusuario.rol in 'AYUDANTE,ADMIN1_AGENDADOR' %}
+    <a href="{% url 'ayudante_editar_pm' personal_seleccionado.pm_id %}?next={{ request.path }}{% if request.GET.q %}%3Fq%3D{{ request.GET.q }}{% endif %}"
+       style="background: #f59e0b; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      Editar Datos / Marcar No Ascendio
+    </a>
+    {% endif %}
   </div>
 
   <!-- STATS -->

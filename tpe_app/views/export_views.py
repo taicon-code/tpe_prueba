@@ -160,14 +160,23 @@ def export_person_historial_pdf(request, personal_id):
     ci           = str(personal.PM_CI) if personal.PM_CI else 'N/A'
     escalafon    = personal.get_PM_ESCALAFON_display() or 'N/A'
     estado_pm    = personal.get_PM_ESTADO_display()
-    fecha_prom   = _format_date(personal.PM_PROMOCION)
+    anio_egreso  = str(personal.PM_PROMOCION) if personal.PM_PROMOCION else 'N/A'
+    años_serv    = personal.años_servicio
+    grado_esp    = personal.grado_esperado
+    no_asc_txt   = '  ⚠ No ascendió al grado correspondiente' if personal.PM_NO_ASCENDIO else ''
+
+    grado_line = grado
+    if grado_esp and grado_esp != grado:
+        grado_line = f"{grado}  (esperado: {grado_esp}{no_asc_txt})"
+    elif personal.PM_NO_ASCENDIO:
+        grado_line = f"{grado}{no_asc_txt}"
 
     col2 = usable_w / 2
     tabla_datos = Table([
-        [Paragraph(f"<b>Grado:</b>  {grado}",        s_dato), Paragraph(f"<b>Especialidad:</b>  {especialidad}", s_dato)],
+        [Paragraph(f"<b>Grado:</b>  {grado_line}",    s_dato), Paragraph(f"<b>Especialidad:</b>  {especialidad}", s_dato)],
         [Paragraph(f"<b>Nombre:</b>  {nombre_comp}",  s_dato), ''],
         [Paragraph(f"<b>C.I.:</b>  {ci}",             s_dato), Paragraph(f"<b>Escalafón:</b>  {escalafon}",     s_dato)],
-        [Paragraph(f"<b>Estado:</b>  {estado_pm}",    s_dato), Paragraph(f"<b>Fecha Prom.:</b>  {fecha_prom}",  s_dato)],
+        [Paragraph(f"<b>Estado:</b>  {estado_pm}",    s_dato), Paragraph(f"<b>Año Egreso:</b>  {anio_egreso}  ({años_serv} años de servicio)" if años_serv else f"<b>Año Egreso:</b>  {anio_egreso}", s_dato)],
     ], colWidths=[col2, col2])
     tabla_datos.setStyle(TableStyle([
         ('SPAN',          (0, 1), (1, 1)),
@@ -222,6 +231,15 @@ def export_person_historial_pdf(request, personal_id):
             estado_display = (sim.get_SIM_ESTADO_display()
                               if hasattr(sim, 'get_SIM_ESTADO_display') else sim.SIM_ESTADO)
             story.append(Paragraph(f"<b>Estado:</b> {estado_display}", s_dato))
+
+            # Grado que tenía el militar cuando se tramitó este sumario
+            from tpe_app.models import PM_SIM as PM_SIM_model
+            pm_sim_reg = PM_SIM_model.objects.filter(sim=sim, pm=personal).first()
+            if pm_sim_reg and pm_sim_reg.PMSIM_GRADO_EN_FECHA:
+                story.append(Paragraph(
+                    f"<b>Grado al momento del sumario:</b> {pm_sim_reg.PMSIM_GRADO_EN_FECHA}",
+                    s_dato
+                ))
             story.append(Spacer(1, 5))
 
             # Recopilar actuados

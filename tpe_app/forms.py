@@ -152,6 +152,30 @@ class PMSIMForm(forms.ModelForm):
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
     )
 
+    PM_PROMOCION = forms.IntegerField(
+        label='Año de Egreso',
+        required=False,
+        min_value=1950,
+        max_value=2100,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: 2000',
+        })
+    )
+
+    PMSIM_GRADO_EN_FECHA = forms.ChoiceField(
+        label='Grado al momento del sumario',
+        required=False,
+        choices=[('', '---------')] + list(PM.GRADO_CHOICES),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+
+    PM_NO_ASCENDIO = forms.BooleanField(
+        label='No ascendió al grado correspondiente',
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
+
     class Meta:
         model = PM_SIM
         fields = []  # Solo usamos los campos personalizados
@@ -169,6 +193,9 @@ class PMSIMForm(forms.ModelForm):
             self.fields['PM_GRADO'].initial = pm.PM_GRADO
             self.fields['PM_ARMA'].initial = pm.PM_ARMA
             self.fields['PM_ESPEC'].initial = pm.PM_ESPEC
+            self.fields['PM_PROMOCION'].initial = pm.PM_PROMOCION
+            self.fields['PM_NO_ASCENDIO'].initial = pm.PM_NO_ASCENDIO
+            self.fields['PMSIM_GRADO_EN_FECHA'].initial = self.instance.PMSIM_GRADO_EN_FECHA
     
     def clean(self):
         cleaned_data = super().clean()
@@ -177,14 +204,20 @@ class PMSIMForm(forms.ModelForm):
         if cleaned_data.get('DELETE'):
             return cleaned_data
 
-        ci = (cleaned_data.get('PM_CI') or '').strip()
-        nombre = (cleaned_data.get('PM_NOMBRE') or '').strip().upper()
-        paterno = (cleaned_data.get('PM_PATERNO') or '').strip().upper()
-        materno = (cleaned_data.get('PM_MATERNO') or '').strip().upper()
-        escalafon = cleaned_data.get('PM_ESCALAFON') or None
-        grado = cleaned_data.get('PM_GRADO') or None
-        arma = cleaned_data.get('PM_ARMA') or None
-        espec = (cleaned_data.get('PM_ESPEC') or '').strip() or None
+        ci           = (cleaned_data.get('PM_CI') or '').strip()
+        nombre       = (cleaned_data.get('PM_NOMBRE') or '').strip().upper()
+        paterno      = (cleaned_data.get('PM_PATERNO') or '').strip().upper()
+        materno      = (cleaned_data.get('PM_MATERNO') or '').strip().upper()
+        escalafon    = cleaned_data.get('PM_ESCALAFON') or None
+        grado        = cleaned_data.get('PM_GRADO') or None
+        arma         = cleaned_data.get('PM_ARMA') or None
+        espec        = (cleaned_data.get('PM_ESPEC') or '').strip() or None
+        promocion    = cleaned_data.get('PM_PROMOCION') or None
+        no_ascendio  = cleaned_data.get('PM_NO_ASCENDIO') or False
+        grado_fecha  = cleaned_data.get('PMSIM_GRADO_EN_FECHA') or None
+
+        # Siempre propagar el grado al momento para que la vista lo guarde en PM_SIM
+        cleaned_data['pmsim_grado_en_fecha'] = grado_fecha
 
         # Form vacío: permitirlo (útil cuando agregas/quitas filas dinámicamente)
         if not any([ci, nombre, paterno, materno, escalafon, grado, arma]):
@@ -214,7 +247,7 @@ class PMSIMForm(forms.ModelForm):
                 query = query.filter(PM_MATERNO=materno)
             pm = query.first()
 
-        # Si encontró PM existente, reutilizarlo
+        # Si encontró PM existente, reutilizarlo (sin sobreescribir sus datos)
         if pm:
             cleaned_data['pm'] = pm
             return cleaned_data
@@ -229,6 +262,8 @@ class PMSIMForm(forms.ModelForm):
             'PM_NOMBRE': nombre,
             'PM_PATERNO': paterno,
             'PM_MATERNO': materno or None,
+            'PM_PROMOCION': promocion,
+            'PM_NO_ASCENDIO': no_ascendio,
         }
         return cleaned_data
 

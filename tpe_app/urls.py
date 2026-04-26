@@ -49,6 +49,9 @@ urlpatterns = [
     path('ayudante/raee/nuevo/', views.ayudante_registrar_raee, name='ayudante_registrar_raee'),
     path('ayudante/autotpe/nuevo/', views.ayudante_registrar_autotpe, name='ayudante_registrar_autotpe'),
 
+    # Edición de Personal Militar (grado actual, año egreso, no ascendió)
+    path('ayudante/pm/<int:pm_id>/editar/', views.ayudante_editar_pm, name='ayudante_editar_pm'),
+
     # ✅ NUEVO v3.3: Wizard de ingreso rápido histórico (4 pasos)
     path('ayudante/wizard/paso1/', views.ayudante_wizard_paso1, name='ayudante_wizard_paso1'),
     path('ayudante/wizard/<int:sim_id>/paso2/', views.ayudante_wizard_paso2, name='ayudante_wizard_paso2'),
