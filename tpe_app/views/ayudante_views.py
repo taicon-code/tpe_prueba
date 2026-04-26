@@ -16,7 +16,7 @@ from ..models import (
     SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, ABOG, VOCAL_TPE, Resolucion, RecursoTSP
 )
 from ..forms import (
-    RESForm, RESNotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, AUTOTPENotificacionForm,
+    RESForm, NotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, MemorandumForm,
     PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm
 )
 
@@ -27,36 +27,36 @@ def ayudante_dashboard(request):
     from ..models import DocumentoAdjunto, ABOG
 
     # Últimos SIM registrados
-    ultimos_sim = SIM.objects.all().order_by('-SIM_FECREG')[:10]
+    ultimos_sim = SIM.objects.all().order_by('-fecha_registro')[:10]
 
     # Últimas Resoluciones PRIMERA registradas
-    ultimas_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').order_by('-RES_FEC')[:10]
+    ultimas_res = Resolucion.objects.filter(instancia='PRIMERA').order_by('-fecha')[:10]
 
     # RES sin PDF (panel principal) — solo PRIMERA
     res_con_pdf = set(
-        DocumentoAdjunto.objects.filter(DOC_TABLA='resolucion').values_list('DOC_ID_REG', flat=True)
+        DocumentoAdjunto.objects.filter(tabla='resolucion').values_list('registro_id', flat=True)
     )
     res_sin_pdf = (
-        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
+        Resolucion.objects.filter(instancia='PRIMERA')
         .exclude(id__in=res_con_pdf)
-        .select_related('sim', 'abog').order_by('-RES_FEC')[:10]
+        .select_related('sim', 'abog').order_by('-fecha')[:10]
     )
     total_res_sin_pdf = (
-        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
+        Resolucion.objects.filter(instancia='PRIMERA')
         .exclude(id__in=res_con_pdf).count()
     )
 
     # Contadores
     total_sim = SIM.objects.count()
     total_pm = PM.objects.count()
-    total_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
+    total_res = Resolucion.objects.filter(instancia='PRIMERA').count()
     total_res_sin_notif = Resolucion.objects.filter(
-        RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=True
+        instancia='PRIMERA', notificacion__isnull=True
     ).count()
-    total_rr = Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION').count()
-    total_rap = RecursoTSP.objects.filter(TSP_INSTANCIA='APELACION').count()
+    total_rr = Resolucion.objects.filter(instancia='RECONSIDERACION').count()
+    total_rap = RecursoTSP.objects.filter(instancia='APELACION').count()
     total_autotpe = AUTOTPE.objects.count()
-    total_autotpe_sin_notif = AUTOTPE.objects.filter(TPE_FECNOT__isnull=True).count()
+    total_autotpe_sin_notif = AUTOTPE.objects.filter(notificacion__isnull=True).count()
 
     context = {
         'ultimos_sim': ultimos_sim,
@@ -78,7 +78,7 @@ def ayudante_dashboard(request):
 
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_lista_res(request):
-    """Lista de RES filtrada por gestión (año) con: grado, nombres, RES_TIPO, notificado"""
+    """Lista de RES filtrada por gestión (año) con: grado, nombres, tipo, notificado"""
 
     # Parámetro GET: gestion (año), default = año actual
     gestion = request.GET.get('gestion', str(date.today().year))
@@ -91,17 +91,17 @@ def ayudante_lista_res(request):
     # Query: Resoluciones PRIMERA del año especificado, ordenadas por grado/apellido
     resoluciones = (
         Resolucion.objects
-        .filter(RES_INSTANCIA='PRIMERA', RES_FEC__year=gestion)
+        .filter(instancia='PRIMERA', fecha__year=gestion)
         .select_related('pm', 'sim')
-        .order_by('pm__PM_GRADO', 'pm__PM_PATERNO', 'pm__PM_NOMBRE')
+        .order_by('pm__grado', 'pm__paterno', 'pm__nombre')
     )
 
     # Opciones de gestión disponibles (años únicos)
     gestiones_disponibles = (
-        Resolucion.objects.filter(RES_INSTANCIA='PRIMERA')
-        .values_list('RES_FEC__year', flat=True)
+        Resolucion.objects.filter(instancia='PRIMERA')
+        .values_list('fecha__year', flat=True)
         .distinct()
-        .order_by('-RES_FEC__year')
+        .order_by('-fecha__year')
     )
 
     context = {
@@ -127,12 +127,12 @@ def ayudante_registrar_res(request):
 
                     # Actualizar la fase del SIM si es necesario
                     sim = res.sim
-                    if sim.SIM_FASE not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'ELEVADO_TSP', 'CONCLUIDO']:
-                        sim.SIM_FASE = '1RA_RESOLUCION'
-                        sim.SIM_ESTADO = 'PROCESO_EN_EL_TPE'
+                    if sim.fase not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'ELEVADO_TSP', 'CONCLUIDO']:
+                        sim.fase = '1RA_RESOLUCION'
+                        sim.estado = 'PROCESO_EN_EL_TPE'
                         sim.save()
 
-                    messages.success(request, f'Resolución {res.RES_NUM} registrada exitosamente')
+                    messages.success(request, f'Resolución {res.numero} registrada exitosamente')
                     return redirect('ayudante_lista_res')
             except Exception as e:
                 messages.error(request, f'Error al registrar la resolución: {str(e)}')
@@ -150,20 +150,20 @@ def ayudante_registrar_res(request):
 @rol_requerido('AYUDANTE', 'ADMIN1_AGENDADOR', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_notificacion(request, res_id):
     """Registrar la notificación de una RES existente"""
+    from ..models import Notificacion
 
     res = get_object_or_404(Resolucion, id=res_id)
+    notif_existente = getattr(res, 'notificacion', None)
 
     if request.method == 'POST':
-        form = RESNotificacionForm(request.POST, instance=res)
+        form = NotificacionForm(request.POST, instance=notif_existente)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    form.save()
-                    messages.success(
-                        request,
-                        f'Notificación de RES {res.RES_NUM} registrada exitosamente'
-                    )
-                    # Redirigir según el rol del usuario
+                    notif = form.save(commit=False)
+                    notif.resolucion = res
+                    notif.save()
+                    messages.success(request, f'Notificación de RES {res.numero} registrada exitosamente')
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
                     if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
@@ -172,12 +172,12 @@ def ayudante_registrar_notificacion(request, res_id):
             except Exception as e:
                 messages.error(request, f'Error al registrar notificación: {str(e)}')
     else:
-        form = RESNotificacionForm(instance=res)
+        form = NotificacionForm(instance=notif_existente)
 
     context = {
         'form': form,
         'res': res,
-        'titulo': f'Registrar Notificación - RES {res.RES_NUM}',
+        'titulo': f'Registrar Notificación - RES {res.numero}',
     }
 
     return render(request, 'tpe_app/ayudante/registrar_notificacion.html', context)
@@ -197,14 +197,14 @@ def ayudante_registrar_rap(request):
 
                     # Actualizar fase del SIM
                     sim = rap.sim
-                    if sim.SIM_FASE not in ['ELEVADO_TSP', 'CONCLUIDO']:
-                        sim.SIM_FASE = 'ELEVADO_TSP'
-                        sim.SIM_ESTADO = 'PROCESO_EN_EL_TSP'
+                    if sim.fase not in ['ELEVADO_TSP', 'CONCLUIDO']:
+                        sim.fase = 'ELEVADO_TSP'
+                        sim.estado = 'PROCESO_EN_EL_TSP'
                         sim.save()
 
                     messages.success(
                         request,
-                        f'Recurso de Apelación {rap.TSP_NUM} registrado exitosamente'
+                        f'Recurso de Apelación {rap.numero} registrado exitosamente'
                     )
                     return redirect('ayudante_dashboard')
             except Exception as e:
@@ -234,7 +234,7 @@ def ayudante_registrar_raee(request):
 
                     messages.success(
                         request,
-                        f'RAEE {raee.TSP_NUM} registrado exitosamente'
+                        f'RAEE {raee.numero} registrado exitosamente'
                     )
                     return redirect('ayudante_dashboard')
             except Exception as e:
@@ -252,29 +252,32 @@ def ayudante_registrar_raee(request):
 
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_autotpe(request):
-    """Registrar un Auto del TPE histórico (incluyendo memorándum)"""
+    """Registrar un Auto del TPE histórico (con memorándum opcional)"""
 
     if request.method == 'POST':
         form = AUTOTPEHistoricoForm(request.POST)
+        memo_form = MemorandumForm(request.POST)
+        tiene_memo = bool(request.POST.get('numero'))  # campo del MemorandumForm
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    autotpe = form.save(commit=False)
-                    autotpe.save()
-
-                    messages.success(
-                        request,
-                        f'Auto TPE {autotpe.TPE_NUM} registrado exitosamente'
-                    )
+                    autotpe = form.save()
+                    if tiene_memo and memo_form.is_valid():
+                        memo = memo_form.save(commit=False)
+                        memo.autotpe = autotpe
+                        memo.save()
+                    messages.success(request, f'Auto TPE {autotpe.numero} registrado exitosamente')
                     return redirect('ayudante_dashboard')
             except Exception as e:
                 messages.error(request, f'Error al registrar Auto TPE: {str(e)}')
     else:
         form = AUTOTPEHistoricoForm()
+        memo_form = MemorandumForm()
 
     context = {
         'form': form,
-        'titulo': 'Registrar Auto del TPE Histórico (incluyendo Memorándum)',
+        'memo_form': memo_form,
+        'titulo': 'Registrar Auto del TPE Histórico (con Memorándum)',
     }
 
     return render(request, 'tpe_app/ayudante/registrar_autotpe.html', context)
@@ -284,64 +287,20 @@ def ayudante_registrar_autotpe(request):
 def ayudante_registrar_notificacion_rr(request, rr_id):
     """Registrar la notificación de un RR existente"""
 
-    rr = get_object_or_404(Resolucion, id=rr_id, RES_INSTANCIA='RECONSIDERACION')
+    rr = get_object_or_404(Resolucion, id=rr_id, instancia='RECONSIDERACION')
+
+    from ..models import Notificacion
+    notif_existente = getattr(rr, 'notificacion', None)
 
     if request.method == 'POST':
-        try:
-            with transaction.atomic():
-                rr.RES_FECNOT = timezone.now().date()
-                rr.RES_HORNOT = timezone.now().time()
-                rr.RES_NOT = request.POST.get('RR_NOT', '')
-                rr.save()
-                messages.success(
-                    request,
-                    f'Notificación de RR {rr.RES_NUM} registrada exitosamente'
-                )
-                # Redirigir según el rol del usuario
-                rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
-                if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
-                    return redirect('admin3_dashboard')
-                else:
-                    return redirect('ayudante_dashboard')
-        except Exception as e:
-            messages.error(request, f'Error al registrar notificación: {str(e)}')
-
-    # Compat de template
-    rr.RR_NUM = rr.RES_NUM
-    rr.RR_FECPRESEN = rr.RES_FECPRESEN
-    context = {
-        'rr': rr,
-        'titulo': f'Registrar Notificación - RR {rr.RES_NUM}',
-    }
-
-    return render(request, 'tpe_app/admin3/registrar_notificacion_rr.html', context)
-
-
-@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
-def ayudante_registrar_notificacion_auto(request, auto_id):
-    """Registrar la notificación de un Auto TPE existente"""
-
-    auto = get_object_or_404(AUTOTPE, id=auto_id)
-
-    if request.method == 'POST':
-        form = AUTOTPENotificacionForm(request.POST, instance=auto)
+        form = NotificacionForm(request.POST, instance=notif_existente)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    form.save()
-                    # Si es Auto de Ejecutoria, transicionar SIM a EJECUTORIA_NOTIFICADA
-                    # para que Admin1 pueda ordenar el archivo final a SPRODA
-                    if auto.TPE_TIPO == 'AUTO_EJECUTORIA' and auto.sim:
-                        sim = auto.sim
-                        # Actualizar SIM_FASE a EJECUTORIA_NOTIFICADA si no está ya en estado final
-                        if sim.SIM_FASE not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']:
-                            sim.SIM_FASE = 'EJECUTORIA_NOTIFICADA'
-                            sim.save()
-                    messages.success(
-                        request,
-                        f'Notificación de Auto {auto.TPE_NUM} registrada exitosamente'
-                    )
-                    # Redirigir según el rol del usuario
+                    notif = form.save(commit=False)
+                    notif.resolucion = rr
+                    notif.save()
+                    messages.success(request, f'Notificación de RR {rr.numero} registrada exitosamente')
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
                     if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
@@ -350,12 +309,55 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
             except Exception as e:
                 messages.error(request, f'Error al registrar notificación: {str(e)}')
     else:
-        form = AUTOTPENotificacionForm(instance=auto)
+        form = NotificacionForm(instance=notif_existente)
+
+    rr.RR_NUM = rr.numero
+    rr.RR_FECPRESEN = rr.fecha_presentacion
+    context = {
+        'form': form,
+        'rr': rr,
+        'titulo': f'Registrar Notificación - RR {rr.numero}',
+    }
+
+    return render(request, 'tpe_app/admin3/registrar_notificacion_rr.html', context)
+
+
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
+def ayudante_registrar_notificacion_auto(request, auto_id):
+    """Registrar la notificación de un Auto TPE existente"""
+    from ..models import Notificacion
+
+    auto = get_object_or_404(AUTOTPE, id=auto_id)
+    notif_existente = getattr(auto, 'notificacion', None)
+
+    if request.method == 'POST':
+        form = NotificacionForm(request.POST, instance=notif_existente)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    notif = form.save(commit=False)
+                    notif.autotpe = auto
+                    notif.save()
+                    if auto.tipo == 'AUTO_EJECUTORIA' and auto.sim:
+                        sim = auto.sim
+                        if sim.fase not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']:
+                            sim.fase = 'EJECUTORIA_NOTIFICADA'
+                            sim.save()
+                    messages.success(request, f'Notificación de Auto {auto.numero} registrada exitosamente')
+                    rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
+                    if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
+                        return redirect('admin3_dashboard')
+                    else:
+                        return redirect('ayudante_dashboard')
+            except Exception as e:
+                messages.error(request, f'Error al registrar notificación: {str(e)}')
+    else:
+        form = NotificacionForm(instance=notif_existente)
 
     context = {
         'form': form,
         'auto': auto,
-        'titulo': f'Registrar Notificación - Auto {auto.TPE_NUM}',
+        'titulo': f'Registrar Notificación - Auto {auto.numero}',
     }
 
     return render(request, 'tpe_app/ayudante/registrar_notificacion_auto.html', context)
@@ -367,23 +369,23 @@ def ayudante_lista_res_sin_pdf(request):
 
     from ..models import DocumentoAdjunto
     res_con_pdf = DocumentoAdjunto.objects.filter(
-        DOC_TABLA='resolucion'
-    ).values_list('DOC_ID_REG', flat=True)
+        tabla='resolucion'
+    ).values_list('registro_id', flat=True)
 
     resoluciones_sin_pdf = (
         Resolucion.objects
-        .filter(RES_INSTANCIA='PRIMERA')
+        .filter(instancia='PRIMERA')
         .exclude(id__in=res_con_pdf)
         .select_related('pm', 'sim')
-        .order_by('-RES_FEC')
+        .order_by('-fecha')
     )
 
     # Contadores
     total_sin_pdf = resoluciones_sin_pdf.count()
     total_con_pdf = Resolucion.objects.filter(
-        RES_INSTANCIA='PRIMERA', id__in=res_con_pdf
+        instancia='PRIMERA', id__in=res_con_pdf
     ).count()
-    total_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
+    total_res = Resolucion.objects.filter(instancia='PRIMERA').count()
 
     context = {
         'resoluciones': resoluciones_sin_pdf,
@@ -405,13 +407,13 @@ def ayudante_wizard_buscar_sim(request):
     codigo = (request.GET.get('q') or '').strip().upper()
     if not codigo:
         return JsonResponse({'found': False})
-    sim = SIM.objects.filter(SIM_COD=codigo).order_by('SIM_VERSION').first()
+    sim = SIM.objects.filter(codigo=codigo).order_by('version').first()
     if sim:
         return JsonResponse({
             'found': True,
             'sim_id': sim.pk,
-            'sim_cod': sim.SIM_COD,
-            'sim_resum': sim.SIM_RESUM[:100] if sim.SIM_RESUM else '',
+            'sim_cod': sim.codigo,
+            'sim_resum': sim.resumen[:100] if sim.resumen else '',
             'wizard_url': reverse('ayudante_wizard_paso2', kwargs={'sim_id': sim.pk}),
         })
     return JsonResponse({'found': False})
@@ -424,7 +426,7 @@ def ayudante_wizard_paso1(request):
         sim_existente_id = request.POST.get('sim_existente_id')
         if sim_existente_id:
             sim = get_object_or_404(SIM, pk=sim_existente_id)
-            messages.info(request, f'Usando SIM existente: {sim.SIM_COD}')
+            messages.info(request, f'Usando SIM existente: {sim.codigo}')
             return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
 
         form = WizardSIMForm(request.POST)
@@ -433,7 +435,7 @@ def ayudante_wizard_paso1(request):
             try:
                 with transaction.atomic():
                     sim = form.save()
-                messages.success(request, f'SIM {sim.SIM_COD} creado. Ahora agregue los militares.')
+                messages.success(request, f'SIM {sim.codigo} creado. Ahora agregue los militares.')
                 return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
             except Exception as e:
                 messages.error(request, f'Error al guardar SIM: {str(e)}')
@@ -490,8 +492,8 @@ def ayudante_wizard_paso2(request, sim_id):
                                 grado_fecha = inline_form.cleaned_data.get('pmsim_grado_en_fecha') or None
                                 pm_sim, _ = PM_SIM.objects.get_or_create(sim=sim, pm=pm)
                                 if grado_fecha:
-                                    pm_sim.PMSIM_GRADO_EN_FECHA = grado_fecha
-                                    pm_sim.save(update_fields=['PMSIM_GRADO_EN_FECHA'])
+                                    pm_sim.grado_en_fecha = grado_fecha
+                                    pm_sim.save(update_fields=['grado_en_fecha'])
 
                     messages.success(request, 'Militares guardados correctamente.')
                     return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
@@ -518,8 +520,8 @@ def ayudante_wizard_paso3(request, sim_id):
     """PASO 3 — Primera Resolución + RR opcional"""
     sim = get_object_or_404(SIM, pk=sim_id)
 
-    res_existente = Resolucion.objects.filter(sim=sim, RES_INSTANCIA='PRIMERA').first()
-    rr_existente = Resolucion.objects.filter(sim=sim, RES_INSTANCIA='RECONSIDERACION').first()
+    res_existente = Resolucion.objects.filter(sim=sim, instancia='PRIMERA').first()
+    rr_existente = Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION').first()
 
     if request.method == 'POST':
         action = request.POST.get('action', 'save')
@@ -544,8 +546,8 @@ def ayudante_wizard_paso3(request, sim_id):
                     res.save()
                     res_existente = res
 
-                    if sim.SIM_FASE not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'NOTIFICADO_1RA', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
-                        sim.SIM_FASE = '1RA_RESOLUCION'
+                    if sim.fase not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'NOTIFICADO_1RA', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
+                        sim.fase = '1RA_RESOLUCION'
                         sim.save()
 
                 elif guardar_res and not res_form.is_valid():
@@ -559,8 +561,8 @@ def ayudante_wizard_paso3(request, sim_id):
                         rr.resolucion_origen = res_existente
                         rr.save()
 
-                        if sim.SIM_FASE not in ['2DA_RESOLUCION', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
-                            sim.SIM_FASE = '2DA_RESOLUCION'
+                        if sim.fase not in ['2DA_RESOLUCION', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
+                            sim.fase = '2DA_RESOLUCION'
                             sim.save()
                     else:
                         errores = True
@@ -598,8 +600,8 @@ def ayudante_wizard_paso4(request, sim_id):
     sim = get_object_or_404(SIM, pk=sim_id)
 
     autotpe_existente = AUTOTPE.objects.filter(sim=sim).first()
-    rap_existente = RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='APELACION').first()
-    raee_existente = RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='ACLARACION_ENMIENDA').first()
+    rap_existente = RecursoTSP.objects.filter(sim=sim, instancia='APELACION').first()
+    raee_existente = RecursoTSP.objects.filter(sim=sim, instancia='ACLARACION_ENMIENDA').first()
     autotsp_existente = AUTOTSP.objects.filter(sim=sim).first()
 
     if request.method == 'POST':
@@ -636,12 +638,12 @@ def ayudante_wizard_paso4(request, sim_id):
                     if rap_form.is_valid():
                         rap = rap_form.save(commit=False)
                         rap.sim = sim
-                        rap.TSP_INSTANCIA = 'APELACION'
+                        rap.instancia = 'APELACION'
                         if not rap.pm:
                             rap.pm = sim.militares.first()
                         rap.save()
-                        if sim.SIM_FASE not in ['ELEVADO_TSP', 'CONCLUIDO']:
-                            sim.SIM_FASE = 'ELEVADO_TSP'
+                        if sim.fase not in ['ELEVADO_TSP', 'CONCLUIDO']:
+                            sim.fase = 'ELEVADO_TSP'
                             sim.save()
                         rap_existente = rap
                     else:
@@ -651,7 +653,7 @@ def ayudante_wizard_paso4(request, sim_id):
                     if raee_form.is_valid():
                         raee = raee_form.save(commit=False)
                         raee.sim = sim
-                        raee.TSP_INSTANCIA = 'ACLARACION_ENMIENDA'
+                        raee.instancia = 'ACLARACION_ENMIENDA'
                         if not raee.pm:
                             raee.pm = sim.militares.first()
                         raee.save()
@@ -705,10 +707,10 @@ def ayudante_wizard_paso4(request, sim_id):
 def ayudante_wizard_resumen(request, sim_id):
     """Vista de resumen final del wizard — solo lectura"""
     sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
-    resoluciones = Resolucion.objects.filter(sim=sim).order_by('RES_FEC')
-    autos_tpe = AUTOTPE.objects.filter(sim=sim).order_by('TPE_FEC')
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim).order_by('TSP_FEC')
-    autos_tsp = AUTOTSP.objects.filter(sim=sim).order_by('TSP_FEC')
+    resoluciones = Resolucion.objects.filter(sim=sim).order_by('fecha')
+    autos_tpe = AUTOTPE.objects.filter(sim=sim).order_by('fecha')
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim).order_by('fecha')
+    autos_tsp = AUTOTSP.objects.filter(sim=sim).order_by('fecha')
 
     return render(request, 'tpe_app/ayudante/wizard/resumen.html', {
         'sim': sim,
@@ -731,32 +733,32 @@ def ayudante_editar_pm(request, pm_id):
     pm = get_object_or_404(PM, pm_id=pm_id)
 
     if request.method == 'POST':
-        grado      = request.POST.get('PM_GRADO') or None
-        escalafon  = request.POST.get('PM_ESCALAFON') or None
-        estado     = request.POST.get('PM_ESTADO') or pm.PM_ESTADO
-        promocion  = request.POST.get('PM_PROMOCION') or None
-        no_asc     = request.POST.get('PM_NO_ASCENDIO') == 'on'
+        grado      = request.POST.get('grado') or None
+        escalafon  = request.POST.get('escalafon') or None
+        estado     = request.POST.get('estado') or pm.estado
+        promocion  = request.POST.get('anio_promocion') or None
+        no_asc     = request.POST.get('no_ascendio') == 'on'
 
         if promocion:
             try:
                 promocion = int(promocion)
                 if not (1950 <= promocion <= 2100):
                     messages.error(request, 'Año de egreso fuera de rango (1950-2100).')
-                    promocion = pm.PM_PROMOCION
+                    promocion = pm.anio_promocion
             except ValueError:
                 messages.error(request, 'Año de egreso inválido.')
-                promocion = pm.PM_PROMOCION
+                promocion = pm.anio_promocion
         else:
             promocion = None
 
-        pm.PM_GRADO       = grado
-        pm.PM_ESCALAFON   = escalafon
-        pm.PM_ESTADO      = estado
-        pm.PM_PROMOCION   = promocion
-        pm.PM_NO_ASCENDIO = no_asc
-        pm.save(update_fields=['PM_GRADO', 'PM_ESCALAFON', 'PM_ESTADO', 'PM_PROMOCION', 'PM_NO_ASCENDIO'])
+        pm.grado       = grado
+        pm.escalafon   = escalafon
+        pm.estado      = estado
+        pm.anio_promocion   = promocion
+        pm.no_ascendio = no_asc
+        pm.save(update_fields=['grado', 'escalafon', 'estado', 'anio_promocion', 'no_ascendio'])
 
-        messages.success(request, f'Datos de {pm.PM_NOMBRE} {pm.PM_PATERNO} actualizados.')
+        messages.success(request, f'Datos de {pm.nombre} {pm.paterno} actualizados.')
         next_url = request.POST.get('next') or request.GET.get('next') or 'ayudante_dashboard'
         return redirect(next_url)
 

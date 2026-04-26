@@ -19,6 +19,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
+from django.contrib.auth.decorators import login_required
 from tpe_app.models import PM, SIM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, PerfilUsuario
 
 
@@ -39,20 +40,20 @@ def _sanitize_filename(text):
 def _obtener_historial(personal_id):
     """Obtiene historial completo de una persona"""
     try:
-        personal = PM.objects.get(pm_id=personal_id)
+        personal = PM.objects.get(id=personal_id)
     except PM.DoesNotExist:
         return None, None
 
-    sims = SIM.objects.filter(militares__pm_id=personal_id).distinct()
+    sims = SIM.objects.filter(militares__id=personal_id).distinct()
     sim_ids = list(sims.values_list('id', flat=True))
 
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='PRIMERA'),
-        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='RECONSIDERACION'),
-        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='APELACION'),
-        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='ACLARACION_ENMIENDA'),
+        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA'),
+        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION'),
+        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION'),
+        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA'),
         'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }
@@ -60,11 +61,12 @@ def _obtener_historial(personal_id):
     return personal, historial
 
 
+@login_required
 def export_person_historial_pdf(request, personal_id):
     """Genera PDF formal del historial disciplinario de un militar."""
     personal, historial = _obtener_historial(personal_id)
     if not personal or not historial:
-        get_object_or_404(PM, pm_id=personal_id)
+        get_object_or_404(PM, id=personal_id)
         return HttpResponse("Personal no encontrado", status=404)
 
     # Registrar fuente Arial desde Windows
@@ -111,11 +113,11 @@ def export_person_historial_pdf(request, personal_id):
         try:
             perfil = request.user.perfilusuario
             if perfil.abogado:
-                grado_usuario = perfil.abogado.AB_GRADO or ""
-                espec_usuario = perfil.abogado.AB_ARMA or ""
+                grado_usuario = perfil.abogado.grado or ""
+                espec_usuario = perfil.abogado.arma or ""
             elif perfil.vocal and perfil.vocal.pm:
-                grado_usuario = perfil.vocal.pm.get_PM_GRADO_display() or ""
-                espec_usuario = perfil.vocal.pm.get_PM_ARMA_display() or ""
+                grado_usuario = perfil.vocal.pm.get_grado_display() or ""
+                espec_usuario = perfil.vocal.pm.get_arma_display() or ""
         except Exception:
             pass
 
@@ -154,21 +156,21 @@ def export_person_historial_pdf(request, personal_id):
     story.append(Paragraph("<u>DATOS DEL PERSONAL</u>", s_seccion))
     story.append(Spacer(1, 4))
 
-    grado        = personal.get_PM_GRADO_display() or 'N/A'
-    especialidad = personal.get_PM_ARMA_display() or 'N/A'
-    nombre_comp  = f"{personal.PM_NOMBRE} {personal.PM_PATERNO} {personal.PM_MATERNO or ''}".strip()
-    ci           = str(personal.PM_CI) if personal.PM_CI else 'N/A'
-    escalafon    = personal.get_PM_ESCALAFON_display() or 'N/A'
-    estado_pm    = personal.get_PM_ESTADO_display()
-    anio_egreso  = str(personal.PM_PROMOCION) if personal.PM_PROMOCION else 'N/A'
+    grado        = personal.get_grado_display() or 'N/A'
+    especialidad = personal.get_arma_display() or 'N/A'
+    nombre_comp  = f"{personal.nombre} {personal.paterno} {personal.materno or ''}".strip()
+    ci           = str(personal.ci) if personal.ci else 'N/A'
+    escalafon    = personal.get_escalafon_display() or 'N/A'
+    estado_pm    = personal.get_estado_display()
+    anio_egreso  = str(personal.anio_promocion) if personal.anio_promocion else 'N/A'
     años_serv    = personal.años_servicio
     grado_esp    = personal.grado_esperado
-    no_asc_txt   = '  ⚠ No ascendió al grado correspondiente' if personal.PM_NO_ASCENDIO else ''
+    no_asc_txt   = '  ⚠ No ascendió al grado correspondiente' if personal.no_ascendio else ''
 
     grado_line = grado
     if grado_esp and grado_esp != grado:
         grado_line = f"{grado}  (esperado: {grado_esp}{no_asc_txt})"
-    elif personal.PM_NO_ASCENDIO:
+    elif personal.no_ascendio:
         grado_line = f"{grado}{no_asc_txt}"
 
     col2 = usable_w / 2
@@ -223,21 +225,21 @@ def export_person_historial_pdf(request, personal_id):
         cw = [usable_w * p for p in (0.20, 0.09, 0.12, 0.44, 0.15)]
 
         for idx, sim in enumerate(sumarios, 1):
-            story.append(Paragraph(f"SUMARIO N.° {sim.SIM_COD}", s_sim_tit))
+            story.append(Paragraph(f"SUMARIO N.° {sim.codigo}", s_sim_tit))
 
-            objeto = sim.SIM_OBJETO or 'N/A'
+            objeto = sim.objeto or 'N/A'
             story.append(Paragraph(f"<b>Objeto:</b> {objeto}", s_objeto))
 
-            estado_display = (sim.get_SIM_ESTADO_display()
-                              if hasattr(sim, 'get_SIM_ESTADO_display') else sim.SIM_ESTADO)
+            estado_display = (sim.get_estado_display()
+                              if hasattr(sim, 'get_estado_display') else sim.estado)
             story.append(Paragraph(f"<b>Estado:</b> {estado_display}", s_dato))
 
             # Grado que tenía el militar cuando se tramitó este sumario
             from tpe_app.models import PM_SIM as PM_SIM_model
             pm_sim_reg = PM_SIM_model.objects.filter(sim=sim, pm=personal).first()
-            if pm_sim_reg and pm_sim_reg.PMSIM_GRADO_EN_FECHA:
+            if pm_sim_reg and pm_sim_reg.grado_en_fecha:
                 story.append(Paragraph(
-                    f"<b>Grado al momento del sumario:</b> {pm_sim_reg.PMSIM_GRADO_EN_FECHA}",
+                    f"<b>Grado al momento del sumario:</b> {pm_sim_reg.grado_en_fecha}",
                     s_dato
                 ))
             story.append(Spacer(1, 5))
@@ -247,26 +249,26 @@ def export_person_historial_pdf(request, personal_id):
             for res in historial['resoluciones'].filter(sim=sim):
                 documentos.append({
                     'tipo': 'RESOLUCIÓN',
-                    'numero': res.RES_NUM or 'S/N',
-                    'fecha_doc': res.RES_FEC,
-                    'resolutiva': res.RES_RESOL or 'N/A',
-                    'notificacion': 'Sí' if res.RES_FECNOT else 'No',
+                    'numero': res.numero or 'S/N',
+                    'fecha_doc': res.fecha,
+                    'resolutiva': res.texto or 'N/A',
+                    'notificacion': 'Sí' if getattr(res, 'notificacion', None) else 'No',
                 })
             for rr in historial.get('segundas_resoluciones', Resolucion.objects.none()).filter(sim=sim):
                 documentos.append({
                     'tipo': 'REC. RECONSIDERACIÓN',
-                    'numero': rr.RES_NUM or 'S/N',
-                    'fecha_doc': rr.RES_FEC,
-                    'resolutiva': rr.RES_RESOL or 'N/A',
-                    'notificacion': 'Sí' if rr.RES_FECNOT else 'No',
+                    'numero': rr.numero or 'S/N',
+                    'fecha_doc': rr.fecha,
+                    'resolutiva': rr.texto or 'N/A',
+                    'notificacion': 'Sí' if getattr(rr, 'notificacion', None) else 'No',
                 })
             for auto in historial['autos_tpe'].filter(sim=sim):
                 documentos.append({
                     'tipo': 'AUTO TPE',
-                    'numero': auto.TPE_NUM or 'S/N',
-                    'fecha_doc': auto.TPE_FEC,
-                    'resolutiva': auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A',
-                    'notificacion': 'Sí' if auto.TPE_FECNOT else 'No',
+                    'numero': auto.numero or 'S/N',
+                    'fecha_doc': auto.fecha,
+                    'resolutiva': auto.get_tipo_display() if auto.tipo else 'N/A',
+                    'notificacion': 'Sí' if getattr(auto, 'notificacion', None) else 'No',
                 })
             documentos.sort(key=lambda x: x['fecha_doc'] or date.min)
 
@@ -307,12 +309,13 @@ def export_person_historial_pdf(request, personal_id):
     buffer.seek(0)
 
     fecha_export = datetime.now().strftime("%d-%m-%Y")
-    filename = f"HISTORIAL_{personal.PM_CI}_{fecha_export}.pdf"
+    filename = f"HISTORIAL_{personal.ci}_{fecha_export}.pdf"
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 
+@login_required
 def export_person_pdfs_zip(request, personal_id):
     """
     DEPRECATED: Mantener por compatibilidad. Redirige a export_person_historial_pdf.
@@ -351,11 +354,11 @@ def _generar_pdf_sumario(personal, sim, historial):
 
     c.setFont("Helvetica", 9)
     datos_personales = [
-        f"Nombre: {personal.PM_NOMBRE} {personal.PM_PATERNO} {personal.PM_MATERNO or ''}",
-        f"CI: {personal.PM_CI}",
-        f"Grado: {personal.get_PM_GRADO_display() or 'N/A'}",
-        f"Arma: {personal.get_PM_ARMA_display() or 'N/A'}",
-        f"Estado: {personal.get_PM_ESTADO_display()}"
+        f"Nombre: {personal.nombre} {personal.paterno} {personal.materno or ''}",
+        f"CI: {personal.ci}",
+        f"Grado: {personal.get_grado_display() or 'N/A'}",
+        f"Arma: {personal.get_arma_display() or 'N/A'}",
+        f"Estado: {personal.get_estado_display()}"
     ]
 
     for dato in datos_personales:
@@ -367,16 +370,16 @@ def _generar_pdf_sumario(personal, sim, historial):
     # ===== SUMARIO =====
     if sim:
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(x_margin, y_position, f"SUMARIO: {sim.SIM_COD}")
+        c.drawString(x_margin, y_position, f"SUMARIO: {sim.codigo}")
         y_position -= line_height
 
         c.setFont("Helvetica", 9)
         sim_data = [
-            f"Tipo: {sim.get_SIM_TIPO_display() if sim.SIM_TIPO else 'N/A'}",
-            f"Objeto: {sim.SIM_OBJETO[:100]}..." if len(sim.SIM_OBJETO or '') > 100 else f"Objeto: {sim.SIM_OBJETO or 'N/A'}",
-            f"Resumen: {sim.SIM_RESUM or 'N/A'}",
-            f"Fecha Ingreso: {_format_date(sim.SIM_FECING)}",
-            f"Estado: {sim.get_SIM_ESTADO_display() if hasattr(sim, 'get_SIM_ESTADO_display') else sim.SIM_ESTADO}"
+            f"Tipo: {sim.get_tipo_display() if sim.tipo else 'N/A'}",
+            f"Objeto: {sim.objeto[:100]}..." if len(sim.objeto or '') > 100 else f"Objeto: {sim.objeto or 'N/A'}",
+            f"Resumen: {sim.resumen or 'N/A'}",
+            f"Fecha Ingreso: {_format_date(sim.fecha_ingreso)}",
+            f"Estado: {sim.get_estado_display() if hasattr(sim, 'get_estado_display') else sim.estado}"
         ]
 
         for dato in sim_data:
@@ -401,12 +404,12 @@ def _generar_pdf_sumario(personal, sim, historial):
                     c.showPage()
                     y_position = height - 0.5 * inch
 
-                res_text = f"• {res.RES_NUM} ({_format_date(res.RES_FEC)}) — {res.get_RES_TIPO_display()}"
+                res_text = f"• {res.numero} ({_format_date(res.fecha)}) — {res.get_tipo_display()}"
                 c.drawString(x_margin + 0.3 * inch, y_position, res_text)
                 y_position -= line_height * 0.8
 
                 # Referencia a PDF en OneDrive
-                pdf_ref = f"  Ref: RES. {res.RES_NUM} (OneDrive)"
+                pdf_ref = f"  Ref: RES. {res.numero} (OneDrive)"
                 c.drawString(x_margin + 0.5 * inch, y_position, pdf_ref)
                 y_position -= line_height * 0.8
 
@@ -450,6 +453,7 @@ def _generar_pdf_sumario(personal, sim, historial):
     return buffer
 
 
+@login_required
 def export_person_excel(request, personal_id):
     """
     Genera un Excel con 4 hojas: Personal, Sumarios, Resoluciones, Cronología.
@@ -457,7 +461,7 @@ def export_person_excel(request, personal_id):
     personal, historial = _obtener_historial(personal_id)
 
     if not personal or not historial:
-        personal = get_object_or_404(PM, pm_id=personal_id)
+        personal = get_object_or_404(PM, id=personal_id)
         return HttpResponse("Personal no encontrado", status=404)
 
     if not historial:
@@ -473,14 +477,14 @@ def export_person_excel(request, personal_id):
     ws_personal['A1'].font = Font(bold=True, size=12)
 
     personal_data = [
-        ("CI:", str(personal.PM_CI)),
-        ("Nombre:", f"{personal.PM_NOMBRE} {personal.PM_PATERNO} {personal.PM_MATERNO or ''}"),
-        ("Grado:", personal.get_PM_GRADO_display() or "N/A"),
-        ("Escalafón:", personal.get_PM_ESCALAFON_display() or "N/A"),
-        ("Arma:", personal.get_PM_ARMA_display() or "N/A"),
-        ("Especialidad:", personal.PM_ESPEC or "N/A"),
-        ("Estado:", personal.get_PM_ESTADO_display()),
-        ("Fecha Promoción:", _format_date(personal.PM_PROMOCION)),
+        ("CI:", str(personal.ci)),
+        ("Nombre:", f"{personal.nombre} {personal.paterno} {personal.materno or ''}"),
+        ("Grado:", personal.get_grado_display() or "N/A"),
+        ("Escalafón:", personal.get_escalafon_display() or "N/A"),
+        ("Arma:", personal.get_arma_display() or "N/A"),
+        ("Especialidad:", personal.especialidad or "N/A"),
+        ("Estado:", personal.get_estado_display()),
+        ("Fecha Promoción:", _format_date(personal.anio_promocion)),
     ]
 
     for idx, (label, value) in enumerate(personal_data, start=2):
@@ -502,12 +506,12 @@ def export_person_excel(request, personal_id):
         cell.alignment = Alignment(horizontal="center")
 
     for row_idx, sim in enumerate(historial['sumarios'], 2):
-        ws_sumarios.cell(row=row_idx, column=1, value=sim.SIM_COD)
-        ws_sumarios.cell(row=row_idx, column=2, value=sim.get_SIM_TIPO_display() if sim.SIM_TIPO else "N/A")
-        ws_sumarios.cell(row=row_idx, column=3, value=sim.SIM_OBJETO[:50] + "..." if len(sim.SIM_OBJETO or '') > 50 else sim.SIM_OBJETO)
-        ws_sumarios.cell(row=row_idx, column=4, value=sim.SIM_RESUM or "N/A")
-        ws_sumarios.cell(row=row_idx, column=5, value=_format_date(sim.SIM_FECING))
-        ws_sumarios.cell(row=row_idx, column=6, value=sim.SIM_ESTADO)
+        ws_sumarios.cell(row=row_idx, column=1, value=sim.codigo)
+        ws_sumarios.cell(row=row_idx, column=2, value=sim.get_tipo_display() if sim.tipo else "N/A")
+        ws_sumarios.cell(row=row_idx, column=3, value=sim.objeto[:50] + "..." if len(sim.objeto or '') > 50 else sim.objeto)
+        ws_sumarios.cell(row=row_idx, column=4, value=sim.resumen or "N/A")
+        ws_sumarios.cell(row=row_idx, column=5, value=_format_date(sim.fecha_ingreso))
+        ws_sumarios.cell(row=row_idx, column=6, value=sim.estado)
 
     for col in range(1, len(headers_sim) + 1):
         ws_sumarios.column_dimensions[chr(64 + col)].width = 25
@@ -524,42 +528,46 @@ def export_person_excel(request, personal_id):
     row_idx = 2
     # Resoluciones (RES)
     for res in historial['resoluciones']:
-        ws_docs.cell(row=row_idx, column=1, value=res.sim.SIM_COD)
+        ws_docs.cell(row=row_idx, column=1, value=res.sim.codigo)
         ws_docs.cell(row=row_idx, column=2, value="Resolución TPE (RES)")
-        ws_docs.cell(row=row_idx, column=3, value=res.RES_NUM)
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(res.RES_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=res.RES_TIPO_NOTIF or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(res.RES_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=res.numero)
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(res.fecha))
+        notif_res = getattr(res, 'notificacion', None)
+        ws_docs.cell(row=row_idx, column=5, value=notif_res.tipo if notif_res else "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(notif_res.fecha if notif_res else None))
         row_idx += 1
 
     # Segundas Resoluciones (RR) — Resolucion RECONSIDERACION
     for rr in historial['segundas_resoluciones']:
-        ws_docs.cell(row=row_idx, column=1, value=rr.sim.SIM_COD)
+        ws_docs.cell(row=row_idx, column=1, value=rr.sim.codigo)
         ws_docs.cell(row=row_idx, column=2, value="Recurso Reconsideración (RR)")
-        ws_docs.cell(row=row_idx, column=3, value=rr.RES_NUM or "N/A")
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(rr.RES_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=rr.RES_NOT or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(rr.RES_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=rr.numero or "N/A")
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(rr.fecha))
+        notif_rr = getattr(rr, 'notificacion', None)
+        ws_docs.cell(row=row_idx, column=5, value=notif_rr.notificado_a if notif_rr else "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(notif_rr.fecha if notif_rr else None))
         row_idx += 1
 
     # Recursos de Apelación (RAP) — RecursoTSP APELACION
     for rap in historial['recursos_apelacion']:
-        ws_docs.cell(row=row_idx, column=1, value=rap.sim.SIM_COD)
+        ws_docs.cell(row=row_idx, column=1, value=rap.sim.codigo)
         ws_docs.cell(row=row_idx, column=2, value="Recurso Apelación (RAP)")
-        ws_docs.cell(row=row_idx, column=3, value=rap.TSP_NUM or "N/A")
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(rap.TSP_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=rap.TSP_TIPO_NOTIF or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(rap.TSP_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=rap.numero or "N/A")
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(rap.fecha))
+        notif_rap = getattr(rap, 'notificacion', None)
+        ws_docs.cell(row=row_idx, column=5, value=notif_rap.tipo if notif_rap else "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(notif_rap.fecha if notif_rap else None))
         row_idx += 1
 
     # RAEE — RecursoTSP ACLARACION_ENMIENDA
     for raee in historial['raees']:
-        ws_docs.cell(row=row_idx, column=1, value=raee.sim.SIM_COD)
+        ws_docs.cell(row=row_idx, column=1, value=raee.sim.codigo)
         ws_docs.cell(row=row_idx, column=2, value="Recurso RAEE")
-        ws_docs.cell(row=row_idx, column=3, value=raee.TSP_NUM or "N/A")
-        ws_docs.cell(row=row_idx, column=4, value=_format_date(raee.TSP_FEC))
-        ws_docs.cell(row=row_idx, column=5, value=raee.TSP_TIPO_NOTIF or "N/A")
-        ws_docs.cell(row=row_idx, column=6, value=_format_date(raee.TSP_FECNOT))
+        ws_docs.cell(row=row_idx, column=3, value=raee.numero or "N/A")
+        ws_docs.cell(row=row_idx, column=4, value=_format_date(raee.fecha))
+        notif_raee = getattr(raee, 'notificacion', None)
+        ws_docs.cell(row=row_idx, column=5, value=notif_raee.tipo if notif_raee else "N/A")
+        ws_docs.cell(row=row_idx, column=6, value=_format_date(notif_raee.fecha if notif_raee else None))
         row_idx += 1
 
     for col in range(1, len(headers_docs) + 1):
@@ -577,13 +585,13 @@ def export_person_excel(request, personal_id):
     # Crear timeline ordenada
     eventos = []
     for sim in historial['sumarios']:
-        eventos.append((sim.SIM_FECING, "Sumario Ingreso", f"SIM {sim.SIM_COD}: {sim.SIM_RESUM}"))
+        eventos.append((sim.fecha_ingreso, "Sumario Ingreso", f"SIM {sim.codigo}: {sim.resumen}"))
 
     for res in historial['resoluciones']:
-        eventos.append((res.RES_FEC, "Resolución TPE", f"RES {res.RES_NUM}: {res.get_RES_TIPO_display()}"))
+        eventos.append((res.fecha, "Resolución TPE", f"RES {res.numero}: {res.get_tipo_display()}"))
 
     for rap in historial['recursos_apelacion']:
-        eventos.append((rap.TSP_FEC, "Apelación TSP", f"RAP {rap.TSP_NUM or 'Pendiente'}: {rap.TSP_TIPO or 'N/A'}"))
+        eventos.append((rap.fecha, "Apelación TSP", f"RAP {rap.numero or 'Pendiente'}: {rap.tipo or 'N/A'}"))
 
     # Ordenar por fecha
     eventos = sorted([e for e in eventos if e[0]], key=lambda x: x[0])
@@ -598,7 +606,7 @@ def export_person_excel(request, personal_id):
 
     # Guardar
     fecha_export = datetime.now().strftime("%Y-%m-%d")
-    excel_filename = f"HISTORIAL_{personal.PM_CI}_{fecha_export}.xlsx"
+    excel_filename = f"HISTORIAL_{personal.ci}_{fecha_export}.xlsx"
 
     buffer = BytesIO()
     wb.save(buffer)
@@ -613,6 +621,7 @@ def export_person_excel(request, personal_id):
 # EXPORTACIÓN DE SIM COMPLETO
 # ============================================================
 
+@login_required
 def export_sim_pdf(request, sim_id):
     """Exporta un SIM completo a PDF con militares y actuados"""
     sim = get_object_or_404(SIM, id=sim_id)
@@ -653,12 +662,12 @@ def export_sim_pdf(request, sim_id):
 
     c.setFont("Helvetica", 9)
     info_sim = [
-        f"Código: {sim.SIM_COD}",
-        f"Tipo: {sim.get_SIM_TIPO_display()}",
-        f"Objeto: {sim.SIM_OBJETO}",
-        f"Resumen: {sim.SIM_RESUM}",
-        f"Fecha Ingreso: {_format_date(sim.SIM_FECING)}",
-        f"Estado: {sim.get_SIM_ESTADO_display()}",
+        f"Código: {sim.codigo}",
+        f"Tipo: {sim.get_tipo_display()}",
+        f"Objeto: {sim.objeto}",
+        f"Resumen: {sim.resumen}",
+        f"Fecha Ingreso: {_format_date(sim.fecha_ingreso)}",
+        f"Estado: {sim.get_estado_display()}",
     ]
 
     for info in info_sim:
@@ -680,8 +689,8 @@ def export_sim_pdf(request, sim_id):
         if y_position < 2 * inch:
             c.showPage()
             y_position = height - 0.5 * inch
-        nombre_completo = f"{militar.PM_GRADO} {militar.PM_NOMBRE} {militar.PM_PATERNO} {militar.PM_MATERNO or ''}"
-        c.drawString(x_margin + 0.2 * inch, y_position, f"• {nombre_completo} (CI: {militar.PM_CI or 'N/A'})")
+        nombre_completo = f"{militar.grado} {militar.nombre} {militar.paterno} {militar.materno or ''}"
+        c.drawString(x_margin + 0.2 * inch, y_position, f"• {nombre_completo} (CI: {militar.ci or 'N/A'})")
         y_position -= line_height
 
     y_position -= 0.5 * line_height
@@ -697,7 +706,7 @@ def export_sim_pdf(request, sim_id):
             if y_position < 2 * inch:
                 c.showPage()
                 y_position = height - 0.5 * inch
-            res_info = f"• RES {res.RES_NUM} ({_format_date(res.RES_FEC)}) — {res.get_RES_TIPO_display()}"
+            res_info = f"• RES {res.numero} ({_format_date(res.fecha)}) — {res.get_tipo_display()}"
             c.drawString(x_margin + 0.2 * inch, y_position, res_info)
             y_position -= line_height
 
@@ -714,7 +723,7 @@ def export_sim_pdf(request, sim_id):
             if y_position < 2 * inch:
                 c.showPage()
                 y_position = height - 0.5 * inch
-            auto_info = f"• AUTO {auto.TPE_NUM} ({_format_date(auto.TPE_FEC)}) — {auto.get_TPE_TIPO_display()}"
+            auto_info = f"• AUTO {auto.numero} ({_format_date(auto.fecha)}) — {auto.get_tipo_display()}"
             c.drawString(x_margin + 0.2 * inch, y_position, auto_info)
             y_position -= line_height
 
@@ -731,7 +740,7 @@ def export_sim_pdf(request, sim_id):
             if y_position < 2 * inch:
                 c.showPage()
                 y_position = height - 0.5 * inch
-            recurso_info = f"• {recurso.get_TSP_INSTANCIA_display()} ({_format_date(recurso.TSP_FEC)})"
+            recurso_info = f"• {recurso.get_instancia_display()} ({_format_date(recurso.fecha)})"
             c.drawString(x_margin + 0.2 * inch, y_position, recurso_info)
             y_position -= line_height
 
@@ -739,13 +748,14 @@ def export_sim_pdf(request, sim_id):
     buffer.seek(0)
 
     fecha_export = datetime.now().strftime("%Y-%m-%d")
-    filename = f"SIM_{_sanitize_filename(sim.SIM_COD)}_{fecha_export}.pdf"
+    filename = f"SIM_{_sanitize_filename(sim.codigo)}_{fecha_export}.pdf"
 
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 
+@login_required
 def export_sim_excel(request, sim_id):
     """Exporta un SIM completo a Excel con 3 hojas: SIM, Militares, Actuados"""
     sim = get_object_or_404(SIM, id=sim_id)
@@ -764,12 +774,12 @@ def export_sim_excel(request, sim_id):
     ws_sim['A1'].font = Font(bold=True, size=12)
 
     sim_data = [
-        ("Código:", sim.SIM_COD),
-        ("Tipo:", sim.get_SIM_TIPO_display()),
-        ("Objeto:", sim.SIM_OBJETO),
-        ("Resumen:", sim.SIM_RESUM),
-        ("Fecha Ingreso:", _format_date(sim.SIM_FECING)),
-        ("Estado:", sim.get_SIM_ESTADO_display()),
+        ("Código:", sim.codigo),
+        ("Tipo:", sim.get_tipo_display()),
+        ("Objeto:", sim.objeto),
+        ("Resumen:", sim.resumen),
+        ("Fecha Ingreso:", _format_date(sim.fecha_ingreso)),
+        ("Estado:", sim.get_estado_display()),
     ]
 
     for idx, (label, value) in enumerate(sim_data, start=2):
@@ -791,13 +801,13 @@ def export_sim_excel(request, sim_id):
         cell.alignment = Alignment(horizontal="center")
 
     for idx, militar in enumerate(militares, start=2):
-        ws_militares.cell(row=idx, column=1, value=militar.PM_GRADO)
-        ws_militares.cell(row=idx, column=2, value=militar.PM_NOMBRE)
-        ws_militares.cell(row=idx, column=3, value=militar.PM_PATERNO)
-        ws_militares.cell(row=idx, column=4, value=militar.PM_MATERNO or "")
-        ws_militares.cell(row=idx, column=5, value=str(militar.PM_CI) if militar.PM_CI else "")
-        ws_militares.cell(row=idx, column=6, value=militar.get_PM_ARMA_display() or "")
-        ws_militares.cell(row=idx, column=7, value=militar.get_PM_ESCALAFON_display() or "")
+        ws_militares.cell(row=idx, column=1, value=militar.grado)
+        ws_militares.cell(row=idx, column=2, value=militar.nombre)
+        ws_militares.cell(row=idx, column=3, value=militar.paterno)
+        ws_militares.cell(row=idx, column=4, value=militar.materno or "")
+        ws_militares.cell(row=idx, column=5, value=str(militar.ci) if militar.ci else "")
+        ws_militares.cell(row=idx, column=6, value=militar.get_arma_display() or "")
+        ws_militares.cell(row=idx, column=7, value=militar.get_escalafon_display() or "")
 
     for col in range(1, len(headers_militares) + 1):
         ws_militares.column_dimensions[chr(64 + col)].width = 18
@@ -816,41 +826,45 @@ def export_sim_excel(request, sim_id):
     # Resoluciones
     for res in resoluciones:
         ws_actuados.cell(row=row_idx, column=1, value="Resolución TPE")
-        ws_actuados.cell(row=row_idx, column=2, value=res.RES_NUM or "N/A")
-        ws_actuados.cell(row=row_idx, column=3, value=_format_date(res.RES_FEC))
-        ws_actuados.cell(row=row_idx, column=4, value=res.get_RES_TIPO_display() or "")
-        ws_actuados.cell(row=row_idx, column=5, value=res.RES_TIPO_NOTIF or "")
-        ws_actuados.cell(row=row_idx, column=6, value=_format_date(res.RES_FECNOT))
+        ws_actuados.cell(row=row_idx, column=2, value=res.numero or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(res.fecha))
+        ws_actuados.cell(row=row_idx, column=4, value=res.get_tipo_display() or "")
+        n_res = getattr(res, 'notificacion', None)
+        ws_actuados.cell(row=row_idx, column=5, value=n_res.tipo if n_res else "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(n_res.fecha if n_res else None))
         row_idx += 1
 
     # Autos TPE
     for auto in autos_tpe:
         ws_actuados.cell(row=row_idx, column=1, value="Auto TPE")
-        ws_actuados.cell(row=row_idx, column=2, value=auto.TPE_NUM or "N/A")
-        ws_actuados.cell(row=row_idx, column=3, value=_format_date(auto.TPE_FEC))
-        ws_actuados.cell(row=row_idx, column=4, value=auto.get_TPE_TIPO_display() or "")
-        ws_actuados.cell(row=row_idx, column=5, value=auto.TPE_TIPO_NOTIF or "")
-        ws_actuados.cell(row=row_idx, column=6, value=_format_date(auto.TPE_FECNOT))
+        ws_actuados.cell(row=row_idx, column=2, value=auto.numero or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(auto.fecha))
+        ws_actuados.cell(row=row_idx, column=4, value=auto.get_tipo_display() or "")
+        n_auto = getattr(auto, 'notificacion', None)
+        ws_actuados.cell(row=row_idx, column=5, value=n_auto.tipo if n_auto else "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(n_auto.fecha if n_auto else None))
         row_idx += 1
 
     # Autos TSP
     for auto in autos_tsp:
         ws_actuados.cell(row=row_idx, column=1, value="Auto TSP")
-        ws_actuados.cell(row=row_idx, column=2, value=auto.TSP_NUM or "N/A")
-        ws_actuados.cell(row=row_idx, column=3, value=_format_date(auto.TSP_FEC))
-        ws_actuados.cell(row=row_idx, column=4, value=auto.get_TSP_TIPO_display() or "")
-        ws_actuados.cell(row=row_idx, column=5, value=auto.TSP_TIPO_NOTIF or "")
-        ws_actuados.cell(row=row_idx, column=6, value=_format_date(auto.TSP_FECNOT))
+        ws_actuados.cell(row=row_idx, column=2, value=auto.numero or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(auto.fecha))
+        ws_actuados.cell(row=row_idx, column=4, value=auto.get_tipo_display() or "")
+        n_tsp = getattr(auto, 'notificacion', None)
+        ws_actuados.cell(row=row_idx, column=5, value=n_tsp.tipo if n_tsp else "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(n_tsp.fecha if n_tsp else None))
         row_idx += 1
 
     # Recursos TSP
     for recurso in recursos_tsp:
-        ws_actuados.cell(row=row_idx, column=1, value=recurso.get_TSP_INSTANCIA_display())
-        ws_actuados.cell(row=row_idx, column=2, value=recurso.TSP_NUM or "N/A")
-        ws_actuados.cell(row=row_idx, column=3, value=_format_date(recurso.TSP_FEC))
-        ws_actuados.cell(row=row_idx, column=4, value=recurso.get_TSP_INSTANCIA_display() or "")
-        ws_actuados.cell(row=row_idx, column=5, value=recurso.TSP_TIPO_NOTIF or "")
-        ws_actuados.cell(row=row_idx, column=6, value=_format_date(recurso.TSP_FECNOT))
+        ws_actuados.cell(row=row_idx, column=1, value=recurso.get_instancia_display())
+        ws_actuados.cell(row=row_idx, column=2, value=recurso.numero or "N/A")
+        ws_actuados.cell(row=row_idx, column=3, value=_format_date(recurso.fecha))
+        ws_actuados.cell(row=row_idx, column=4, value=recurso.get_instancia_display() or "")
+        n_rec = getattr(recurso, 'notificacion', None)
+        ws_actuados.cell(row=row_idx, column=5, value=n_rec.tipo if n_rec else "")
+        ws_actuados.cell(row=row_idx, column=6, value=_format_date(n_rec.fecha if n_rec else None))
         row_idx += 1
 
     for col in range(1, len(headers_actuados) + 1):
@@ -858,7 +872,7 @@ def export_sim_excel(request, sim_id):
 
     # Guardar
     fecha_export = datetime.now().strftime("%Y-%m-%d")
-    excel_filename = f"SIM_{_sanitize_filename(sim.SIM_COD)}_{fecha_export}.xlsx"
+    excel_filename = f"SIM_{_sanitize_filename(sim.codigo)}_{fecha_export}.xlsx"
 
     buffer = BytesIO()
     wb.save(buffer)

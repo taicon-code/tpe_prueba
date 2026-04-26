@@ -299,18 +299,18 @@
 <div class="sim-header">
   <div style="display: flex; justify-content: space-between; align-items: flex-start;">
     <div>
-      <h1>{{ sim.SIM_COD }}</h1>
-      <div style="font-size: 0.95rem; opacity: 0.9;">{{ sim.get_SIM_TIPO_display }}</div>
+      <h1>{{ sim.codigo }}</h1>
+      <div style="font-size: 0.95rem; opacity: 0.9;">{{ sim.get_tipo_display }}</div>
     </div>
     <div>
-      {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
-        <span class="estado-badge estado-para-agenda">{{ sim.get_SIM_ESTADO_display }}</span>
-      {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
-        <span class="estado-badge estado-proceso">{{ sim.get_SIM_ESTADO_display }}</span>
-      {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TSP' %}
-        <span class="estado-badge estado-apelacion">{{ sim.get_SIM_ESTADO_display }}</span>
-      {% elif sim.SIM_ESTADO == 'PROCESO_CONCLUIDO_TPE' %}
-        <span class="estado-badge estado-concluido">{{ sim.get_SIM_ESTADO_display }}</span>
+      {% if sim.estado == 'PARA_AGENDA' %}
+        <span class="estado-badge estado-para-agenda">{{ sim.get_estado_display }}</span>
+      {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
+        <span class="estado-badge estado-proceso">{{ sim.get_estado_display }}</span>
+      {% elif sim.estado == 'PROCESO_EN_EL_TSP' %}
+        <span class="estado-badge estado-apelacion">{{ sim.get_estado_display }}</span>
+      {% elif sim.estado == 'PROCESO_CONCLUIDO_TPE' %}
+        <span class="estado-badge estado-concluido">{{ sim.get_estado_display }}</span>
       {% endif %}
     </div>
   </div>
@@ -318,17 +318,17 @@
   <div style="margin-top: 1.5rem;">
     <div style="margin-bottom: 1rem;">
       <div style="font-weight: 600; opacity: 0.9; margin-bottom: 0.25rem;">Objeto:</div>
-      <div style="font-size: 1rem; font-weight: 700;">{{ sim.SIM_OBJETO }}</div>
+      <div style="font-size: 1rem; font-weight: 700;">{{ sim.objeto }}</div>
     </div>
 
     <div class="sim-meta">
       <div class="meta-item">
         <div class="meta-label">Fecha Ingreso:</div>
-        <div class="meta-value">{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</div>
+        <div class="meta-value">{{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">Resumen:</div>
-        <div class="meta-value">{{ sim.SIM_RESUM }}</div>
+        <div class="meta-value">{{ sim.resumen }}</div>
       </div>
     </div>
   </div>
@@ -354,13 +354,13 @@
     <tbody>
       {% for militar in militares %}
       <tr>
-        <td>{{ militar.PM_GRADO }}</td>
-        <td>{{ militar.PM_NOMBRE }}</td>
-        <td>{{ militar.PM_PATERNO }}</td>
-        <td>{{ militar.PM_MATERNO|default:"—" }}</td>
-        <td>{{ militar.PM_CI|default:"—" }}</td>
-        <td>{{ militar.get_PM_ARMA_display|default:"—" }}</td>
-        <td>{{ militar.get_PM_ESCALAFON_display|default:"—" }}</td>
+        <td>{{ militar.grado }}</td>
+        <td>{{ militar.nombre }}</td>
+        <td>{{ militar.paterno }}</td>
+        <td>{{ militar.materno|default:"—" }}</td>
+        <td>{{ militar.ci|default:"—" }}</td>
+        <td>{{ militar.get_arma_display|default:"—" }}</td>
+        <td>{{ militar.get_escalafon_display|default:"—" }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -380,7 +380,7 @@
   {% for res in resoluciones %}
   <div class="actuado-card">
     <div class="actuado-header">
-      <div class="actuado-titulo">Resolución Nº {{ res.RES_NUM|default:"S/N" }}</div>
+      <div class="actuado-titulo">Resolución Nº {{ res.numero|default:"S/N" }}</div>
       {% with docs=res.documentoadjunto_set.all %}
         {% if docs %}
           <div>
@@ -394,19 +394,19 @@
     <div class="actuado-info">
       <div class="info-item">
         <span class="info-label">Fecha:</span>
-        <span class="info-value">{{ res.RES_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+        <span class="info-value">{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Instancia:</span>
-        <span class="info-value">{{ res.get_RES_INSTANCIA_display|default:"—" }}</span>
+        <span class="info-value">{{ res.get_instancia_display|default:"—" }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Tipo:</span>
-        <span class="info-value">{{ res.get_RES_TIPO_display|default:"—" }}</span>
+        <span class="info-value">{{ res.get_tipo_display|default:"—" }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Notificación:</span>
-        <span class="info-value">{{ res.RES_TIPO_NOTIF|default:"—" }} ({{ res.RES_FECNOT|date:"d/m/Y"|default:"—" }})</span>
+        <span class="info-value">{{ res.notificacion.tipo|default:"—" }} ({{ res.notificacion.fecha|date:"d/m/Y"|default:"—" }})</span>
       </div>
     </div>
   </div>
@@ -419,27 +419,27 @@
   {% for auto in autos_tpe %}
   <div class="actuado-card" style="border-left-color: #f59e0b;">
     <div class="actuado-header">
-      <div class="actuado-titulo">Auto TPE Nº {{ auto.TPE_NUM|default:"S/N" }}</div>
+      <div class="actuado-titulo">Auto TPE Nº {{ auto.numero|default:"S/N" }}</div>
     </div>
     <div class="actuado-info">
       <div class="info-item">
         <span class="info-label">Fecha:</span>
-        <span class="info-value">{{ auto.TPE_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+        <span class="info-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Disposición:</span>
-        <span class="info-value">{{ auto.get_TPE_TIPO_display|default:"—" }}</span>
+        <span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span>
       </div>
-      {% if auto.TPE_FECNOT %}
+      {% if auto.notificacion %}
       <div class="info-item">
         <span class="info-label">Notificación:</span>
-        <span class="info-value">{{ auto.TPE_TIPO_NOTIF|default:"—" }} ({{ auto.TPE_FECNOT|date:"d/m/Y" }})</span>
+        <span class="info-value">{{ auto.notificacion.tipo|default:"—" }} ({{ auto.notificacion.fecha|date:"d/m/Y" }})</span>
       </div>
       {% endif %}
-      {% if auto.TPE_MEMO_NUM %}
+      {% if auto.memorandum %}
       <div class="info-item">
         <span class="info-label">Memorandum:</span>
-        <span class="info-value">Nº {{ auto.TPE_MEMO_NUM }} ({{ auto.TPE_MEMO_FEC|date:"d/m/Y"|default:"N/A" }})</span>
+        <span class="info-value">Nº {{ auto.memorandum.numero }} ({{ auto.memorandum.fecha|date:"d/m/Y"|default:"N/A" }})</span>
       </div>
       {% endif %}
     </div>
@@ -453,21 +453,21 @@
   {% for auto in autos_tsp %}
   <div class="actuado-card" style="border-left-color: #8b5cf6;">
     <div class="actuado-header">
-      <div class="actuado-titulo">Auto TSP Nº {{ auto.TSP_NUM|default:"S/N" }}</div>
+      <div class="actuado-titulo">Auto TSP Nº {{ auto.numero|default:"S/N" }}</div>
     </div>
     <div class="actuado-info">
       <div class="info-item">
         <span class="info-label">Fecha:</span>
-        <span class="info-value">{{ auto.TSP_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+        <span class="info-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Disposición:</span>
-        <span class="info-value">{{ auto.get_TSP_TIPO_display|default:"—" }}</span>
+        <span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span>
       </div>
-      {% if auto.TSP_FECNOT %}
+      {% if auto.notificacion %}
       <div class="info-item">
         <span class="info-label">Notificación:</span>
-        <span class="info-value">{{ auto.TSP_FECNOT|date:"d/m/Y"|default:"—" }}</span>
+        <span class="info-value">{{ auto.notificacion.fecha|date:"d/m/Y"|default:"—" }}</span>
       </div>
       {% endif %}
     </div>
@@ -481,21 +481,21 @@
   {% for recurso in recursos_tsp %}
   <div class="actuado-card" style="border-left-color: #10b981;">
     <div class="actuado-header">
-      <div class="actuado-titulo">{{ recurso.get_TSP_INSTANCIA_display|default:"Recurso" }}</div>
+      <div class="actuado-titulo">{{ recurso.get_instancia_display|default:"Recurso" }}</div>
     </div>
     <div class="actuado-info">
       <div class="info-item">
         <span class="info-label">Fecha Presentación:</span>
-        <span class="info-value">{{ recurso.TSP_FECOFI|date:"d/m/Y"|default:"N/A" }}</span>
+        <span class="info-value">{{ recurso.fechaOFI|date:"d/m/Y"|default:"N/A" }}</span>
       </div>
       <div class="info-item">
         <span class="info-label">Instancia:</span>
-        <span class="info-value">{{ recurso.get_TSP_INSTANCIA_display|default:"—" }}</span>
+        <span class="info-value">{{ recurso.get_instancia_display|default:"—" }}</span>
       </div>
-      {% if recurso.TSP_FECLIMITE %}
+      {% if recurso.fechaLIMITE %}
       <div class="info-item">
         <span class="info-label">Plazo Límite:</span>
-        <span class="info-value">{{ recurso.TSP_FECLIMITE|date:"d/m/Y" }}</span>
+        <span class="info-value">{{ recurso.fechaLIMITE|date:"d/m/Y" }}</span>
       </div>
       {% endif %}
     </div>
@@ -525,7 +525,7 @@
     </div>
     {% if custodia_actual.abog %}
     <div style="color: #065f46; margin-bottom: 0.5rem;">
-      <strong>Abogado:</strong> {{ custodia_actual.abog.AB_GRADO }} {{ custodia_actual.abog.AB_PATERNO }} {{ custodia_actual.abog.AB_MATERNO }}
+      <strong>Abogado:</strong> {{ custodia_actual.abog.grado }} {{ custodia_actual.abog.paterno }} {{ custodia_actual.abog.materno }}
     </div>
     {% endif %}
     <div style="color: #065f46; margin-bottom: 0.5rem;">
@@ -552,7 +552,7 @@
 
       {% if custodia.abog %}
       <div class="timeline-info">
-        👤 <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
+        👤 <strong>{{ custodia.abog.grado }} {{ custodia.abog.paterno }}</strong>
       </div>
       {% endif %}
 

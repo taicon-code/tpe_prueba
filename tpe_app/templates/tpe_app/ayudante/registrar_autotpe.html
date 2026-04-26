@@ -97,27 +97,27 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TPE_NUM.label }} <span class="text-danger">*</span></label>
-                                {{ form.TPE_NUM }}
+                                <label class="form-label">{{ form.numero.label }} <span class="text-danger">*</span></label>
+                                {{ form.numero }}
                                 <small class="text-muted d-block mt-1">Formato: NN/AA</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TPE_FEC.label }} <span class="text-danger">*</span></label>
-                                {{ form.TPE_FEC }}
+                                <label class="form-label">{{ form.fecha.label }} <span class="text-danger">*</span></label>
+                                {{ form.fecha }}
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TPE_TIPO.label }} <span class="text-danger">*</span></label>
-                                {{ form.TPE_TIPO }}
+                                <label class="form-label">{{ form.tipo.label }} <span class="text-danger">*</span></label>
+                                {{ form.tipo }}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.TPE_RESOL.label }} <span class="text-danger">*</span></label>
-                            {{ form.TPE_RESOL }}
-                            {% if form.TPE_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TPE_RESOL.errors }}</div>{% endif %}
+                            <label class="form-label">{{ form.texto.label }} <span class="text-danger">*</span></label>
+                            {{ form.texto }}
+                            {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}
                         </div>
 
                         <hr class="my-4">
@@ -129,21 +129,13 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TPE_MEMO_NUM.label }}</label>
-                                {{ form.TPE_MEMO_NUM }}
+                                <label class="form-label">{{ memo_form.numero.label }}</label>
+                                {{ memo_form.numero }}
                                 <small class="text-muted d-block mt-1">Número de memorándum (si aplica)</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TPE_MEMO_FEC.label }}</label>
-                                {{ form.TPE_MEMO_FEC }}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TPE_MEMO_ENTREGA.label }}</label>
-                                {{ form.TPE_MEMO_ENTREGA }}
-                                <small class="text-muted d-block mt-1">Fecha de entrega del memorándum</small>
+                                <label class="form-label">{{ memo_form.fecha.label }}</label>
+                                {{ memo_form.fecha }}
                             </div>
                         </div>
 

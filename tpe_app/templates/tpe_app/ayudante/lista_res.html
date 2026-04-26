@@ -124,26 +124,26 @@
                             {% for res in resoluciones %}
                             <tr>
                                 <td class="text-center text-nowrap">
-                                    <small class="text-muted">{{ res.pm.PM_GRADO|default:"—" }}</small>
+                                    <small class="text-muted">{{ res.pm.grado|default:"—" }}</small>
                                 </td>
                                 <td>
-                                    <strong>{{ res.pm.PM_PATERNO }}</strong>
+                                    <strong>{{ res.pm.paterno }}</strong>
                                 </td>
-                                <td>{{ res.pm.PM_NOMBRE }}</td>
+                                <td>{{ res.pm.nombre }}</td>
                                 <td class="text-center">
-                                    <code class="bg-light p-1">{{ res.sim.SIM_COD }}</code>
+                                    <code class="bg-light p-1">{{ res.sim.codigo }}</code>
                                 </td>
                                 <td class="text-center">
-                                    <code class="bg-light p-1">{{ res.RES_NUM }}</code>
+                                    <code class="bg-light p-1">{{ res.numero }}</code>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">{{ res.get_RES_TIPO_display|truncatewords:3 }}</span>
+                                    <span class="badge bg-info">{{ res.get_tipo_display|truncatewords:3 }}</span>
                                 </td>
                                 <td class="text-center">
-                                    {% if res.RES_FECNOT %}
+                                    {% if res.notificacion %}
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle me-1"></i>
-                                            {{ res.RES_FECNOT|date:"d/m/Y" }}
+                                            {{ res.notificacion.fecha|date:"d/m/Y" }}
                                         </span>
                                     {% else %}
                                         <span class="badge bg-warning text-dark">

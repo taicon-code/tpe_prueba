@@ -23,9 +23,9 @@ def asesor_jefe_dashboard(request):
     fecha_limite = hoy + timedelta(days=30)
 
     proximas_agendas = AGENDA.objects.filter(
-        AG_FECPROG__gte=hoy,
-        AG_FECPROG__lte=fecha_limite
-    ).order_by('AG_FECPROG')
+        fecha_prog__gte=hoy,
+        fecha_prog__lte=fecha_limite
+    ).order_by('fecha_prog')
 
     # Enriquecer agendas con información
     for agenda in proximas_agendas:
@@ -33,15 +33,15 @@ def asesor_jefe_dashboard(request):
             dictamen__agenda=agenda
         ).distinct().count()
         agenda.dictamenes_pendientes = DICTAMEN.objects.filter(
-            agenda=agenda, DIC_ESTADO='PENDIENTE'
+            agenda=agenda, estado='PENDIENTE'
         ).count()
 
     # Resumen de estados
     resumen = {
-        'para_agenda': SIM.objects.filter(SIM_ESTADO='PARA_AGENDA').count(),
-        'en_proceso': SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TPE').count(),
-        'en_apelacion': SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TSP').count(),
-        'concluido': SIM.objects.filter(SIM_ESTADO='PROCESO_CONCLUIDO_TPE').count(),
+        'para_agenda': SIM.objects.filter(estado='PARA_AGENDA').count(),
+        'en_proceso': SIM.objects.filter(estado='PROCESO_EN_EL_TPE').count(),
+        'en_apelacion': SIM.objects.filter(estado='PROCESO_EN_EL_TSP').count(),
+        'concluido': SIM.objects.filter(estado='PROCESO_CONCLUIDO_TPE').count(),
     }
 
     # Estadísticas del mes
@@ -50,17 +50,17 @@ def asesor_jefe_dashboard(request):
 
     estadisticas = {
         'sims_ingresados_mes': SIM.objects.filter(
-            SIM_FECING__gte=mes_actual,
-            SIM_FECING__lt=siguiente_mes
+            fecha_ingreso__gte=mes_actual,
+            fecha_ingreso__lt=siguiente_mes
         ).count(),
         'resoluciones_mes': Resolucion.objects.filter(
-            RES_FEC__gte=mes_actual,
-            RES_FEC__lt=siguiente_mes,
-            RES_INSTANCIA='PRIMERA'
+            fecha__gte=mes_actual,
+            fecha__lt=siguiente_mes,
+            instancia='PRIMERA'
         ).count(),
         'autos_mes': AUTOTPE.objects.filter(
-            TPE_FEC__gte=mes_actual,
-            TPE_FEC__lt=siguiente_mes
+            fecha__gte=mes_actual,
+            fecha__lt=siguiente_mes
         ).count(),
     }
 
@@ -84,9 +84,9 @@ def asesor_jefe_agendas(request):
     siguiente_mes = (mes_actual + timedelta(days=32)).replace(day=1)
 
     agendas = AGENDA.objects.filter(
-        AG_FECPROG__gte=mes_actual,
-        AG_FECPROG__lt=siguiente_mes
-    ).order_by('AG_FECPROG')
+        fecha_prog__gte=mes_actual,
+        fecha_prog__lt=siguiente_mes
+    ).order_by('fecha_prog')
 
     # Enriquecer agendas
     for agenda in agendas:
@@ -99,11 +99,11 @@ def asesor_jefe_agendas(request):
             pm_sim_set.count() for pm_sim_set in [sim.pm_sim.all() for sim in sims]
         )
         agenda.dictamenes_pendientes = DICTAMEN.objects.filter(
-            agenda=agenda, DIC_ESTADO='PENDIENTE'
+            agenda=agenda, estado='PENDIENTE'
         ).count()
         agenda.dictamenes_confirmados = DICTAMEN.objects.filter(
             agenda=agenda
-        ).exclude(DIC_ESTADO='PENDIENTE').count()
+        ).exclude(estado='PENDIENTE').count()
 
     context = {
         'asesor': asesor,
@@ -122,21 +122,21 @@ def asesor_jefe_estadisticas(request):
     # Totales generales
     total_sims = SIM.objects.count()
     sims_por_estado = {}
-    for estado, _ in SIM._meta.get_field('SIM_ESTADO').choices:
-        count = SIM.objects.filter(SIM_ESTADO=estado).count()
+    for estado, _ in SIM._meta.get_field('estado').choices:
+        count = SIM.objects.filter(estado=estado).count()
         sims_por_estado[estado] = count
 
     # Resoluciones
-    total_res = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
+    total_res = Resolucion.objects.filter(instancia='PRIMERA').count()
     res_notificadas = Resolucion.objects.filter(
-        RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=False
+        instancia='PRIMERA', notificacion__isnull=False
     ).count()
 
     # Autos
     total_autos = AUTOTPE.objects.count()
     autos_por_tipo = {}
-    for tipo, _ in AUTOTPE._meta.get_field('TPE_TIPO').choices:
-        count = AUTOTPE.objects.filter(TPE_TIPO=tipo).count()
+    for tipo, _ in AUTOTPE._meta.get_field('tipo').choices:
+        count = AUTOTPE.objects.filter(tipo=tipo).count()
         if count > 0:
             autos_por_tipo[tipo] = count
 
@@ -149,19 +149,19 @@ def asesor_jefe_estadisticas(request):
         mes_fin = (mes_fecha.replace(day=1) + timedelta(days=32)).replace(day=1)
 
         sims_mes = SIM.objects.filter(
-            SIM_FECING__gte=mes_inicio,
-            SIM_FECING__lt=mes_fin
+            fecha_ingreso__gte=mes_inicio,
+            fecha_ingreso__lt=mes_fin
         ).count()
 
         res_mes = Resolucion.objects.filter(
-            RES_FEC__gte=mes_inicio,
-            RES_FEC__lt=mes_fin,
-            RES_INSTANCIA='PRIMERA'
+            fecha__gte=mes_inicio,
+            fecha__lt=mes_fin,
+            instancia='PRIMERA'
         ).count()
 
         autos_mes = AUTOTPE.objects.filter(
-            TPE_FEC__gte=mes_inicio,
-            TPE_FEC__lt=mes_fin
+            fecha__gte=mes_inicio,
+            fecha__lt=mes_fin
         ).count()
 
         estadisticas_mensuales.append({

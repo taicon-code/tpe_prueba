@@ -252,13 +252,13 @@
                     <tbody>
                         {% for sim in ultimos_sim %}
                         <tr>
-                            <td><code>{{ sim.SIM_COD }}</code></td>
-                            <td>{{ sim.get_SIM_TIPO_display }}</td>
-                            <td>{{ sim.SIM_RESUM|truncatewords:5 }}</td>
-                            <td>{{ sim.SIM_FECREG|date:"d/m/Y" }}</td>
+                            <td><code>{{ sim.codigo }}</code></td>
+                            <td>{{ sim.get_tipo_display }}</td>
+                            <td>{{ sim.resumen|truncatewords:5 }}</td>
+                            <td>{{ sim.fecha_registro|date:"d/m/Y" }}</td>
                             <td>
-                                <span class="badge bg-{% if sim.SIM_ESTADO == 'PARA_AGENDA' %}primary{% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}warning{% elif sim.SIM_ESTADO == 'EN_APELACION_TSP' %}danger{% elif sim.SIM_ESTADO == 'CONCLUIDO' %}success{% else %}secondary{% endif %}">
-                                    {{ sim.get_SIM_ESTADO_display }}
+                                <span class="badge bg-{% if sim.estado == 'PARA_AGENDA' %}primary{% elif sim.estado == 'PROCESO_EN_EL_TPE' %}warning{% elif sim.estado == 'EN_APELACION_TSP' %}danger{% elif sim.estado == 'CONCLUIDO' %}success{% else %}secondary{% endif %}">
+                                    {{ sim.get_estado_display }}
                                 </span>
                             </td>
                         </tr>
@@ -292,15 +292,15 @@
                     <tbody>
                         {% for res in ultimas_res %}
                         <tr>
-                            <td><code>{{ res.RES_NUM }}</code></td>
-                            <td>{{ res.sim.SIM_COD }}</td>
-                            <td>{{ res.pm.PM_GRADO }} {{ res.pm.PM_PATERNO }}, {{ res.pm.PM_NOMBRE }}</td>
-                            <td>{{ res.get_RES_TIPO_display|truncatewords:3 }}</td>
-                            <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                            <td><code>{{ res.numero }}</code></td>
+                            <td>{{ res.sim.codigo }}</td>
+                            <td>{{ res.pm.grado }} {{ res.pm.paterno }}, {{ res.pm.nombre }}</td>
+                            <td>{{ res.get_tipo_display|truncatewords:3 }}</td>
+                            <td>{{ res.fecha|date:"d/m/Y" }}</td>
                             <td>
-                                {% if res.RES_FECNOT %}
+                                {% if res.notificacion %}
                                     <span class="badge bg-success">Sí</span>
-                                    <small>{{ res.RES_FECNOT|date:"d/m/Y" }}</small>
+                                    <small>{{ res.notificacion.fecha|date:"d/m/Y" }}</small>
                                 {% else %}
                                     <span class="badge bg-warning">Pendiente</span>
                                     <a href="{% url 'ayudante_registrar_notificacion' res.id %}" class="btn btn-sm btn-link">Notificar</a>
@@ -348,23 +348,23 @@
                                 {% for res in res_sin_pdf %}
                                 <tr>
                                     <td class="text-center">
-                                        <strong>{{ res.RES_NUM }}</strong>
+                                        <strong>{{ res.numero }}</strong>
                                     </td>
                                     <td>
-                                        <code class="bg-light p-1">{{ res.sim.SIM_COD }}</code>
+                                        <code class="bg-light p-1">{{ res.sim.codigo }}</code>
                                     </td>
                                     <td>
                                         <span class="badge bg-warning" style="font-size: 0.75rem;">
-                                            {{ res.get_RES_TIPO_display|truncatewords:2 }}
+                                            {{ res.get_tipo_display|truncatewords:2 }}
                                         </span>
                                     </td>
                                     <td style="white-space: nowrap;">
-                                        <small>{{ res.RES_FEC|date:"d/m/Y" }}</small>
+                                        <small>{{ res.fecha|date:"d/m/Y" }}</small>
                                     </td>
                                     <td>
                                         <small>
                                             {% if res.abog %}
-                                                {{ res.abog.AB_GRADO }} {{ res.abog.AB_PATERNO }}
+                                                {{ res.abog.grado }} {{ res.abog.paterno }}
                                             {% else %}
                                                 —
                                             {% endif %}

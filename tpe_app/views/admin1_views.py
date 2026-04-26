@@ -35,61 +35,61 @@ def admin1_dashboard(request):
     filtros_q = Q()
     if query:
         filtros_q = (
-            Q(SIM_COD__icontains=query) |
-            Q(SIM_RESUM__icontains=query) |
-            Q(SIM_OBJETO__icontains=query) |
-            Q(militares__PM_PATERNO__icontains=query) |
-            Q(militares__PM_MATERNO__icontains=query) |
-            Q(militares__PM_NOMBRE__icontains=query)
+            Q(codigo__icontains=query) |
+            Q(resumen__icontains=query) |
+            Q(objeto__icontains=query) |
+            Q(militares__paterno__icontains=query) |
+            Q(militares__materno__icontains=query) |
+            Q(militares__nombre__icontains=query)
         )
 
     # Sumarios recientes para referencia
     sumarios_recientes = (
         SIM.objects.prefetch_related('abogados', 'militares')
         .filter(filtros_q)
-        .order_by('-SIM_FECREG')[:20]
+        .order_by('-fecha_registro')[:20]
     )
 
     # Sumarios en proceso (con abogado asignado) para gestión de abogados
     sumarios_en_proceso = (
-        SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TPE')
+        SIM.objects.filter(estado='PROCESO_EN_EL_TPE')
         .prefetch_related('abogados', 'militares')
         .filter(filtros_q)
-        .order_by('-SIM_FECING')[:30]
+        .order_by('-fecha_ingreso')[:30]
     )
 
     # Sumarios para agenda (sin abogado asignado - ignorando solicitudes)
     sumarios_sin_asignar = (
-        SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True)
-        .exclude(SIM_TIPO__startswith='SOLICITUD')
+        SIM.objects.filter(estado='PARA_AGENDA', abogados__isnull=True)
+        .exclude(tipo__startswith='SOLICITUD')
         .prefetch_related('militares')
         .filter(filtros_q)
         .distinct()
-        .order_by('-SIM_FECING')
+        .order_by('-fecha_ingreso')
     )
 
     # Solicitudes para agendar
     solicitudes_sin_asignar = (
-        SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True, SIM_TIPO__startswith='SOLICITUD')
+        SIM.objects.filter(estado='PARA_AGENDA', abogados__isnull=True, tipo__startswith='SOLICITUD')
         .prefetch_related('militares')
         .filter(filtros_q)
         .distinct()
-        .order_by('-SIM_FECING')
+        .order_by('-fecha_ingreso')
     )
 
     # RR por agendar — calcular fecha límite 25 días y color de alerta
     rr_sin_asignar = list(
-        Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION', abog__isnull=True)
+        Resolucion.objects.filter(instancia='RECONSIDERACION', abog__isnull=True)
         .select_related('sim', 'resolucion_origen')
-        .order_by('-RES_FECPRESEN')
+        .order_by('-fecha_presentacion')
     )
     hoy = date.today()
     for rr in rr_sin_asignar:
         # Compat de template (antes exponían .res y .RR_FECPRESEN)
         rr.res = rr.resolucion_origen
-        rr.RR_FECPRESEN = rr.RES_FECPRESEN
-        if rr.RES_FECPRESEN:
-            rr.fecha_limite_25 = rr.RES_FECPRESEN + timedelta(days=25)
+        rr.RR_FECPRESEN = rr.fecha_presentacion
+        if rr.fecha_presentacion:
+            rr.fecha_limite_25 = rr.fecha_presentacion + timedelta(days=25)
             dias = (rr.fecha_limite_25 - hoy).days
             if dias < 0:
                 rr.alerta_25 = 'danger'
@@ -108,30 +108,29 @@ def admin1_dashboard(request):
 
     # Documentos pendientes de notificar (RES y RR)
     res_sin_notificar = Resolucion.objects.filter(
-        RES_INSTANCIA='PRIMERA', RES_FECNOT__isnull=True
+        instancia='PRIMERA', notificacion__isnull=True
     ).count()
     rr_sin_notificar = Resolucion.objects.filter(
-        RES_INSTANCIA='RECONSIDERACION', RES_FECNOT__isnull=True
+        instancia='RECONSIDERACION', notificacion__isnull=True
     ).count()
     total_sin_notificar = res_sin_notificar + rr_sin_notificar
 
     # Ejecutorias notificadas pendientes de ordenar archivo a SPRODA
-    # Mostrar todos los Autos de Ejecutoria notificados que no hayan sido archivados
     ejecutorias_notificadas = (
         AUTOTPE.objects.filter(
-            TPE_TIPO='AUTO_EJECUTORIA',
-            TPE_FECNOT__isnull=False,
+            tipo='AUTO_EJECUTORIA',
+            notificacion__isnull=False,
         )
-        .exclude(sim__SIM_FASE__in=['PENDIENTE_ARCHIVO', 'CONCLUIDO'])
-        .select_related('sim', 'pm', 'resolucion')
+        .exclude(sim__fase__in=['PENDIENTE_ARCHIVO', 'CONCLUIDO'])
+        .select_related('sim', 'pm', 'resolucion', 'notificacion')
         .prefetch_related('sim__militares')
-        .order_by('-TPE_FECNOT')
+        .order_by('-notificacion__fecha')
     )
 
     # Agendas realizadas para marcar en el calendario del sidebar
     agendas_realizadas = AGENDA.objects.filter(
-        AG_ESTADO='REALIZADA', AG_FECREAL__isnull=False
-    ).values_list('AG_FECREAL', flat=True).order_by('AG_FECREAL')
+        estado='REALIZADA', fecha_real__isnull=False
+    ).values_list('fecha_real', flat=True).order_by('fecha_real')
 
     # Formatear fechas de agendas realizadas para el JavaScript (JSON válido)
     agendas_dict = {}
@@ -173,7 +172,7 @@ def registrar_sumario(request):
                 with transaction.atomic():
                     # Guardar el sumario
                     sumario = form.save(commit=False)
-                    sumario.SIM_ESTADO = 'PARA_AGENDA'  # Estado inicial
+                    sumario.estado = 'PARA_AGENDA'  # Estado inicial
                     sumario.save()
 
                     # Crear custodia inicial: Admin2 es custodio desde que ingresa el SIM
@@ -194,41 +193,41 @@ def registrar_sumario(request):
                                 pm_data = inline_form.cleaned_data.get('pm_data') or {}
                                 if not pm_data:
                                     continue
-                                ci = pm_data.get('PM_CI')
+                                ci = pm_data.get('ci')
                                 if ci:
-                                    pm = PM.objects.filter(PM_CI=ci).first()
+                                    pm = PM.objects.filter(ci=ci).first()
                                 if not pm:
                                     pm = PM.objects.create(
-                                        PM_CI=pm_data.get('PM_CI'),
-                                        PM_ESCALAFON=pm_data.get('PM_ESCALAFON'),
-                                        PM_GRADO=pm_data.get('PM_GRADO'),
-                                        PM_ARMA=pm_data.get('PM_ARMA'),
-                                        PM_ESPEC=pm_data.get('PM_ESPEC'),
-                                        PM_NOMBRE=pm_data.get('PM_NOMBRE'),
-                                        PM_PATERNO=pm_data.get('PM_PATERNO'),
-                                        PM_MATERNO=pm_data.get('PM_MATERNO'),
-                                        PM_ESTADO='ACTIVO',
+                                        ci=pm_data.get('ci'),
+                                        escalafon=pm_data.get('escalafon'),
+                                        grado=pm_data.get('grado'),
+                                        arma=pm_data.get('arma'),
+                                        especialidad=pm_data.get('especialidad'),
+                                        nombre=pm_data.get('nombre'),
+                                        paterno=pm_data.get('paterno'),
+                                        materno=pm_data.get('materno'),
+                                        estado='ACTIVO',
                                     )
                                 else:
                                     # Actualizar especialidad si ya existe
-                                    if pm_data.get('PM_ESPEC'):
-                                        pm.PM_ESPEC = pm_data['PM_ESPEC']
-                                        pm.save(update_fields=['PM_ESPEC'])
+                                    if pm_data.get('especialidad'):
+                                        pm.especialidad = pm_data['especialidad']
+                                        pm.save(update_fields=['especialidad'])
 
                             # Guardar foto si se subió para este militar
-                            foto = request.FILES.get(f'pm_sim_set-{i}-PM_FOTO')
+                            foto = request.FILES.get(f'pm_sim_set-{i}-foto')
                             if foto and pm:
-                                if pm.PM_FOTO:
-                                    pm.PM_FOTO.delete(save=False)
-                                pm.PM_FOTO = foto
-                                pm.save(update_fields=['PM_FOTO'])
+                                if pm.foto:
+                                    pm.foto.delete(save=False)
+                                pm.foto = foto
+                                pm.save(update_fields=['foto'])
 
                             if pm:
                                 PM_SIM.objects.get_or_create(sim=sumario, pm=pm)
 
                     messages.success(
                         request,
-                        f'✅ Sumario {sumario.SIM_COD} registrado exitosamente'
+                        f'✅ Sumario {sumario.codigo} registrado exitosamente'
                     )
                     return redirect('admin1_dashboard')
 
@@ -241,7 +240,7 @@ def registrar_sumario(request):
         formset = PMSIMFormSet()
 
     # Lista de personal militar para autocompletado
-    personal_militar = PM.objects.values('PM_CI', 'PM_NOMBRE', 'PM_PATERNO', 'PM_GRADO')[:100]
+    personal_militar = PM.objects.values('ci', 'nombre', 'paterno', 'grado')[:100]
 
     context = {
         'form': form,
@@ -267,8 +266,8 @@ def agendar_sumario(request):
             try:
                 with transaction.atomic():
                     # Actualizar el sumario
-                    sumario.SIM_ESTADO = 'PROCESO_EN_EL_TPE'
-                    sumario.SIM_FASE = 'EN_DICTAMEN_1RA'
+                    sumario.estado = 'PROCESO_EN_EL_TPE'
+                    sumario.fase = 'EN_DICTAMEN_1RA'
                     sumario.save()
 
                     # Crear ABOG_SIM: el primero es responsable de la carpeta
@@ -283,8 +282,8 @@ def agendar_sumario(request):
                     nombres = ", ".join(str(a) for a in abogados)
                     messages.success(
                         request,
-                        f'✅ Sumario {sumario.SIM_COD} agendado en agenda {agenda.AG_NUM} '
-                        f'con abogado(s): {nombres} — {agenda.AG_FECPROG.strftime("%d/%m/%Y")}. '
+                        f'✅ Sumario {sumario.codigo} agendado en agenda {agenda.numero} '
+                        f'con abogado(s): {nombres} — {agenda.fecha_prog.strftime("%d/%m/%Y")}. '
                         f'Admin2 debe entregar la carpeta.'
                     )
             except Exception as exc:
@@ -301,8 +300,8 @@ def agendar_sumario(request):
 
     context = {
         'form': form,
-        'sumarios_pendientes': SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True).count(),
-        'agendas_programadas': AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').count(),
+        'sumarios_pendientes': SIM.objects.filter(estado='PARA_AGENDA', abogados__isnull=True).count(),
+        'agendas_programadas': AGENDA.objects.filter(estado='PROGRAMADA').count(),
     }
 
     return render(request, 'tpe_app/admin1/agendar_sumario.html', context)
@@ -315,13 +314,13 @@ def registrar_rr(request):
         if form.is_valid():
             rr = form.save(commit=False)
             # La instancia se fija explícitamente
-            rr.RES_INSTANCIA = 'RECONSIDERACION'
+            rr.instancia = 'RECONSIDERACION'
             # Heredar sim y pm de la resolución origen
             rr.sim = rr.resolucion_origen.sim
             rr.pm = rr.resolucion_origen.pm or rr.sim.militares.first()
             # Número se asigna al momento del fallo; por ahora vacío
-            if not rr.RES_NUM:
-                rr.RES_NUM = ''
+            if not rr.numero:
+                rr.numero = ''
             rr.save()
 
             # Crear custodia inicial: Admin2 es custodio del RR desde que se registra
@@ -369,7 +368,7 @@ def agendar_rr(request):
     context = {
         'form': form,
         'rr_pendientes': Resolucion.objects.filter(
-            RES_INSTANCIA='RECONSIDERACION', abog__isnull=True
+            instancia='RECONSIDERACION', abog__isnull=True
         ).count(),
     }
     return render(request, 'tpe_app/admin1/agendar_rr.html', context)
@@ -401,7 +400,7 @@ def gestionar_abogados_sim(request, sim_id):
                     )
 
             nombres = ", ".join(str(a) for a in form.cleaned_data['abogados'])
-            messages.success(request, f'✅ Abogados del sumario {sim.SIM_COD} actualizados: {nombres}')
+            messages.success(request, f'✅ Abogados del sumario {sim.codigo} actualizados: {nombres}')
             return redirect('gestionar_abogados_sim', sim_id=sim.pk)
     else:
         form = GestionarAbogadosSIMForm(initial={'abogados': sim.abogados.all()})
@@ -436,7 +435,7 @@ def crear_agenda(request):
                 agenda = form.save()
                 messages.success(
                     request,
-                    f'✅ Agenda {agenda.AG_NUM} creada para {agenda.AG_FECPROG.strftime("%d/%m/%Y")}'
+                    f'✅ Agenda {agenda.numero} creada para {agenda.fecha_prog.strftime("%d/%m/%Y")}'
                 )
                 return redirect('lista_agendas')
             except Exception as exc:
@@ -451,9 +450,9 @@ def crear_agenda(request):
 
     # Agendas ordinarias y extraordinarias del mes actual
     agendas_mes = AGENDA.objects.filter(
-        AG_FECPROG__year=year,
-        AG_FECPROG__month=month
-    ).exclude(AG_ESTADO='CANCELADA')
+        fecha_prog__year=year,
+        fecha_prog__month=month
+    ).exclude(estado='CANCELADA')
 
     # Importar feriados
     from ..models import FERIADOS_2026
@@ -477,12 +476,12 @@ def crear_agenda(request):
     # Construir datos por día
     dias_datos = {}
     for agenda in agendas_mes:
-        dia = agenda.AG_FECPROG.day
+        dia = agenda.fecha_prog.day
         if dia not in dias_datos:
             dias_datos[dia] = {'agendas': [], 'feriado': None}
         dias_datos[dia]['agendas'].append({
-            'tipo': agenda.AG_TIPO,
-            'num': agenda.AG_NUM
+            'tipo': agenda.tipo,
+            'num': agenda.numero
         })
 
     # Agregar feriados del mes
@@ -540,13 +539,13 @@ def crear_agenda(request):
 def lista_agendas(request):
     """Lista todas las agendas con su estado y opciones de edición"""
 
-    agendas = AGENDA.objects.all().order_by('-AG_FECPROG')
+    agendas = AGENDA.objects.all().order_by('-fecha_prog')
 
     context = {
         'agendas': agendas,
-        'total_programadas': AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').count(),
-        'total_realizadas': AGENDA.objects.filter(AG_ESTADO='REALIZADA').count(),
-        'total_suspendidas': AGENDA.objects.filter(AG_ESTADO='SUSPENDIDA').count(),
+        'total_programadas': AGENDA.objects.filter(estado='PROGRAMADA').count(),
+        'total_realizadas': AGENDA.objects.filter(estado='REALIZADA').count(),
+        'total_suspendidas': AGENDA.objects.filter(estado='SUSPENDIDA').count(),
     }
 
     return render(request, 'tpe_app/admin1/lista_agendas.html', context)
@@ -586,12 +585,12 @@ def editar_agenda_resultado(request, ag_id):
                     agenda = form.save()
 
                     # Determinar mensaje según estado
-                    if agenda.AG_ESTADO == 'REALIZADA':
-                        msg = f'✅ Agenda {agenda.AG_NUM} registrada como REALIZADA el {agenda.AG_FECREAL.strftime("%d/%m/%Y")}'
-                    elif agenda.AG_ESTADO == 'SUSPENDIDA':
-                        msg = f'⚠️ Agenda {agenda.AG_NUM} registrada como SUSPENDIDA'
+                    if agenda.estado == 'REALIZADA':
+                        msg = f'✅ Agenda {agenda.numero} registrada como REALIZADA el {agenda.fecha_real.strftime("%d/%m/%Y")}'
+                    elif agenda.estado == 'SUSPENDIDA':
+                        msg = f'⚠️ Agenda {agenda.numero} registrada como SUSPENDIDA'
                     else:
-                        msg = f'📅 Agenda {agenda.AG_NUM} REPROGRAMADA'
+                        msg = f'📅 Agenda {agenda.numero} REPROGRAMADA'
 
                     messages.success(request, msg)
                     return redirect('lista_agendas')
@@ -611,7 +610,7 @@ def editar_agenda_resultado(request, ag_id):
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
 def admin1_ordenar_ejecutoria(request, res_id):
     """Admin1 ordena a Admin2 que entregue carpeta a abogado de ejecutoria (ABOG2)"""
-    res = get_object_or_404(Resolucion, pk=res_id, RES_INSTANCIA='PRIMERA')
+    res = get_object_or_404(Resolucion, pk=res_id, instancia='PRIMERA')
     sim = res.sim
 
     # Validar: ¿ya existe custodia ACTIVA para ejecutoria?
@@ -624,7 +623,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
     if custodia_existente:
         messages.warning(
             request,
-            f'⚠️ Orden ya creada para {sim.SIM_COD}. Admin2 debe completar la entrega.'
+            f'⚠️ Orden ya creada para {sim.codigo}. Admin2 debe completar la entrega.'
         )
         return redirect('pendientes_ejecutoria')
 
@@ -656,7 +655,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
             )
             messages.success(
                 request,
-                f'✅ Orden creada: {sim.SIM_COD} → Admin2 debe entregar a ABOG2'
+                f'✅ Orden creada: {sim.codigo} → Admin2 debe entregar a ABOG2'
             )
     except Exception as exc:
         messages.error(request, f'❌ Error al crear orden: {exc}')
@@ -677,28 +676,28 @@ def autocomplete_pm(request):
     # PRIORIDAD 1: Buscar por CI
     if query_ci:
         if query_ci.isdigit():
-            pm = PM.objects.filter(PM_CI=query_ci).first()
+            pm = PM.objects.filter(ci=query_ci).first()
 
     # PRIORIDAD 2: Buscar por Nombre + Paterno + Materno
     if not pm and query_nombre and query_paterno:
-        query = PM.objects.filter(PM_NOMBRE=query_nombre, PM_PATERNO=query_paterno)
+        query = PM.objects.filter(nombre=query_nombre, paterno=query_paterno)
         if query_materno:
-            query = query.filter(PM_MATERNO=query_materno)
+            query = query.filter(materno=query_materno)
         pm = query.first()
 
     if pm:
         return JsonResponse({
             'encontrado': True,
-            'pm_id': pm.pm_id,
-            'PM_CI': str(pm.PM_CI) if pm.PM_CI else '',
-            'PM_NOMBRE': pm.PM_NOMBRE,
-            'PM_PATERNO': pm.PM_PATERNO,
-            'PM_MATERNO': pm.PM_MATERNO or '',
-            'PM_GRADO': pm.PM_GRADO or '',
-            'PM_ARMA': pm.PM_ARMA or '',
-            'PM_ESCALAFON': pm.PM_ESCALAFON or '',
-            'PM_ESPEC': pm.PM_ESPEC or '',
-            'PM_FOTO': pm.PM_FOTO.url if pm.PM_FOTO else '',
+            'pm_id': pm.id,
+            'ci': str(pm.ci) if pm.ci else '',
+            'nombre': pm.nombre,
+            'paterno': pm.paterno,
+            'materno': pm.materno or '',
+            'grado': pm.grado or '',
+            'arma': pm.arma or '',
+            'escalafon': pm.escalafon or '',
+            'especialidad': pm.especialidad or '',
+            'foto': pm.foto.url if pm.foto else '',
         })
     else:
         return JsonResponse({'encontrado': False})
@@ -715,23 +714,23 @@ def admin1_ordenar_archivo_sproda(request, sim_id):
 
     sim = get_object_or_404(SIM, pk=sim_id)
 
-    if sim.SIM_FASE != 'EJECUTORIA_NOTIFICADA':
+    if sim.fase != 'EJECUTORIA_NOTIFICADA':
         messages.error(request, "Este sumario no está en fase de ejecutoria notificada.")
         return redirect('admin1_dashboard')
 
     if request.method == 'POST':
-        sim.SIM_FASE = 'PENDIENTE_ARCHIVO'
+        sim.fase = 'PENDIENTE_ARCHIVO'
         sim.save()
         messages.success(
             request,
-            f"✅ Archivo SPRODA ordenado para SIM {sim.SIM_COD}. Admin2 recibirá la instrucción."
+            f"✅ Archivo SPRODA ordenado para SIM {sim.codigo}. Admin2 recibirá la instrucción."
         )
         return redirect('admin1_dashboard')
 
     # Obtener el Auto de Ejecutoria asociado
     auto_ej = AUTOTPE.objects.filter(
-        sim=sim, TPE_TIPO='AUTO_EJECUTORIA', TPE_FECNOT__isnull=False
-    ).order_by('-TPE_FEC').first()
+        sim=sim, tipo='AUTO_EJECUTORIA', notificacion__isnull=False
+    ).select_related('notificacion', 'memorandum').order_by('-fecha').first()
 
     return render(request, 'tpe_app/admin1/ordenar_archivo_sproda.html', {
         'sim': sim,

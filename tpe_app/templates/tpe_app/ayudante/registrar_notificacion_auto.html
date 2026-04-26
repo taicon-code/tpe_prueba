@@ -66,10 +66,10 @@
                 </h1>
                 <p class="text-muted">Registre los datos de notificación del Auto TPE</p>
                 <div class="alert alert-light border">
-                    <strong>Auto TPE:</strong> {{ auto.TPE_NUM }}<br>
-                    <strong>Tipo:</strong> {{ auto.get_TPE_TIPO_display }}<br>
-                    <strong>Sumario:</strong> {{ auto.sim.SIM_COD }}<br>
-                    <strong>Personal:</strong> {{ auto.pm.PM_GRADO }} {{ auto.pm.PM_PATERNO }}, {{ auto.pm.PM_NOMBRE }}
+                    <strong>Auto TPE:</strong> {{ auto.numero }}<br>
+                    <strong>Tipo:</strong> {{ auto.get_tipo_display }}<br>
+                    <strong>Sumario:</strong> {{ auto.sim.codigo }}<br>
+                    <strong>Personal:</strong> {{ auto.pm.grado }} {{ auto.pm.paterno }}, {{ auto.pm.nombre }}
                 </div>
             </div>
 
@@ -92,45 +92,45 @@
                         <!-- Fecha y Hora de Notificación -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.TPE_FECNOT.id_for_label }}" class="form-label">
-                                    {{ form.TPE_FECNOT.label }} <span class="text-danger">*</span>
+                                <label for="{{ form.fecha.id_for_label }}" class="form-label">
+                                    {{ form.fecha.label }} <span class="text-danger">*</span>
                                 </label>
-                                {{ form.TPE_FECNOT }}
-                                {% if form.TPE_FECNOT.errors %}
-                                    <div class="text-danger small mt-1">{{ form.TPE_FECNOT.errors }}</div>
+                                {{ form.fecha }}
+                                {% if form.fecha.errors %}
+                                    <div class="text-danger small mt-1">{{ form.fecha.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.TPE_HORNOT.id_for_label }}" class="form-label">
-                                    {{ form.TPE_HORNOT.label }}
+                                <label for="{{ form.hora.id_for_label }}" class="form-label">
+                                    {{ form.hora.label }}
                                 </label>
-                                {{ form.TPE_HORNOT }}
-                                {% if form.TPE_HORNOT.errors %}
-                                    <div class="text-danger small mt-1">{{ form.TPE_HORNOT.errors }}</div>
+                                {{ form.hora }}
+                                {% if form.hora.errors %}
+                                    <div class="text-danger small mt-1">{{ form.hora.errors }}</div>
                                 {% endif %}
                             </div>
                         </div>
 
                         <!-- Persona que Notificó -->
                         <div class="mb-3">
-                            <label for="{{ form.TPE_NOT.id_for_label }}" class="form-label">
-                                {{ form.TPE_NOT.label }}
+                            <label for="{{ form.notificado_a.id_for_label }}" class="form-label">
+                                {{ form.notificado_a.label }}
                             </label>
-                            {{ form.TPE_NOT }}
-                            {% if form.TPE_NOT.errors %}
-                                <div class="text-danger small mt-1">{{ form.TPE_NOT.errors }}</div>
+                            {{ form.notificado_a }}
+                            {% if form.notificado_a.errors %}
+                                <div class="text-danger small mt-1">{{ form.notificado_a.errors }}</div>
                             {% endif %}
                             <small class="text-muted d-block mt-1">Nombre de la persona que notificó</small>
                         </div>
 
                         <!-- Tipo de Notificación -->
                         <div class="mb-3">
-                            <label for="{{ form.TPE_TIPO_NOTIF.id_for_label }}" class="form-label">
-                                {{ form.TPE_TIPO_NOTIF.label }}
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                {{ form.tipo.label }}
                             </label>
-                            {{ form.TPE_TIPO_NOTIF }}
-                            {% if form.TPE_TIPO_NOTIF.errors %}
-                                <div class="text-danger small mt-1">{{ form.TPE_TIPO_NOTIF.errors }}</div>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
                             {% endif %}
                         </div>
 

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, AUTOTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, RecursoTSP
+from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, AUTOTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -66,7 +66,7 @@ class SIMAdminForm(forms.ModelForm):
         model = SIM
         fields = '__all__'
         widgets = {
-            'SIM_RESUM': ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
+            'resumen': ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
         }
 
 
@@ -75,9 +75,9 @@ class SIMAdminForm(forms.ModelForm):
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(PM)
 class PMAdmin(admin.ModelAdmin):
-    list_display  = ('PM_CI', 'PM_ESCALAFON', 'PM_GRADO', 'PM_NOMBRE', 'PM_PATERNO', 'PM_ARMA', 'PM_ESTADO')
-    search_fields = ('PM_CI', 'PM_NOMBRE', 'PM_PATERNO')
-    list_filter   = ('PM_ESTADO', 'PM_ESCALAFON', 'PM_ARMA')
+    list_display  = ('ci', 'escalafon', 'grado', 'nombre', 'paterno', 'arma', 'estado')
+    search_fields = ('ci', 'nombre', 'paterno')
+    list_filter   = ('estado', 'escalafon', 'arma')
 
     class Meta:
         verbose_name        = "Personal Militar"
@@ -91,8 +91,8 @@ class PMAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(ABOG)
 class ABOGAdmin(admin.ModelAdmin):
-    list_display  = ('AB_CI', 'AB_GRADO', 'AB_NOMBRE', 'AB_PATERNO', 'AB_MATERNO')
-    search_fields = ('AB_CI', 'AB_NOMBRE', 'AB_PATERNO')
+    list_display  = ('ci', 'grado', 'nombre', 'paterno', 'materno')
+    search_fields = ('ci', 'nombre', 'paterno')
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -102,7 +102,7 @@ class ABOGAdmin(admin.ModelAdmin):
 class VocalTPEAdmin(admin.ModelAdmin):
     list_display  = ('pm', 'cargo', 'activo')
     list_filter   = ('cargo', 'activo')
-    search_fields = ('pm__PM_NOMBRE', 'pm__PM_PATERNO')
+    search_fields = ('pm__nombre', 'pm__paterno')
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -120,17 +120,17 @@ class PM_SIM_Inline(admin.TabularInline):
 @admin.register(SIM)
 class SIMAdmin(admin.ModelAdmin):
     form          = SIMAdminForm
-    list_display  = ('SIM_COD', 'SIM_TIPO', 'SIM_RESUM', 'SIM_FECREG')
-    search_fields = ('SIM_COD', 'SIM_RESUM')
-    list_filter   = ('SIM_TIPO',)
+    list_display  = ('codigo', 'tipo', 'resumen', 'fecha_registro')
+    search_fields = ('codigo', 'resumen')
+    list_filter   = ('tipo',)
     inlines       = [PM_SIM_Inline]
 # ESTO ORDENA LOS CAMPOS EN EL FORMULARIO PARA LA VISUALIZACIÓN DENTRO DEL SUMARIO INFORMATIVO MILITAR
     fieldsets = (
         ('Datos principales', {
-            'fields': ('SIM_COD','SIM_FECING', 'SIM_OBJETO','SIM_RESUM', 'SIM_AUTOFINAL','SIM_TIPO')
+            'fields': ('codigo','fecha_ingreso', 'objeto','resumen', 'auto_final','tipo')
         }),
         ('Situación Actual', {
-            'fields': ('SIM_ESTADO',)
+            'fields': ('estado',)
         }),
     )
 
@@ -140,13 +140,13 @@ class SIMAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(AGENDA)
 class AGENDAAdmin(admin.ModelAdmin):
-    list_display  = ('AG_NUM', 'AG_FECPROG', 'AG_FECREAL', 'AG_TIPO')
-    search_fields = ('AG_NUM',)
-    list_filter   = ('AG_TIPO',)
+    list_display  = ('numero', 'fecha_prog', 'fecha_real', 'tipo')
+    search_fields = ('numero',)
+    list_filter   = ('tipo',)
 
     fieldsets = (
         ('Datos de la Reunión', {
-            'fields': ('AG_NUM', 'AG_FECPROG', 'AG_FECREAL', 'AG_TIPO',)
+            'fields': ('numero', 'fecha_prog', 'fecha_real', 'tipo',)
         }),
     )
 
@@ -157,13 +157,13 @@ class AGENDAAdmin(admin.ModelAdmin):
 @admin.register(DICTAMEN)
 class DICTAMENAdmin(admin.ModelAdmin):
 
-    list_display  = ('DIC_NUM', 'sim', 'agenda', 'abog', 'DIC_CONCL')
-    search_fields = ('DIC_NUM', 'sim__SIM_COD', 'agenda__AG_NUM')
+    list_display  = ('numero', 'sim', 'agenda', 'abog', 'conclusion')
+    search_fields = ('numero', 'sim__codigo', 'agenda__numero')
     list_filter   = ('abog',)
 
     fieldsets = (
         ('Datos del Dictamen', {
-            'fields': ('agenda', 'sim', 'abog', 'DIC_NUM', 'DIC_CONCL')
+            'fields': ('agenda', 'sim', 'abog', 'numero', 'conclusion')
         }),
     )
 
@@ -173,28 +173,41 @@ class DICTAMENAdmin(admin.ModelAdmin):
 #  Agrupa RES, RR y AUTOTPE
 # ============================================================
 
+class NotificacionInline(admin.StackedInline):
+    model = Notificacion
+    extra = 0
+    max_num = 1
+    verbose_name = "Notificación"
+    fields = ('tipo', 'notificado_a', 'fecha', 'hora')
+
+
+class MemorandumInline(admin.StackedInline):
+    model = Memorandum
+    extra = 0
+    max_num = 1
+    verbose_name = "Memorándum"
+    fields = ('numero', 'fecha', 'fecha_entrega')
+
+
 @admin.register(Resolucion)
 class ResolucionAdmin(admin.ModelAdmin):
-    list_display  = ('RES_NUM', 'RES_INSTANCIA', 'sim', 'abog', 'RES_TIPO', 'RES_RESUM', 'RES_FEC',
-                     'alerta_plazo', 'RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT', 'RES_HORNOT')
-    search_fields = ('RES_NUM', 'sim__SIM_COD', 'abog__AB_PATERNO')
-    list_filter   = ('RES_INSTANCIA', 'RES_TIPO', 'RES_RESUM')
+    list_display  = ('numero', 'instancia', 'sim', 'abog', 'tipo', 'resumen', 'fecha', 'alerta_plazo')
+    search_fields = ('numero', 'sim__codigo', 'abog__paterno')
+    list_filter   = ('instancia', 'tipo', 'resumen')
+    inlines       = [NotificacionInline]
 
     fieldsets = (
         ('INSTANCIA', {
-            'fields': ('RES_INSTANCIA',)
+            'fields': ('instancia',)
         }),
         ('RELACIONES', {
             'fields': ('sim', 'pm', 'abog', 'agenda', 'dictamen', 'resolucion_origen',)
         }),
         ('DISPOSICIÓN RESOLUTIVA', {
-            'fields': ('RES_NUM', 'RES_FEC', 'RES_RESOL', 'RES_TIPO', 'RES_RESUM',)
+            'fields': ('numero', 'fecha', 'texto', 'tipo', 'resumen',)
         }),
         ('PLAZOS (RECONSIDERACION)', {
-            'fields': ('RES_FECPRESEN', 'RES_FECLIMITE',)
-        }),
-        ('NOTIFICACIÓN', {
-            'fields': ('RES_TIPO_NOTIF', 'RES_NOT', 'RES_FECNOT', 'RES_HORNOT',)
+            'fields': ('fecha_presentacion', 'fecha_limite',)
         }),
     )
 
@@ -215,32 +228,35 @@ class ResolucionAdmin(admin.ModelAdmin):
         }
         label = etiquetas.get(color, '-')
         css = colores_css.get(color, '#6c757d')
-        fecha = obj.RES_FECLIMITE.strftime('%d/%m/%Y') if obj.RES_FECLIMITE else '-'
+        fecha = obj.fecha_limite.strftime('%d/%m/%Y') if obj.fecha_limite else '-'
         return (
             f'<span style="color:{css};font-weight:700;">'
             f'{label}</span><br><small style="color:#555;">{fecha}</small>'
         )
     alerta_plazo.short_description = 'Plazo RR'
 
+class NotificacionAUTOTPEInline(admin.StackedInline):
+    model = Notificacion
+    extra = 0
+    max_num = 1
+    verbose_name = "Notificación"
+    fields = ('tipo', 'notificado_a', 'fecha', 'hora')
+    fk_name = 'autotpe'
+
+
 @admin.register(AUTOTPE)
 class AUTOTPEAdmin(admin.ModelAdmin):
-    list_display  = ('TPE_NUM', 'sim', 'abog', 'TPE_TIPO', 'TPE_FEC', 'TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT','TPE_HORNOT')
-    search_fields = ('TPE_NUM', 'sim__SIM_COD','abog__AB_PATERNO')
-    list_filter   = ('TPE_TIPO',)
+    list_display  = ('numero', 'sim', 'abog', 'tipo', 'fecha')
+    search_fields = ('numero', 'sim__codigo', 'abog__paterno')
+    list_filter   = ('tipo',)
+    inlines       = [NotificacionAUTOTPEInline, MemorandumInline]
 
     fieldsets = (
         ('AGENDA', {
             'fields': ('sim', 'abog', 'agenda',)
         }),
         ('DISPOSICIÓN DEL AUTO', {
-            'fields': ('TPE_NUM', 'TPE_FEC', 'TPE_RESOL', 'TPE_TIPO',)
-        }),
-        ('NOTIFICACIÓN', {
-            'fields': ('TPE_TIPO_NOTIF', 'TPE_NOT', 'TPE_FECNOT', 'TPE_HORNOT',)
-        }),
-        ('MEMORÁNDUM', {
-            'fields': ('TPE_MEMO_NUM', 'TPE_MEMO_FEC', 'TPE_MEMO_ENTREGA',),
-            'classes': ('collapse',),
+            'fields': ('numero', 'fecha', 'texto', 'tipo',)
         }),
     )
 
@@ -250,17 +266,26 @@ class AUTOTPEAdmin(admin.ModelAdmin):
 #  Agrupa RAP, RAEE y AUTOTSP
 # ============================================================
 
+class NotificacionRecursoTSPInline(admin.StackedInline):
+    model = Notificacion
+    extra = 0
+    max_num = 1
+    verbose_name = "Notificación"
+    fields = ('tipo', 'notificado_a', 'fecha', 'hora')
+    fk_name = 'recurso_tsp'
+
+
 @admin.register(RecursoTSP)
 class RecursoTSPAdmin(admin.ModelAdmin):
-    list_display  = ('TSP_NUM', 'TSP_INSTANCIA', 'sim', 'TSP_FECPRESEN', 'TSP_OFI',
-                     'TSP_FECOFI', 'alerta_plazo', 'TSP_FEC',
-                     'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT')
-    search_fields = ('TSP_NUM', 'sim__SIM_COD')
-    list_filter   = ('TSP_INSTANCIA', 'TSP_TIPO')
+    list_display  = ('numero', 'instancia', 'sim', 'fecha_presentacion', 'numero_oficio',
+                     'fecha_oficio', 'alerta_plazo', 'fecha')
+    search_fields = ('numero', 'sim__codigo')
+    list_filter   = ('instancia', 'tipo')
+    inlines       = [NotificacionRecursoTSPInline]
 
     @mark_safe
     def alerta_plazo(self, obj):
-        if obj.TSP_INSTANCIA != 'APELACION':
+        if obj.instancia != 'APELACION':
             return '<span style="color:#6c757d;">—</span>'
         color = obj.get_alerta_plazo()
         etiquetas = {
@@ -277,7 +302,7 @@ class RecursoTSPAdmin(admin.ModelAdmin):
         }
         label = etiquetas.get(color, '-')
         css = colores_css.get(color, '#6c757d')
-        fecha = obj.TSP_FECLIMITE.strftime('%d/%m/%Y') if obj.TSP_FECLIMITE else '-'
+        fecha = obj.fecha_limite.strftime('%d/%m/%Y') if obj.fecha_limite else '-'
         return (
             f'<span style="color:{css};font-weight:700;">'
             f'{label}</span><br><small style="color:#555;">{fecha}</small>'
@@ -286,38 +311,45 @@ class RecursoTSPAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('INSTANCIA', {
-            'fields': ('TSP_INSTANCIA',),
+            'fields': ('instancia',),
         }),
         ('REGISTRO DEL RECURSO', {
             'fields': ('sim', 'pm', 'resolucion', 'recurso_origen',
-                       'TSP_FECPRESEN', 'TSP_FECLIMITE',)
+                       'fecha_presentacion', 'fecha_limite',)
         }),
         ('REGISTRO DE ENVÍO AL TSP', {
-            'fields': ('TSP_OFI', 'TSP_FECOFI',)
+            'fields': ('numero_oficio', 'fecha_oficio',)
         }),
         ('PARTE RESOLUTIVA', {
-            'fields': ('TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_TIPO', 'TSP_RESUM',)
-        }),
-        ('NOTIFICACIÓN', {
-            'fields': ('TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT',)
+            'fields': ('numero', 'fecha', 'texto', 'tipo',)
         }),
     )
 
 
+class NotificacionAUTOTSPInline(admin.StackedInline):
+    model = Notificacion
+    extra = 0
+    max_num = 1
+    verbose_name = "Notificación"
+    fields = ('tipo', 'notificado_a', 'fecha', 'hora')
+    fk_name = 'autotsp'
+
+
 @admin.register(AUTOTSP)
 class AUTOTSPAdmin(admin.ModelAdmin):
-    list_display  = ('TSP_NUM', 'sim', 'TSP_TIPO', 'TSP_FEC', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT','TSP_HORNOT')
-    search_fields = ('TSP_NUM', 'sim__SIM_COD')
-    list_filter   = ('TSP_TIPO',)
+    list_display  = ('numero', 'sim', 'tipo', 'fecha')
+    search_fields = ('numero', 'sim__codigo')
+    list_filter   = ('tipo',)
+    inlines       = [NotificacionAUTOTSPInline]
 
 # ════════════════════════════════════════════════════════════════════════════
 #  ADMIN: Documentos Adjuntos
 # ════════════════════════════════════════════════════════════════════════════
 # @admin.register(DocumentoAdjunto)
 # class DocumentoAdjuntoAdmin(admin.ModelAdmin):
-    # list_display  = ('DOC_NOMBRE', 'DOC_TABLA', 'DOC_TIPO', 'DOC_FECREG')
-    # search_fields = ('DOC_NOMBRE', 'DOC_TABLA')
-    # list_filter   = ('DOC_TABLA', 'DOC_TIPO')
+    # list_display  = ('nombre', 'tabla', 'tipo', 'fecha_registro')
+    # search_fields = ('nombre', 'tabla')
+    # list_filter   = ('tabla', 'tipo')
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
@@ -366,7 +398,7 @@ class UsuarioTPEAdmin(UserAdmin):
 class PerfilUsuarioAdmin(admin.ModelAdmin):
     list_display  = ('usuario_completo', 'rol_badge', 'abogado_asignado', 'activo', 'acciones')
     list_filter   = ('rol', 'activo', 'user__date_joined')
-    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'abogado__AB_PATERNO')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'abogado__paterno')
     readonly_fields = ('user_info',)
 
     fieldsets = (
@@ -400,7 +432,7 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
     def abogado_asignado(self, obj):
         """Muestra si hay abogado asignado"""
         if obj.abogado:
-            return f"✓ {obj.abogado.AB_PATERNO} {obj.abogado.AB_MATERNO}"
+            return f"✓ {obj.abogado.paterno} {obj.abogado.materno}"
         return "—"
     abogado_asignado.short_description = "Abogado Vinculado"
 

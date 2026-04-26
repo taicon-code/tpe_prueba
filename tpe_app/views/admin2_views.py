@@ -55,7 +55,7 @@ def admin2_dashboard(request):
 
             # Abogado de RR si existe
             rr = Resolucion.objects.filter(
-                sim=custodia.sim, RES_INSTANCIA='RECONSIDERACION', abog__isnull=False
+                sim=custodia.sim, instancia='RECONSIDERACION', abog__isnull=False
             ).select_related('abog').last()
             custodia.abog_rr = rr.abog if rr else None
 
@@ -127,38 +127,38 @@ def admin2_dashboard(request):
         ).exists()
 
         # No incluir archivados/concluidos
-        if not has_active_custody and sim.SIM_ESTADO not in ['PROCESO_CONCLUIDO_TPE', 'PROCESO_EJECUTADO']:
+        if not has_active_custody and sim.estado not in ['PROCESO_CONCLUIDO_TPE', 'PROCESO_EJECUTADO']:
             abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
             sim.abogados_asignados = [a.abog for a in abog_primera]
             sims_pendientes_entregar.append(sim)
 
     # Ordenar por fecha de ingreso descendente
-    sims_pendientes_entregar.sort(key=lambda x: x.SIM_FECING if x.SIM_FECING else timezone.now(), reverse=True)
+    sims_pendientes_entregar.sort(key=lambda x: x.fecha_ingreso if x.fecha_ingreso else timezone.now(), reverse=True)
 
     # ✅ 7. PENDIENTE ARCHIVO SPRODA (Admin1 ordenó el archivo final)
     sims_pendiente_archivo = list(
-        SIM.objects.filter(SIM_FASE='PENDIENTE_ARCHIVO')
+        SIM.objects.filter(fase='PENDIENTE_ARCHIVO')
         .prefetch_related('militares')
-        .order_by('-SIM_FECING')
+        .order_by('-fecha_ingreso')
     )
     for sim_pa in sims_pendiente_archivo:
         sim_pa.auto_ejecutoria = AUTOTPE.objects.filter(
-            sim=sim_pa, TPE_TIPO='AUTO_EJECUTORIA'
-        ).order_by('-TPE_FEC').first()
+            sim=sim_pa, tipo='AUTO_EJECUTORIA'
+        ).order_by('-fecha').first()
 
     # ✅ 8. PROCESO_CONCLUIDO_TPE con memorándum pendiente de retorno
     sims_memo_pendiente = list(
-        SIM.objects.filter(SIM_ESTADO='PROCESO_CONCLUIDO_TPE')
+        SIM.objects.filter(estado='PROCESO_CONCLUIDO_TPE')
         .prefetch_related('militares')
-        .order_by('-SIM_FECING')
+        .order_by('-fecha_ingreso')
     )
     sims_con_memo_pendiente = []
     for sim_m in sims_memo_pendiente:
         auto = AUTOTPE.objects.filter(
-            sim=sim_m, TPE_TIPO='AUTO_EJECUTORIA',
-            TPE_MEMO_NUM__isnull=False,
-            TPE_MEMO_ENTREGA__isnull=True,
-        ).first()
+            sim=sim_m, tipo='AUTO_EJECUTORIA',
+            memorandum__isnull=False,
+            memorandum__fecha_entrega__isnull=True,
+        ).select_related('memorandum').first()
         if auto:
             sim_m.auto_ejecutoria = auto
             sims_con_memo_pendiente.append(sim_m)
@@ -171,12 +171,12 @@ def admin2_dashboard(request):
 
     if query:
         try:
-            # Buscar en SIM_COD, militares paterno/materno/nombre
+            # Buscar en codigo, militares paterno/materno/nombre
             filtros_q = (
-                Q(SIM_COD__icontains=query) |
-                Q(militares__PM_PATERNO__icontains=query) |
-                Q(militares__PM_MATERNO__icontains=query) |
-                Q(militares__PM_NOMBRE__icontains=query)
+                Q(codigo__icontains=query) |
+                Q(militares__paterno__icontains=query) |
+                Q(militares__materno__icontains=query) |
+                Q(militares__nombre__icontains=query)
             )
             sims = SIM.objects.filter(filtros_q).distinct()
             historial_sim = CustodiaSIM.objects.filter(sim__in=sims).select_related('abog').order_by('fecha_recepcion')
@@ -269,7 +269,7 @@ def admin2_entregar_carpeta(request, sim_id):
                 messages.error(request, f'❌ Error: {str(e)}')
 
     # Obtener abogados disponibles
-    abogados = ABOG.objects.all().order_by('AB_PATERNO')
+    abogados = ABOG.objects.all().order_by('paterno')
 
     # Tipos de custodia disponibles para entregar
     TIPOS_CUSTODIA = [
@@ -306,7 +306,7 @@ def admin2_entregar_carpeta(request, sim_id):
     if orden_ejecutoria and orden_ejecutoria.abog_destino:
         pre_llenar_tipo = 'ABOG_AUTOS'
         pre_llenar_abog = orden_ejecutoria.abog_destino.pk
-        mensaje_orden = f'📋 Orden: Entregar a ABOG2 ({orden_ejecutoria.abog_destino.AB_PATERNO}) para Ejecutoria'
+        mensaje_orden = f'📋 Orden: Entregar a ABOG2 ({orden_ejecutoria.abog_destino.paterno}) para Ejecutoria'
 
     context = {
         'sim': sim,
@@ -355,7 +355,7 @@ def admin2_recibir_carpeta(request, sim_id):
 
                 messages.success(
                     request,
-                    f'✅ Carpeta recibida de {custodio_actual.abog.AB_GRADO} {custodio_actual.abog.AB_PATERNO}'
+                    f'✅ Carpeta recibida de {custodio_actual.abog.grado} {custodio_actual.abog.paterno}'
                 )
                 return redirect('admin2_dashboard')
         except Exception as e:
@@ -397,7 +397,7 @@ def admin2_confirmar_recepcion(request, sim_id):
 
                 messages.success(
                     request,
-                    f'✅ Carpeta {sim.SIM_COD} recibida conforme y en su poder'
+                    f'✅ Carpeta {sim.codigo} recibida conforme y en su poder'
                 )
                 return redirect('admin2_dashboard')
         except Exception as e:
@@ -436,22 +436,22 @@ def subir_pdf_res(request, res_id):
             with transaction.atomic():
                 # Eliminar PDF anterior si existe
                 DocumentoAdjunto.objects.filter(
-                    DOC_TABLA='resolucion',
-                    DOC_ID_REG=res.pk
+                    tabla='resolucion',
+                    registro_id=res.pk
                 ).delete()
 
                 # Crear nuevo documento
                 DocumentoAdjunto.objects.create(
-                    DOC_TABLA='resolucion',
-                    DOC_ID_REG=res.pk,
-                    DOC_TIPO='resolucion',
-                    DOC_RUTA=archivo_pdf,
-                    DOC_NOMBRE=f'RES {res.RES_NUM} - {res.pm.PM_GRADO} {res.pm.PM_PATERNO}'
+                    tabla='resolucion',
+                    registro_id=res.pk,
+                    tipo='resolucion',
+                    archivo=archivo_pdf,
+                    nombre=f'RES {res.numero} - {res.pm.grado} {res.pm.paterno}'
                 )
 
                 messages.success(
                     request,
-                    f'✅ PDF de la Resolución {res.RES_NUM} subido correctamente'
+                    f'✅ PDF de la Resolución {res.numero} subido correctamente'
                 )
                 return redirect('administrativo_dashboard')
         except Exception as e:
@@ -459,8 +459,8 @@ def subir_pdf_res(request, res_id):
 
     # Verificar si ya tiene PDF
     pdf_existente = DocumentoAdjunto.objects.filter(
-        DOC_TABLA='resolucion',
-        DOC_ID_REG=res.pk
+        tabla='resolucion',
+        registro_id=res.pk
     ).first()
 
     context = {
@@ -522,12 +522,12 @@ def admin2_confirmar_archivo_sproda(request, sim_id):
     """Admin2 confirma que realizó el archivo final (SPRODA + copias a secciones si corresponde).
     Transiciona el SIM a CONCLUIDO → PROCESO_CONCLUIDO_TPE."""
 
-    sim = get_object_or_404(SIM, pk=sim_id, SIM_FASE='PENDIENTE_ARCHIVO')
+    sim = get_object_or_404(SIM, pk=sim_id, fase='PENDIENTE_ARCHIVO')
 
     if request.method == 'POST':
         observacion = request.POST.get('observacion', '').strip()
         with transaction.atomic():
-            sim.SIM_FASE = 'CONCLUIDO'
+            sim.fase = 'CONCLUIDO'
             sim.save()
             # Registrar en historial de custodia
             CustodiaSIM.objects.create(
@@ -540,13 +540,13 @@ def admin2_confirmar_archivo_sproda(request, sim_id):
             )
         messages.success(
             request,
-            f"✅ SIM {sim.SIM_COD} archivado correctamente. Estado: Proceso Concluido (TPE)."
+            f"✅ SIM {sim.codigo} archivado correctamente. Estado: Proceso Concluido (TPE)."
         )
         return redirect('admin2_dashboard')
 
     auto_ej = AUTOTPE.objects.filter(
-        sim=sim, TPE_TIPO='AUTO_EJECUTORIA'
-    ).order_by('-TPE_FEC').first()
+        sim=sim, tipo='AUTO_EJECUTORIA'
+    ).order_by('-fecha').first()
 
     return render(request, 'tpe_app/admin2/confirmar_archivo_sproda.html', {
         'sim': sim,
@@ -560,7 +560,7 @@ def admin2_registrar_retorno_memo(request, auto_id):
     """Admin2 registra el retorno del memorándum del Auto de Ejecutoria.
     Cuando el memo retorna, el SIM pasa a PROCESO_EJECUTADO."""
 
-    auto = get_object_or_404(AUTOTPE, id=auto_id, TPE_TIPO='AUTO_EJECUTORIA')
+    auto = get_object_or_404(AUTOTPE, id=auto_id, tipo='AUTO_EJECUTORIA')
 
     if request.method == 'POST':
         fecha_entrega = request.POST.get('fecha_entrega')
@@ -576,14 +576,14 @@ def admin2_registrar_retorno_memo(request, auto_id):
 
             if fecha:
                 with transaction.atomic():
-                    auto.TPE_MEMO_ENTREGA = fecha
-                    auto.save(update_fields=['TPE_MEMO_ENTREGA'])
+                    auto.memorandum.fecha_entrega = fecha
+                    auto.memorandum.save(update_fields=['fecha_entrega'])
                     sim = auto.sim
-                    sim.SIM_FASE = 'MEMORANDUM_RETORNADO'
+                    sim.fase = 'MEMORANDUM_RETORNADO'
                     sim.save()
                 messages.success(
                     request,
-                    f"✅ Retorno de memorándum registrado. SIM {sim.SIM_COD}: Proceso Ejecutado."
+                    f"✅ Retorno de memorándum registrado. SIM {sim.codigo}: Proceso Ejecutado."
                 )
                 return redirect('admin2_dashboard')
 

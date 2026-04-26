@@ -69,8 +69,8 @@ def get_pendientes_ejecutoria():
     por_res = []
     res_notificadas = (
         Resolucion.objects
-        .filter(instancia='PRIMERA', fecha_notif__isnull=False)
-        .select_related('sim', 'pm', 'abog')
+        .filter(instancia='PRIMERA', notificacion__isnull=False)
+        .select_related('sim', 'pm', 'abog', 'notificacion')
     )
     for res in res_notificadas:
         if res.recursos_reconsideracion.exists():
@@ -79,7 +79,7 @@ def get_pendientes_ejecutoria():
             continue
         if CustodiaSIM.objects.filter(sim=res.sim, motivo='EJECUTORIA', estado='ACTIVA').exists():
             continue
-        fecha_limite = add_business_days(res.fecha_notif, 15)
+        fecha_limite = add_business_days(res.notificacion.fecha, 15)
         if fecha_limite <= hoy:
             res.fecha_limite = fecha_limite
             res.dias_vencido = (hoy - fecha_limite).days
@@ -88,8 +88,8 @@ def get_pendientes_ejecutoria():
     por_rr = []
     rr_notificados = (
         Resolucion.objects
-        .filter(instancia='RECONSIDERACION', fecha_notif__isnull=False)
-        .select_related('sim', 'pm', 'abog', 'resolucion_origen')
+        .filter(instancia='RECONSIDERACION', notificacion__isnull=False)
+        .select_related('sim', 'pm', 'abog', 'resolucion_origen', 'notificacion')
     )
     for rr in rr_notificados:
         if RecursoTSP.objects.filter(resolucion=rr, instancia='APELACION').exists():
@@ -98,7 +98,7 @@ def get_pendientes_ejecutoria():
             continue
         if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', estado='ACTIVA').exists():
             continue
-        fecha_limite = add_business_days(rr.fecha_notif, 3)
+        fecha_limite = add_business_days(rr.notificacion.fecha, 3)
         if fecha_limite <= hoy:
             rr.fecha_limite = fecha_limite
             rr.dias_vencido = (hoy - fecha_limite).days
@@ -769,11 +769,6 @@ class AUTOTPE(models.Model):
         ('AUTO_EXCUSA',                'Auto de Excusa'),
         ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
     ]
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
 
     sim            = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
     abog           = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
@@ -787,13 +782,6 @@ class AUTOTPE(models.Model):
     fecha          = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
     texto          = models.TextField(null=True, blank=True, verbose_name='Resolución')
     tipo           = models.CharField(null=True, blank=True, max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
-    tipo_notif     = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    notif_a        = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    fecha_notif    = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    hora_notif     = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
-    memo_numero    = models.CharField(max_length=60, null=True, blank=True, verbose_name='N° Memorándum')
-    memo_fecha     = models.DateField(null=True, blank=True, verbose_name='Fecha Memorándum')
-    memo_fecha_entrega = models.DateField(null=True, blank=True, verbose_name='Fecha Entrega Memorándum')
 
     class Meta:
         db_table            = 'autotpe'
@@ -805,10 +793,32 @@ class AUTOTPE(models.Model):
         return f"{self.numero} — {self.get_tipo_display()}"
 
     def save(self, *args, **kwargs):
-        self.numero     = self.numero.upper()     if self.numero     else self.numero
-        self.texto      = self.texto.upper()      if self.texto      else self.texto
-        self.notif_a    = self.notif_a.upper()    if self.notif_a    else self.notif_a
-        self.memo_numero = self.memo_numero.upper() if self.memo_numero else self.memo_numero
+        self.numero = self.numero.upper() if self.numero else self.numero
+        self.texto  = self.texto.upper()  if self.texto  else self.texto
+        super().save(*args, **kwargs)
+
+
+# ============================================================
+# MODELO 5b: Memorandum — Memorándum de ejecutoria (solo AUTO_EJECUTORIA)
+# ============================================================
+class Memorandum(models.Model):
+
+    autotpe       = models.OneToOneField(AUTOTPE, on_delete=models.CASCADE,
+                                         related_name='memorandum', verbose_name='Auto TPE')
+    numero        = models.CharField(max_length=60, verbose_name='N° Memorándum')
+    fecha         = models.DateField(verbose_name='Fecha Memorándum')
+    fecha_entrega = models.DateField(null=True, blank=True, verbose_name='Fecha Entrega Memorándum')
+
+    class Meta:
+        db_table            = 'memorandum'
+        verbose_name        = 'Memorándum'
+        verbose_name_plural = 'Memorándums'
+
+    def __str__(self):
+        return f"Memo {self.numero} — Auto {self.autotpe.numero}"
+
+    def save(self, *args, **kwargs):
+        self.numero = self.numero.upper() if self.numero else self.numero
         super().save(*args, **kwargs)
 
 
@@ -827,21 +837,12 @@ class AUTOTSP(models.Model):
         ('AUTO_EJECUTORIA',   'Auto de Ejecutoria'),
         ('AUTO_EXCUSA',       'Auto de Excusa'),
     ]
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
 
-    sim        = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario', null=True, blank=True)
-    numero     = models.CharField(max_length=15, verbose_name='Número de Auto')
-    fecha      = models.DateField(verbose_name='Fecha del Auto')
-    texto      = models.TextField(verbose_name='Resolución')
-    tipo       = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
-    tipo_notif = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo de Notificación')
-    notif_a    = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    fecha_notif = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    hora_notif  = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
+    sim    = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario', null=True, blank=True)
+    numero = models.CharField(max_length=15, verbose_name='Número de Auto')
+    fecha  = models.DateField(verbose_name='Fecha del Auto')
+    texto  = models.TextField(verbose_name='Resolución')
+    tipo   = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
 
     class Meta:
         db_table            = 'autotsp'
@@ -853,9 +854,8 @@ class AUTOTSP(models.Model):
         return f"{self.numero} — {self.get_tipo_display()}"
 
     def save(self, *args, **kwargs):
-        self.numero  = self.numero.upper()  if self.numero  else self.numero
-        self.texto   = self.texto.upper()   if self.texto   else self.texto
-        self.notif_a = self.notif_a.upper() if self.notif_a else self.notif_a
+        self.numero = self.numero.upper() if self.numero else self.numero
+        self.texto  = self.texto.upper()  if self.texto  else self.texto
         super().save(*args, **kwargs)
 
 
@@ -935,12 +935,6 @@ class Resolucion(models.Model):
         ('IMPROCEDENCIA', 'Improcedencia a su Recurso de Reconsideración'),
     ]
 
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
-
     instancia          = models.CharField(max_length=20, choices=INSTANCIA_CHOICES, default='PRIMERA', verbose_name='Instancia')
     sim                = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
     abog               = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
@@ -959,10 +953,6 @@ class Resolucion(models.Model):
     resumen            = models.CharField(max_length=20, choices=RESUM_CHOICES, null=True, blank=True, verbose_name='Resumen (RECONSIDERACION)')
     fecha_presentacion = models.DateField(null=True, blank=True, verbose_name='Fecha Presentación (RECONSIDERACION)')
     fecha_limite       = models.DateField(null=True, blank=True, verbose_name='Fecha Límite 15 días (RECONSIDERACION)')
-    tipo_notif         = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo Notificación')
-    notif_a            = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    fecha_notif        = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    hora_notif         = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
     class Meta:
         db_table            = 'resolucion'
@@ -977,9 +967,8 @@ class Resolucion(models.Model):
     def save(self, *args, **kwargs):
         if self.instancia == 'RECONSIDERACION' and self.fecha_presentacion and not self.fecha_limite:
             self.fecha_limite = add_business_days(self.fecha_presentacion, 15)
-        self.numero  = self.numero.upper()  if self.numero  else self.numero
-        self.texto   = self.texto.upper()   if self.texto   else self.texto
-        self.notif_a = self.notif_a.upper() if self.notif_a else self.notif_a
+        self.numero = self.numero.upper() if self.numero else self.numero
+        self.texto  = self.texto.upper()  if self.texto  else self.texto
         super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):
@@ -1031,12 +1020,6 @@ class RecursoTSP(models.Model):
         ('OTRO',                              'OTRO'),
     ]
 
-    NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
-    ]
-
     instancia          = models.CharField(max_length=25, choices=INSTANCIA_CHOICES, default='APELACION', verbose_name='Instancia')
     sim                = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
     abog               = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
@@ -1054,10 +1037,6 @@ class RecursoTSP(models.Model):
     numero             = models.CharField(max_length=15, null=True, blank=True, db_index=True, verbose_name='Número Resolución TSP')
     fecha              = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
     texto              = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
-    tipo_notif         = models.CharField(max_length=20, choices=NOTIF_CHOICES, null=True, blank=True, verbose_name='Tipo Notificación')
-    notif_a            = models.CharField(max_length=100, null=True, blank=True, verbose_name='Notificado a /Dirección/Periódico')
-    fecha_notif        = models.DateField(null=True, blank=True, verbose_name='Fecha Notificación')
-    hora_notif         = models.TimeField(null=True, blank=True, verbose_name='Hora Notificación')
 
     class Meta:
         db_table            = 'recurso_tsp'
@@ -1072,10 +1051,9 @@ class RecursoTSP(models.Model):
         if self.instancia == 'APELACION' and self.fecha_oficio and not self.fecha_limite:
             self.fecha_limite = add_business_days(self.fecha_oficio, 3)
         self.numero_oficio = self.numero_oficio.upper() if self.numero_oficio else self.numero_oficio
-        self.numero  = self.numero.upper()  if self.numero  else self.numero
-        self.texto   = self.texto.upper()   if self.texto   else self.texto
-        self.tipo    = self.tipo.upper()    if self.tipo    else self.tipo
-        self.notif_a = self.notif_a.upper() if self.notif_a else self.notif_a
+        self.numero = self.numero.upper() if self.numero else self.numero
+        self.texto  = self.texto.upper()  if self.texto  else self.texto
+        self.tipo   = self.tipo.upper()   if self.tipo   else self.tipo
         super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):
@@ -1106,6 +1084,47 @@ def next_recurso_tsp_num(year=None):
             except (ValueError, IndexError):
                 pass
         return f'{max_n + 1:02d}/{year_suffix}'
+
+
+# ============================================================
+# MODELO 11d: Notificacion — Datos de notificación de cualquier documento
+# ============================================================
+class Notificacion(models.Model):
+
+    NOTIF_CHOICES = [
+        ('FIRMA',   'Firma'),
+        ('EDICTO',  'Edicto'),
+        ('CEDULON', 'Cedulón'),
+    ]
+
+    tipo         = models.CharField(max_length=10, choices=NOTIF_CHOICES, verbose_name='Tipo de Notificación')
+    notificado_a = models.CharField(max_length=100, blank=True, verbose_name='Notificado a / Periódico / Dirección')
+    fecha        = models.DateField(null=True, blank=True, verbose_name='Fecha de Notificación')
+    hora         = models.TimeField(null=True, blank=True, verbose_name='Hora de Notificación')
+
+    # Exactamente uno de estos debe ser no-nulo
+    resolucion  = models.OneToOneField('Resolucion',  null=True, blank=True, on_delete=models.CASCADE,
+                                       related_name='notificacion', verbose_name='Resolución')
+    autotpe     = models.OneToOneField('AUTOTPE',     null=True, blank=True, on_delete=models.CASCADE,
+                                       related_name='notificacion', verbose_name='Auto TPE')
+    autotsp     = models.OneToOneField('AUTOTSP',     null=True, blank=True, on_delete=models.CASCADE,
+                                       related_name='notificacion', verbose_name='Auto TSP')
+    recurso_tsp = models.OneToOneField('RecursoTSP',  null=True, blank=True, on_delete=models.CASCADE,
+                                       related_name='notificacion', verbose_name='Recurso TSP')
+
+    class Meta:
+        db_table            = 'notificacion'
+        verbose_name        = 'Notificación'
+        verbose_name_plural = 'Notificaciones'
+        ordering            = ['-fecha']
+
+    def __str__(self):
+        doc = (self.resolucion or self.autotpe or self.autotsp or self.recurso_tsp)
+        return f"Notif {self.fecha} — {doc}"
+
+    def save(self, *args, **kwargs):
+        self.notificado_a = self.notificado_a.upper() if self.notificado_a else self.notificado_a
+        super().save(*args, **kwargs)
 
 
 # ============================================================

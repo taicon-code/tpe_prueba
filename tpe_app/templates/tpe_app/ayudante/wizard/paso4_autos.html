@@ -42,12 +42,12 @@
                  style="{% if not autotpe_existente %}display:none{% endif %}">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_NUM.id_for_label }}" class="form-label">{{ autotpe_form.TPE_NUM.label }}</label>
-                        {{ autotpe_form.TPE_NUM }}
+                        <label for="{{ autotpe_form.numero.id_for_label }}" class="form-label">{{ autotpe_form.numero.label }}</label>
+                        {{ autotpe_form.numero }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_FEC.id_for_label }}" class="form-label">{{ autotpe_form.TPE_FEC.label }}</label>
-                        {{ autotpe_form.TPE_FEC }}
+                        <label for="{{ autotpe_form.fecha.id_for_label }}" class="form-label">{{ autotpe_form.fecha.label }}</label>
+                        {{ autotpe_form.fecha }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
@@ -56,54 +56,14 @@
                         {{ autotpe_form.pm }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_TIPO.id_for_label }}" class="form-label">{{ autotpe_form.TPE_TIPO.label }}</label>
-                        {{ autotpe_form.TPE_TIPO }}
+                        <label for="{{ autotpe_form.tipo.id_for_label }}" class="form-label">{{ autotpe_form.tipo.label }}</label>
+                        {{ autotpe_form.tipo }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ autotpe_form.TPE_RESOL.id_for_label }}" class="form-label">{{ autotpe_form.TPE_RESOL.label }}</label>
-                        {{ autotpe_form.TPE_RESOL }}
-                    </div>
-                </div>
-                <hr class="my-3">
-                <h6 class="mb-3">Notificación (opcional)</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_TIPO_NOTIF.id_for_label }}" class="form-label">{{ autotpe_form.TPE_TIPO_NOTIF.label }}</label>
-                        {{ autotpe_form.TPE_TIPO_NOTIF }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_NOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_NOT.label }}</label>
-                        {{ autotpe_form.TPE_NOT }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_FECNOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_FECNOT.label }}</label>
-                        {{ autotpe_form.TPE_FECNOT }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_HORNOT.id_for_label }}" class="form-label">{{ autotpe_form.TPE_HORNOT.label }}</label>
-                        {{ autotpe_form.TPE_HORNOT }}
-                    </div>
-                </div>
-                <hr class="my-3">
-                <h6 class="mb-3">Memorándum (si corresponde)</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_MEMO_NUM.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_NUM.label }}</label>
-                        {{ autotpe_form.TPE_MEMO_NUM }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_MEMO_FEC.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_FEC.label }}</label>
-                        {{ autotpe_form.TPE_MEMO_FEC }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.TPE_MEMO_ENTREGA.id_for_label }}" class="form-label">{{ autotpe_form.TPE_MEMO_ENTREGA.label }}</label>
-                        {{ autotpe_form.TPE_MEMO_ENTREGA }}
+                        <label for="{{ autotpe_form.texto.id_for_label }}" class="form-label">{{ autotpe_form.texto.label }}</label>
+                        {{ autotpe_form.texto }}
                     </div>
                 </div>
             </div>
@@ -124,60 +84,38 @@
                  style="{% if not rap_existente %}display:none{% endif %}">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_FECPRESEN.id_for_label }}" class="form-label">{{ rap_form.TSP_FECPRESEN.label }}</label>
-                        {{ rap_form.TSP_FECPRESEN }}
+                        <label for="{{ rap_form.fechaPRESEN.id_for_label }}" class="form-label">{{ rap_form.fechaPRESEN.label }}</label>
+                        {{ rap_form.fechaPRESEN }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_OFI.id_for_label }}" class="form-label">{{ rap_form.TSP_OFI.label }}</label>
-                        {{ rap_form.TSP_OFI }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_FECOFI.id_for_label }}" class="form-label">{{ rap_form.TSP_FECOFI.label }}</label>
-                        {{ rap_form.TSP_FECOFI }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_TIPO.id_for_label }}" class="form-label">{{ rap_form.TSP_TIPO.label }}</label>
-                        {{ rap_form.TSP_TIPO }}
+                        <label for="{{ rap_form.numero_oficio.id_for_label }}" class="form-label">{{ rap_form.numero_oficio.label }}</label>
+                        {{ rap_form.numero_oficio }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_NUM.id_for_label }}" class="form-label">{{ rap_form.TSP_NUM.label }}</label>
-                        {{ rap_form.TSP_NUM }}
+                        <label for="{{ rap_form.fechaOFI.id_for_label }}" class="form-label">{{ rap_form.fechaOFI.label }}</label>
+                        {{ rap_form.fechaOFI }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_FEC.id_for_label }}" class="form-label">{{ rap_form.TSP_FEC.label }}</label>
-                        {{ rap_form.TSP_FEC }}
+                        <label for="{{ rap_form.tipo.id_for_label }}" class="form-label">{{ rap_form.tipo.label }}</label>
+                        {{ rap_form.tipo }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.numero.id_for_label }}" class="form-label">{{ rap_form.numero.label }}</label>
+                        {{ rap_form.numero }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ rap_form.fecha.id_for_label }}" class="form-label">{{ rap_form.fecha.label }}</label>
+                        {{ rap_form.fecha }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ rap_form.TSP_RESOL.id_for_label }}" class="form-label">{{ rap_form.TSP_RESOL.label }}</label>
-                        {{ rap_form.TSP_RESOL }}
-                    </div>
-                </div>
-                <hr class="my-3">
-                <h6 class="mb-3">Notificación (opcional)</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_TIPO_NOTIF.id_for_label }}" class="form-label">{{ rap_form.TSP_TIPO_NOTIF.label }}</label>
-                        {{ rap_form.TSP_TIPO_NOTIF }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_NOT.id_for_label }}" class="form-label">{{ rap_form.TSP_NOT.label }}</label>
-                        {{ rap_form.TSP_NOT }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_FECNOT.id_for_label }}" class="form-label">{{ rap_form.TSP_FECNOT.label }}</label>
-                        {{ rap_form.TSP_FECNOT }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.TSP_HORNOT.id_for_label }}" class="form-label">{{ rap_form.TSP_HORNOT.label }}</label>
-                        {{ rap_form.TSP_HORNOT }}
+                        <label for="{{ rap_form.texto.id_for_label }}" class="form-label">{{ rap_form.texto.label }}</label>
+                        {{ rap_form.texto }}
                     </div>
                 </div>
             </div>
@@ -198,46 +136,24 @@
                  style="{% if not raee_existente %}display:none{% endif %}">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ raee_form.TSP_NUM.id_for_label }}" class="form-label">{{ raee_form.TSP_NUM.label }}</label>
-                        {{ raee_form.TSP_NUM }}
+                        <label for="{{ raee_form.numero.id_for_label }}" class="form-label">{{ raee_form.numero.label }}</label>
+                        {{ raee_form.numero }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ raee_form.TSP_FEC.id_for_label }}" class="form-label">{{ raee_form.TSP_FEC.label }}</label>
-                        {{ raee_form.TSP_FEC }}
+                        <label for="{{ raee_form.fecha.id_for_label }}" class="form-label">{{ raee_form.fecha.label }}</label>
+                        {{ raee_form.fecha }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ raee_form.TSP_RESUM.id_for_label }}" class="form-label">{{ raee_form.TSP_RESUM.label }}</label>
-                        {{ raee_form.TSP_RESUM }}
+                        <label for="{{ raee_form.resumen.id_for_label }}" class="form-label">{{ raee_form.resumen.label }}</label>
+                        {{ raee_form.resumen }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ raee_form.TSP_RESOL.id_for_label }}" class="form-label">{{ raee_form.TSP_RESOL.label }}</label>
-                        {{ raee_form.TSP_RESOL }}
-                    </div>
-                </div>
-                <hr class="my-3">
-                <h6 class="mb-3">Notificación (opcional)</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.TSP_TIPO_NOTIF.id_for_label }}" class="form-label">{{ raee_form.TSP_TIPO_NOTIF.label }}</label>
-                        {{ raee_form.TSP_TIPO_NOTIF }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.TSP_NOT.id_for_label }}" class="form-label">{{ raee_form.TSP_NOT.label }}</label>
-                        {{ raee_form.TSP_NOT }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.TSP_FECNOT.id_for_label }}" class="form-label">{{ raee_form.TSP_FECNOT.label }}</label>
-                        {{ raee_form.TSP_FECNOT }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.TSP_HORNOT.id_for_label }}" class="form-label">{{ raee_form.TSP_HORNOT.label }}</label>
-                        {{ raee_form.TSP_HORNOT }}
+                        <label for="{{ raee_form.texto.id_for_label }}" class="form-label">{{ raee_form.texto.label }}</label>
+                        {{ raee_form.texto }}
                     </div>
                 </div>
             </div>
@@ -258,46 +174,24 @@
                  style="{% if not autotsp_existente %}display:none{% endif %}">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_NUM.id_for_label }}" class="form-label">{{ autotsp_form.TSP_NUM.label }}</label>
-                        {{ autotsp_form.TSP_NUM }}
+                        <label for="{{ autotsp_form.numero.id_for_label }}" class="form-label">{{ autotsp_form.numero.label }}</label>
+                        {{ autotsp_form.numero }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_FEC.id_for_label }}" class="form-label">{{ autotsp_form.TSP_FEC.label }}</label>
-                        {{ autotsp_form.TSP_FEC }}
+                        <label for="{{ autotsp_form.fecha.id_for_label }}" class="form-label">{{ autotsp_form.fecha.label }}</label>
+                        {{ autotsp_form.fecha }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_TIPO.id_for_label }}" class="form-label">{{ autotsp_form.TSP_TIPO.label }}</label>
-                        {{ autotsp_form.TSP_TIPO }}
+                        <label for="{{ autotsp_form.tipo.id_for_label }}" class="form-label">{{ autotsp_form.tipo.label }}</label>
+                        {{ autotsp_form.tipo }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ autotsp_form.TSP_RESOL.id_for_label }}" class="form-label">{{ autotsp_form.TSP_RESOL.label }}</label>
-                        {{ autotsp_form.TSP_RESOL }}
-                    </div>
-                </div>
-                <hr class="my-3">
-                <h6 class="mb-3">Notificación (opcional)</h6>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_TIPO_NOTIF.id_for_label }}" class="form-label">{{ autotsp_form.TSP_TIPO_NOTIF.label }}</label>
-                        {{ autotsp_form.TSP_TIPO_NOTIF }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_NOT.id_for_label }}" class="form-label">{{ autotsp_form.TSP_NOT.label }}</label>
-                        {{ autotsp_form.TSP_NOT }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_FECNOT.id_for_label }}" class="form-label">{{ autotsp_form.TSP_FECNOT.label }}</label>
-                        {{ autotsp_form.TSP_FECNOT }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.TSP_HORNOT.id_for_label }}" class="form-label">{{ autotsp_form.TSP_HORNOT.label }}</label>
-                        {{ autotsp_form.TSP_HORNOT }}
+                        <label for="{{ autotsp_form.texto.id_for_label }}" class="form-label">{{ autotsp_form.texto.label }}</label>
+                        {{ autotsp_form.texto }}
                     </div>
                 </div>
             </div>
