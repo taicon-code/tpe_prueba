@@ -87,13 +87,13 @@
         <tbody>
             {% for res in resoluciones %}
             <tr>
-                <td>{{ res.RES_NUM }}</td>
-                <td>{{ res.sim.SIM_COD|default:"—" }}</td>
-                <td style="font-size: 0.9rem;">{{ res.pm.get_PM_GRADO_display|default:"—" }}</td>
-                <td style="font-size: 0.9rem;">{{ res.pm.PM_NOMBRE|default:"—" }}</td>
-                <td style="font-size: 0.9rem;">{{ res.pm.PM_PATERNO|default:"—" }}</td>
-                <td style="font-size: 0.9rem;">{{ res.pm.PM_MATERNO|default:"—" }}</td>
-                <td style="white-space: nowrap;">{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                <td>{{ res.numero }}</td>
+                <td>{{ res.sim.codigo|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.pm.get_grado_display|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.pm.nombre|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.pm.paterno|default:"—" }}</td>
+                <td style="font-size: 0.9rem;">{{ res.pm.materno|default:"—" }}</td>
+                <td style="white-space: nowrap;">{{ res.fecha|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <a href="{% url 'ayudante_registrar_notificacion' res.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff; border-radius: 4px; text-decoration: none;">
                         ✅ Notificar
@@ -128,13 +128,13 @@
         <tbody>
             {% for rr in recursos %}
             <tr>
-                <td>{{ rr.sim.SIM_COD }}</td>
+                <td>{{ rr.sim.codigo }}</td>
                 <td>{{ rr.RR_NUM }}</td>
                 <td>{{ rr.RR_FECPRESEN|date:"d/m/Y" }}</td>
                 <td style="font-size: 0.9rem;">
                     {% with pm=rr.sim.militares.first %}
                         {% if pm %}
-                            {{ pm.PM_GRADO }} {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}
+                            {{ pm.grado }} {{ pm.nombre }} {{ pm.paterno }}
                         {% else %}
                             <span style="color: #999;">Sin militar asignado</span>
                         {% endif %}
@@ -175,17 +175,17 @@
         <tbody>
             {% for auto in autos %}
             <tr>
-                <td>{{ auto.TPE_NUM }}</td>
-                <td style="font-size: 0.85rem;">{{ auto.get_TPE_TIPO_display|default:"—" }}</td>
-                <td>{{ auto.sim.SIM_COD|default:"—" }}</td>
+                <td>{{ auto.numero }}</td>
+                <td style="font-size: 0.85rem;">{{ auto.get_tipo_display|default:"—" }}</td>
+                <td>{{ auto.sim.codigo|default:"—" }}</td>
                 <td style="font-size: 0.9rem;">
                     {% if auto.pm %}
-                        {{ auto.pm.PM_GRADO }} {{ auto.pm.PM_NOMBRE }} {{ auto.pm.PM_PATERNO }} {{ auto.pm.PM_MATERNO }}
+                        {{ auto.pm.grado }} {{ auto.pm.nombre }} {{ auto.pm.paterno }} {{ auto.pm.materno }}
                     {% else %}
                         <span style="color: #999;">Sin militar asignado</span>
                     {% endif %}
                 </td>
-                <td style="white-space: nowrap;">{{ auto.TPE_FEC|date:"d/m/Y" }}</td>
+                <td style="white-space: nowrap;">{{ auto.fecha|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <a href="{% url 'ayudante_registrar_notificacion_auto' auto.id %}" class="btn" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; background: #10b981; color: #fff; border-radius: 4px; text-decoration: none;">
                         ✅ Notificar

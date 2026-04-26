@@ -33,12 +33,12 @@
 
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                {{ form.RES_FECPRESEN.label }}
+                {{ form.fecha_presentacion.label }}
             </label>
-            {{ form.RES_FECPRESEN }}
-            {% if form.RES_FECPRESEN.errors %}
+            {{ form.fecha_presentacion }}
+            {% if form.fecha_presentacion.errors %}
                 <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.RES_FECPRESEN.errors.0 }}
+                    {{ form.fecha_presentacion.errors.0 }}
                 </div>
             {% endif %}
         </div>

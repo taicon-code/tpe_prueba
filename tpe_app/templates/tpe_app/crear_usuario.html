@@ -106,7 +106,7 @@
                         <option value="">-- Seleccionar abogado --</option>
                         {% for abog in abogados %}
                         <option value="{{ abog.id }}">
-                            {{ abog.AB_PATERNO }} {{ abog.AB_MATERNO }} (CI: {{ abog.AB_CI }})
+                            {{ abog.paterno }} {{ abog.materno }} (CI: {{ abog.ci }})
                         </option>
                         {% endfor %}
                     </select>

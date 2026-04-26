@@ -247,11 +247,11 @@
     <div class="info-grid">
         <div class="info-item">
             <span class="lbl">Sumario</span>
-            <span class="val">{{ dictamen.sim.SIM_COD }}</span>
+            <span class="val">{{ dictamen.sim.codigo }}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Militar</span>
-            <span class="val">{{ dictamen.pm.PM_GRADO|default:"" }} {{ dictamen.pm.PM_NOMBRE }} {{ dictamen.pm.PM_PATERNO }}</span>
+            <span class="val">{{ dictamen.pm.grado|default:"" }} {{ dictamen.pm.nombre }} {{ dictamen.pm.paterno }}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Abogado Asesor</span>
@@ -259,7 +259,7 @@
         </div>
         <div class="info-item">
             <span class="lbl">Número de Dictamen</span>
-            <span class="val">{{ dictamen.DIC_NUM|default:"S/N" }}</span>
+            <span class="val">{{ dictamen.numero|default:"S/N" }}</span>
         </div>
     </div>
 </div>
@@ -312,8 +312,8 @@
             {% for vocal_obj in vocales_presentes %}
                 {% with voto_valor=votos|get_item:vocal_obj.pk %}
                 <tr>
-                    <td class="grado-col">{{ vocal_obj.pm.PM_GRADO }}</td>
-                    <td class="nombre-col">{{ vocal_obj.pm.PM_NOMBRE }} {{ vocal_obj.pm.PM_PATERNO }}</td>
+                    <td class="grado-col">{{ vocal_obj.pm.grado }}</td>
+                    <td class="nombre-col">{{ vocal_obj.pm.nombre }} {{ vocal_obj.pm.paterno }}</td>
                     <td class="cargo-col">{{ vocal_obj.get_cargo_display }}</td>
                     <td class="voto-col">
                         <select name="voto_{{ vocal_obj.pk }}" class="voto-select" onchange="actualizarContadores()">

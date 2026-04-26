@@ -208,19 +208,19 @@
     <div class="info-grid">
         <div class="info-item">
             <span class="lbl">Número de Agenda</span>
-            <span class="val">{{ agenda.AG_NUM }}</span>
+            <span class="val">{{ agenda.numero }}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Tipo</span>
-            <span class="val">{{ agenda.AG_TIPO }}</span>
+            <span class="val">{{ agenda.tipo }}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Fecha Programada</span>
-            <span class="val">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</span>
+            <span class="val">{{ agenda.fecha_prog|date:"d/m/Y" }}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Estado</span>
-            <span class="val">{{ agenda.AG_ESTADO }}</span>
+            <span class="val">{{ agenda.estado }}</span>
         </div>
     </div>
 </div>
@@ -246,8 +246,8 @@
             {% for vocal_obj in vocales_activos %}
                 {% with asistencia=asistencias|get_item:vocal_obj.pk %}
                 <tr>
-                    <td class="grado-col">{{ vocal_obj.pm.PM_GRADO }}</td>
-                    <td class="nombre-col">{{ vocal_obj.pm.PM_NOMBRE }} {{ vocal_obj.pm.PM_PATERNO }}</td>
+                    <td class="grado-col">{{ vocal_obj.pm.grado }}</td>
+                    <td class="nombre-col">{{ vocal_obj.pm.nombre }} {{ vocal_obj.pm.paterno }}</td>
                     <td class="cargo-col">{{ vocal_obj.get_cargo_display }}</td>
                     <td class="estado-col">
                         <select name="estado_{{ vocal_obj.pk }}" class="state-select">

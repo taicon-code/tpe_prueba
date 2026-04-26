@@ -98,25 +98,25 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_NUM.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_NUM }}
+                                <label class="form-label">{{ form.numero.label }} <span class="text-danger">*</span></label>
+                                {{ form.numero }}
                                 <small class="text-muted d-block mt-1">Formato: NN/AA</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_FEC.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_FEC }}
+                                <label class="form-label">{{ form.fecha.label }} <span class="text-danger">*</span></label>
+                                {{ form.fecha }}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.TSP_RESUM.label }}</label>
-                            {{ form.TSP_RESUM }}
+                            <label class="form-label">{{ form.resumen.label }}</label>
+                            {{ form.resumen }}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.TSP_RESOL.label }} <span class="text-danger">*</span></label>
-                            {{ form.TSP_RESOL }}
-                            {% if form.TSP_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TSP_RESOL.errors }}</div>{% endif %}
+                            <label class="form-label">{{ form.texto.label }} <span class="text-danger">*</span></label>
+                            {{ form.texto }}
+                            {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end pt-3">

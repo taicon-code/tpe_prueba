@@ -1,7 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Crear Auto TPE - {{ sim.SIM_COD }}{% endblock %}
-{% block navbar_title %}📋 Crear Auto TPE — {{ sim.SIM_COD }}{% endblock %}
+{% block title %}Crear Auto TPE - {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}📋 Crear Auto TPE — {{ sim.codigo }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
@@ -12,7 +12,7 @@
 
 <h1 style="margin-bottom: 1rem; color: #1e3c72;">📝 Crear Auto TPE</h1>
 <div class="card" style="max-width: 1000px; margin: 0 auto;">
-    <p style="margin: 0 0 1rem 0;"><strong>Dictamen:</strong> {{ dictamen.DIC_NUM|default:"S/N" }} — {{ dictamen.agenda }}</p>
+    <p style="margin: 0 0 1rem 0;"><strong>Dictamen:</strong> {{ dictamen.numero|default:"S/N" }} — {{ dictamen.agenda }}</p>
 
     <form method="post">
         {% csrf_token %}
@@ -20,11 +20,11 @@
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Fecha (opcional)</label>
-                <input class="form-control" type="date" name="TPE_FEC" />
+                <input class="form-control" type="date" name="fecha" />
             </div>
             <div>
                 <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Tipo (opcional)</label>
-                <select class="form-control" name="TPE_TIPO">
+                <select class="form-control" name="tipo">
                     <option value="">---------</option>
                     {% for v, label in tipos %}
                         <option value="{{ v }}">{{ label }}</option>
@@ -35,7 +35,7 @@
 
         <div style="margin-top: 1rem;">
             <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Resolución (opcional)</label>
-            <textarea class="form-control" name="TPE_RESOL" rows="8" placeholder="Texto del auto..."></textarea>
+            <textarea class="form-control" name="texto" rows="8" placeholder="Texto del auto..."></textarea>
         </div>
 
         <div style="display:flex; gap: 0.75rem; margin-top: 1.25rem;">

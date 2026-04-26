@@ -199,11 +199,11 @@
     <div class="info-grid">
         <div class="info-item">
             <span class="lbl">Sumario</span>
-            <span class="val">{{ dictamen.sim.SIM_COD }}</span>
+            <span class="val">{{ dictamen.sim.codigo }}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Militar</span>
-            <span class="val">{{ dictamen.pm.PM_GRADO|default:"" }} {{ dictamen.pm.PM_NOMBRE }} {{ dictamen.pm.PM_PATERNO }}{% if dictamen.pm.PM_MATERNO %} {{ dictamen.pm.PM_MATERNO }}{% endif %}</span>
+            <span class="val">{{ dictamen.pm.grado|default:"" }} {{ dictamen.pm.nombre }} {{ dictamen.pm.paterno }}{% if dictamen.pm.materno %} {{ dictamen.pm.materno }}{% endif %}</span>
         </div>
         <div class="info-item">
             <span class="lbl">Abogado Asesor</span>
@@ -211,7 +211,7 @@
         </div>
         <div class="info-item">
             <span class="lbl">Número de Dictamen</span>
-            <span class="val">{{ dictamen.DIC_NUM|default:"S/N" }}</span>
+            <span class="val">{{ dictamen.numero|default:"S/N" }}</span>
         </div>
     </div>
 </div>
@@ -223,7 +223,7 @@
     <div class="concl-box">
         <div class="concl-label">Veredicto / Recomendación</div>
         <div class="concl-text">
-            {{ dictamen.DIC_CONCL|default:"Sin conclusión registrada" }}
+            {{ dictamen.conclusion|default:"Sin conclusión registrada" }}
         </div>
     </div>
 </div>
@@ -259,11 +259,11 @@
     <!-- Campo de texto para modificación -->
     <div id="modify-section" style="display: none; margin-top: 1.5rem;">
         <div class="form-group">
-            <label for="DIC_CONCL_SEC">Conclusión modificada por el tribunal</label>
+            <label for="conclusion_secretario">Conclusión modificada por el tribunal</label>
             <textarea
-                id="DIC_CONCL_SEC"
-                name="DIC_CONCL_SEC"
-                placeholder="Ingresa la nueva conclusión del tribunal...">{{ dictamen.DIC_CONCL_SEC|default:"" }}</textarea>
+                id="conclusion_secretario"
+                name="conclusion_secretario"
+                placeholder="Ingresa la nueva conclusión del tribunal...">{{ dictamen.conclusion_secretario|default:"" }}</textarea>
         </div>
     </div>
 
@@ -282,7 +282,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const radioButtons = document.querySelectorAll('input[name="accion"]');
     const modifySection = document.getElementById('modify-section');
-    const textareaField = document.getElementById('DIC_CONCL_SEC');
+    const textareaField = document.getElementById('conclusion_secretario');
 
     function updateUI() {
         const selectedValue = document.querySelector('input[name="accion"]:checked').value;

@@ -15,34 +15,34 @@
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Número de Agenda</p>
             <p style="font-size: 1.3rem; font-weight: 600; color: #1e3c72; margin: 0.3rem 0;">
-                {{ agenda.AG_NUM }}
+                {{ agenda.numero }}
             </p>
         </div>
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Tipo</p>
             <p style="font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0;">
-                {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                {% if agenda.tipo == 'ORDINARIA' %}
                     <span class="badge badge-blue">Ordinaria</span>
-                {% elif agenda.AG_TIPO == 'EXTRAORDINARIA' %}
+                {% elif agenda.tipo == 'EXTRAORDINARIA' %}
                     <span class="badge badge-purple">Extraordinaria</span>
                 {% else %}
-                    {{ agenda.AG_TIPO }}
+                    {{ agenda.tipo }}
                 {% endif %}
             </p>
         </div>
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Estado</p>
             <p style="font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0;">
-                {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
+                {% if agenda.estado == 'PROGRAMADA' %}
                     <span class="badge badge-blue">Programada</span>
-                {% elif agenda.AG_ESTADO == 'REALIZADA' %}
+                {% elif agenda.estado == 'REALIZADA' %}
                     <span class="badge badge-green">Realizada</span>
-                {% elif agenda.AG_ESTADO == 'SUSPENDIDA' %}
+                {% elif agenda.estado == 'SUSPENDIDA' %}
                     <span class="badge badge-red">Suspendida</span>
-                {% elif agenda.AG_ESTADO == 'REPROGRAMADA' %}
+                {% elif agenda.estado == 'REPROGRAMADA' %}
                     <span class="badge badge-orange">Reprogramada</span>
                 {% else %}
-                    {{ agenda.AG_ESTADO }}
+                    {{ agenda.estado }}
                 {% endif %}
             </p>
         </div>
@@ -52,14 +52,14 @@
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Fecha Programada</p>
             <p style="font-size: 1rem; font-weight: 500; color: #1e3c72; margin: 0.3rem 0;">
-                {{ agenda.AG_FECPROG|date:"d/m/Y" }}
+                {{ agenda.fecha_prog|date:"d/m/Y" }}
             </p>
         </div>
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Fecha Realizada</p>
             <p style="font-size: 1rem; font-weight: 500; color: #1e3c72; margin: 0.3rem 0;">
-                {% if agenda.AG_FECREAL %}
-                    {{ agenda.AG_FECREAL|date:"d/m/Y" }}
+                {% if agenda.fecha_real %}
+                    {{ agenda.fecha_real|date:"d/m/Y" }}
                 {% else %}
                     <span style="color: #999;">—</span>
                 {% endif %}
@@ -97,15 +97,15 @@
                 </td>
                 <td>
                     <small style="color: #666;">
-                        {{ dictamen.sim.get_SIM_TIPO_display }}
+                        {{ dictamen.sim.get_tipo_display }}
                     </small>
                 </td>
                 <td>
                     {% if dictamen.pm %}
-                        <strong>{{ dictamen.pm.PM_PATERNO }} {{ dictamen.pm.PM_MATERNO }}, {{ dictamen.pm.PM_NOMBRE }}</strong>
+                        <strong>{{ dictamen.pm.paterno }} {{ dictamen.pm.materno }}, {{ dictamen.pm.nombre }}</strong>
                         <br>
                         <small style="color: #666;">
-                            {{ dictamen.pm.PM_GRADO|default:"—" }} • {{ dictamen.pm.PM_ARMA|default:"—" }}
+                            {{ dictamen.pm.grado|default:"—" }} • {{ dictamen.pm.arma|default:"—" }}
                         </small>
                     {% else %}
                         <span style="color: #999;">No especificado</span>
@@ -113,22 +113,22 @@
                 </td>
                 <td>
                     {% if dictamen.abog %}
-                        <small>{{ dictamen.abog.AB_PATERNO }}</small>
+                        <small>{{ dictamen.abog.paterno }}</small>
                     {% else %}
                         <span style="color: #999;">—</span>
                     {% endif %}
                 </td>
                 <td>
-                    {% if dictamen.sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                    {% if dictamen.sim.estado == 'PARA_AGENDA' %}
                         <span class="badge badge-blue">Para Agenda</span>
-                    {% elif dictamen.sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                    {% elif dictamen.sim.estado == 'PROCESO_EN_EL_TPE' %}
                         <span class="badge badge-orange">En Proceso</span>
-                    {% elif dictamen.sim.SIM_ESTADO == 'EN_APELACION_TSP' %}
+                    {% elif dictamen.sim.estado == 'EN_APELACION_TSP' %}
                         <span class="badge badge-red">En Apelación</span>
-                    {% elif dictamen.sim.SIM_ESTADO == 'CONCLUIDO' %}
+                    {% elif dictamen.sim.estado == 'CONCLUIDO' %}
                         <span class="badge badge-green">Concluido</span>
                     {% else %}
-                        {{ dictamen.sim.get_SIM_ESTADO_display }}
+                        {{ dictamen.sim.get_estado_display }}
                     {% endif %}
                 </td>
             </tr>

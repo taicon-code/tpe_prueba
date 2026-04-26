@@ -337,27 +337,27 @@
     <div class="military-card">
       <div class="military-header">
         <div>
-          <div class="military-name">{{ mil.personal.PM_NOMBRE }} {{ mil.personal.PM_PATERNO }} {{ mil.personal.PM_MATERNO }}</div>
-          <div class="military-grado">{{ mil.personal.get_PM_GRADO_display }}</div>
+          <div class="military-name">{{ mil.personal.nombre }} {{ mil.personal.paterno }} {{ mil.personal.materno }}</div>
+          <div class="military-grado">{{ mil.personal.get_grado_display }}</div>
         </div>
       </div>
 
       <div class="military-info">
         <div class="military-info-item">
-          <span class="military-info-label">Arma:</span> {{ mil.personal.get_PM_ARMA_display|default:"—" }}
+          <span class="military-info-label">Arma:</span> {{ mil.personal.get_arma_display|default:"—" }}
         </div>
         <div class="military-info-item">
-          <span class="military-info-label">Escalafón:</span> {{ mil.personal.get_PM_ESCALAFON_display|default:"—" }}
+          <span class="military-info-label">Escalafón:</span> {{ mil.personal.get_escalafon_display|default:"—" }}
         </div>
         <div class="military-info-item">
-          <span class="military-info-label">Estado:</span> {{ mil.personal.get_PM_ESTADO_display }}
+          <span class="military-info-label">Estado:</span> {{ mil.personal.get_estado_display }}
         </div>
       </div>
 
       <div class="military-sims">
         <strong>Sumarios:</strong> {{ mil.historial.sumarios.count }}<br>
         {% for sim in mil.historial.sumarios %}
-          • {{ sim.SIM_COD }} ({{ sim.get_SIM_ESTADO_display }})<br>
+          • {{ sim.codigo }} ({{ sim.get_estado_display }})<br>
         {% endfor %}
       </div>
     </div>

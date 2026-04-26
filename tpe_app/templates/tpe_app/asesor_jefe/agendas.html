@@ -113,10 +113,10 @@
         <tbody>
         {% for agenda in agendas %}
             <tr>
-                <td class="num-col"><strong>{{ agenda.AG_NUM }}</strong></td>
-                <td class="fecha-col">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</td>
+                <td class="num-col"><strong>{{ agenda.numero }}</strong></td>
+                <td class="fecha-col">{{ agenda.fecha_prog|date:"d/m/Y" }}</td>
                 <td class="tipo-col">
-                    {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                    {% if agenda.tipo == 'ORDINARIA' %}
                         <span class="badge badge-blue">ORDINARIA</span>
                     {% else %}
                         <span class="badge badge-yellow">EXTRAORDINARIA</span>

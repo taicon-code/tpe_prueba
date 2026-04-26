@@ -98,43 +98,43 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_FECPRESEN.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_FECPRESEN }}
-                                {% if form.TSP_FECPRESEN.errors %}<div class="text-danger small mt-1">{{ form.TSP_FECPRESEN.errors }}</div>{% endif %}
+                                <label class="form-label">{{ form.fechaPRESEN.label }} <span class="text-danger">*</span></label>
+                                {{ form.fechaPRESEN }}
+                                {% if form.fechaPRESEN.errors %}<div class="text-danger small mt-1">{{ form.fechaPRESEN.errors }}</div>{% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_OFI.label }}</label>
-                                {{ form.TSP_OFI }}
+                                <label class="form-label">{{ form.numero_oficio.label }}</label>
+                                {{ form.numero_oficio }}
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_FECOFI.label }}</label>
-                                {{ form.TSP_FECOFI }}
+                                <label class="form-label">{{ form.fechaOFI.label }}</label>
+                                {{ form.fechaOFI }}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_NUM.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_NUM }}
+                                <label class="form-label">{{ form.numero.label }} <span class="text-danger">*</span></label>
+                                {{ form.numero }}
                                 <small class="text-muted d-block mt-1">Formato: NN/AA</small>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_FEC.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_FEC }}
+                                <label class="form-label">{{ form.fecha.label }} <span class="text-danger">*</span></label>
+                                {{ form.fecha }}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_TIPO.label }}</label>
-                                {{ form.TSP_TIPO }}
+                                <label class="form-label">{{ form.tipo.label }}</label>
+                                {{ form.tipo }}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.TSP_RESOL.label }} <span class="text-danger">*</span></label>
-                            {{ form.TSP_RESOL }}
-                            {% if form.TSP_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TSP_RESOL.errors }}</div>{% endif %}
+                            <label class="form-label">{{ form.texto.label }} <span class="text-danger">*</span></label>
+                            {{ form.texto }}
+                            {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end pt-3">

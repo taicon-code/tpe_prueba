@@ -21,7 +21,7 @@
                         📄 Documento Origen
                     </h6>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.9rem;">
-                        <div><strong>Sumario:</strong> {{ sim.SIM_COD }}</div>
+                        <div><strong>Sumario:</strong> {{ sim.codigo }}</div>
                         <div><strong>Tipo:</strong>
                             <span style="background: #7c3aed; color: #fff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">
                                 {% if origen == 'res' %}1ra Resolución sin RR{% else %}RR sin RAP{% endif %}
@@ -29,7 +29,7 @@
                         </div>
                         <div><strong>Referencia:</strong> {{ origen_label }}</div>
                         <div><strong>Militar:</strong>
-                            {% if pm %}{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }} {{ pm.PM_MATERNO }}{% else %}—{% endif %}
+                            {% if pm %}{{ pm.grado }} {{ pm.paterno }} {{ pm.materno }}{% else %}—{% endif %}
                         </div>
                     </div>
                 </div>
@@ -51,21 +51,21 @@
 
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="id_TPE_NUM" class="form-label">
+                                <label for="id_numero" class="form-label">
                                     Número del Auto <span class="text-danger">*</span>
                                 </label>
-                                {{ form.TPE_NUM }}
-                                {% if form.TPE_NUM.errors %}
-                                    <div class="text-danger small mt-1">{{ form.TPE_NUM.errors.0 }}</div>
+                                {{ form.numero }}
+                                {% if form.numero.errors %}
+                                    <div class="text-danger small mt-1">{{ form.numero.errors.0 }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="id_TPE_FEC" class="form-label">
+                                <label for="id_fecha" class="form-label">
                                     Fecha del Auto <span class="text-danger">*</span>
                                 </label>
-                                {{ form.TPE_FEC }}
-                                {% if form.TPE_FEC.errors %}
-                                    <div class="text-danger small mt-1">{{ form.TPE_FEC.errors.0 }}</div>
+                                {{ form.fecha }}
+                                {% if form.fecha.errors %}
+                                    <div class="text-danger small mt-1">{{ form.fecha.errors.0 }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-4 mb-3">
@@ -75,15 +75,15 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="id_TPE_RESOL" class="form-label">Texto del Auto de Ejecutoria</label>
-                            {{ form.TPE_RESOL }}
-                            {% if form.TPE_RESOL.errors %}
-                                <div class="text-danger small mt-1">{{ form.TPE_RESOL.errors.0 }}</div>
+                            <label for="id_texto" class="form-label">Texto del Auto de Ejecutoria</label>
+                            {{ form.texto }}
+                            {% if form.texto.errors %}
+                                <div class="text-danger small mt-1">{{ form.texto.errors.0 }}</div>
                             {% endif %}
                         </div>
 
                         <div class="alert alert-warning" style="font-size: 0.85rem;">
-                            ⚠️ Al guardar, el Sumario <strong>{{ sim.SIM_COD }}</strong> será marcado como
+                            ⚠️ Al guardar, el Sumario <strong>{{ sim.codigo }}</strong> será marcado como
                             <strong>CONCLUIDO</strong>.
                         </div>
 

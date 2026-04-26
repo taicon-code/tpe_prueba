@@ -51,57 +51,57 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ form.SIM_COD.id_for_label }}" class="form-label">{{ form.SIM_COD.label }}</label>
-                        {{ form.SIM_COD }}
+                        <label for="{{ form.codigo.id_for_label }}" class="form-label">{{ form.codigo.label }}</label>
+                        {{ form.codigo }}
                         <small class="text-muted d-block mt-1">
                             Formato: <strong>PREFIJO-NÚMERO/AÑO</strong> &nbsp;|&nbsp;
                             Ej: DJE-123/25 &nbsp; SASJUR-25/25 &nbsp; SDISCAPE-86/25
                         </small>
-                        {% if form.SIM_COD.errors %}
-                            <div class="invalid-feedback d-block">{{ form.SIM_COD.errors.0 }}</div>
+                        {% if form.codigo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.codigo.errors.0 }}</div>
                         {% endif %}
                         <div id="sim-cod-error" class="invalid-feedback d-none"></div>
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ form.SIM_FECING.id_for_label }}" class="form-label">{{ form.SIM_FECING.label }}</label>
-                        {{ form.SIM_FECING }}
-                        {% if form.SIM_FECING.errors %}
-                            <div class="invalid-feedback d-block">{{ form.SIM_FECING.errors.0 }}</div>
+                        <label for="{{ form.fecha_ingreso.id_for_label }}" class="form-label">{{ form.fecha_ingreso.label }}</label>
+                        {{ form.fecha_ingreso }}
+                        {% if form.fecha_ingreso.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fecha_ingreso.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
-                        <label for="{{ form.SIM_TIPO.id_for_label }}" class="form-label">{{ form.SIM_TIPO.label }}</label>
-                        {{ form.SIM_TIPO }}
-                        {% if form.SIM_TIPO.errors %}
-                            <div class="invalid-feedback d-block">{{ form.SIM_TIPO.errors.0 }}</div>
+                        <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}</label>
+                        {{ form.tipo }}
+                        {% if form.tipo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>
                         {% endif %}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ form.SIM_FASE.id_for_label }}" class="form-label">{{ form.SIM_FASE.label }}</label>
-                        {{ form.SIM_FASE }}
-                        <small class="text-muted d-block mt-1">{{ form.SIM_FASE.help_text }}</small>
-                        {% if form.SIM_FASE.errors %}
-                            <div class="invalid-feedback d-block">{{ form.SIM_FASE.errors.0 }}</div>
+                        <label for="{{ form.fase.id_for_label }}" class="form-label">{{ form.fase.label }}</label>
+                        {{ form.fase }}
+                        <small class="text-muted d-block mt-1">{{ form.fase.help_text }}</small>
+                        {% if form.fase.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fase.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ form.SIM_OBJETO.id_for_label }}" class="form-label">{{ form.SIM_OBJETO.label }}</label>
-                        {{ form.SIM_OBJETO }}
-                        {% if form.SIM_OBJETO.errors %}
-                            <div class="invalid-feedback d-block">{{ form.SIM_OBJETO.errors.0 }}</div>
+                        <label for="{{ form.objeto.id_for_label }}" class="form-label">{{ form.objeto.label }}</label>
+                        {{ form.objeto }}
+                        {% if form.objeto.errors %}
+                            <div class="invalid-feedback d-block">{{ form.objeto.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ form.SIM_RESUM.id_for_label }}" class="form-label">{{ form.SIM_RESUM.label }}</label>
-                        {{ form.SIM_RESUM }}
-                        {% if form.SIM_RESUM.errors %}
-                            <div class="invalid-feedback d-block">{{ form.SIM_RESUM.errors.0 }}</div>
+                        <label for="{{ form.resumen.id_for_label }}" class="form-label">{{ form.resumen.label }}</label>
+                        {{ form.resumen }}
+                        {% if form.resumen.errors %}
+                            <div class="invalid-feedback d-block">{{ form.resumen.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
@@ -139,8 +139,8 @@ document.getElementById('btn-buscar-sim').addEventListener('click', function() {
         });
 });
 
-// Validación y conversión a mayúsculas de SIM_COD
-const simCodInput = document.querySelector('#id_SIM_COD');
+// Validación y conversión a mayúsculas de codigo
+const simCodInput = document.querySelector('#id_codigo');
 const simCodError = document.getElementById('sim-cod-error');
 
 if (simCodInput) {

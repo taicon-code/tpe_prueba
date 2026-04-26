@@ -5,11 +5,11 @@
     {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=2 %}
 
     <div class="card mb-3">
-        <div class="card-header">Militares actuales en <strong>{{ sim.SIM_COD }}</strong></div>
+        <div class="card-header">Militares actuales en <strong>{{ sim.codigo }}</strong></div>
         <div class="card-body">
             {% if militares_actuales %}
                 {% for pm in militares_actuales %}
-                    <span class="badge bg-info me-1 mb-1">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}, {{ pm.PM_NOMBRE }}</span>
+                    <span class="badge bg-info me-1 mb-1">{{ pm.grado }} {{ pm.paterno }}, {{ pm.nombre }}</span>
                 {% endfor %}
             {% else %}
                 <em class="text-muted">No hay militares aún.</em>
@@ -33,27 +33,27 @@
                             <div class="row g-2">
                                 <div class="col-md-2">
                                     <label class="form-label">CI</label>
-                                    {{ form_militar.PM_CI }}
+                                    {{ form_militar.ci }}
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Nombre</label>
-                                    {{ form_militar.PM_NOMBRE }}
+                                    {{ form_militar.nombre }}
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Paterno</label>
-                                    {{ form_militar.PM_PATERNO }}
+                                    {{ form_militar.paterno }}
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Materno</label>
-                                    {{ form_militar.PM_MATERNO }}
+                                    {{ form_militar.materno }}
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Escalafón</label>
-                                    {{ form_militar.PM_ESCALAFON }}
+                                    {{ form_militar.escalafon }}
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Arma</label>
-                                    {{ form_militar.PM_ARMA }}
+                                    {{ form_militar.arma }}
                                 </div>
                             </div>
 
@@ -63,15 +63,15 @@
                                         Grado en el Sumario
                                         <small class="text-muted fw-normal d-block">El que dice el documento</small>
                                     </label>
-                                    {{ form_militar.PMSIM_GRADO_EN_FECHA }}
+                                    {{ form_militar.grado_en_fecha }}
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Año de Egreso</label>
-                                    {{ form_militar.PM_PROMOCION }}
+                                    {{ form_militar.anio_promocion }}
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Especialidad</label>
-                                    {{ form_militar.PM_ESPEC }}
+                                    {{ form_militar.especialidad }}
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="button" class="btn btn-danger btn-sm w-100 delete-form-btn">
@@ -84,7 +84,7 @@
                             <div class="row g-2 mt-1">
                                 <div class="col-12">
                                     <div class="form-check">
-                                        {{ form_militar.PM_NO_ASCENDIO }}
+                                        {{ form_militar.no_ascendio }}
                                         <label class="form-check-label text-warning fw-semibold">
                                             No ascendió al grado correspondiente a su año de egreso
                                         </label>
@@ -141,7 +141,7 @@ document.getElementById('add-form').addEventListener('click', function() {
         }
     });
 
-    // Resetear todos los checkboxes (DELETE y PM_NO_ASCENDIO)
+    // Resetear todos los checkboxes (DELETE y no_ascendio)
     newForm.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         const name = cb.getAttribute('name');
         if (name) {

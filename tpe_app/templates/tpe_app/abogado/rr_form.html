@@ -1,7 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Crear RR - {{ sim.SIM_COD }}{% endblock %}
-{% block navbar_title %}🔄 Crear RR — {{ sim.SIM_COD }}{% endblock %}
+{% block title %}Crear RR - {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}🔄 Crear RR — {{ sim.codigo }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
@@ -12,7 +12,7 @@
 
 <h1 style="margin-bottom: 1rem; color: #1e3c72;">🧩 Crear Segunda Resolución (RR)</h1>
 <div class="card" style="max-width: 1000px; margin: 0 auto;">
-    <p style="margin: 0 0 1rem 0;"><strong>RES origen:</strong> {{ res.RES_NUM }} — {{ res.get_RES_TIPO_display }}</p>
+    <p style="margin: 0 0 1rem 0;"><strong>RES origen:</strong> {{ res.numero }} — {{ res.get_tipo_display }}</p>
 
     <form method="post">
         {% csrf_token %}

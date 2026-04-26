@@ -21,40 +21,40 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
             <div>
-                <label class="field-label">{{ form.SIM_COD.label }}</label>
-                {{ form.SIM_COD }}
-                {% if form.SIM_COD.errors %}<div class="field-error">{{ form.SIM_COD.errors.0 }}</div>{% endif %}
+                <label class="field-label">{{ form.codigo.label }}</label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<div class="field-error">{{ form.codigo.errors.0 }}</div>{% endif %}
                 <small class="field-hint">Formato: DJE-###/AA</small>
             </div>
             <div>
-                <label class="field-label">{{ form.SIM_FECING.label }}</label>
-                {{ form.SIM_FECING }}
-                {% if form.SIM_FECING.errors %}<div class="field-error">{{ form.SIM_FECING.errors.0 }}</div>{% endif %}
+                <label class="field-label">{{ form.fecha_ingreso.label }}</label>
+                {{ form.fecha_ingreso }}
+                {% if form.fecha_ingreso.errors %}<div class="field-error">{{ form.fecha_ingreso.errors.0 }}</div>{% endif %}
             </div>
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label class="field-label">{{ form.SIM_TIPO.label }}</label>
-            {{ form.SIM_TIPO }}
-            {% if form.SIM_TIPO.errors %}<div class="field-error">{{ form.SIM_TIPO.errors.0 }}</div>{% endif %}
+            <label class="field-label">{{ form.tipo.label }}</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="field-error">{{ form.tipo.errors.0 }}</div>{% endif %}
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label class="field-label">{{ form.SIM_OBJETO.label }}</label>
-            {{ form.SIM_OBJETO }}
-            {% if form.SIM_OBJETO.errors %}<div class="field-error">{{ form.SIM_OBJETO.errors.0 }}</div>{% endif %}
+            <label class="field-label">{{ form.objeto.label }}</label>
+            {{ form.objeto }}
+            {% if form.objeto.errors %}<div class="field-error">{{ form.objeto.errors.0 }}</div>{% endif %}
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label class="field-label">{{ form.SIM_RESUM.label }}</label>
-            {{ form.SIM_RESUM }}
-            {% if form.SIM_RESUM.errors %}<div class="field-error">{{ form.SIM_RESUM.errors.0 }}</div>{% endif %}
+            <label class="field-label">{{ form.resumen.label }}</label>
+            {{ form.resumen }}
+            {% if form.resumen.errors %}<div class="field-error">{{ form.resumen.errors.0 }}</div>{% endif %}
         </div>
 
         <div>
-            <label class="field-label">{{ form.SIM_AUTOFINAL.label }}</label>
-            {{ form.SIM_AUTOFINAL }}
-            {% if form.SIM_AUTOFINAL.errors %}<div class="field-error">{{ form.SIM_AUTOFINAL.errors.0 }}</div>{% endif %}
+            <label class="field-label">{{ form.auto_final.label }}</label>
+            {{ form.auto_final }}
+            {% if form.auto_final.errors %}<div class="field-error">{{ form.auto_final.errors.0 }}</div>{% endif %}
             <small class="field-hint">Opcional — se puede agregar después</small>
         </div>
     </div>
@@ -79,46 +79,46 @@
                 <div class="militar-row-top">
                     <div>
                         <label class="field-label-sm">CI</label>
-                        {{ mform.PM_CI }}
-                        {% if mform.PM_CI.errors %}<div class="field-error">{{ mform.PM_CI.errors.0 }}</div>{% endif %}
+                        {{ mform.ci }}
+                        {% if mform.ci.errors %}<div class="field-error">{{ mform.ci.errors.0 }}</div>{% endif %}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_ESCALAFON.label }}</label>
-                        {{ mform.PM_ESCALAFON }}
+                        <label class="field-label-sm">{{ mform.escalafon.label }}</label>
+                        {{ mform.escalafon }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_GRADO.label }}</label>
-                        {{ mform.PM_GRADO }}
+                        <label class="field-label-sm">{{ mform.grado.label }}</label>
+                        {{ mform.grado }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_ARMA.label }}</label>
-                        {{ mform.PM_ARMA }}
+                        <label class="field-label-sm">{{ mform.arma.label }}</label>
+                        {{ mform.arma }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_ESPEC.label }}</label>
-                        {{ mform.PM_ESPEC }}
+                        <label class="field-label-sm">{{ mform.especialidad.label }}</label>
+                        {{ mform.especialidad }}
                     </div>
                 </div>
 
                 <!-- Fila 2: Nombre + Paterno + Materno + Foto + Eliminar -->
                 <div class="militar-row-bottom">
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_NOMBRE.label }}</label>
-                        {{ mform.PM_NOMBRE }}
-                        {% if mform.PM_NOMBRE.errors %}<div class="field-error">{{ mform.PM_NOMBRE.errors.0 }}</div>{% endif %}
+                        <label class="field-label-sm">{{ mform.nombre.label }}</label>
+                        {{ mform.nombre }}
+                        {% if mform.nombre.errors %}<div class="field-error">{{ mform.nombre.errors.0 }}</div>{% endif %}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_PATERNO.label }}</label>
-                        {{ mform.PM_PATERNO }}
-                        {% if mform.PM_PATERNO.errors %}<div class="field-error">{{ mform.PM_PATERNO.errors.0 }}</div>{% endif %}
+                        <label class="field-label-sm">{{ mform.paterno.label }}</label>
+                        {{ mform.paterno }}
+                        {% if mform.paterno.errors %}<div class="field-error">{{ mform.paterno.errors.0 }}</div>{% endif %}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.PM_MATERNO.label }}</label>
-                        {{ mform.PM_MATERNO }}
+                        <label class="field-label-sm">{{ mform.materno.label }}</label>
+                        {{ mform.materno }}
                     </div>
                     <div>
-                        <label class="field-label-sm">📷 {{ mform.PM_FOTO.label }}</label>
-                        {{ mform.PM_FOTO }}
+                        <label class="field-label-sm">📷 {{ mform.foto.label }}</label>
+                        {{ mform.foto }}
                         <small class="field-hint">JPG/PNG — opcional</small>
                     </div>
                     {% if forloop.counter > 1 %}
@@ -142,41 +142,41 @@
                 <div class="militar-row-top">
                     <div>
                         <label class="field-label-sm">CI</label>
-                        {{ formset.empty_form.PM_CI }}
+                        {{ formset.empty_form.ci }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_ESCALAFON.label }}</label>
-                        {{ formset.empty_form.PM_ESCALAFON }}
+                        <label class="field-label-sm">{{ formset.empty_form.escalafon.label }}</label>
+                        {{ formset.empty_form.escalafon }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_GRADO.label }}</label>
-                        {{ formset.empty_form.PM_GRADO }}
+                        <label class="field-label-sm">{{ formset.empty_form.grado.label }}</label>
+                        {{ formset.empty_form.grado }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_ARMA.label }}</label>
-                        {{ formset.empty_form.PM_ARMA }}
+                        <label class="field-label-sm">{{ formset.empty_form.arma.label }}</label>
+                        {{ formset.empty_form.arma }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_ESPEC.label }}</label>
-                        {{ formset.empty_form.PM_ESPEC }}
+                        <label class="field-label-sm">{{ formset.empty_form.especialidad.label }}</label>
+                        {{ formset.empty_form.especialidad }}
                     </div>
                 </div>
                 <div class="militar-row-bottom">
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_NOMBRE.label }}</label>
-                        {{ formset.empty_form.PM_NOMBRE }}
+                        <label class="field-label-sm">{{ formset.empty_form.nombre.label }}</label>
+                        {{ formset.empty_form.nombre }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_PATERNO.label }}</label>
-                        {{ formset.empty_form.PM_PATERNO }}
+                        <label class="field-label-sm">{{ formset.empty_form.paterno.label }}</label>
+                        {{ formset.empty_form.paterno }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.PM_MATERNO.label }}</label>
-                        {{ formset.empty_form.PM_MATERNO }}
+                        <label class="field-label-sm">{{ formset.empty_form.materno.label }}</label>
+                        {{ formset.empty_form.materno }}
                     </div>
                     <div>
-                        <label class="field-label-sm">📷 {{ formset.empty_form.PM_FOTO.label }}</label>
-                        {{ formset.empty_form.PM_FOTO }}
+                        <label class="field-label-sm">📷 {{ formset.empty_form.foto.label }}</label>
+                        {{ formset.empty_form.foto }}
                         <small class="field-hint">JPG/PNG — opcional</small>
                     </div>
                     <div style="display: flex; align-items: flex-end;">
@@ -198,7 +198,7 @@
     <!-- DATALIST PARA AUTOCOMPLETADO -->
     <datalist id="pm_list">
         {% for pm in personal_militar %}
-            <option value="{{ pm.PM_CI }}">{{ pm.PM_GRADO }} {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}</option>
+            <option value="{{ pm.ci }}">{{ pm.grado }} {{ pm.nombre }} {{ pm.paterno }}</option>
         {% endfor %}
     </datalist>
 
@@ -292,8 +292,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function applyGradoFilter(formEl) {
-        const escalafonSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
-        const gradoSelect = formEl.querySelector('select[name$="-PM_GRADO"]');
+        const escalafonSelect = formEl.querySelector('select[name$="-escalafon"]');
+        const gradoSelect = formEl.querySelector('select[name$="-grado"]');
         if (!escalafonSelect || !gradoSelect) return;
         const escalafon = escalafonSelect.value;
         const permitidos = GRADOS_POR_ESCALAFON[escalafon] || null;
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function attachPhotoPreview(formEl) {
-        const fileInput = formEl.querySelector('input[type="file"][name$="-PM_FOTO"]');
+        const fileInput = formEl.querySelector('input[type="file"][name$="-foto"]');
         if (!fileInput) return;
         fileInput.addEventListener('change', function() {
             let preview = formEl.querySelector('.foto-preview');
@@ -334,11 +334,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function attachRowHandlers(formEl) {
         attachRemoveHandler(formEl);
-        const escSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
+        const escSelect = formEl.querySelector('select[name$="-escalafon"]');
         if (escSelect) {
             applyGradoFilter(formEl);
             escSelect.addEventListener('change', function() {
-                formEl.querySelector('select[name$="-PM_GRADO"]').value = '';
+                formEl.querySelector('select[name$="-grado"]').value = '';
                 applyGradoFilter(formEl);
             });
         }
@@ -346,14 +346,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function attachAutocompleteHandler(formEl) {
-        const ciInput = formEl.querySelector('input[name$="-PM_CI"]');
-        const nombreInput = formEl.querySelector('input[name$="-PM_NOMBRE"]');
-        const paternoInput = formEl.querySelector('input[name$="-PM_PATERNO"]');
-        const maternoInput = formEl.querySelector('input[name$="-PM_MATERNO"]');
-        const gradoSelect = formEl.querySelector('select[name$="-PM_GRADO"]');
-        const armaSelect = formEl.querySelector('select[name$="-PM_ARMA"]');
-        const escalafonSelect = formEl.querySelector('select[name$="-PM_ESCALAFON"]');
-        const especInput = formEl.querySelector('input[name$="-PM_ESPEC"]');
+        const ciInput = formEl.querySelector('input[name$="-ci"]');
+        const nombreInput = formEl.querySelector('input[name$="-nombre"]');
+        const paternoInput = formEl.querySelector('input[name$="-paterno"]');
+        const maternoInput = formEl.querySelector('input[name$="-materno"]');
+        const gradoSelect = formEl.querySelector('select[name$="-grado"]');
+        const armaSelect = formEl.querySelector('select[name$="-arma"]');
+        const escalafonSelect = formEl.querySelector('select[name$="-escalafon"]');
+        const especInput = formEl.querySelector('input[name$="-especialidad"]');
 
         function buscarPM() {
             const ci = (ciInput?.value || '').trim();
@@ -374,14 +374,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.encontrado) {
                         // Autocompleta todos los campos
-                        if (ciInput && data.PM_CI) ciInput.value = data.PM_CI;
-                        if (nombreInput) nombreInput.value = data.PM_NOMBRE;
-                        if (paternoInput) paternoInput.value = data.PM_PATERNO;
-                        if (maternoInput) maternoInput.value = data.PM_MATERNO;
-                        if (escalafonSelect) escalafonSelect.value = data.PM_ESCALAFON;
-                        if (gradoSelect) gradoSelect.value = data.PM_GRADO;
-                        if (armaSelect) armaSelect.value = data.PM_ARMA;
-                        if (especInput) especInput.value = data.PM_ESPEC;
+                        if (ciInput && data.ci) ciInput.value = data.ci;
+                        if (nombreInput) nombreInput.value = data.nombre;
+                        if (paternoInput) paternoInput.value = data.paterno;
+                        if (maternoInput) maternoInput.value = data.materno;
+                        if (escalafonSelect) escalafonSelect.value = data.escalafon;
+                        if (gradoSelect) gradoSelect.value = data.grado;
+                        if (armaSelect) armaSelect.value = data.arma;
+                        if (especInput) especInput.value = data.especialidad;
 
                         // Aplicar filtro de grado según escalafón
                         if (escalafonSelect) {

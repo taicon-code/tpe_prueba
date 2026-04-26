@@ -225,8 +225,8 @@
     {% for agenda in proximas_agendas %}
     <div class="agenda-item">
         <div class="agenda-header">
-            <span class="agenda-num">{{ agenda.AG_NUM }}</span>
-            <span class="agenda-fecha">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</span>
+            <span class="agenda-num">{{ agenda.numero }}</span>
+            <span class="agenda-fecha">{{ agenda.fecha_prog|date:"d/m/Y" }}</span>
         </div>
         <div class="agenda-stats">
             <div class="agenda-stat">
@@ -238,7 +238,7 @@
             </div>
             {% endif %}
             <div class="agenda-stat">
-                <span>{{ agenda.AG_TIPO }}</span>
+                <span>{{ agenda.tipo }}</span>
             </div>
         </div>
     </div>

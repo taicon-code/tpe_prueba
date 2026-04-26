@@ -21,7 +21,7 @@
                 <strong>Número:</strong>
             </p>
             <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
-                {{ agenda.AG_NUM }}
+                {{ agenda.numero }}
             </p>
         </div>
         <div>
@@ -29,12 +29,12 @@
                 <strong>Tipo:</strong>
             </p>
             <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
-                {% if agenda.AG_TIPO == 'ORDINARIA' %}
+                {% if agenda.tipo == 'ORDINARIA' %}
                     <span class="badge badge-blue">Ordinaria</span>
-                {% elif agenda.AG_TIPO == 'EXTRAORDINARIA' %}
+                {% elif agenda.tipo == 'EXTRAORDINARIA' %}
                     <span class="badge badge-purple">Extraordinaria</span>
                 {% else %}
-                    {{ agenda.AG_TIPO }}
+                    {{ agenda.tipo }}
                 {% endif %}
             </p>
         </div>
@@ -43,7 +43,7 @@
                 <strong>Fecha Programada:</strong>
             </p>
             <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
-                {{ agenda.AG_FECPROG|date:"d/m/Y" }}
+                {{ agenda.fecha_prog|date:"d/m/Y" }}
             </p>
         </div>
         <div>
@@ -51,16 +51,16 @@
                 <strong>Estado Actual:</strong>
             </p>
             <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
-                {% if agenda.AG_ESTADO == 'PROGRAMADA' %}
+                {% if agenda.estado == 'PROGRAMADA' %}
                     <span class="badge badge-blue">Programada</span>
-                {% elif agenda.AG_ESTADO == 'REALIZADA' %}
+                {% elif agenda.estado == 'REALIZADA' %}
                     <span class="badge badge-green">Realizada</span>
-                {% elif agenda.AG_ESTADO == 'SUSPENDIDA' %}
+                {% elif agenda.estado == 'SUSPENDIDA' %}
                     <span class="badge badge-red">Suspendida</span>
-                {% elif agenda.AG_ESTADO == 'REPROGRAMADA' %}
+                {% elif agenda.estado == 'REPROGRAMADA' %}
                     <span class="badge badge-orange">Reprogramada</span>
                 {% else %}
-                    {{ agenda.AG_ESTADO }}
+                    {{ agenda.estado }}
                 {% endif %}
             </p>
         </div>
@@ -80,22 +80,22 @@
 
             <div style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <label style="display: flex; align-items: flex-start; padding: 1.25rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                    <input type="radio" name="AG_ESTADO" value="REALIZADA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
+                    <input type="radio" name="estado" value="REALIZADA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
                     <span style="line-height: 1.5;">Realizada (sesión se realizó)</span>
                 </label>
                 <label style="display: flex; align-items: flex-start; padding: 1.25rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                    <input type="radio" name="AG_ESTADO" value="SUSPENDIDA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
+                    <input type="radio" name="estado" value="SUSPENDIDA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
                     <span style="line-height: 1.5;">Suspendida (sin nueva fecha aún)</span>
                 </label>
                 <label style="display: flex; align-items: flex-start; padding: 1.25rem; background: #fff; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s;">
-                    <input type="radio" name="AG_ESTADO" value="REPROGRAMADA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
+                    <input type="radio" name="estado" value="REPROGRAMADA" style="width: 1.5rem; height: 1.5rem; min-width: 1.5rem; margin-right: 1rem; margin-top: 0.2rem; cursor: pointer; border: 2px solid #ccc; border-radius: 50%; appearance: none; -webkit-appearance: none; flex-shrink: 0;">
                     <span style="line-height: 1.5;">Reprogramada (nueva fecha)</span>
                 </label>
             </div>
 
-            {% if form.AG_ESTADO.errors %}
+            {% if form.estado.errors %}
                 <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.5rem;">
-                    {{ form.AG_ESTADO.errors.0 }}
+                    {{ form.estado.errors.0 }}
                 </div>
             {% endif %}
         </div>
@@ -114,12 +114,12 @@
 
         <div style="margin-bottom: 1.5rem; padding: 1.5rem; background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 6px; display: none;" id="fecreal-field">
             <label style="display: block; margin-bottom: 0.75rem; font-weight: 600; color: #166534;">
-                📅 {{ form.AG_FECREAL.label }}
+                📅 {{ form.fecha_real.label }}
             </label>
-            {{ form.AG_FECREAL }}
-            {% if form.AG_FECREAL.errors %}
+            {{ form.fecha_real }}
+            {% if form.fecha_real.errors %}
                 <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
-                    {{ form.AG_FECREAL.errors.0 }}
+                    {{ form.fecha_real.errors.0 }}
                 </div>
             {% endif %}
             <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.5rem;">
@@ -176,7 +176,7 @@
     .badge-red    { background: #fef2f2; color: #b91c1c; }
 
     /* Radio buttons - custom styling */
-    input[name="AG_ESTADO"] {
+    input[name="estado"] {
         width: 1.5rem !important;
         height: 1.5rem !important;
         min-width: 1.5rem !important;
@@ -192,27 +192,27 @@
         transition: all 0.2s !important;
     }
 
-    input[name="AG_ESTADO"]:checked {
+    input[name="estado"]:checked {
         background: #1e3c72 !important;
         border-color: #1e3c72 !important;
     }
 
-    input[name="AG_ESTADO"]:hover {
+    input[name="estado"]:hover {
         border-color: #1e3c72 !important;
         box-shadow: 0 0 0 3px rgba(30,60,114,.1) !important;
     }
 
-    input[name="AG_ESTADO"]:focus {
+    input[name="estado"]:focus {
         outline: none !important;
         box-shadow: 0 0 0 3px rgba(30,60,114,.2) !important;
     }
 
-    label:has(input[name="AG_ESTADO"]:hover) {
+    label:has(input[name="estado"]:hover) {
         background: #f0f7ff !important;
         border-color: #3b82f6 !important;
     }
 
-    label:has(input[name="AG_ESTADO"]:checked) {
+    label:has(input[name="estado"]:checked) {
         background: #e0f2fe !important;
         border-color: #1e3c72 !important;
         font-weight: 600 !important;
@@ -281,7 +281,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const radioButtons = document.querySelectorAll('[name="AG_ESTADO"]');
+    const radioButtons = document.querySelectorAll('[name="estado"]');
     const frecrealField = document.getElementById('fecreal-field');
     const infoSuspendida = document.getElementById('info-suspendida');
     const infoReprogramada = document.getElementById('info-reprogramada');

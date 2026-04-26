@@ -112,7 +112,7 @@
     {% for agenda in agendas_proximas %}
     <a href="{% url 'vocal_agenda_detalle' agenda.pk %}" class="agenda-card" style="text-decoration: none;">
         <div class="header">
-            <span class="fecha">{{ agenda.AG_FECPROG|date:"d/m/Y" }}</span>
+            <span class="fecha">{{ agenda.fecha_prog|date:"d/m/Y" }}</span>
             {% if agenda.pending_count > 0 %}
             <span class="pendiente-badge">
                 🔔 {{ agenda.pending_count }} pendiente{{ agenda.pending_count|pluralize }}
@@ -120,8 +120,8 @@
             {% endif %}
         </div>
         <div class="desc">
-            <strong>{{ agenda.AG_NUM }}</strong><br>
-            Tipo: {{ agenda.get_AG_TIPO_display|default:"Ordinaria" }}
+            <strong>{{ agenda.numero }}</strong><br>
+            Tipo: {{ agenda.get_tipo_display|default:"Ordinaria" }}
         </div>
         <span class="link-btn">Ver Agenda →</span>
     </a>
@@ -151,7 +151,7 @@
         color: #374151;
         transition: all 0.2s;
     " onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">
-        <span style="font-weight: 500;">{{ agenda.AG_FECPROG|date:"d/m/Y" }} — {{ agenda.AG_NUM }}</span>
+        <span style="font-weight: 500;">{{ agenda.fecha_prog|date:"d/m/Y" }} — {{ agenda.numero }}</span>
         <span style="font-size: 0.8rem; color: #6b7280;">Ver →</span>
     </a>
     {% endfor %}
