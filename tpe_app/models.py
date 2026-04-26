@@ -1150,12 +1150,19 @@ class PerfilUsuario(models.Model):
         ('ABOG1_ASESOR',       'Abogado 1 (Asesor/1ra Resolución)'),
         ('ABOG2_AUTOS',        'Abogado 2 (Autos de Ejecución)'),
         ('ABOG3_BUSCADOR',     'Abogado 3 (Búsqueda de Antecedentes)'),
-        ('VOCAL_TPE',          'Vocal TPE (Secretario de Actas)'),
+        ('SECRETARIO_ACTAS',   'Secretario de Actas'),
         ('ASESOR_JEFE',        'Asesor Jefe (Supervisor de Procesos)'),
         ('ASESOR_JURIDICO',    'Asesor Jurídico del DPTO-I'),
         ('ABOGADO',            'Abogado (General)'),
         ('BUSCADOR',           'Buscador (General)'),
     ]
+
+    # Roles que requieren vinculación a PM (todo el personal que no es abogado ni vocal)
+    ROLES_CON_PM = {
+        'MASTER', 'ADMINISTRADOR', 'AYUDANTE',
+        'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR',
+        'ASESOR_JEFE', 'ASESOR_JURIDICO', 'BUSCADOR',
+    }
 
     user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, verbose_name='Usuario del sistema')
     rol     = models.CharField(max_length=20, choices=ROL_CHOICES, verbose_name='Rol/Perfil')
@@ -1163,6 +1170,8 @@ class PerfilUsuario(models.Model):
                                 verbose_name='Vinculado a Abogado')
     vocal   = models.ForeignKey(VOCAL_TPE, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name='Vinculado a Vocal TPE')
+    pm      = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='Vinculado a Personal Militar')
     activo  = models.BooleanField(default=True, verbose_name='Usuario activo')
 
     class Meta:
@@ -1171,4 +1180,29 @@ class PerfilUsuario(models.Model):
         verbose_name_plural = 'Perfiles de Usuario'
 
     def __str__(self):
+        if self.pm:
+            return f"{self.pm.grado} {self.pm.paterno} [{self.get_rol_display()}]"
+        if self.abogado:
+            return f"{self.abogado.grado} {self.abogado.paterno} [{self.get_rol_display()}]"
         return f"{self.user.username} ({self.get_rol_display()})"
+
+    @property
+    def grado(self):
+        """Grado del usuario, sin importar si es PM, abogado o vocal."""
+        if self.pm:
+            return self.pm.grado
+        if self.abogado:
+            return self.abogado.grado
+        if self.vocal:
+            return self.vocal.pm.grado
+        return ''
+
+    @property
+    def nombre_completo(self):
+        if self.pm:
+            return f"{self.pm.grado} {self.pm.nombre} {self.pm.paterno}".strip()
+        if self.abogado:
+            return f"{self.abogado.grado} {self.abogado.nombre} {self.abogado.paterno}".strip()
+        if self.vocal:
+            return str(self.vocal.pm)
+        return self.user.get_full_name() or self.user.username
