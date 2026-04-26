@@ -436,14 +436,12 @@ def subir_pdf_res(request, res_id):
             with transaction.atomic():
                 # Eliminar PDF anterior si existe
                 DocumentoAdjunto.objects.filter(
-                    tabla='resolucion',
-                    registro_id=res.pk
+                    resolucion_id=res.pk
                 ).delete()
 
                 # Crear nuevo documento
                 DocumentoAdjunto.objects.create(
-                    tabla='resolucion',
-                    registro_id=res.pk,
+                    resolucion=res,
                     tipo='resolucion',
                     archivo=archivo_pdf,
                     nombre=f'RES {res.numero} - {res.pm.grado} {res.pm.paterno}'
@@ -459,8 +457,7 @@ def subir_pdf_res(request, res_id):
 
     # Verificar si ya tiene PDF
     pdf_existente = DocumentoAdjunto.objects.filter(
-        tabla='resolucion',
-        registro_id=res.pk
+        resolucion_id=res.pk
     ).first()
 
     context = {

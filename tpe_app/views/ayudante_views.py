@@ -34,7 +34,7 @@ def ayudante_dashboard(request):
 
     # RES sin PDF (panel principal) — solo PRIMERA
     res_con_pdf = set(
-        DocumentoAdjunto.objects.filter(tabla='resolucion').values_list('registro_id', flat=True)
+        DocumentoAdjunto.objects.filter(resolucion__isnull=False).values_list('resolucion_id', flat=True)
     )
     res_sin_pdf = (
         Resolucion.objects.filter(instancia='PRIMERA')
@@ -369,8 +369,8 @@ def ayudante_lista_res_sin_pdf(request):
 
     from ..models import DocumentoAdjunto
     res_con_pdf = DocumentoAdjunto.objects.filter(
-        tabla='resolucion'
-    ).values_list('registro_id', flat=True)
+        resolucion__isnull=False
+    ).values_list('resolucion_id', flat=True)
 
     resoluciones_sin_pdf = (
         Resolucion.objects

@@ -25,44 +25,44 @@ def abogado_dashboard(request):
 
     mis_sumarios = SIM.objects.filter(
         pk__in=sim_ids_con_custodia
-    ).exclude(SIM_TIPO__startswith='SOLICITUD').order_by('-SIM_FECREG').distinct()
+    ).exclude(tipo__startswith='SOLICITUD').order_by('-fecha_registro').distinct()
 
     # ✅ NUEVO v3.1: Solicitudes CON CUSTODIA ACTIVA
     mis_solicitudes = SIM.objects.filter(
         pk__in=sim_ids_con_custodia,
-        SIM_TIPO__startswith='SOLICITUD'
-    ).order_by('-SIM_FECREG').distinct()
+        tipo__startswith='SOLICITUD'
+    ).order_by('-fecha_registro').distinct()
     
     # ✅ NUEVO v3.1: Recursos asignados a este abogado
     # Mostrar Resolucion RECONSIDERACION donde el abogado está asignado,
     # aunque Admin2 aún no haya entregado custodia
     mis_recursos = list(
         Resolucion.objects.filter(
-            RES_INSTANCIA='RECONSIDERACION',
+            instancia='RECONSIDERACION',
             abog=perfil.abogado,
         )
         .select_related('sim', 'resolucion_origen', 'pm')
         .prefetch_related('sim__militares')
-        .order_by('-RES_FEC')
+        .order_by('-fecha')
         .distinct()
     )
     for rr in mis_recursos:
         # Adjuntar PDF de la PRIMERA resolución impugnada (si existe)
         if rr.resolucion_origen_id:
             doc = DocumentoAdjunto.objects.filter(
-                DOC_TABLA='resolucion', DOC_ID_REG=rr.resolucion_origen_id
+                resolucion_id=rr.resolucion_origen_id
             ).first()
-            rr.pdf_primera_res = doc.DOC_RUTA.url if doc else None
+            rr.pdf_primera_res = doc.archivo.url if doc else None
         else:
             rr.pdf_primera_res = None
         # Mostrar el militar específico del RR (no el primero del sumario)
         rr.investigado = rr.pm if rr.pm else rr.sim.militares.first()
         # Compat de template: exponer .res (resolución origen) y .RR_FEC
         rr.res = rr.resolucion_origen
-        rr.RR_FEC = rr.RES_FEC
+        rr.RR_FEC = rr.fecha
     
     # Todos los sumarios (para consulta opcional)
-    todos_sumarios = SIM.objects.all().order_by('-SIM_FECREG')
+    todos_sumarios = SIM.objects.all().order_by('-fecha_registro')
     
     total_asignados = mis_sumarios.count() + mis_solicitudes.count() + len(mis_recursos)
     
@@ -80,10 +80,10 @@ def abogado_dashboard(request):
         'mis_recursos': mis_recursos,
         'total_asignados': total_asignados,
         'total_res': Resolucion.objects.filter(
-            RES_INSTANCIA='PRIMERA', abog=perfil.abogado
+            instancia='PRIMERA', abog=perfil.abogado
         ).count(),
         'total_rr': Resolucion.objects.filter(
-            RES_INSTANCIA='RECONSIDERACION', sim__pk__in=sim_ids_con_custodia
+            instancia='RECONSIDERACION', sim__pk__in=sim_ids_con_custodia
         ).count(),
         'total_autotpe': AUTOTPE.objects.filter(abog=perfil.abogado).count(),
         'pendientes_ejecutoria': pendientes_ej,
@@ -136,13 +136,13 @@ def abogado_entregar_carpeta(request, sim_id):
                         tipo_custodio='ADMIN2_ARCHIVO',
                         abog=perfil.abogado,
                         usuario=request.user,
-                        observacion=f'Recibida de {perfil.abogado.AB_GRADO} {perfil.abogado.AB_PATERNO}. {form.cleaned_data.get("observacion", "")}',
+                        observacion=f'Recibida de {perfil.abogado.grado} {perfil.abogado.paterno}. {form.cleaned_data.get("observacion", "")}',
                         estado='PENDIENTE_CONFIRMACION'
                     )
 
                     messages.success(
                         request,
-                        f'✅ Carpeta del sumario {sim.SIM_COD} entregada a Archivo SIM'
+                        f'✅ Carpeta del sumario {sim.codigo} entregada a Archivo SIM'
                     )
                     return redirect('abogado_dashboard')
             except Exception as e:

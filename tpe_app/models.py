@@ -864,13 +864,6 @@ class AUTOTSP(models.Model):
 # ============================================================
 class DocumentoAdjunto(models.Model):
 
-    TABLA_CHOICES = [
-        ('sim',         'Sumario SIM'),
-        ('resolucion',  'Resolución (PRIMERA/RECONSIDERACION)'),
-        ('recurso_tsp', 'Recurso TSP (APELACION/ACLARACION_ENMIENDA)'),
-        ('autotpe',     'Auto TPE'),
-        ('autotsp',     'Auto TSP'),
-    ]
     TIPO_CHOICES = [
         ('resolucion',   'Resolución'),
         ('auto',         'Auto'),
@@ -880,8 +873,12 @@ class DocumentoAdjunto(models.Model):
         ('otro',         'Otro'),
     ]
 
-    tabla          = models.CharField(max_length=30, choices=TABLA_CHOICES, verbose_name='Tabla de origen')
-    registro_id    = models.BigIntegerField(verbose_name='ID del registro')
+    sim         = models.ForeignKey('SIM',        null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Sumario SIM')
+    resolucion  = models.ForeignKey('Resolucion', null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Resolución')
+    autotpe     = models.ForeignKey('AUTOTPE',    null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Auto TPE')
+    autotsp     = models.ForeignKey('AUTOTSP',    null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Auto TSP')
+    recurso_tsp = models.ForeignKey('RecursoTSP', null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Recurso TSP')
+
     tipo           = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name='Tipo de documento')
     archivo        = models.FileField(upload_to='documentos/%Y/', verbose_name='Archivo PDF')
     nombre         = models.CharField(max_length=100, verbose_name='Nombre descriptivo')
@@ -891,12 +888,9 @@ class DocumentoAdjunto(models.Model):
         db_table            = 'documentos_adjuntos'
         verbose_name        = 'Documento Adjunto'
         verbose_name_plural = 'Documentos Adjuntos'
-        indexes             = [
-            models.Index(fields=['tabla', 'registro_id'], name='DOC_TABLA_ID'),
-        ]
 
     def __str__(self):
-        return f"{self.nombre} ({self.get_tabla_display()})"
+        return self.nombre
 
 
 # ============================================================

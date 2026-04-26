@@ -345,11 +345,12 @@ class AUTOTSPAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 #  ADMIN: Documentos Adjuntos
 # ════════════════════════════════════════════════════════════════════════════
-# @admin.register(DocumentoAdjunto)
-# class DocumentoAdjuntoAdmin(admin.ModelAdmin):
-    # list_display  = ('nombre', 'tabla', 'tipo', 'fecha_registro')
-    # search_fields = ('nombre', 'tabla')
-    # list_filter   = ('tabla', 'tipo')
+@admin.register(DocumentoAdjunto)
+class DocumentoAdjuntoAdmin(admin.ModelAdmin):
+    list_display  = ('nombre', 'tipo', 'sim', 'resolucion', 'autotpe', 'autotsp', 'recurso_tsp', 'fecha_registro')
+    search_fields = ('nombre',)
+    list_filter   = ('tipo',)
+    raw_id_fields = ('sim', 'resolucion', 'autotpe', 'autotsp', 'recurso_tsp')
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
