@@ -296,9 +296,10 @@ class VOCAL_TPE(models.Model):
         ('RELATOR',          'Vocal Relator'),
     ]
 
-    pm     = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
-    cargo  = models.CharField(max_length=20, choices=CARGO_CHOICES, verbose_name='Cargo')
-    activo = models.BooleanField(default=True, verbose_name='Activo')
+    pm       = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
+    cargo    = models.CharField(max_length=20, choices=CARGO_CHOICES, verbose_name='Cargo en Tribunal')
+    cargo_em = models.CharField(max_length=100, null=True, blank=True, verbose_name='Cargo en Estado Mayor')
+    activo   = models.BooleanField(default=True, verbose_name='Activo')
 
     class Meta:
         db_table            = 'vocal_tpe'
@@ -309,6 +310,14 @@ class VOCAL_TPE(models.Model):
     def __str__(self):
         estado = '' if self.activo else ' (inactivo)'
         return f"{self.get_cargo_display()} — {self.pm}{estado}"
+
+    @property
+    def identificacion_completa(self):
+        """Grado + nombre + cargo EM para mostrar en documentos."""
+        partes = [str(self.pm)]
+        if self.cargo_em:
+            partes.append(self.cargo_em)
+        return ' — '.join(partes)
 
 
 # ============================================================

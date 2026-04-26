@@ -131,9 +131,11 @@ class Command(BaseCommand):
             estado='ACTIVO',
         ))
         vocal_pres, _ = VOCAL_TPE.objects.get_or_create(
-            pm=pm_pres, cargo='PRESIDENTE', defaults=dict(activo=True))
+            pm=pm_pres, cargo='PRESIDENTE',
+            defaults=dict(activo=True, cargo_em='JEFE DPTO. I-PERS'))
         vocal_sec, _ = VOCAL_TPE.objects.get_or_create(
-            pm=pm_sec, cargo='SECRETARIO_ACTAS', defaults=dict(activo=True))
+            pm=pm_sec, cargo='SECRETARIO_ACTAS',
+            defaults=dict(activo=True, cargo_em='AYUDANTE DE ÓRDENES DPTO. I-PERS'))
         self.stdout.write(self.style.SUCCESS('   ✅ 2 vocales creados (Presidente + Secretario de Actas)'))
 
         # ── 4. USUARIOS ───────────────────────────────────────────────────────

@@ -100,9 +100,10 @@ class ABOGAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(VOCAL_TPE)
 class VocalTPEAdmin(admin.ModelAdmin):
-    list_display  = ('pm', 'cargo', 'activo')
+    list_display  = ('pm', 'cargo', 'cargo_em', 'activo')
     list_filter   = ('cargo', 'activo')
-    search_fields = ('pm__nombre', 'pm__paterno')
+    search_fields = ('pm__nombre', 'pm__paterno', 'cargo_em')
+    fields        = ('pm', 'cargo', 'cargo_em', 'activo')
 
 
 # ════════════════════════════════════════════════════════════════════════════
