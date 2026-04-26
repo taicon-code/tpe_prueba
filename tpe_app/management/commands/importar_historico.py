@@ -260,33 +260,33 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod = _str(fila.get("SIM_COD"))
+                cod = _str(fila.get("codigo"))
                 if not cod:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD vacio")
+                    self._registrar_skip(hoja, num_fila, "codigo vacio")
                     continue
 
-                objeto = _str(fila.get("SIM_OBJETO"))
-                resum  = _str(fila.get("SIM_RESUM"))
-                tipo   = _str(fila.get("SIM_TIPO"))
+                objeto = _str(fila.get("objeto"))
+                resum  = _str(fila.get("resumen"))
+                tipo   = _str(fila.get("tipo"))
                 if not objeto:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: SIM_OBJETO vacio")
+                    self._registrar_skip(hoja, num_fila, f"{cod}: objeto vacio")
                     continue
                 if not resum:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: SIM_RESUM vacio")
+                    self._registrar_skip(hoja, num_fila, f"{cod}: resumen vacio")
                     continue
                 if not tipo:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: SIM_TIPO vacio")
+                    self._registrar_skip(hoja, num_fila, f"{cod}: tipo vacio")
                     continue
 
                 _, creado = SIM.objects.get_or_create(
-                    SIM_COD=cod.upper(),
+                    codigo=cod.upper(),
                     defaults=dict(
-                        SIM_FECING=_parse_fecha(fila.get("SIM_FECING")),
-                        SIM_ESTADO=_str(fila.get("SIM_ESTADO")) or "PARA_AGENDA",
-                        SIM_OBJETO=objeto.upper(),
-                        SIM_RESUM=resum.upper()[:200],
-                        SIM_AUTOFINAL=(_str(fila.get("SIM_AUTOFINAL")) or ""),
-                        SIM_TIPO=tipo.upper(),
+                        fecha_ingreso=_parse_fecha(fila.get("fecha_ingreso")),
+                        estado=_str(fila.get("estado")) or "PARA_AGENDA",
+                        objeto=objeto.upper(),
+                        resumen=resum.upper()[:200],
+                        auto_final=(_str(fila.get("auto_final")) or ""),
+                        tipo=tipo.upper(),
                     ),
                 )
                 if creado:
@@ -303,42 +303,42 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                nombre  = _str(fila.get("PM_NOMBRE"))
-                paterno = _str(fila.get("PM_PATERNO"))
-                ci      = _ci(fila.get("PM_CI"))
+                nombre  = _str(fila.get("nombre"))
+                paterno = _str(fila.get("paterno"))
+                ci      = _ci(fila.get("ci"))
 
                 if not nombre or not paterno:
-                    self._registrar_skip(hoja, num_fila, "PM_NOMBRE o PM_PATERNO vacios")
+                    self._registrar_skip(hoja, num_fila, "nombre o paterno vacios")
                     continue
 
                 # Buscar por CI si existe, sino por nombre+paterno
                 if ci:
                     pm, creado = PM.objects.get_or_create(
-                        PM_CI=ci,
+                        ci=ci,
                         defaults=dict(
-                            PM_NOMBRE=nombre.upper(),
-                            PM_PATERNO=paterno.upper(),
-                            PM_MATERNO=(_str(fila.get("PM_MATERNO")) or "").upper() or None,
-                            PM_ESCALAFON=_str(fila.get("PM_ESCALAFON")),
-                            PM_GRADO=_str(fila.get("PM_GRADO")),
-                            PM_ARMA=_str(fila.get("PM_ARMA")),
-                            PM_ESPEC=(_str(fila.get("PM_ESPEC")) or "").upper() or None,
-                            PM_ESTADO=_str(fila.get("PM_ESTADO")) or "ACTIVO",
-                            PM_PROMOCION=_parse_fecha(fila.get("PM_PROMOCION")),
+                            nombre=nombre.upper(),
+                            paterno=paterno.upper(),
+                            materno=(_str(fila.get("materno")) or "").upper() or None,
+                            escalafon=_str(fila.get("escalafon")),
+                            grado=_str(fila.get("grado")),
+                            arma=_str(fila.get("arma")),
+                            especialidad=(_str(fila.get("especialidad")) or "").upper() or None,
+                            estado=_str(fila.get("estado")) or "ACTIVO",
+                            anio_promocion=_parse_fecha(fila.get("anio_promocion")),
                         ),
                     )
                 else:
                     pm, creado = PM.objects.get_or_create(
-                        PM_NOMBRE=nombre.upper(),
-                        PM_PATERNO=paterno.upper(),
+                        nombre=nombre.upper(),
+                        paterno=paterno.upper(),
                         defaults=dict(
-                            PM_MATERNO=(_str(fila.get("PM_MATERNO")) or "").upper() or None,
-                            PM_ESCALAFON=_str(fila.get("PM_ESCALAFON")),
-                            PM_GRADO=_str(fila.get("PM_GRADO")),
-                            PM_ARMA=_str(fila.get("PM_ARMA")),
-                            PM_ESPEC=(_str(fila.get("PM_ESPEC")) or "").upper() or None,
-                            PM_ESTADO=_str(fila.get("PM_ESTADO")) or "ACTIVO",
-                            PM_PROMOCION=_parse_fecha(fila.get("PM_PROMOCION")),
+                            materno=(_str(fila.get("materno")) or "").upper() or None,
+                            escalafon=_str(fila.get("escalafon")),
+                            grado=_str(fila.get("grado")),
+                            arma=_str(fila.get("arma")),
+                            especialidad=(_str(fila.get("especialidad")) or "").upper() or None,
+                            estado=_str(fila.get("estado")) or "ACTIVO",
+                            anio_promocion=_parse_fecha(fila.get("anio_promocion")),
                         ),
                     )
 
@@ -356,20 +356,20 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod = _str(fila.get("SIM_COD"))
-                ci  = _ci(fila.get("PM_CI"))
+                cod = _str(fila.get("codigo"))
+                ci  = _ci(fila.get("ci"))
 
                 if not cod or not ci:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD o PM_CI vacios")
+                    self._registrar_skip(hoja, num_fila, "codigo o ci vacios")
                     continue
 
-                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=cod.upper(), version=1).first()
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}")
                     continue
 
                 try:
-                    pm = PM.objects.get(PM_CI=ci)
+                    pm = PM.objects.get(ci=ci)
                 except PM.DoesNotExist:
                     self._registrar_skip(hoja, num_fila, f"PM no encontrado con CI: {ci}")
                     continue
@@ -389,39 +389,39 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod     = _str(fila.get("SIM_COD"))
-                res_num = _str(fila.get("RES_NUM"))
-                res_fec = _parse_fecha(fila.get("RES_FEC"))
-                res_tipo= _str(fila.get("RES_TIPO"))
-                res_res = _str(fila.get("RES_RESOL"))
+                cod     = _str(fila.get("codigo"))
+                res_num = _str(fila.get("numero"))
+                res_fec = _parse_fecha(fila.get("fecha"))
+                res_tipo= _str(fila.get("tipo"))
+                res_res = _str(fila.get("texto"))
 
                 if not cod:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
+                    self._registrar_skip(hoja, num_fila, "codigo vacio"); continue
                 if not res_num:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: RES_NUM vacio"); continue
+                    self._registrar_skip(hoja, num_fila, f"{cod}: numero vacio"); continue
                 if not res_fec:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: RES_FEC vacio"); continue
+                    self._registrar_skip(hoja, num_fila, f"{cod}: fecha vacio"); continue
                 if not res_tipo:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: RES_TIPO vacio"); continue
+                    self._registrar_skip(hoja, num_fila, f"{cod}: tipo vacio"); continue
                 if not res_res:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: RES_RESOL vacio"); continue
+                    self._registrar_skip(hoja, num_fila, f"{cod}: texto vacio"); continue
 
-                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=cod.upper(), version=1).first()
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 _, creado = Resolucion.objects.get_or_create(
                     sim=sim,
-                    RES_INSTANCIA='PRIMERA',
-                    RES_NUM=res_num.upper(),
+                    instancia='PRIMERA',
+                    numero=res_num.upper(),
                     defaults=dict(
-                        RES_FEC=res_fec,
-                        RES_TIPO=res_tipo,
-                        RES_RESOL=res_res.upper(),
-                        RES_TIPO_NOTIF=_str(fila.get("RES_TIPO_NOTIF")),
-                        RES_NOT=_str(fila.get("RES_NOT")),
-                        RES_FECNOT=_parse_fecha(fila.get("RES_FECNOT")),
-                        RES_HORNOT=_parse_hora(fila.get("RES_HORNOT")),
+                        fecha=res_fec,
+                        tipo=res_tipo,
+                        texto=res_res.upper(),
+                        tipo_notif=_str(fila.get("tipo_notif")),
+                        notif_a=_str(fila.get("notif_a")),
+                        fecha_notif=_parse_fecha(fila.get("fecha_notif")),
+                        hora_notif=_parse_hora(fila.get("hora_notif")),
                     ),
                 )
                 if creado:
@@ -438,48 +438,48 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod     = _str(fila.get("SIM_COD"))
-                res_num = _str(fila.get("RES_NUM"))
+                cod     = _str(fila.get("codigo"))
+                res_num = _str(fila.get("numero"))
 
                 if not cod:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
+                    self._registrar_skip(hoja, num_fila, "codigo vacio"); continue
                 if not res_num:
-                    self._registrar_skip(hoja, num_fila, f"{cod}: RES_NUM vacio"); continue
+                    self._registrar_skip(hoja, num_fila, f"{cod}: numero vacio"); continue
 
-                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=cod.upper(), version=1).first()
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 try:
                     res = Resolucion.objects.get(
-                        sim=sim, RES_INSTANCIA='PRIMERA', RES_NUM=res_num.upper()
+                        sim=sim, instancia='PRIMERA', numero=res_num.upper()
                     )
                 except Resolucion.DoesNotExist:
                     self._registrar_skip(hoja, num_fila, f"RES no encontrada: {res_num} en {cod}"); continue
                 except Resolucion.MultipleObjectsReturned:
                     res = Resolucion.objects.filter(
-                        sim=sim, RES_INSTANCIA='PRIMERA', RES_NUM=res_num.upper()
+                        sim=sim, instancia='PRIMERA', numero=res_num.upper()
                     ).first()
 
                 # Un sumario solo tiene un RR por resolución PRIMERA
                 if Resolucion.objects.filter(
-                    sim=sim, RES_INSTANCIA='RECONSIDERACION', resolucion_origen=res
+                    sim=sim, instancia='RECONSIDERACION', resolucion_origen=res
                 ).exists():
                     self._registrar_skip(hoja, num_fila, f"{cod}: RR ya existe para {res_num}"); continue
 
                 Resolucion.objects.create(
                     sim=sim,
-                    RES_INSTANCIA='RECONSIDERACION',
+                    instancia='RECONSIDERACION',
                     resolucion_origen=res,
-                    RES_FECPRESEN=_parse_fecha(fila.get("RR_FECPRESEN")),
-                    RES_NUM=_str(fila.get("RR_NUM")),
-                    RES_FEC=_parse_fecha(fila.get("RR_FEC")),
-                    RES_RESOL=(_str(fila.get("RR_RESOL")) or "").upper() or None,
-                    RES_RESUM=((_str(fila.get("RR_RESUM")) or "")[:20]) or None,
-                    RES_TIPO_NOTIF=_str(fila.get("RR_TIPO_NOTIF")),
-                    RES_NOT=_str(fila.get("RR_NOT")),
-                    RES_FECNOT=_parse_fecha(fila.get("RR_FECNOT")),
-                    RES_HORNOT=_parse_hora(fila.get("RR_HORNOT")),
+                    fecha_presentacion=_parse_fecha(fila.get("RR_FECPRESEN")),
+                    numero=_str(fila.get("RR_NUM")),
+                    fecha=_parse_fecha(fila.get("RR_FEC")),
+                    texto=(_str(fila.get("RR_RESOL")) or "").upper() or None,
+                    resumen=((_str(fila.get("RR_RESUM")) or "")[:20]) or None,
+                    tipo_notif=_str(fila.get("RR_TIPO_NOTIF")),
+                    notif_a=_str(fila.get("RR_NOT")),
+                    fecha_notif=_parse_fecha(fila.get("RR_FECNOT")),
+                    hora_notif=_parse_hora(fila.get("RR_HORNOT")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:
@@ -492,31 +492,31 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod = _str(fila.get("SIM_COD"))
+                cod = _str(fila.get("codigo"))
                 if not cod:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
+                    self._registrar_skip(hoja, num_fila, "codigo vacio"); continue
 
-                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=cod.upper(), version=1).first()
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
-                if RecursoTSP.objects.filter(sim=sim, TSP_INSTANCIA='APELACION').exists():
+                if RecursoTSP.objects.filter(sim=sim, instancia='APELACION').exists():
                     self._registrar_skip(hoja, num_fila, f"{cod}: RAP ya existe"); continue
 
                 RecursoTSP.objects.create(
                     sim=sim,
-                    TSP_INSTANCIA='APELACION',
-                    TSP_FECPRESEN=_parse_fecha(fila.get("RAP_FECPRESEN")),
-                    TSP_OFI=_str(fila.get("RAP_OFI")),
-                    TSP_FECOFI=_parse_fecha(fila.get("RAP_FECOFI")),
-                    TSP_NUM=_str(fila.get("RAP_NUM")),
-                    TSP_FEC=_parse_fecha(fila.get("RAP_FEC")),
-                    TSP_TIPO=_str(fila.get("RAP_TIPO")),
-                    TSP_RESOL=(_str(fila.get("RAP_RESOL")) or "").upper() or None,
-                    TSP_TIPO_NOTIF=_str(fila.get("RAP_TIPO_NOTIF")),
-                    TSP_NOT=_str(fila.get("RAP_NOT")),
-                    TSP_FECNOT=_parse_fecha(fila.get("RAP_FECNOT")),
-                    TSP_HORNOT=_parse_hora(fila.get("RAP_HORNOT")),
+                    instancia='APELACION',
+                    fechaPRESEN=_parse_fecha(fila.get("RAP_FECPRESEN")),
+                    numero_oficio=_str(fila.get("RAP_OFI")),
+                    fechaOFI=_parse_fecha(fila.get("RAP_FECOFI")),
+                    numero=_str(fila.get("RAP_NUM")),
+                    fecha=_parse_fecha(fila.get("RAP_FEC")),
+                    tipo=_str(fila.get("RAP_TIPO")),
+                    texto=(_str(fila.get("RAP_RESOL")) or "").upper() or None,
+                    tipo_notif=_str(fila.get("RAP_TIPO_NOTIF")),
+                    notif_a=_str(fila.get("RAP_NOT")),
+                    fecha_notif=_parse_fecha(fila.get("RAP_FECNOT")),
+                    hora_notif=_parse_hora(fila.get("RAP_HORNOT")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:
@@ -529,27 +529,27 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod = _str(fila.get("SIM_COD"))
+                cod = _str(fila.get("codigo"))
                 if not cod:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
+                    self._registrar_skip(hoja, num_fila, "codigo vacio"); continue
 
-                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=cod.upper(), version=1).first()
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 AUTOTPE.objects.create(
                     sim=sim,
-                    TPE_NUM=_str(fila.get("TPE_NUM")),
-                    TPE_FEC=_parse_fecha(fila.get("TPE_FEC")),
-                    TPE_TIPO=_str(fila.get("TPE_TIPO")),
-                    TPE_RESOL=(_str(fila.get("TPE_RESOL")) or "").upper() or None,
-                    TPE_TIPO_NOTIF=_str(fila.get("TPE_TIPO_NOTIF")),
-                    TPE_NOT=_str(fila.get("TPE_NOT")),
-                    TPE_FECNOT=_parse_fecha(fila.get("TPE_FECNOT")),
-                    TPE_HORNOT=_parse_hora(fila.get("TPE_HORNOT")),
-                    TPE_MEMO_NUM=_str(fila.get("TPE_MEMO_NUM")),
-                    TPE_MEMO_FEC=_parse_fecha(fila.get("TPE_MEMO_FEC")),
-                    TPE_MEMO_ENTREGA=_parse_fecha(fila.get("TPE_MEMO_ENTREGA")),
+                    numero=_str(fila.get("numero")),
+                    fecha=_parse_fecha(fila.get("fecha")),
+                    tipo=_str(fila.get("tipo")),
+                    texto=(_str(fila.get("texto")) or "").upper() or None,
+                    tipo_notif=_str(fila.get("tipo_notif")),
+                    notif_a=_str(fila.get("notif_a")),
+                    fecha_notif=_parse_fecha(fila.get("fecha_notif")),
+                    hora_notif=_parse_hora(fila.get("hora_notif")),
+                    memo_numero=_str(fila.get("memo_numero")),
+                    memo_fecha=_parse_fecha(fila.get("memo_fecha")),
+                    memo_fecha_entrega=_parse_fecha(fila.get("memo_fecha_entrega")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:
@@ -562,25 +562,25 @@ class Command(BaseCommand):
             _iter_filas(ws), start=3
         ):
             try:
-                cod = _str(fila.get("SIM_COD"))
+                cod = _str(fila.get("codigo"))
                 if not cod:
-                    self._registrar_skip(hoja, num_fila, "SIM_COD vacio"); continue
+                    self._registrar_skip(hoja, num_fila, "codigo vacio"); continue
 
-                sim = SIM.objects.filter(SIM_COD=cod.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=cod.upper(), version=1).first()
                 if not sim:
                     self._registrar_skip(hoja, num_fila, f"SIM no encontrado: {cod}"); continue
 
                 RecursoTSP.objects.create(
                     sim=sim,
-                    TSP_INSTANCIA='ACLARACION_ENMIENDA',
-                    TSP_NUM=_str(fila.get("RAE_NUM")),
-                    TSP_FEC=_parse_fecha(fila.get("RAE_FEC")),
-                    TSP_RESOL=(_str(fila.get("RAE_RESOL")) or "").upper() or None,
-                    TSP_RESUM=(_str(fila.get("RAE_RESUM")) or "")[:200] or None,
-                    TSP_TIPO_NOTIF=_str(fila.get("RAE_TIPO_NOTIF")),
-                    TSP_NOT=_str(fila.get("RAE_NOT")),
-                    TSP_FECNOT=_parse_fecha(fila.get("RAE_FECNOT")),
-                    TSP_HORNOT=_parse_hora(fila.get("RAE_HORNOT")),
+                    instancia='ACLARACION_ENMIENDA',
+                    numero=_str(fila.get("RAE_NUM")),
+                    fecha=_parse_fecha(fila.get("RAE_FEC")),
+                    texto=(_str(fila.get("RAE_RESOL")) or "").upper() or None,
+                    resumen=(_str(fila.get("RAE_RESUM")) or "")[:200] or None,
+                    tipo_notif=_str(fila.get("RAE_TIPO_NOTIF")),
+                    notif_a=_str(fila.get("RAE_NOT")),
+                    fecha_notif=_parse_fecha(fila.get("RAE_FECNOT")),
+                    hora_notif=_parse_hora(fila.get("RAE_HORNOT")),
                 )
                 self._registrar_ok(hoja)
             except Exception as exc:

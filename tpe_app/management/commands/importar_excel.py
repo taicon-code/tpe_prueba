@@ -375,9 +375,9 @@ class Command(BaseCommand):
         paterno = persona['paterno'].upper()
         materno = persona['materno'].upper() if persona.get('materno') else None
 
-        qs = PM.objects.filter(PM_NOMBRE=nombre, PM_PATERNO=paterno)
+        qs = PM.objects.filter(nombre=nombre, paterno=paterno)
         if materno:
-            qs = qs.filter(PM_MATERNO=materno)
+            qs = qs.filter(materno=materno)
         if qs.exists():
             return qs.first()
 
@@ -386,12 +386,12 @@ class Command(BaseCommand):
             return None
 
         pm = PM(
-            PM_NOMBRE=nombre, PM_PATERNO=paterno, PM_MATERNO=materno,
-            PM_GRADO=persona.get('grado'),
-            PM_ARMA=persona.get('arma'),
-            PM_ESCALAFON=persona.get('escalafon'),
-            PM_ESPEC=persona.get('espec'),
-            PM_ESTADO='ACTIVO',
+            nombre=nombre, paterno=paterno, materno=materno,
+            grado=persona.get('grado'),
+            arma=persona.get('arma'),
+            escalafon=persona.get('escalafon'),
+            especialidad=persona.get('espec'),
+            estado='ACTIVO',
         )
         pm.save()
         self.stats['pm'] += 1
@@ -411,14 +411,14 @@ class Command(BaseCommand):
             self.stats['agenda'] += 1
             return None
         ag, creada = AGENDA.objects.get_or_create(
-            AG_NUM=num,
-            defaults={'AG_FECPROG': fecha, 'AG_TIPO': 'ORDINARIA'},
+            numero=num,
+            defaults={'fecha_prog': fecha, 'tipo': 'ORDINARIA'},
         )
         if creada:
             self.stats['agenda'] += 1
-        elif fecha and not ag.AG_FECREAL:
-            ag.AG_FECREAL = fecha
-            ag.save(update_fields=['AG_FECREAL'])
+        elif fecha and not ag.fecha_real:
+            ag.fecha_real = fecha
+            ag.save(update_fields=['fecha_real'])
         return ag
 
     def _sim_placeholder(self, cod: str, objeto: str, estado: str = 'CONCLUIDO',
@@ -427,12 +427,12 @@ class Command(BaseCommand):
         cod = truncar(cod.upper(), 10)
         if not self.dry:
             sim, creada = SIM.objects.get_or_create(
-                SIM_COD=cod,
+                codigo=cod,
                 defaults={
-                    'SIM_OBJETO': truncar(objeto, 500) or 'REFERENCIA HISTÓRICA',
-                    'SIM_RESUM': truncar(objeto, 200) or 'REFERENCIA HISTÓRICA',
-                    'SIM_TIPO': tipo_sim(objeto),
-                    'SIM_ESTADO': estado,
+                    'objeto': truncar(objeto, 500) or 'REFERENCIA HISTÓRICA',
+                    'resumen': truncar(objeto, 200) or 'REFERENCIA HISTÓRICA',
+                    'tipo': tipo_sim(objeto),
+                    'estado': estado,
                 },
             )
             if creada:
@@ -472,11 +472,11 @@ class Command(BaseCommand):
                 continue
 
             sim, creada = SIM.objects.get_or_create(
-                SIM_COD=cod,
+                codigo=cod,
                 defaults={
-                    'SIM_FECING': fecing, 'SIM_ESTADO': estado,
-                    'SIM_OBJETO': objeto, 'SIM_RESUM': resum,
-                    'SIM_TIPO': tipo_sim(objeto, desc),
+                    'fecha_ingreso': fecing, 'estado': estado,
+                    'objeto': objeto, 'resumen': resum,
+                    'tipo': tipo_sim(objeto, desc),
                 },
             )
             if creada:
@@ -504,11 +504,11 @@ class Command(BaseCommand):
                 continue
 
             sim, creada = SIM.objects.get_or_create(
-                SIM_COD=cod,
+                codigo=cod,
                 defaults={
-                    'SIM_FECING': fecing, 'SIM_ESTADO': 'PARA_AGENDA',
-                    'SIM_OBJETO': objeto, 'SIM_RESUM': truncar(objeto, 200),
-                    'SIM_TIPO': tipo_sim(objeto),
+                    'fecha_ingreso': fecing, 'estado': 'PARA_AGENDA',
+                    'objeto': objeto, 'resumen': truncar(objeto, 200),
+                    'tipo': tipo_sim(objeto),
                 },
             )
             if creada:
@@ -518,7 +518,7 @@ class Command(BaseCommand):
     # ── Hoja RESOLUCIONES ────────────────────────────────────────────────────
     def _importar_resoluciones(self, ws):
         self.stdout.write('>> Importando RESOLUCIONES...')
-        # Cols: A=N°, B=SIM_COD, C=GRADO/NOMBRES, D=N°REUNION, E=N°RES, F=FECHA_RES,
+        # Cols: A=N°, B=codigo, C=GRADO/NOMBRES, D=N°REUNION, E=N°RES, F=FECHA_RES,
         #       G=MOTIVO, H=PARTE RESOLUTIVA, I=FECHA_NOTIF, J=VENCE, K=ENVIO,
         #       L=N°OF/AUTO, M=ESTADO, N=DESC_SANCION
         _cont_esp = {'POSESION': 0, 'INFORME DE NECESIDAD': 0, 'SOLICITUD': 0}
@@ -543,7 +543,7 @@ class Command(BaseCommand):
             if re.match(r'DJE-', sim_cod_raw, re.I):
                 # SIM disciplinario con código DJE
                 # ✅ CORREGIDO: Usar filter() + first() para evitar MultipleObjectsReturned con reaperturas
-                sim = SIM.objects.filter(SIM_COD=sim_cod_raw.upper(), SIM_VERSION=1).first()
+                sim = SIM.objects.filter(codigo=sim_cod_raw.upper(), version=1).first()
                 if not sim:
                     # Caso histórico (2023-2025) no en hoja SIM.
                     objeto_ph = truncar(row[6], 500) if row[6] else 'SIM HISTÓRICO'
@@ -574,8 +574,8 @@ class Command(BaseCommand):
             # ── Actualizar estado del SIM según columna M ────────────────────
             estado_excel = str(row[12]).strip().upper() if row[12] else ''
             if estado_excel == 'CONCLUIDO' and sim and not self.dry:
-                sim.SIM_ESTADO = 'CONCLUIDO'
-                sim.save(update_fields=['SIM_ESTADO'])
+                sim.estado = 'CONCLUIDO'
+                sim.save(update_fields=['estado'])
 
             # ── Crear RES ────────────────────────────────────────────────────
             if self.dry:
@@ -585,14 +585,14 @@ class Command(BaseCommand):
             fec_notif = parsear_fecha(row[8]) if not es_vacio(row[8]) else None
             _, creada = Resolucion.objects.get_or_create(
                 sim=sim,
-                RES_INSTANCIA='PRIMERA',
-                RES_NUM=truncar(res_num, 15),
+                instancia='PRIMERA',
+                numero=truncar(res_num, 15),
                 defaults={
-                    'RES_FEC': res_fec,
-                    'RES_RESOL': resol or desc or 'SIN TEXTO',
-                    'RES_TIPO': tipo_res(resol, desc),
+                    'fecha': res_fec,
+                    'texto': resol or desc or 'SIN TEXTO',
+                    'tipo': tipo_res(resol, desc),
                     'agenda': ag,
-                    'RES_FECNOT': fec_notif,
+                    'fecha_notif': fec_notif,
                 },
             )
             if creada:
@@ -626,7 +626,7 @@ class Command(BaseCommand):
                 if num:
                     try:
                         sim = Resolucion.objects.get(
-                            RES_INSTANCIA='PRIMERA', RES_NUM=num
+                            instancia='PRIMERA', numero=num
                         ).sim
                     except Resolucion.DoesNotExist:
                         pass
@@ -636,7 +636,7 @@ class Command(BaseCommand):
                 for p in parsear_personas(nombres):
                     if p and p.get('paterno'):
                         qs = PM_SIM.objects.filter(
-                            pm__PM_PATERNO=p['paterno'].upper()
+                            pm__paterno=p['paterno'].upper()
                         ).select_related('sim')
                         if qs.exists():
                             sim = qs.first().sim
@@ -662,11 +662,11 @@ class Command(BaseCommand):
 
             _, creada = AUTOTPE.objects.get_or_create(
                 sim=sim,
-                TPE_NUM=truncar(num_corto, 15),
+                numero=truncar(num_corto, 15),
                 defaults={
-                    'TPE_FEC': auto_fec,
-                    'TPE_RESOL': resol,
-                    'TPE_TIPO': tipo_autotpe(resol),
+                    'fecha': auto_fec,
+                    'texto': resol,
+                    'tipo': tipo_autotpe(resol),
                 },
             )
             if creada:
@@ -696,7 +696,7 @@ class Command(BaseCommand):
             if num:
                 try:
                     res_obj = Resolucion.objects.get(
-                        RES_INSTANCIA='PRIMERA', RES_NUM=num
+                        instancia='PRIMERA', numero=num
                     )
                 except Resolucion.DoesNotExist:
                     pass
@@ -711,12 +711,12 @@ class Command(BaseCommand):
                 if not self.dry:
                     res_obj, _ = Resolucion.objects.get_or_create(
                         sim=sim_ph,
-                        RES_INSTANCIA='PRIMERA',
-                        RES_NUM=truncar(num or res_ref, 15),
+                        instancia='PRIMERA',
+                        numero=truncar(num or res_ref, 15),
                         defaults={
-                            'RES_FEC': fec_pres,
-                            'RES_RESOL': resol or 'RESOLUCION HISTORICA 2025',
-                            'RES_TIPO': tipo_res(resol),
+                            'fecha': fec_pres,
+                            'texto': resol or 'RESOLUCION HISTORICA 2025',
+                            'tipo': tipo_res(resol),
                         },
                     )
 
@@ -728,14 +728,14 @@ class Command(BaseCommand):
             ag  = self._agenda(str(row[8]).strip() if row[8] else None)
 
             _, creada = Resolucion.objects.get_or_create(
-                RES_INSTANCIA='RECONSIDERACION',
+                instancia='RECONSIDERACION',
                 resolucion_origen=res_obj,
                 sim=sim,
                 defaults={
-                    'RES_FECPRESEN': fec_pres,
-                    'RES_FECLIMITE': fec_lim,
-                    'RES_RESOL': resol,
-                    'RES_RESUM': (truncar(resol, 20) or None),
+                    'fecha_presentacion': fec_pres,
+                    'fecha_limite': fec_lim,
+                    'texto': resol,
+                    'resumen': (truncar(resol, 20) or None),
                     'agenda': ag,
                 },
             )
@@ -768,8 +768,8 @@ class Command(BaseCommand):
             if num:
                 try:
                     rr_obj = Resolucion.objects.filter(
-                        RES_INSTANCIA='RECONSIDERACION',
-                        resolucion_origen__RES_NUM=num,
+                        instancia='RECONSIDERACION',
+                        resolucion_origen__numero=num,
                     ).first()
                     if rr_obj:
                         sim = rr_obj.sim
@@ -778,7 +778,7 @@ class Command(BaseCommand):
                 if not sim:
                     try:
                         sim = Resolucion.objects.get(
-                            RES_INSTANCIA='PRIMERA', RES_NUM=num
+                            instancia='PRIMERA', numero=num
                         ).sim
                     except Resolucion.DoesNotExist:
                         pass
@@ -797,13 +797,13 @@ class Command(BaseCommand):
 
             _, creada = RecursoTSP.objects.get_or_create(
                 sim=sim,
-                TSP_INSTANCIA='APELACION',
-                TSP_FECPRESEN=fec_pres,
+                instancia='APELACION',
+                fechaPRESEN=fec_pres,
                 defaults={
                     'resolucion': rr_obj,
-                    'TSP_OFI': ofi_num,
-                    'TSP_FECOFI': ofi_fec,
-                    'TSP_RESOL': resol,
+                    'numero_oficio': ofi_num,
+                    'fechaOFI': ofi_fec,
+                    'texto': resol,
                 },
             )
             if creada:

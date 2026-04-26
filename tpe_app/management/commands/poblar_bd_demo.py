@@ -60,59 +60,59 @@ class Command(BaseCommand):
         # ── 1. PERSONAL MILITAR ───────────────────────────────────────────────
         self.stdout.write('👥 Creando Personal Militar...')
 
-        pm_tte, _ = PM.objects.get_or_create(PM_CI=10000001, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUBALTERNO', PM_GRADO='TTE.', PM_ARMA='INF.',
-            PM_NOMBRE='JUAN', PM_PATERNO='CONDORI', PM_MATERNO='MAMANI',
-            PM_ESTADO='ACTIVO', PM_ESPEC='COMBATE',
+        pm_tte, _ = PM.objects.get_or_create(ci=10000001, defaults=dict(
+            escalafon='OFICIAL SUBALTERNO', grado='TTE.', arma='INF.',
+            nombre='JUAN', paterno='CONDORI', materno='MAMANI',
+            estado='ACTIVO', especialidad='COMBATE',
         ))
-        pm_cap, _ = PM.objects.get_or_create(PM_CI=10000002, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUBALTERNO', PM_GRADO='CAP.', PM_ARMA='CAB.',
-            PM_NOMBRE='PEDRO', PM_PATERNO='VARGAS', PM_MATERNO='QUISPE',
-            PM_ESTADO='ACTIVO',
+        pm_cap, _ = PM.objects.get_or_create(ci=10000002, defaults=dict(
+            escalafon='OFICIAL SUBALTERNO', grado='CAP.', arma='CAB.',
+            nombre='PEDRO', paterno='VARGAS', materno='QUISPE',
+            estado='ACTIVO',
         ))
-        pm_my, _ = PM.objects.get_or_create(PM_CI=10000003, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUPERIOR', PM_GRADO='MY.', PM_ARMA='ART.',
-            PM_NOMBRE='ROBERTO', PM_PATERNO='FLORES', PM_MATERNO='CONDORI',
-            PM_ESTADO='ACTIVO',
+        pm_my, _ = PM.objects.get_or_create(ci=10000003, defaults=dict(
+            escalafon='OFICIAL SUPERIOR', grado='MY.', arma='ART.',
+            nombre='ROBERTO', paterno='FLORES', materno='CONDORI',
+            estado='ACTIVO',
         ))
-        pm_tcnl, _ = PM.objects.get_or_create(PM_CI=10000004, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUPERIOR', PM_GRADO='TCNL.', PM_ARMA='ING.',
-            PM_NOMBRE='MARIO', PM_PATERNO='GUTIERREZ', PM_MATERNO='LOPEZ',
-            PM_ESTADO='ACTIVO',
+        pm_tcnl, _ = PM.objects.get_or_create(ci=10000004, defaults=dict(
+            escalafon='OFICIAL SUPERIOR', grado='TCNL.', arma='ING.',
+            nombre='MARIO', paterno='GUTIERREZ', materno='LOPEZ',
+            estado='ACTIVO',
         ))
-        pm_cnl, _ = PM.objects.get_or_create(PM_CI=10000005, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUPERIOR', PM_GRADO='CNL.', PM_ARMA='COM.',
-            PM_NOMBRE='CARLOS', PM_PATERNO='MENDOZA', PM_MATERNO='TORREZ',
-            PM_ESTADO='ACTIVO',
+        pm_cnl, _ = PM.objects.get_or_create(ci=10000005, defaults=dict(
+            escalafon='OFICIAL SUPERIOR', grado='CNL.', arma='COM.',
+            nombre='CARLOS', paterno='MENDOZA', materno='TORREZ',
+            estado='ACTIVO',
         ))
-        pm_sof, _ = PM.objects.get_or_create(PM_CI=10000006, defaults=dict(
-            PM_ESCALAFON='SUBOFICIAL', PM_GRADO='SOF. 1RO.', PM_ARMA='INT.',
-            PM_NOMBRE='HUGO', PM_PATERNO='MAMANI', PM_MATERNO='CHOQUE',
-            PM_ESTADO='ACTIVO',
+        pm_sof, _ = PM.objects.get_or_create(ci=10000006, defaults=dict(
+            escalafon='SUBOFICIAL', grado='SOF. 1RO.', arma='INT.',
+            nombre='HUGO', paterno='MAMANI', materno='CHOQUE',
+            estado='ACTIVO',
         ))
-        pm_my2, _ = PM.objects.get_or_create(PM_CI=10000007, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUPERIOR', PM_GRADO='MY.', PM_ARMA='SAN.',
-            PM_NOMBRE='ANA MARIA', PM_PATERNO='GARCIA', PM_MATERNO='RIOS',
-            PM_ESTADO='ACTIVO',
+        pm_my2, _ = PM.objects.get_or_create(ci=10000007, defaults=dict(
+            escalafon='OFICIAL SUPERIOR', grado='MY.', arma='SAN.',
+            nombre='ANA MARIA', paterno='GARCIA', materno='RIOS',
+            estado='ACTIVO',
         ))
         # Militar adicional para sumario con dos implicados
-        pm_sgto, _ = PM.objects.get_or_create(PM_CI=10000008, defaults=dict(
-            PM_ESCALAFON='SARGENTO', PM_GRADO='SGTO. 1RO.', PM_ARMA='INF.',
-            PM_NOMBRE='LUIS', PM_PATERNO='TICONA', PM_MATERNO='HUANCA',
-            PM_ESTADO='ACTIVO',
+        pm_sgto, _ = PM.objects.get_or_create(ci=10000008, defaults=dict(
+            escalafon='SARGENTO', grado='SGTO. 1RO.', arma='INF.',
+            nombre='LUIS', paterno='TICONA', materno='HUANCA',
+            estado='ACTIVO',
         ))
         self.stdout.write(self.style.SUCCESS('   ✅ 8 militares creados'))
 
         # ── 2. ABOGADOS ───────────────────────────────────────────────────────
         self.stdout.write('⚖️  Creando Abogados...')
 
-        abog1, _ = ABOG.objects.get_or_create(AB_CI=20000001, defaults=dict(
-            AB_GRADO='MY.', AB_ARMA='INF.',
-            AB_NOMBRE='JORGE', AB_PATERNO='RODRIGUEZ', AB_MATERNO='SALINAS',
+        abog1, _ = ABOG.objects.get_or_create(ci=20000001, defaults=dict(
+            grado='MY.', arma='INF.',
+            nombre='JORGE', paterno='RODRIGUEZ', materno='SALINAS',
         ))
-        abog2, _ = ABOG.objects.get_or_create(AB_CI=20000002, defaults=dict(
-            AB_GRADO='CAP.', AB_ARMA='INT.',
-            AB_NOMBRE='PATRICIA', AB_PATERNO='LLANOS', AB_MATERNO='VERA',
+        abog2, _ = ABOG.objects.get_or_create(ci=20000002, defaults=dict(
+            grado='CAP.', arma='INT.',
+            nombre='PATRICIA', paterno='LLANOS', materno='VERA',
         ))
         self.stdout.write(self.style.SUCCESS('   ✅ 2 abogados creados'))
 
@@ -120,15 +120,15 @@ class Command(BaseCommand):
         self.stdout.write('🎖️  Creando Vocales del Tribunal...')
 
         # Usamos militares existentes como vocales
-        pm_pres, _ = PM.objects.get_or_create(PM_CI=30000001, defaults=dict(
-            PM_ESCALAFON='GENERAL', PM_GRADO='GRAL. BRIG.', PM_ARMA='INF.',
-            PM_NOMBRE='ANTONIO', PM_PATERNO='PEREZ', PM_MATERNO='ALBA',
-            PM_ESTADO='ACTIVO',
+        pm_pres, _ = PM.objects.get_or_create(ci=30000001, defaults=dict(
+            escalafon='GENERAL', grado='GRAL. BRIG.', arma='INF.',
+            nombre='ANTONIO', paterno='PEREZ', materno='ALBA',
+            estado='ACTIVO',
         ))
-        pm_sec, _ = PM.objects.get_or_create(PM_CI=30000002, defaults=dict(
-            PM_ESCALAFON='OFICIAL SUPERIOR', PM_GRADO='MY.', PM_ARMA='COM.',
-            PM_NOMBRE='SILVIA', PM_PATERNO='CHURA', PM_MATERNO='RAMOS',
-            PM_ESTADO='ACTIVO',
+        pm_sec, _ = PM.objects.get_or_create(ci=30000002, defaults=dict(
+            escalafon='OFICIAL SUPERIOR', grado='MY.', arma='COM.',
+            nombre='SILVIA', paterno='CHURA', materno='RAMOS',
+            estado='ACTIVO',
         ))
         vocal_pres, _ = VOCAL_TPE.objects.get_or_create(
             pm=pm_pres, cargo='PRESIDENTE', defaults=dict(activo=True))
@@ -149,25 +149,25 @@ class Command(BaseCommand):
         # ── 5. AGENDAS ────────────────────────────────────────────────────────
         self.stdout.write('📅 Creando Agendas...')
 
-        agenda1, _ = AGENDA.objects.get_or_create(AG_NUM='AG-001/26', defaults=dict(
-            AG_FECPROG=date(2026, 3, 10),
-            AG_FECREAL=date(2026, 3, 10),
-            AG_TIPO='ORDINARIA',
+        agenda1, _ = AGENDA.objects.get_or_create(numero='AG-001/26', defaults=dict(
+            fecha_prog=date(2026, 3, 10),
+            fecha_real=date(2026, 3, 10),
+            tipo='ORDINARIA',
         ))
-        agenda2, _ = AGENDA.objects.get_or_create(AG_NUM='AG-002/26', defaults=dict(
-            AG_FECPROG=date(2026, 3, 25),
-            AG_FECREAL=date(2026, 3, 25),
-            AG_TIPO='ORDINARIA',
+        agenda2, _ = AGENDA.objects.get_or_create(numero='AG-002/26', defaults=dict(
+            fecha_prog=date(2026, 3, 25),
+            fecha_real=date(2026, 3, 25),
+            tipo='ORDINARIA',
         ))
-        agenda3, _ = AGENDA.objects.get_or_create(AG_NUM='AG-003/26', defaults=dict(
-            AG_FECPROG=date(2026, 4, 8),
-            AG_FECREAL=date(2026, 4, 8),
-            AG_TIPO='EXTRAORDINARIA',
+        agenda3, _ = AGENDA.objects.get_or_create(numero='AG-003/26', defaults=dict(
+            fecha_prog=date(2026, 4, 8),
+            fecha_real=date(2026, 4, 8),
+            tipo='EXTRAORDINARIA',
         ))
-        agenda_futura, _ = AGENDA.objects.get_or_create(AG_NUM='AG-004/26', defaults=dict(
-            AG_FECPROG=date(2026, 4, 22),
-            AG_FECREAL=None,
-            AG_TIPO='ORDINARIA',
+        agenda_futura, _ = AGENDA.objects.get_or_create(numero='AG-004/26', defaults=dict(
+            fecha_prog=date(2026, 4, 22),
+            fecha_real=None,
+            tipo='ORDINARIA',
         ))
         self.stdout.write(self.style.SUCCESS('   ✅ 4 agendas creadas'))
 
@@ -178,12 +178,12 @@ class Command(BaseCommand):
         # ESCENARIO 1: PARA_AGENDA
         # SIM recién ingresado, abogado asignado, esperando agenda
         # ─────────────────────────────────────────────────────────────────────
-        sim1, _ = SIM.objects.get_or_create(SIM_COD='DJE-001/26', defaults=dict(
-            SIM_FECING=date(2026, 4, 10),
-            SIM_ESTADO='PARA_AGENDA',
-            SIM_TIPO='DISCIPLINARIO',
-            SIM_OBJETO='ESTABLECER CIRCUNSTANCIAS DEL CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y ACCIDENTE DE TRANSITO',
-            SIM_RESUM='BEBIDAS ALCOHOLICAS Y ACCIDENTE',
+        sim1, _ = SIM.objects.get_or_create(codigo='DJE-001/26', defaults=dict(
+            fecha_ingreso=date(2026, 4, 10),
+            estado='PARA_AGENDA',
+            tipo='DISCIPLINARIO',
+            objeto='ESTABLECER CIRCUNSTANCIAS DEL CONSUMO DE BEBIDAS ALCOHOLICAS PMA. Y ACCIDENTE DE TRANSITO',
+            resumen='BEBIDAS ALCOHOLICAS Y ACCIDENTE',
         ))
         PM_SIM.objects.get_or_create(sim=sim1, pm=pm_tte)
         PM_SIM.objects.get_or_create(sim=sim1, pm=pm_sgto)  # dos implicados
@@ -193,12 +193,12 @@ class Command(BaseCommand):
         # ─────────────────────────────────────────────────────────────────────
         # ESCENARIO 2: PROCESO_EN_EL_TPE — tiene dictamen PENDIENTE
         # ─────────────────────────────────────────────────────────────────────
-        sim2, _ = SIM.objects.get_or_create(SIM_COD='DJE-002/26', defaults=dict(
-            SIM_FECING=date(2026, 3, 5),
-            SIM_ESTADO='PROCESO_EN_EL_TPE',
-            SIM_TIPO='DISCIPLINARIO',
-            SIM_OBJETO='ESTABLECER CIRCUNSTANCIAS DE MALTRATO AL PERSONAL SUBALTERNO',
-            SIM_RESUM='MALTRATO AL PERSONAL',
+        sim2, _ = SIM.objects.get_or_create(codigo='DJE-002/26', defaults=dict(
+            fecha_ingreso=date(2026, 3, 5),
+            estado='PROCESO_EN_EL_TPE',
+            tipo='DISCIPLINARIO',
+            objeto='ESTABLECER CIRCUNSTANCIAS DE MALTRATO AL PERSONAL SUBALTERNO',
+            resumen='MALTRATO AL PERSONAL',
         ))
         PM_SIM.objects.get_or_create(sim=sim2, pm=pm_cap)
         ABOG_SIM.objects.get_or_create(sim=sim2, abog=abog1)
@@ -206,11 +206,11 @@ class Command(BaseCommand):
         dic2, _ = DICTAMEN.objects.get_or_create(
             sim=sim2, agenda=agenda1,
             defaults=dict(
-                DIC_NUM='01/26',
-                DIC_CONCL='SE RECOMIENDA LA SANCION DISCIPLINARIA POR MALTRATO AL PERSONAL',
+                numero='01/26',
+                conclusion='SE RECOMIENDA LA SANCION DISCIPLINARIA POR MALTRATO AL PERSONAL',
                 abog=abog1,
                 pm=pm_cap,
-                DIC_ESTADO='PENDIENTE',
+                estado='PENDIENTE',
             )
         )
         self.stdout.write('   📌 Escenario 2: DJE-002/26 → PROCESO (dictamen pendiente)')
@@ -218,12 +218,12 @@ class Command(BaseCommand):
         # ─────────────────────────────────────────────────────────────────────
         # ESCENARIO 3: RES emitida → CONCLUIDO
         # ─────────────────────────────────────────────────────────────────────
-        sim3, _ = SIM.objects.get_or_create(SIM_COD='DJE-003/26', defaults=dict(
-            SIM_FECING=date(2026, 2, 10),
-            SIM_ESTADO='CONCLUIDO',
-            SIM_TIPO='DISCIPLINARIO',
-            SIM_OBJETO='ESTABLECER CIRCUNSTANCIAS DE HURTO DE ARMAMENTO INSTITUCIONAL',
-            SIM_RESUM='HURTO DE ARMAMENTO',
+        sim3, _ = SIM.objects.get_or_create(codigo='DJE-003/26', defaults=dict(
+            fecha_ingreso=date(2026, 2, 10),
+            estado='CONCLUIDO',
+            tipo='DISCIPLINARIO',
+            objeto='ESTABLECER CIRCUNSTANCIAS DE HURTO DE ARMAMENTO INSTITUCIONAL',
+            resumen='HURTO DE ARMAMENTO',
         ))
         PM_SIM.objects.get_or_create(sim=sim3, pm=pm_my)
         ABOG_SIM.objects.get_or_create(sim=sim3, abog=abog2)
@@ -231,47 +231,47 @@ class Command(BaseCommand):
         dic3, _ = DICTAMEN.objects.get_or_create(
             sim=sim3, agenda=agenda1,
             defaults=dict(
-                DIC_NUM='02/26',
-                DIC_CONCL='SE RECOMIENDA SANCION ARRESTO POR 60 DIAS',
+                numero='02/26',
+                conclusion='SE RECOMIENDA SANCION ARRESTO POR 60 DIAS',
                 abog=abog2, pm=pm_my,
-                DIC_ESTADO='CONFIRMADO',
+                estado='CONFIRMADO',
                 secretario=vocal_sec,
-                DIC_CONCL_SEC='CONFIRMADO EL DICTAMEN SIN MODIFICACIONES',
-                DIC_CONFIR_FEC=date(2026, 2, 15),
+                conclusion_secretario='CONFIRMADO EL DICTAMEN SIN MODIFICACIONES',
+                fecha_confirmacion=date(2026, 2, 15),
             )
         )
         res3, _ = Resolucion.objects.get_or_create(
-            sim=sim3, RES_INSTANCIA='PRIMERA', RES_NUM='15/26',
+            sim=sim3, instancia='PRIMERA', numero='15/26',
             defaults=dict(
-                RES_FEC=date(2026, 2, 20),
-                RES_TIPO='SANCION_ARRESTO',
-                RES_RESOL='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: SANCIONAR AL MY. ROBERTO FLORES CONDORI CON 60 DIAS DE ARRESTO.',
+                fecha=date(2026, 2, 20),
+                tipo='SANCION_ARRESTO',
+                texto='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: SANCIONAR AL MY. ROBERTO FLORES CONDORI CON 60 DIAS DE ARRESTO.',
                 abog=abog2, agenda=agenda1, dictamen=dic3, pm=pm_my,
-                RES_TIPO_NOTIF='FIRMA',
-                RES_NOT='MY. ROBERTO FLORES CONDORI',
-                RES_FECNOT=date(2026, 2, 21),
+                tipo_notif='FIRMA',
+                notif_a='MY. ROBERTO FLORES CONDORI',
+                fecha_notif=date(2026, 2, 21),
             ))
         # Auto de ejecutoria (caso terminado sin apelación)
-        AUTOTPE.objects.get_or_create(sim=sim3, TPE_TIPO='AUTO_EJECUTORIA', defaults=dict(
-            TPE_NUM='08/26',
-            TPE_FEC=date(2026, 3, 15),
-            TPE_RESOL='SE DECLARA EJECUTORIADA LA RESOLUCION NRO. 15/26 DEL TRIBUNAL DE PERSONAL.',
+        AUTOTPE.objects.get_or_create(sim=sim3, tipo='AUTO_EJECUTORIA', defaults=dict(
+            numero='08/26',
+            fecha=date(2026, 3, 15),
+            texto='SE DECLARA EJECUTORIADA LA RESOLUCION NRO. 15/26 DEL TRIBUNAL DE PERSONAL.',
             abog=abog2, agenda=agenda2, pm=pm_my, resolucion=res3,
-            TPE_TIPO_NOTIF='FIRMA',
-            TPE_NOT='MY. ROBERTO FLORES CONDORI',
-            TPE_FECNOT=date(2026, 3, 16),
+            tipo_notif='FIRMA',
+            notif_a='MY. ROBERTO FLORES CONDORI',
+            fecha_notif=date(2026, 3, 16),
         ))
         self.stdout.write('   📌 Escenario 3: DJE-003/26 → CONCLUIDO (RES + AUTO EJECUTORIA)')
 
         # ─────────────────────────────────────────────────────────────────────
         # ESCENARIO 4: RES + RR en proceso
         # ─────────────────────────────────────────────────────────────────────
-        sim4, _ = SIM.objects.get_or_create(SIM_COD='DJE-004/26', defaults=dict(
-            SIM_FECING=date(2026, 1, 15),
-            SIM_ESTADO='PROCESO_EN_EL_TPE',
-            SIM_TIPO='DISCIPLINARIO',
-            SIM_OBJETO='ESTABLECER CIRCUNSTANCIAS DE COBROS IRREGULARES AL PERSONAL',
-            SIM_RESUM='COBROS IRREGULARES',
+        sim4, _ = SIM.objects.get_or_create(codigo='DJE-004/26', defaults=dict(
+            fecha_ingreso=date(2026, 1, 15),
+            estado='PROCESO_EN_EL_TPE',
+            tipo='DISCIPLINARIO',
+            objeto='ESTABLECER CIRCUNSTANCIAS DE COBROS IRREGULARES AL PERSONAL',
+            resumen='COBROS IRREGULARES',
         ))
         PM_SIM.objects.get_or_create(sim=sim4, pm=pm_tcnl)
         ABOG_SIM.objects.get_or_create(sim=sim4, abog=abog1)
@@ -279,34 +279,34 @@ class Command(BaseCommand):
         dic4, _ = DICTAMEN.objects.get_or_create(
             sim=sim4, agenda=agenda1,
             defaults=dict(
-                DIC_NUM='03/26',
-                DIC_CONCL='SE RECOMIENDA SANCION LETRA B POR COBROS IRREGULARES',
+                numero='03/26',
+                conclusion='SE RECOMIENDA SANCION LETRA B POR COBROS IRREGULARES',
                 abog=abog1, pm=pm_tcnl,
-                DIC_ESTADO='MODIFICADO',
+                estado='MODIFICADO',
                 secretario=vocal_sec,
-                DIC_CONCL_SEC='SE MODIFICA: SE RECOMIENDA ARCHIVO DE OBRADOS POR INSUFICIENCIA PROBATORIA',
-                DIC_CONFIR_FEC=date(2026, 1, 25),
+                conclusion_secretario='SE MODIFICA: SE RECOMIENDA ARCHIVO DE OBRADOS POR INSUFICIENCIA PROBATORIA',
+                fecha_confirmacion=date(2026, 1, 25),
             )
         )
         res4, _ = Resolucion.objects.get_or_create(
-            sim=sim4, RES_INSTANCIA='PRIMERA', RES_NUM='05/26',
+            sim=sim4, instancia='PRIMERA', numero='05/26',
             defaults=dict(
-                RES_FEC=date(2026, 2, 1),
-                RES_TIPO='SANCION_LETRA_B',
-                RES_RESOL='EL TRIBUNAL RESUELVE: SANCIONAR AL TCNL. MARIO GUTIERREZ LOPEZ CON LETRA B (PERDIDA DE ANTIGUEDAD).',
+                fecha=date(2026, 2, 1),
+                tipo='SANCION_LETRA_B',
+                texto='EL TRIBUNAL RESUELVE: SANCIONAR AL TCNL. MARIO GUTIERREZ LOPEZ CON LETRA B (PERDIDA DE ANTIGUEDAD).',
                 abog=abog1, agenda=agenda1, dictamen=dic4, pm=pm_tcnl,
-                RES_TIPO_NOTIF='CEDULON',
-                RES_NOT='TCNL. MARIO GUTIERREZ LOPEZ',
-                RES_FECNOT=date(2026, 2, 3),
+                tipo_notif='CEDULON',
+                notif_a='TCNL. MARIO GUTIERREZ LOPEZ',
+                fecha_notif=date(2026, 2, 3),
             ))
         rr4, _ = Resolucion.objects.get_or_create(
-            sim=sim4, RES_INSTANCIA='RECONSIDERACION', resolucion_origen=res4,
+            sim=sim4, instancia='RECONSIDERACION', resolucion_origen=res4,
             defaults=dict(
-                RES_NUM='02/26',
-                RES_FECPRESEN=date(2026, 2, 10),
-                RES_FEC=None,
-                RES_RESOL=None,
-                RES_RESUM='PROCEDENCIA',
+                numero='02/26',
+                fecha_presentacion=date(2026, 2, 10),
+                fecha=None,
+                texto=None,
+                resumen='PROCEDENCIA',
                 abog=abog1, agenda=agenda2, pm=pm_tcnl,
             ))
         self.stdout.write('   📌 Escenario 4: DJE-004/26 → RES emitida + RR pendiente (MODIFICADO por Secretario)')
@@ -314,12 +314,12 @@ class Command(BaseCommand):
         # ─────────────────────────────────────────────────────────────────────
         # ESCENARIO 5: EN_APELACION_TSP
         # ─────────────────────────────────────────────────────────────────────
-        sim5, _ = SIM.objects.get_or_create(SIM_COD='DJE-005/26', defaults=dict(
-            SIM_FECING=date(2025, 11, 10),
-            SIM_ESTADO='EN_APELACION_TSP',
-            SIM_TIPO='DISCIPLINARIO',
-            SIM_OBJETO='ESTABLECER CIRCUNSTANCIAS DE INDISCIPLINA PROFESIONAL Y ABANDONO DE SERVICIO',
-            SIM_RESUM='INDISCIPLINA Y ABANDONO',
+        sim5, _ = SIM.objects.get_or_create(codigo='DJE-005/26', defaults=dict(
+            fecha_ingreso=date(2025, 11, 10),
+            estado='EN_APELACION_TSP',
+            tipo='DISCIPLINARIO',
+            objeto='ESTABLECER CIRCUNSTANCIAS DE INDISCIPLINA PROFESIONAL Y ABANDONO DE SERVICIO',
+            resumen='INDISCIPLINA Y ABANDONO',
         ))
         PM_SIM.objects.get_or_create(sim=sim5, pm=pm_cnl)
         ABOG_SIM.objects.get_or_create(sim=sim5, abog=abog2)
@@ -327,42 +327,42 @@ class Command(BaseCommand):
         dic5, _ = DICTAMEN.objects.get_or_create(
             sim=sim5, agenda=agenda1,
             defaults=dict(
-                DIC_NUM='04/26',
-                DIC_CONCL='SE RECOMIENDA SANCION RETIRO OBLIGATORIO',
+                numero='04/26',
+                conclusion='SE RECOMIENDA SANCION RETIRO OBLIGATORIO',
                 abog=abog2, pm=pm_cnl,
-                DIC_ESTADO='CONFIRMADO',
+                estado='CONFIRMADO',
                 secretario=vocal_sec,
-                DIC_CONCL_SEC='CONFIRMADO',
-                DIC_CONFIR_FEC=date(2025, 12, 1),
+                conclusion_secretario='CONFIRMADO',
+                fecha_confirmacion=date(2025, 12, 1),
             )
         )
         res5, _ = Resolucion.objects.get_or_create(
-            sim=sim5, RES_INSTANCIA='PRIMERA', RES_NUM='52/25',
+            sim=sim5, instancia='PRIMERA', numero='52/25',
             defaults=dict(
-                RES_FEC=date(2025, 12, 10),
-                RES_TIPO='SANCION_RETIRO_OBLIGATORIO',
-                RES_RESOL='EL TRIBUNAL RESUELVE: SANCIONAR AL CNL. CARLOS MENDOZA TORREZ CON RETIRO OBLIGATORIO.',
+                fecha=date(2025, 12, 10),
+                tipo='SANCION_RETIRO_OBLIGATORIO',
+                texto='EL TRIBUNAL RESUELVE: SANCIONAR AL CNL. CARLOS MENDOZA TORREZ CON RETIRO OBLIGATORIO.',
                 abog=abog2, agenda=agenda1, dictamen=dic5, pm=pm_cnl,
-                RES_TIPO_NOTIF='EDICTO',
-                RES_NOT='PERIODICO LA RAZON',
-                RES_FECNOT=date(2025, 12, 15),
+                tipo_notif='EDICTO',
+                notif_a='PERIODICO LA RAZON',
+                fecha_notif=date(2025, 12, 15),
             ))
         rr5, _ = Resolucion.objects.get_or_create(
-            sim=sim5, RES_INSTANCIA='RECONSIDERACION', resolucion_origen=res5,
+            sim=sim5, instancia='RECONSIDERACION', resolucion_origen=res5,
             defaults=dict(
-                RES_NUM='12/25',
-                RES_FECPRESEN=date(2025, 12, 20),
-                RES_FEC=date(2026, 1, 10),
-                RES_RESOL='EL TRIBUNAL RESUELVE: MANTENER EN TODOS SUS TERMINOS LA RESOLUCION NRO. 52/25.',
-                RES_RESUM='IMPROCEDENCIA',
+                numero='12/25',
+                fecha_presentacion=date(2025, 12, 20),
+                fecha=date(2026, 1, 10),
+                texto='EL TRIBUNAL RESUELVE: MANTENER EN TODOS SUS TERMINOS LA RESOLUCION NRO. 52/25.',
+                resumen='IMPROCEDENCIA',
                 abog=abog2, agenda=agenda2, pm=pm_cnl,
             ))
         rap5, _ = RecursoTSP.objects.get_or_create(
-            sim=sim5, TSP_INSTANCIA='APELACION', resolucion=rr5,
+            sim=sim5, instancia='APELACION', resolucion=rr5,
             defaults=dict(
-                TSP_FECPRESEN=date(2026, 1, 15),
-                TSP_OFI='OFI-012/26',
-                TSP_FECOFI=date(2026, 1, 16),
+                fechaPRESEN=date(2026, 1, 15),
+                numero_oficio='OFI-012/26',
+                fechaOFI=date(2026, 1, 16),
                 pm=pm_cnl,
             ))
         self.stdout.write('   📌 Escenario 5: DJE-005/26 → EN APELACION TSP (RES + RR + RAP)')
@@ -370,12 +370,12 @@ class Command(BaseCommand):
         # ─────────────────────────────────────────────────────────────────────
         # ESCENARIO 6: SOBRESEÍDO
         # ─────────────────────────────────────────────────────────────────────
-        sim6, _ = SIM.objects.get_or_create(SIM_COD='DJE-006/26', defaults=dict(
-            SIM_FECING=date(2026, 1, 20),
-            SIM_ESTADO='CONCLUIDO',
-            SIM_TIPO='DISCIPLINARIO',
-            SIM_OBJETO='ESTABLECER CIRCUNSTANCIAS DE FALTA LISTA Y ABANDONO DE DESTINO',
-            SIM_RESUM='FALTA LISTA Y ABANDONO',
+        sim6, _ = SIM.objects.get_or_create(codigo='DJE-006/26', defaults=dict(
+            fecha_ingreso=date(2026, 1, 20),
+            estado='CONCLUIDO',
+            tipo='DISCIPLINARIO',
+            objeto='ESTABLECER CIRCUNSTANCIAS DE FALTA LISTA Y ABANDONO DE DESTINO',
+            resumen='FALTA LISTA Y ABANDONO',
         ))
         PM_SIM.objects.get_or_create(sim=sim6, pm=pm_sof)
         ABOG_SIM.objects.get_or_create(sim=sim6, abog=abog2)
@@ -383,35 +383,35 @@ class Command(BaseCommand):
         dic6, _ = DICTAMEN.objects.get_or_create(
             sim=sim6, agenda=agenda2,
             defaults=dict(
-                DIC_NUM='05/26',
-                DIC_CONCL='SE RECOMIENDA SOBRESEIMIENTO POR INSUFICIENCIA DE PRUEBAS',
+                numero='05/26',
+                conclusion='SE RECOMIENDA SOBRESEIMIENTO POR INSUFICIENCIA DE PRUEBAS',
                 abog=abog2, pm=pm_sof,
-                DIC_ESTADO='CONFIRMADO',
+                estado='CONFIRMADO',
                 secretario=vocal_sec,
-                DIC_CONCL_SEC='CONFIRMADO',
-                DIC_CONFIR_FEC=date(2026, 2, 5),
+                conclusion_secretario='CONFIRMADO',
+                fecha_confirmacion=date(2026, 2, 5),
             )
         )
-        AUTOTPE.objects.get_or_create(sim=sim6, TPE_TIPO='SOBRESEIDO', defaults=dict(
-            TPE_NUM='03/26',
-            TPE_FEC=date(2026, 2, 10),
-            TPE_RESOL='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: DECLARAR SOBRESEIDO EL PROCESO SUMARIO CONTRA SOF. 1RO. HUGO MAMANI CHOQUE POR INSUFICIENCIA PROBATORIA.',
+        AUTOTPE.objects.get_or_create(sim=sim6, tipo='SOBRESEIDO', defaults=dict(
+            numero='03/26',
+            fecha=date(2026, 2, 10),
+            texto='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: DECLARAR SOBRESEIDO EL PROCESO SUMARIO CONTRA SOF. 1RO. HUGO MAMANI CHOQUE POR INSUFICIENCIA PROBATORIA.',
             abog=abog2, agenda=agenda2, pm=pm_sof,
-            TPE_TIPO_NOTIF='FIRMA',
-            TPE_NOT='SOF. 1RO. HUGO MAMANI CHOQUE',
-            TPE_FECNOT=date(2026, 2, 11),
+            tipo_notif='FIRMA',
+            notif_a='SOF. 1RO. HUGO MAMANI CHOQUE',
+            fecha_notif=date(2026, 2, 11),
         ))
         self.stdout.write('   📌 Escenario 6: DJE-006/26 → CONCLUIDO (SOBRESEÍDO)')
 
         # ─────────────────────────────────────────────────────────────────────
         # ESCENARIO 7: SOLICITUD DE ASCENSO (no disciplinario)
         # ─────────────────────────────────────────────────────────────────────
-        sim7, _ = SIM.objects.get_or_create(SIM_COD='SLC-001/26', defaults=dict(
-            SIM_FECING=date(2026, 3, 1),
-            SIM_ESTADO='CONCLUIDO',
-            SIM_TIPO='SOLICITUD_ASCENSO_AL_GRADO_INMEDIATO_SUPERIOR',
-            SIM_OBJETO='SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR POR MERITOS EXTRAORDINARIOS',
-            SIM_RESUM='SOLICITUD ASCENSO',
+        sim7, _ = SIM.objects.get_or_create(codigo='SLC-001/26', defaults=dict(
+            fecha_ingreso=date(2026, 3, 1),
+            estado='CONCLUIDO',
+            tipo='SOLICITUD_ASCENSO_AL_GRADO_INMEDIATO_SUPERIOR',
+            objeto='SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR POR MERITOS EXTRAORDINARIOS',
+            resumen='SOLICITUD ASCENSO',
         ))
         PM_SIM.objects.get_or_create(sim=sim7, pm=pm_my2)
         ABOG_SIM.objects.get_or_create(sim=sim7, abog=abog1)
@@ -419,25 +419,25 @@ class Command(BaseCommand):
         dic7, _ = DICTAMEN.objects.get_or_create(
             sim=sim7, agenda=agenda3,
             defaults=dict(
-                DIC_NUM='06/26',
-                DIC_CONCL='SE RECOMIENDA APROBAR LA SOLICITUD DE ASCENSO',
+                numero='06/26',
+                conclusion='SE RECOMIENDA APROBAR LA SOLICITUD DE ASCENSO',
                 abog=abog1, pm=pm_my2,
-                DIC_ESTADO='CONFIRMADO',
+                estado='CONFIRMADO',
                 secretario=vocal_sec,
-                DIC_CONCL_SEC='CONFIRMADO',
-                DIC_CONFIR_FEC=date(2026, 3, 10),
+                conclusion_secretario='CONFIRMADO',
+                fecha_confirmacion=date(2026, 3, 10),
             )
         )
         res7, _ = Resolucion.objects.get_or_create(
-            sim=sim7, RES_INSTANCIA='PRIMERA', RES_NUM='20/26',
+            sim=sim7, instancia='PRIMERA', numero='20/26',
             defaults=dict(
-                RES_FEC=date(2026, 3, 15),
-                RES_TIPO='SOLICITUD_ASCENSO',
-                RES_RESOL='EL TRIBUNAL RESUELVE: APROBAR LA SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR DE MY. ANA MARIA GARCIA RIOS.',
+                fecha=date(2026, 3, 15),
+                tipo='SOLICITUD_ASCENSO',
+                texto='EL TRIBUNAL RESUELVE: APROBAR LA SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR DE MY. ANA MARIA GARCIA RIOS.',
                 abog=abog1, agenda=agenda3, dictamen=dic7, pm=pm_my2,
-                RES_TIPO_NOTIF='FIRMA',
-                RES_NOT='MY. ANA MARIA GARCIA RIOS',
-                RES_FECNOT=date(2026, 3, 16),
+                tipo_notif='FIRMA',
+                notif_a='MY. ANA MARIA GARCIA RIOS',
+                fecha_notif=date(2026, 3, 16),
             ))
         self.stdout.write('   📌 Escenario 7: SLC-001/26 → CONCLUIDO (SOLICITUD ASCENSO aprobada)')
 

@@ -59,28 +59,28 @@ class Command(BaseCommand):
         with transaction.atomic():
             # Orden importante: primero las dependientes, luego las principales
 
-            n = RecursoTSP.objects.filter(TSP_INSTANCIA='ACLARACION_ENMIENDA').count()
-            RecursoTSP.objects.filter(TSP_INSTANCIA='ACLARACION_ENMIENDA').delete()
+            n = RecursoTSP.objects.filter(instancia='ACLARACION_ENMIENDA').count()
+            RecursoTSP.objects.filter(instancia='ACLARACION_ENMIENDA').delete()
             self.stdout.write(f"  ❌ RAEE (RecursoTSP.ACLARACION_ENMIENDA) eliminados: {n}")
 
             n = AUTOTSP.objects.count()
             AUTOTSP.objects.all().delete()
             self.stdout.write(f"  ❌ Autos TSP eliminados: {n}")
 
-            n = RecursoTSP.objects.filter(TSP_INSTANCIA='APELACION').count()
-            RecursoTSP.objects.filter(TSP_INSTANCIA='APELACION').delete()
+            n = RecursoTSP.objects.filter(instancia='APELACION').count()
+            RecursoTSP.objects.filter(instancia='APELACION').delete()
             self.stdout.write(f"  ❌ Apelaciones (RecursoTSP.APELACION) eliminadas: {n}")
 
             n = AUTOTPE.objects.count()
             AUTOTPE.objects.all().delete()
             self.stdout.write(f"  ❌ Autos TPE eliminados: {n}")
 
-            n = Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION').count()
-            Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION').delete()
+            n = Resolucion.objects.filter(instancia='RECONSIDERACION').count()
+            Resolucion.objects.filter(instancia='RECONSIDERACION').delete()
             self.stdout.write(f"  ❌ Reconsideraciones (Resolucion.RECONSIDERACION) eliminadas: {n}")
 
-            n = Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').count()
-            Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').delete()
+            n = Resolucion.objects.filter(instancia='PRIMERA').count()
+            Resolucion.objects.filter(instancia='PRIMERA').delete()
             self.stdout.write(f"  ❌ Resoluciones (Resolucion.PRIMERA) eliminadas: {n}")
 
             n = DICTAMEN.objects.count()
