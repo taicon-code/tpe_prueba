@@ -41,17 +41,17 @@ def crear_auto_ejecutoria(request, origen, origen_id):
     - origen='rr'   → vincula al RR  con id=origen_id
     """
     if origen == 'res':
-        res = get_object_or_404(Resolucion, pk=origen_id, RES_INSTANCIA='PRIMERA')
+        res = get_object_or_404(Resolucion, pk=origen_id, instancia='PRIMERA')
         resolucion_link = res
         sim = res.sim
         pm  = res.pm
-        origen_label = f"Resolución {res.RES_NUM} — Sumario {sim.SIM_COD}"
+        origen_label = f"Resolución {res.numero} — Sumario {sim.codigo}"
     elif origen == 'rr':
-        rr  = get_object_or_404(Resolucion, pk=origen_id, RES_INSTANCIA='RECONSIDERACION')
+        rr  = get_object_or_404(Resolucion, pk=origen_id, instancia='RECONSIDERACION')
         resolucion_link = rr
         sim = rr.sim
         pm  = rr.pm
-        origen_label = f"RR {rr.RES_NUM} — Sumario {sim.SIM_COD}"
+        origen_label = f"RR {rr.numero} — Sumario {sim.codigo}"
     else:
         messages.error(request, "Origen inválido.")
         return redirect('pendientes_ejecutoria')
@@ -60,15 +60,15 @@ def crear_auto_ejecutoria(request, origen, origen_id):
         form = AutoEjecutoriaForm(request.POST)
         if form.is_valid():
             auto = form.save(commit=False)
-            auto.TPE_TIPO = 'AUTO_EJECUTORIA'
+            auto.tipo = 'AUTO_EJECUTORIA'
             auto.sim = sim
             auto.pm  = pm
             auto.resolucion = resolucion_link
             auto.save()
             # Auto emitido: SIM pasa a EN_EJECUTORIA (pendiente de notificación y archivo)
-            sim.SIM_FASE = 'EN_EJECUTORIA'
+            sim.fase = 'EN_EJECUTORIA'
             sim.save()
-            messages.success(request, f"Auto de Ejecutoria {auto.TPE_NUM or ''} registrado correctamente.")
+            messages.success(request, f"Auto de Ejecutoria {auto.numero or ''} registrado correctamente.")
             return redirect('pendientes_ejecutoria')
     else:
         form = AutoEjecutoriaForm()

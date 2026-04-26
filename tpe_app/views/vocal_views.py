@@ -22,17 +22,17 @@ def vocal_dashboard(request):
 
     # Agendas del tribunal (todas)
     agendas_proximas = AGENDA.objects.filter(
-        AG_FECPROG__gte=date.today()
-    ).order_by("AG_FECPROG")
+        fecha_prog__gte=date.today()
+    ).order_by("fecha_prog")
 
     agendas_pasadas = AGENDA.objects.filter(
-        AG_FECPROG__lt=date.today()
-    ).order_by("-AG_FECPROG")[:10]  # Últimas 10
+        fecha_prog__lt=date.today()
+    ).order_by("-fecha_prog")[:10]  # Últimas 10
 
     # Contar dictámenes pendientes de confirmar y agregar al objeto
     for agenda in agendas_proximas:
         count = DICTAMEN.objects.filter(
-            agenda=agenda, DIC_ESTADO='PENDIENTE'
+            agenda=agenda, estado='PENDIENTE'
         ).count()
         agenda.pending_count = count
 
@@ -55,17 +55,17 @@ def vocal_agenda_detalle(request, ag_id: int):
     # Dictámenes de esta agenda
     dictamenes = DICTAMEN.objects.filter(
         agenda=agenda
-    ).select_related("sim", "pm", "abog", "secretario").order_by("sim__SIM_COD", "pm__PM_PATERNO")
+    ).select_related("sim", "pm", "abog", "secretario").order_by("sim__codigo", "pm__paterno")
 
     # Recursos de Reconsideración en esta agenda
     rr_en_agenda = Resolucion.objects.filter(
-        agenda=agenda, RES_INSTANCIA='RECONSIDERACION'
-    ).select_related("sim", "pm", "resolucion_origen", "abog").order_by("-RES_FEC")
+        agenda=agenda, instancia='RECONSIDERACION'
+    ).select_related("sim", "pm", "resolucion_origen", "abog").order_by("-fecha")
 
     # Autos TPE en esta agenda
     autos_en_agenda = AUTOTPE.objects.filter(
         agenda=agenda
-    ).select_related("sim", "pm", "abog").order_by("-TPE_FEC")
+    ).select_related("sim", "pm", "abog").order_by("-fecha")
 
     # Agrupar dictámenes por sumario
     dictamenes_por_sim = {}
@@ -109,15 +109,15 @@ def vocal_confirmar_dictamen(request, dic_id: int):
     elif request.method == "POST":
         # Procesar confirmación o modificación
         accion = request.POST.get("accion", "").strip()  # "confirmar" o "modificar"
-        concl_sec = (request.POST.get("DIC_CONCL_SEC") or "").strip()
+        concl_sec = (request.POST.get("conclusion_secretario") or "").strip()
 
         try:
             with transaction.atomic():
                 if accion == "confirmar":
                     # Confirmar sin cambios: copia la conclusión del abogado
-                    dictamen.DIC_ESTADO = "CONFIRMADO"
-                    dictamen.DIC_CONCL_SEC = dictamen.DIC_CONCL  # Mantiene original
-                    msg = f"✓ Dictamen {dictamen.DIC_NUM or 'S/N'} confirmado"
+                    dictamen.estado = "CONFIRMADO"
+                    dictamen.conclusion_secretario = dictamen.conclusion  # Mantiene original
+                    msg = f"✓ Dictamen {dictamen.numero or 'S/N'} confirmado"
 
                 elif accion == "modificar":
                     # Modificar conclusión
@@ -125,16 +125,16 @@ def vocal_confirmar_dictamen(request, dic_id: int):
                         messages.error(request, "Debe ingresar la conclusión modificada")
                         return redirect("vocal_confirmar_dictamen", dic_id=dictamen.pk)
 
-                    dictamen.DIC_ESTADO = "MODIFICADO"
-                    dictamen.DIC_CONCL_SEC = concl_sec.upper()
-                    msg = f"✓ Dictamen {dictamen.DIC_NUM or 'S/N'} modificado"
+                    dictamen.estado = "MODIFICADO"
+                    dictamen.conclusion_secretario = concl_sec.upper()
+                    msg = f"✓ Dictamen {dictamen.numero or 'S/N'} modificado"
 
                 else:
                     messages.error(request, "Acción inválida")
                     return redirect("vocal_confirmar_dictamen", dic_id=dictamen.pk)
 
                 dictamen.secretario = vocal
-                dictamen.DIC_CONFIR_FEC = date.today()
+                dictamen.fecha_confirmacion = date.today()
                 dictamen.save()
 
                 messages.success(request, msg)
@@ -154,7 +154,7 @@ def vocal_registrar_asistencia(request, ag_id: int):
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
     # Todos los vocales activos
-    vocales_activos = VOCAL_TPE.objects.filter(activo=True).order_by("cargo", "pm__PM_PATERNO")
+    vocales_activos = VOCAL_TPE.objects.filter(activo=True).order_by("cargo", "pm__paterno")
 
     if request.method == "GET":
         # Cargar asistencias existentes (si las hay)
@@ -193,7 +193,7 @@ def vocal_registrar_asistencia(request, ag_id: int):
                         justificacion=justificacion if justificacion else None,
                     )
 
-                messages.success(request, f"✓ Asistencia registrada para agenda {agenda.AG_NUM}")
+                messages.success(request, f"✓ Asistencia registrada para agenda {agenda.numero}")
 
         except Exception as e:
             messages.error(request, f"Error al registrar asistencia: {str(e)}")

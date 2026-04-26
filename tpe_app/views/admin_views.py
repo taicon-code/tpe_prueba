@@ -15,21 +15,21 @@ def admin_dashboard(request):
     # Estadísticas generales
     context = {
         'total_sumarios': SIM.objects.count(),
-        'sumarios_para_agenda': SIM.objects.filter(SIM_ESTADO='PARA_AGENDA').count(),
-        'sumarios_en_tpe': SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TPE').count(),
-        'sumarios_en_tsp': SIM.objects.filter(SIM_ESTADO='PROCESO_EN_EL_TSP').count(),
+        'sumarios_para_agenda': SIM.objects.filter(estado='PARA_AGENDA').count(),
+        'sumarios_en_tpe': SIM.objects.filter(estado='PROCESO_EN_EL_TPE').count(),
+        'sumarios_en_tsp': SIM.objects.filter(estado='PROCESO_EN_EL_TSP').count(),
         'total_personal': PM.objects.count(),
         'total_abogados': ABOG.objects.count(),
         'total_usuarios': PerfilUsuario.objects.filter(activo=True).count(),
 
         # Sumarios recientes
-        'sumarios_recientes': SIM.objects.order_by('-SIM_FECREG')[:10],
+        'sumarios_recientes': SIM.objects.order_by('-fecha_registro')[:10],
 
         # Lista de usuarios y sus roles
         'usuarios_activos': PerfilUsuario.objects.filter(activo=True).select_related('user', 'abogado').order_by('user__username'),
         'usuarios_inactivos': PerfilUsuario.objects.filter(activo=False).select_related('user', 'abogado').order_by('user__username'),
         'rol_choices': PerfilUsuario.ROL_CHOICES,
-        'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
+        'abogados': ABOG.objects.all().order_by('paterno', 'materno'),
     }
 
     return render(request, 'tpe_app/dashboard_admin.html', context)
@@ -79,8 +79,8 @@ def crear_usuario_con_rol(request):
                 'last_name': last_name,
                 'rol': rol,
                 'rol_choices': PerfilUsuario.ROL_CHOICES,
-                'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
-                'vocales': VOCAL_TPE.objects.all().order_by('pm__PM_PATERNO', 'pm__PM_MATERNO'),
+                'abogados': ABOG.objects.all().order_by('paterno', 'materno'),
+                'vocales': VOCAL_TPE.objects.all().order_by('pm__paterno', 'pm__materno'),
             }
             return render(request, 'tpe_app/crear_usuario.html', context)
 
@@ -125,15 +125,15 @@ def crear_usuario_con_rol(request):
                 'last_name': last_name,
                 'rol': rol,
                 'rol_choices': PerfilUsuario.ROL_CHOICES,
-                'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
-                'vocales': VOCAL_TPE.objects.all().order_by('pm__PM_PATERNO', 'pm__PM_MATERNO'),
+                'abogados': ABOG.objects.all().order_by('paterno', 'materno'),
+                'vocales': VOCAL_TPE.objects.all().order_by('pm__paterno', 'pm__materno'),
             }
             return render(request, 'tpe_app/crear_usuario.html', context)
 
     # GET: mostrar formulario
     context = {
         'rol_choices': PerfilUsuario.ROL_CHOICES,
-        'abogados': ABOG.objects.all().order_by('AB_PATERNO', 'AB_MATERNO'),
-        'vocales': VOCAL_TPE.objects.all().order_by('pm__PM_PATERNO', 'pm__PM_MATERNO'),
+        'abogados': ABOG.objects.all().order_by('paterno', 'materno'),
+        'vocales': VOCAL_TPE.objects.all().order_by('pm__paterno', 'pm__materno'),
     }
     return render(request, 'tpe_app/crear_usuario.html', context)

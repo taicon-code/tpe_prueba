@@ -2,6 +2,7 @@
 import unicodedata
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Value
 from django.db.models.functions import Replace, Collate
 from ..decorators import rol_requerido
@@ -23,21 +24,21 @@ def _campo_sin_n(campo):
 def _obtener_historial_completo(personal_id):
     """Obtiene el historial completo de un personal"""
     try:
-        personal = PM.objects.get(pm_id=personal_id)
+        personal = PM.objects.get(id=personal_id)
     except PM.DoesNotExist:
         return None
 
     # Obtener todos los SIM donde participa este personal
-    sims = SIM.objects.filter(militares__pm_id=personal_id).distinct()
+    sims = SIM.objects.filter(militares__id=personal_id).distinct()
     sim_ids = list(sims.values_list('id', flat=True))
 
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='PRIMERA'),
-        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, RES_INSTANCIA='RECONSIDERACION'),
-        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='APELACION'),
-        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, TSP_INSTANCIA='ACLARACION_ENMIENDA'),
+        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA'),
+        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION'),
+        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION'),
+        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA'),
         'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }
@@ -59,6 +60,7 @@ def _obtener_estado_actual(personal_id):
     }
 
 
+@login_required
 def buscador_dashboard(request):
     """Dashboard para búsqueda unificada - búsqueda por código SIM, nombre, apellido paterno, materno"""
 
@@ -73,8 +75,8 @@ def buscador_dashboard(request):
     # Búsqueda por año de promoción (lista todos los militares de esa promoción)
     if promocion and promocion.isdigit():
         resultados_pm = list(
-            PM.objects.filter(PM_PROMOCION=int(promocion))
-            .order_by('PM_PATERNO', 'PM_NOMBRE')
+            PM.objects.filter(anio_promocion=int(promocion))
+            .order_by('paterno', 'nombre')
         )
 
     if query:
@@ -85,9 +87,9 @@ def buscador_dashboard(request):
         # y usamos collation accent-insensitive para que á=a, é=e, etc.
         resultados_pm = list(
             PM.objects.annotate(
-                pat_norm=Collate(_campo_sin_n('PM_PATERNO'), 'utf8mb4_general_ci'),
-                nom_norm=Collate(_campo_sin_n('PM_NOMBRE'),  'utf8mb4_general_ci'),
-                mat_norm=Collate(_campo_sin_n('PM_MATERNO'), 'utf8mb4_general_ci'),
+                pat_norm=Collate(_campo_sin_n('paterno'), 'utf8mb4_general_ci'),
+                nom_norm=Collate(_campo_sin_n('nombre'),  'utf8mb4_general_ci'),
+                mat_norm=Collate(_campo_sin_n('materno'), 'utf8mb4_general_ci'),
             ).filter(
                 Q(pat_norm__icontains=q_norm) |
                 Q(nom_norm__icontains=q_norm) |
@@ -97,17 +99,17 @@ def buscador_dashboard(request):
 
         resultados_sim = list(
             SIM.objects.filter(
-                Q(SIM_COD__icontains=query) |
-                Q(SIM_RESUM__icontains=query) |
-                Q(SIM_OBJETO__icontains=query)
+                Q(codigo__icontains=query) |
+                Q(resumen__icontains=query) |
+                Q(objeto__icontains=query)
             ).prefetch_related('abogados', 'militares').distinct()[:20]
         )
 
         # Si hay exactamente 1 PM, mostrar su historial completo
         if len(resultados_pm) == 1:
             personal_seleccionado = resultados_pm[0]
-            historial = _obtener_historial_completo(personal_seleccionado.pm_id)
-            estado = _obtener_estado_actual(personal_seleccionado.pm_id)
+            historial = _obtener_historial_completo(personal_seleccionado.id)
+            estado = _obtener_estado_actual(personal_seleccionado.id)
 
     context = {
         'query': query,
@@ -123,9 +125,9 @@ def buscador_dashboard(request):
     return render(request, 'tpe_app/buscador/dashboard_buscador.html', context)
 
 
+@login_required
 def detalles_sim(request, sim_id):
     """Vista detallada de un SIM: militares, resoluciones, autos, custodia (solo Admin2), etc."""
-    from ..decorators import rol_requerido
 
     sim = get_object_or_404(SIM, id=sim_id)
 
@@ -161,6 +163,7 @@ def detalles_sim(request, sim_id):
     return render(request, 'tpe_app/buscador/detalles_sim.html', context)
 
 
+@login_required
 def busqueda_por_lotes(request):
     """Vista para búsqueda y reporte por lotes de múltiples militares por AP + AM"""
     militares_encontrados = []
@@ -180,13 +183,13 @@ def busqueda_por_lotes(request):
 
                     # Buscar militar con este AP y AM
                     pm = PM.objects.filter(
-                        PM_PATERNO__iexact=ap,
-                        PM_MATERNO__iexact=am
+                        paterno__iexact=ap,
+                        materno__iexact=am
                     ).first()
 
                     if pm:
                         # Obtener historial del militar
-                        historial = _obtener_historial_completo(pm.pm_id)
+                        historial = _obtener_historial_completo(pm.id)
                         if historial:
                             militares_encontrados.append({
                                 'personal': pm,
@@ -199,6 +202,7 @@ def busqueda_por_lotes(request):
     return render(request, 'tpe_app/buscador/busqueda_lotes.html', context)
 
 
+@login_required
 def export_batch_pdf(request):
     """Genera PDF con tabla compacta de múltiples militares"""
     from django.http import HttpResponse
@@ -235,12 +239,12 @@ def export_batch_pdf(request):
             am = partes[1].upper()
 
             pm = PM.objects.filter(
-                PM_PATERNO__iexact=ap,
-                PM_MATERNO__iexact=am
+                paterno__iexact=ap,
+                materno__iexact=am
             ).first()
 
             if pm:
-                historial = _obtener_historial_completo(pm.pm_id)
+                historial = _obtener_historial_completo(pm.id)
                 if historial:
                     militares.append({
                         'personal': pm,
@@ -296,11 +300,11 @@ def export_batch_pdf(request):
         try:
             perfil = request.user.perfilusuario
             if perfil.abogado:
-                grado_usuario = perfil.abogado.AB_GRADO or ""
-                espec_usuario = perfil.abogado.AB_ARMA or ""
+                grado_usuario = perfil.abogado.grado or ""
+                espec_usuario = perfil.abogado.arma or ""
             elif perfil.vocal and perfil.vocal.pm:
-                grado_usuario = perfil.vocal.pm.get_PM_GRADO_display() or ""
-                espec_usuario = perfil.vocal.pm.get_PM_ARMA_display() or ""
+                grado_usuario = perfil.vocal.pm.get_grado_display() or ""
+                espec_usuario = perfil.vocal.pm.get_arma_display() or ""
         except Exception:
             pass
 
@@ -349,34 +353,34 @@ def export_batch_pdf(request):
 
             # Resoluciones (RES)
             for res in hist['resoluciones'].filter(sim=sim):
-                fecha_str = res.RES_FEC.strftime('%d/%m/%y') if res.RES_FEC else 'S/F'
-                resolutiva = res.RES_RESOL if res.RES_RESOL else 'N/A'
+                fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
+                resolutiva = res.texto if res.texto else 'N/A'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RES {res.RES_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                actuados_list.append(f"{num_circulo} RES {res.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
                 contador += 1
 
             # Segundas Resoluciones (RR)
             for rr in hist['segundas_resoluciones'].filter(sim=sim):
-                fecha_str = rr.RES_FEC.strftime('%d/%m/%y') if rr.RES_FEC else 'S/F'
-                resolutiva = rr.RES_RESOL if rr.RES_RESOL else 'N/A'
+                fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
+                resolutiva = rr.texto if rr.texto else 'N/A'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RR {rr.RES_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                actuados_list.append(f"{num_circulo} RR {rr.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
                 contador += 1
 
             # Autos TPE
             for auto in hist['autos_tpe'].filter(sim=sim):
-                fecha_str = auto.TPE_FEC.strftime('%d/%m/%y') if auto.TPE_FEC else 'S/F'
-                resolutiva = auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'
+                fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
+                resolutiva = auto.get_tipo_display() if auto.tipo else 'N/A'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} AUTO {auto.TPE_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                actuados_list.append(f"{num_circulo} AUTO {auto.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
                 contador += 1
 
             # Recursos de Apelación (RAP)
             for rap in hist['recursos_apelacion'].filter(sim=sim):
-                fecha_str = rap.TSP_FEC.strftime('%d/%m/%y') if rap.TSP_FEC else 'S/F'
-                resolutiva = rap.get_TSP_INSTANCIA_display() if rap.TSP_INSTANCIA else 'Recurso de Apelación'
+                fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
+                resolutiva = rap.get_instancia_display() if rap.instancia else 'Recurso de Apelación'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RAP {rap.TSP_NUM or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                actuados_list.append(f"{num_circulo} RAP {rap.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
                 contador += 1
 
             # Unir todo con HTML y remover último <br/><br/>
@@ -384,17 +388,17 @@ def export_batch_pdf(request):
             if actuados_str.endswith('<br/><br/>'):
                 actuados_str = actuados_str[:-10]  # Remover último <br/><br/>
 
-            objeto_completo = sim.SIM_OBJETO or 'N/A'
+            objeto_completo = sim.objeto or 'N/A'
 
             filas.append([
-                Paragraph(pm.get_PM_GRADO_display() or 'N/A', s_td_c),
-                Paragraph(pm.PM_NOMBRE or 'N/A', s_td),
-                Paragraph(pm.PM_PATERNO or 'N/A', s_td),
-                Paragraph(pm.PM_MATERNO or 'N/A', s_td),
-                Paragraph(sim.SIM_COD or 'N/A', s_td_c),
+                Paragraph(pm.get_grado_display() or 'N/A', s_td_c),
+                Paragraph(pm.nombre or 'N/A', s_td),
+                Paragraph(pm.paterno or 'N/A', s_td),
+                Paragraph(pm.materno or 'N/A', s_td),
+                Paragraph(sim.codigo or 'N/A', s_td_c),
                 Paragraph(objeto_completo, s_td),
                 Paragraph(actuados_str, s_td),
-                Paragraph(sim.get_SIM_ESTADO_display() or 'N/A', s_td_c),
+                Paragraph(sim.get_estado_display() or 'N/A', s_td_c),
             ])
 
     tabla = Table(filas, colWidths=col_widths, repeatRows=1)
@@ -426,6 +430,7 @@ def export_batch_pdf(request):
     return response
 
 
+@login_required
 def export_batch_excel(request):
     """Genera Excel con tabla de múltiples militares"""
     from openpyxl import Workbook
@@ -449,12 +454,12 @@ def export_batch_excel(request):
             am = partes[1].upper()
 
             pm = PM.objects.filter(
-                PM_PATERNO__iexact=ap,
-                PM_MATERNO__iexact=am
+                paterno__iexact=ap,
+                materno__iexact=am
             ).first()
 
             if pm:
-                historial = _obtener_historial_completo(pm.pm_id)
+                historial = _obtener_historial_completo(pm.id)
                 if historial:
                     militares.append({
                         'personal': pm,
@@ -490,34 +495,34 @@ def export_batch_excel(request):
 
             # Resoluciones (RES)
             for res in hist['resoluciones'].filter(sim=sim):
-                fecha_str = res.RES_FEC.strftime('%d/%m/%y') if res.RES_FEC else 'S/F'
-                resolutiva = res.RES_RESOL if res.RES_RESOL else 'N/A'
+                fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
+                resolutiva = res.texto if res.texto else 'N/A'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RES {res.RES_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                actuados_list.append(f"{num_circulo} RES {res.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
                 contador += 1
 
             # Segundas Resoluciones (RR)
             for rr in hist['segundas_resoluciones'].filter(sim=sim):
-                fecha_str = rr.RES_FEC.strftime('%d/%m/%y') if rr.RES_FEC else 'S/F'
-                resolutiva = rr.RES_RESOL if rr.RES_RESOL else 'N/A'
+                fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
+                resolutiva = rr.texto if rr.texto else 'N/A'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RR {rr.RES_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                actuados_list.append(f"{num_circulo} RR {rr.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
                 contador += 1
 
             # Autos TPE
             for auto in hist['autos_tpe'].filter(sim=sim):
-                fecha_str = auto.TPE_FEC.strftime('%d/%m/%y') if auto.TPE_FEC else 'S/F'
-                resolutiva = auto.get_TPE_TIPO_display() if auto.TPE_TIPO else 'N/A'
+                fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
+                resolutiva = auto.get_tipo_display() if auto.tipo else 'N/A'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} AUTO {auto.TPE_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                actuados_list.append(f"{num_circulo} AUTO {auto.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
                 contador += 1
 
             # Recursos de Apelación (RAP)
             for rap in hist['recursos_apelacion'].filter(sim=sim):
-                fecha_str = rap.TSP_FEC.strftime('%d/%m/%y') if rap.TSP_FEC else 'S/F'
-                resolutiva = rap.get_TSP_INSTANCIA_display() if rap.TSP_INSTANCIA else 'Recurso de Apelación'
+                fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
+                resolutiva = rap.get_instancia_display() if rap.instancia else 'Recurso de Apelación'
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RAP {rap.TSP_NUM or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                actuados_list.append(f"{num_circulo} RAP {rap.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
                 contador += 1
 
             # Unir todo
@@ -525,14 +530,14 @@ def export_batch_excel(request):
             # Remover último salto de línea si existe
             actuados_str = actuados_str.rstrip('\n')
 
-            ws.cell(row=row_idx, column=1, value=pm.get_PM_GRADO_display() or 'N/A')
-            ws.cell(row=row_idx, column=2, value=pm.PM_NOMBRE or 'N/A')
-            ws.cell(row=row_idx, column=3, value=pm.PM_PATERNO or 'N/A')
-            ws.cell(row=row_idx, column=4, value=pm.PM_MATERNO or 'N/A')
-            ws.cell(row=row_idx, column=5, value=sim.SIM_COD or 'N/A')
-            ws.cell(row=row_idx, column=6, value=sim.SIM_OBJETO or 'N/A')
+            ws.cell(row=row_idx, column=1, value=pm.get_grado_display() or 'N/A')
+            ws.cell(row=row_idx, column=2, value=pm.nombre or 'N/A')
+            ws.cell(row=row_idx, column=3, value=pm.paterno or 'N/A')
+            ws.cell(row=row_idx, column=4, value=pm.materno or 'N/A')
+            ws.cell(row=row_idx, column=5, value=sim.codigo or 'N/A')
+            ws.cell(row=row_idx, column=6, value=sim.objeto or 'N/A')
             ws.cell(row=row_idx, column=7, value=actuados_str)
-            ws.cell(row=row_idx, column=8, value=sim.get_SIM_ESTADO_display() or 'N/A')
+            ws.cell(row=row_idx, column=8, value=sim.get_estado_display() or 'N/A')
 
             row_idx += 1
 
@@ -558,6 +563,7 @@ def export_batch_excel(request):
     return response
 
 
+@login_required
 def upload_foto_pm(request, pm_id):
     """Subir o reemplazar la foto de un Personal Militar"""
     pm = get_object_or_404(PM, pk=pm_id)
@@ -571,11 +577,11 @@ def upload_foto_pm(request, pm_id):
                 messages.error(request, '❌ El archivo debe ser una imagen (JPG, PNG, etc.)')
             else:
                 # Eliminar foto anterior si existe
-                if pm.PM_FOTO:
-                    pm.PM_FOTO.delete(save=False)
-                pm.PM_FOTO = foto
-                pm.save(update_fields=['PM_FOTO'])
-                messages.success(request, f'✅ Foto actualizada para {pm.PM_NOMBRE} {pm.PM_PATERNO}')
+                if pm.foto:
+                    pm.foto.delete(save=False)
+                pm.foto = foto
+                pm.save(update_fields=['foto'])
+                messages.success(request, f'✅ Foto actualizada para {pm.nombre} {pm.paterno}')
         else:
             messages.error(request, '❌ No se seleccionó ningún archivo')
 
@@ -586,6 +592,7 @@ def upload_foto_pm(request, pm_id):
     return redirect('buscador_dashboard')
 
 
+@login_required
 def export_custodia_pdf(request, sim_id):
     """Descargar PDF del historial de custodia de un SIM (Solo Admin2)"""
     from django.http import HttpResponse
@@ -624,7 +631,7 @@ def export_custodia_pdf(request, sim_id):
     # Crear PDF en orientación vertical (portrait)
     response = HttpResponse(content_type='application/pdf')
     now_local = tz.localtime(tz.now())
-    response['Content-Disposition'] = f'attachment; filename="custodia_{sim.SIM_COD}_{now_local.strftime("%d%m%Y")}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="custodia_{sim.codigo}_{now_local.strftime("%d%m%Y")}.pdf"'
 
     doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
                             leftMargin=0.5*inch, rightMargin=0.5*inch)
@@ -640,15 +647,15 @@ def export_custodia_pdf(request, sim_id):
         spaceAfter=10,
         alignment=1
     )
-    story.append(Paragraph(f'Historial de Custodia de Carpeta - {sim.SIM_COD}', title_style))
+    story.append(Paragraph(f'Historial de Custodia de Carpeta - {sim.codigo}', title_style))
     story.append(Spacer(1, 0.15*inch))
 
     # Información del SIM — ancho ajustado a portrait (A4 usable ≈ 7.17 in)
     info_data = [
-        ['Codigo', sim.SIM_COD],
-        ['Tipo', sim.get_SIM_TIPO_display()],
-        ['Estado', sim.get_SIM_ESTADO_display()],
-        ['Ingreso', sim.SIM_FECING.strftime('%d/%m/%Y') if sim.SIM_FECING else '-'],
+        ['Codigo', sim.codigo],
+        ['Tipo', sim.get_tipo_display()],
+        ['Estado', sim.get_estado_display()],
+        ['Ingreso', sim.fecha_ingreso.strftime('%d/%m/%Y') if sim.fecha_ingreso else '-'],
     ]
     info_table = Table(info_data, colWidths=[1.4*inch, 5.77*inch])
     info_table.setStyle(TableStyle([
@@ -702,7 +709,7 @@ def export_custodia_pdf(request, sim_id):
             custodia_data.append([
                 tz.localtime(custodia.fecha_recepcion).strftime('%d/%m/%Y\n%H:%M'),
                 custodia.get_tipo_custodio_display(),
-                custodia.abog.AB_PATERNO if custodia.abog else '-',
+                custodia.abog.paterno if custodia.abog else '-',
                 custodia.get_estado_display(),
                 tz.localtime(custodia.fecha_entrega).strftime('%d/%m/%Y\n%H:%M') if custodia.fecha_entrega else 'Activa',
                 Paragraph(observacion, cell_style),
