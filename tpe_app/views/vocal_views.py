@@ -15,7 +15,7 @@ def _get_vocal_or_403(request):
     return getattr(perfil, "vocal", None) if perfil else None
 
 
-@rol_requerido("VOCAL_TPE")
+@rol_requerido("SECRETARIO_ACTAS")
 def vocal_dashboard(request):
     """Dashboard de vocal/secretario de actas. Lista agendas pasadas y próximas"""
     vocal = _get_vocal_or_403(request)
@@ -46,7 +46,7 @@ def vocal_dashboard(request):
     return render(request, "tpe_app/vocal/dashboard_vocal.html", context)
 
 
-@rol_requerido("VOCAL_TPE")
+@rol_requerido("SECRETARIO_ACTAS")
 def vocal_agenda_detalle(request, ag_id: int):
     """Detalle de una agenda: dictámenes a confirmar, RR y autos a tratarse"""
     vocal = _get_vocal_or_403(request)
@@ -89,7 +89,7 @@ def vocal_agenda_detalle(request, ag_id: int):
     return render(request, "tpe_app/vocal/agenda_detalle.html", context)
 
 
-@rol_requerido("VOCAL_TPE")
+@rol_requerido("SECRETARIO_ACTAS")
 def vocal_confirmar_dictamen(request, dic_id: int):
     """Confirmar o modificar un dictamen (solo para secretario de actas)"""
     vocal = _get_vocal_or_403(request)
@@ -147,7 +147,7 @@ def vocal_confirmar_dictamen(request, dic_id: int):
         return redirect("vocal_agenda_detalle", ag_id=dictamen.agenda.pk)
 
 
-@rol_requerido("VOCAL_TPE")
+@rol_requerido("SECRETARIO_ACTAS")
 def vocal_registrar_asistencia(request, ag_id: int):
     """Registrar asistencia de vocales en una sesión"""
     vocal = _get_vocal_or_403(request)
@@ -202,7 +202,7 @@ def vocal_registrar_asistencia(request, ag_id: int):
         return redirect("vocal_agenda_detalle", ag_id=agenda.pk)
 
 
-@rol_requerido("VOCAL_TPE")
+@rol_requerido("SECRETARIO_ACTAS")
 def vocal_registrar_votos(request, dic_id: int):
     """Registrar votos de vocales en un dictamen"""
     vocal = _get_vocal_or_403(request)

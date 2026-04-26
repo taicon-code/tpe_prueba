@@ -32,7 +32,7 @@ def login_view(request):
                     return redirect('admin3_dashboard')
                 elif perfil.rol == 'ADMINISTRATIVO':
                     return redirect('admin1_dashboard')
-                elif perfil.rol == 'VOCAL_TPE':
+                elif perfil.rol == 'SECRETARIO_ACTAS':
                     return redirect('vocal_dashboard')
                 elif perfil.rol == 'ASESOR_JURIDICO':
                     return redirect('buscador_dashboard')

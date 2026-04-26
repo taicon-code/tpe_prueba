@@ -106,7 +106,7 @@ class Command(BaseCommand):
             ('admin1_flujo', 'admin123', 'ADMIN1_AGENDADOR', None, None),
             ('admin2_flujo', 'admin123', 'ADMIN2_ARCHIVO', None, None),
             ('admin3_flujo', 'admin123', 'ADMIN3_NOTIFICADOR', None, None),
-            ('vocal_flujo', 'vocal123', 'VOCAL_TPE', None, 'vocal_sec'),
+            ('vocal_flujo', 'vocal123', 'SECRETARIO_ACTAS', None, 'vocal_sec'),
             ('ayudante_flujo', 'ayud123', 'AYUDANTE', None, None),
             ('buscador_flujo', 'buscar123', 'BUSCADOR', None, None),
         ]

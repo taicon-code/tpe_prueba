@@ -141,7 +141,7 @@ class Command(BaseCommand):
         self._crear_usuario('admin',    'admin123',    'ADMINISTRADOR', None, None)
         self._crear_usuario('abogado1', 'abog123',     'ABOGADO',       abog1, None)
         self._crear_usuario('abogado2', 'abog123',     'ABOGADO',       abog2, None)
-        self._crear_usuario('secretario', 'sec123',   'VOCAL_TPE',     None, vocal_sec)
+        self._crear_usuario('secretario', 'sec123',   'SECRETARIO_ACTAS', None, vocal_sec)
         self._crear_usuario('adminvista', 'admin123',  'ADMINISTRATIVO', None, None)
         self._crear_usuario('buscador1', 'buscar123',  'BUSCADOR',      None, None)
         self.stdout.write(self.style.SUCCESS('   ✅ 6 usuarios creados'))
