@@ -1014,7 +1014,7 @@ class RecursoTSP(models.Model):
                                            verbose_name='Recurso origen (solo ACLARACION_ENMIENDA)')
 
     fecha_presentacion = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación')
-    numero_oficio      = models.CharField(max_length=25, null=True, blank=True, verbose_name='N° Oficio Elevación')
+    numero_oficio      = models.CharField(max_length=60, null=True, blank=True, verbose_name='N° Oficio Elevación')
     fecha_oficio       = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
     fecha_limite       = models.DateField(null=True, blank=True, verbose_name='Fecha Límite 3 días (APELACION)')
     tipo               = models.CharField(max_length=50, choices=TIPO_CHOICES, null=True, blank=True, verbose_name='Tipo Resolución TSP (APELACION)')

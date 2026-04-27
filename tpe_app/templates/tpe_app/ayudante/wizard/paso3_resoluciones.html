@@ -110,6 +110,41 @@
                     </div>
                 </div>
 
+                <!-- Sección NOTIFICACIÓN RES (opcional) -->
+                <div class="card bg-light mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Notificación</label>
+                                <select name="res_notif_tipo" class="form-select">
+                                    <option value="">— Sin notificación —</option>
+                                    <option value="FIRMA">Firma</option>
+                                    <option value="EDICTO">Edicto</option>
+                                    <option value="CEDULON">Cedulón</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Notificado a</label>
+                                <input type="text" name="res_notif_notificado_a" class="form-control"
+                                       placeholder="Persona / dirección">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Notificación</label>
+                                <input type="date" name="res_notif_fecha" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hora de Notificación</label>
+                                <input type="time" name="res_notif_hora" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -157,6 +192,41 @@
                         <label for="{{ rr_form.texto.id_for_label }}" class="form-label">{{ rr_form.texto.label }}</label>
                         {{ rr_form.texto }}
                         {% if rr_form.texto.errors %}<div class="invalid-feedback d-block">{{ rr_form.texto.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Sección NOTIFICACIÓN RR (opcional) -->
+                <div class="card bg-light mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Notificación</label>
+                                <select name="rr_notif_tipo" class="form-select">
+                                    <option value="">— Sin notificación —</option>
+                                    <option value="FIRMA">Firma</option>
+                                    <option value="EDICTO">Edicto</option>
+                                    <option value="CEDULON">Cedulón</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Notificado a</label>
+                                <input type="text" name="rr_notif_notificado_a" class="form-control"
+                                       placeholder="Persona / dirección">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha de Notificación</label>
+                                <input type="date" name="rr_notif_fecha" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hora de Notificación</label>
+                                <input type="time" name="rr_notif_hora" class="form-control">
+                            </div>
+                        </div>
                     </div>
                 </div>
 

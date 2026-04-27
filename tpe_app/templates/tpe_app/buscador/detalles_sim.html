@@ -354,7 +354,12 @@
     <tbody>
       {% for militar in militares %}
       <tr>
-        <td>{{ militar.grado }}</td>
+        <td>
+          <span title="{% if militar.anio_promocion %}Grado actual del militar{% else %}⚠️ Grado del documento (sin año de egreso){% endif %}">
+            {{ militar.get_grado_display|default:"—" }}
+            {% if not militar.anio_promocion %}<span class="badge bg-warning text-dark" style="font-size: 0.7rem;">DOC</span>{% endif %}
+          </span>
+        </td>
         <td>{{ militar.nombre }}</td>
         <td>{{ militar.paterno }}</td>
         <td>{{ militar.materno|default:"—" }}</td>
@@ -405,8 +410,8 @@
         <span class="info-value">{{ res.get_tipo_display|default:"—" }}</span>
       </div>
       <div class="info-item">
-        <span class="info-label">Notificación:</span>
-        <span class="info-value">{{ res.notificacion.tipo|default:"—" }} ({{ res.notificacion.fecha|date:"d/m/Y"|default:"—" }})</span>
+        <span class="info-label">Número:</span>
+        <span class="info-value">{{ res.numero|default:"—" }}</span>
       </div>
     </div>
   </div>
@@ -430,12 +435,6 @@
         <span class="info-label">Disposición:</span>
         <span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span>
       </div>
-      {% if auto.notificacion %}
-      <div class="info-item">
-        <span class="info-label">Notificación:</span>
-        <span class="info-value">{{ auto.notificacion.tipo|default:"—" }} ({{ auto.notificacion.fecha|date:"d/m/Y" }})</span>
-      </div>
-      {% endif %}
       {% if auto.memorandum %}
       <div class="info-item">
         <span class="info-label">Memorandum:</span>
@@ -464,12 +463,6 @@
         <span class="info-label">Disposición:</span>
         <span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span>
       </div>
-      {% if auto.notificacion %}
-      <div class="info-item">
-        <span class="info-label">Notificación:</span>
-        <span class="info-value">{{ auto.notificacion.fecha|date:"d/m/Y"|default:"—" }}</span>
-      </div>
-      {% endif %}
     </div>
   </div>
   {% endfor %}
@@ -492,10 +485,10 @@
         <span class="info-label">Instancia:</span>
         <span class="info-value">{{ recurso.get_instancia_display|default:"—" }}</span>
       </div>
-      {% if recurso.fechaLIMITE %}
+      {% if recurso.fecha_limite %}
       <div class="info-item">
         <span class="info-label">Plazo Límite:</span>
-        <span class="info-value">{{ recurso.fechaLIMITE|date:"d/m/Y" }}</span>
+        <span class="info-value">{{ recurso.fecha_limite|date:"d/m/Y" }}</span>
       </div>
       {% endif %}
     </div>
@@ -525,7 +518,7 @@
     </div>
     {% if custodia_actual.abogado %}
     <div style="color: #065f46; margin-bottom: 0.5rem;">
-      <strong>Abogado:</strong> {{ custodia_actual.abogado.grado }} {{ custodia_actual.abogado.paterno }} {{ custodia_actual.abogado.materno }}
+      <strong>Abogado:</strong> {{ custodia_actual.abogado.get_grado_display }} {{ custodia_actual.abogado.paterno }} {{ custodia_actual.abogado.materno }}
     </div>
     {% endif %}
     <div style="color: #065f46; margin-bottom: 0.5rem;">
@@ -552,7 +545,7 @@
 
       {% if custodia.abogado %}
       <div class="timeline-info">
-        👤 <strong>{{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}</strong>
+        👤 <strong>{{ custodia.abogado.get_grado_display }} {{ custodia.abogado.paterno }}</strong>
       </div>
       {% endif %}
 

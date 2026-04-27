@@ -135,10 +135,10 @@ def detalles_sim(request, sim_id):
     militares = sim.militares.all()
 
     # Obtener todos los actuados del SIM
-    resoluciones = Resolucion.objects.filter(sim=sim).select_related('abog', 'pm')
-    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abog')
+    resoluciones = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')
+    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abogado')
     autos_tsp = AUTOTSP.objects.filter(sim=sim)
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim).select_related('abog')
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim).select_related('abogado')
 
     # Obtener historial de custodia (trazabilidad) - SOLO para Admin2
     custodia_historial = None
@@ -146,8 +146,8 @@ def detalles_sim(request, sim_id):
     es_admin2 = hasattr(request.user, 'perfilusuario') and request.user.perfilusuario.rol == 'ADMIN2_ARCHIVO'
 
     if es_admin2:
-        custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abog').order_by('fecha_recepcion')
-        custodia_actual = CustodiaSIM.objects.filter(sim=sim, estado='RECIBIDA_CONFORME').select_related('abog').first()
+        custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abogado').order_by('fecha_recepcion')
+        custodia_actual = CustodiaSIM.objects.filter(sim=sim, estado='RECIBIDA_CONFORME').select_related('abogado').first()
 
     context = {
         'sim': sim,

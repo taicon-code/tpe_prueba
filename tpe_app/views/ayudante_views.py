@@ -13,7 +13,7 @@ from django.urls import reverse
 from datetime import date
 from ..decorators import rol_requerido
 from ..models import (
-    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP
+    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum
 )
 from ..forms import (
     RESForm, NotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, MemorandumForm,
@@ -127,15 +127,39 @@ def ayudante_lista_res(request):
 
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_res(request):
-    """Registrar una Resolución histórica (sin dictamen previo)"""
+    """Registrar una Resolución histórica (sin dictamen previo) + notificación opcional"""
+    from ..forms import ResolucionConNotificacionForm
 
     if request.method == 'POST':
-        form = RESForm(request.POST)
+        form = ResolucionConNotificacionForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    res = form.save(commit=False)
+                    # Crear la Resolución
+                    res = Resolucion(
+                        sim=form.cleaned_data['sim'],
+                        pm=form.cleaned_data['pm'],
+                        numero=form.cleaned_data['numero'],
+                        fecha=form.cleaned_data['fecha'],
+                        tipo=form.cleaned_data['tipo'],
+                        texto=form.cleaned_data['texto'],
+                        instancia='PRIMERA'
+                    )
                     res.save()
+
+                    # Si se proporcionan datos de notificación, crear el registro
+                    if form.cleaned_data.get('notif_tipo'):
+                        notif = Notificacion(
+                            resolucion=res,
+                            tipo=form.cleaned_data['notif_tipo'],
+                            notificado_a=form.cleaned_data.get('notif_notificado_a', ''),
+                            fecha=form.cleaned_data.get('notif_fecha'),
+                            hora=form.cleaned_data.get('notif_hora')
+                        )
+                        notif.save()
+                        messages.success(request, f'Resolución {res.numero} registrada con notificación')
+                    else:
+                        messages.success(request, f'Resolución {res.numero} registrada exitosamente')
 
                     # Actualizar la fase del SIM si es necesario
                     sim = res.sim
@@ -144,12 +168,11 @@ def ayudante_registrar_res(request):
                         sim.estado = 'PROCESO_EN_EL_TPE'
                         sim.save()
 
-                    messages.success(request, f'Resolución {res.numero} registrada exitosamente')
                     return redirect('ayudante_lista_res')
             except Exception as e:
                 messages.error(request, f'Error al registrar la resolución: {str(e)}')
     else:
-        form = RESForm()
+        form = ResolucionConNotificacionForm()
 
     context = {
         'form': form,
@@ -197,15 +220,43 @@ def ayudante_registrar_notificacion(request, res_id):
 
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_rap(request):
-    """Registrar un Recurso de Apelación al TSP histórico"""
+    """Registrar un Recurso de Apelación al TSP histórico + notificación opcional"""
+    from ..forms import RAPConNotificacionForm
 
     if request.method == 'POST':
-        form = RAPForm(request.POST)
+        form = RAPConNotificacionForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    rap = form.save(commit=False)
+                    # Crear el RAP
+                    rap = RecursoTSP(
+                        sim=form.cleaned_data['sim'],
+                        pm=form.cleaned_data['pm'],
+                        resolucion=form.cleaned_data.get('resolucion'),
+                        fecha_presentacion=form.cleaned_data['fecha_presentacion'],
+                        numero_oficio=form.cleaned_data.get('numero_oficio'),
+                        fecha_oficio=form.cleaned_data.get('fecha_oficio'),
+                        numero=form.cleaned_data['numero'],
+                        fecha=form.cleaned_data['fecha'],
+                        texto=form.cleaned_data['texto'],
+                        tipo=form.cleaned_data['tipo'],
+                        instancia='APELACION'
+                    )
                     rap.save()
+
+                    # Si se proporcionan datos de notificación
+                    if form.cleaned_data.get('notif_tipo'):
+                        notif = Notificacion(
+                            recurso_tsp=rap,
+                            tipo=form.cleaned_data['notif_tipo'],
+                            notificado_a=form.cleaned_data.get('notif_notificado_a', ''),
+                            fecha=form.cleaned_data.get('notif_fecha'),
+                            hora=form.cleaned_data.get('notif_hora')
+                        )
+                        notif.save()
+                        messages.success(request, f'RAP {rap.numero} registrado con notificación')
+                    else:
+                        messages.success(request, f'Recurso de Apelación {rap.numero} registrado exitosamente')
 
                     # Actualizar fase del SIM
                     sim = rap.sim
@@ -214,15 +265,11 @@ def ayudante_registrar_rap(request):
                         sim.estado = 'PROCESO_EN_EL_TSP'
                         sim.save()
 
-                    messages.success(
-                        request,
-                        f'Recurso de Apelación {rap.numero} registrado exitosamente'
-                    )
                     return redirect('ayudante_dashboard')
             except Exception as e:
                 messages.error(request, f'Error al registrar RAP: {str(e)}')
     else:
-        form = RAPForm()
+        form = RAPConNotificacionForm()
 
     context = {
         'form': form,
@@ -264,32 +311,57 @@ def ayudante_registrar_raee(request):
 
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_registrar_autotpe(request):
-    """Registrar un Auto del TPE histórico (con memorándum opcional)"""
+    """Registrar un Auto del TPE histórico (con notificación y memorándum opcional)"""
+    from ..forms import AUTOTPEHistoricoConNotificacionForm
 
     if request.method == 'POST':
-        form = AUTOTPEHistoricoForm(request.POST)
-        memo_form = MemorandumForm(request.POST)
-        tiene_memo = bool(request.POST.get('numero'))  # campo del MemorandumForm
+        form = AUTOTPEHistoricoConNotificacionForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    autotpe = form.save()
-                    if tiene_memo and memo_form.is_valid():
-                        memo = memo_form.save(commit=False)
-                        memo.autotpe = autotpe
+                    # Crear el Auto TPE
+                    autotpe = AUTOTPE(
+                        sim=form.cleaned_data['sim'],
+                        pm=form.cleaned_data['pm'],
+                        numero=form.cleaned_data['numero'],
+                        fecha=form.cleaned_data['fecha'],
+                        tipo=form.cleaned_data['tipo'],
+                        texto=form.cleaned_data['texto']
+                    )
+                    autotpe.save()
+
+                    # Si se proporcionan datos de notificación
+                    if form.cleaned_data.get('notif_tipo'):
+                        notif = Notificacion(
+                            autotpe=autotpe,
+                            tipo=form.cleaned_data['notif_tipo'],
+                            notificado_a=form.cleaned_data.get('notif_notificado_a', ''),
+                            fecha=form.cleaned_data.get('notif_fecha'),
+                            hora=form.cleaned_data.get('notif_hora')
+                        )
+                        notif.save()
+
+                    # Si es ejecutoria y se proporciona memorándum
+                    if form.cleaned_data.get('memo_numero') and autotpe.tipo == 'AUTO_EJECUTORIA':
+                        memo = Memorandum(
+                            autotpe=autotpe,
+                            numero=form.cleaned_data['memo_numero'],
+                            fecha=form.cleaned_data.get('memo_fecha')
+                        )
                         memo.save()
-                    messages.success(request, f'Auto TPE {autotpe.numero} registrado exitosamente')
+                        messages.success(request, f'Auto TPE {autotpe.numero} registrado con memorándum')
+                    else:
+                        messages.success(request, f'Auto TPE {autotpe.numero} registrado exitosamente')
+
                     return redirect('ayudante_dashboard')
             except Exception as e:
                 messages.error(request, f'Error al registrar Auto TPE: {str(e)}')
     else:
-        form = AUTOTPEHistoricoForm()
-        memo_form = MemorandumForm()
+        form = AUTOTPEHistoricoConNotificacionForm()
 
     context = {
         'form': form,
-        'memo_form': memo_form,
-        'titulo': 'Registrar Auto del TPE Histórico (con Memorándum)',
+        'titulo': 'Registrar Auto del TPE Histórico (con Notificación y Memorándum)',
     }
 
     return render(request, 'tpe_app/ayudante/registrar_autotpe.html', context)
@@ -558,6 +630,20 @@ def ayudante_wizard_paso3(request, sim_id):
                     res.save()
                     res_existente = res
 
+                    # Guardar notificación RES si se proporciona
+                    res_notif_tipo = request.POST.get('res_notif_tipo')
+                    if res_notif_tipo:
+                        # Eliminar notificación anterior si existe
+                        res.notificacion.delete() if hasattr(res, 'notificacion') else None
+                        notif = Notificacion(
+                            resolucion=res,
+                            tipo=res_notif_tipo,
+                            notificado_a=request.POST.get('res_notif_notificado_a', ''),
+                            fecha=request.POST.get('res_notif_fecha') or None,
+                            hora=request.POST.get('res_notif_hora') or None
+                        )
+                        notif.save()
+
                     if sim.fase not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'NOTIFICADO_1RA', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
                         sim.fase = '1RA_RESOLUCION'
                         sim.save()
@@ -572,6 +658,20 @@ def ayudante_wizard_paso3(request, sim_id):
                         rr.pm = res_existente.pm
                         rr.resolucion_origen = res_existente
                         rr.save()
+
+                        # Guardar notificación RR si se proporciona
+                        rr_notif_tipo = request.POST.get('rr_notif_tipo')
+                        if rr_notif_tipo:
+                            # Eliminar notificación anterior si existe
+                            rr.notificacion.delete() if hasattr(rr, 'notificacion') else None
+                            notif = Notificacion(
+                                resolucion=rr,
+                                tipo=rr_notif_tipo,
+                                notificado_a=request.POST.get('rr_notif_notificado_a', ''),
+                                fecha=request.POST.get('rr_notif_fecha') or None,
+                                hora=request.POST.get('rr_notif_hora') or None
+                            )
+                            notif.save()
 
                         if sim.fase not in ['2DA_RESOLUCION', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
                             sim.fase = '2DA_RESOLUCION'
@@ -643,6 +743,35 @@ def ayudante_wizard_paso4(request, sim_id):
                             auto.pm = sim.militares.first()
                         auto.save()
                         autotpe_existente = auto
+
+                        # Procesar notificación de Auto TPE
+                        autotpe_notif_tipo = request.POST.get('autotpe_notif_tipo', '').strip()
+                        if autotpe_notif_tipo:
+                            Notificacion.objects.update_or_create(
+                                autotpe=auto,
+                                defaults={
+                                    'tipo': autotpe_notif_tipo,
+                                    'notificado_a': request.POST.get('autotpe_notif_notificado_a', '').strip(),
+                                    'fecha': request.POST.get('autotpe_notif_fecha') or None,
+                                    'hora': request.POST.get('autotpe_notif_hora') or None,
+                                }
+                            )
+
+                        # Procesar memorándum si es AUTO_EJECUTORIA
+                        if auto.tipo == 'AUTO_EJECUTORIA':
+                            autotpe_memo_numero = request.POST.get('autotpe_memo_numero', '').strip()
+                            autotpe_memo_fecha = request.POST.get('autotpe_memo_fecha', '')
+                            autotpe_memo_fecha_entrega = request.POST.get('autotpe_memo_fecha_entrega', '')
+
+                            if autotpe_memo_numero:
+                                Memorandum.objects.update_or_create(
+                                    autotpe=auto,
+                                    defaults={
+                                        'numero': autotpe_memo_numero,
+                                        'fecha': autotpe_memo_fecha or None,
+                                        'fecha_entrega': autotpe_memo_fecha_entrega or None,
+                                    }
+                                )
                     else:
                         errores = True
 
@@ -658,6 +787,19 @@ def ayudante_wizard_paso4(request, sim_id):
                             sim.fase = 'ELEVADO_TSP'
                             sim.save()
                         rap_existente = rap
+
+                        # Procesar notificación de RAP
+                        rap_notif_tipo = request.POST.get('rap_notif_tipo', '').strip()
+                        if rap_notif_tipo:
+                            Notificacion.objects.update_or_create(
+                                recurso_tsp=rap,
+                                defaults={
+                                    'tipo': rap_notif_tipo,
+                                    'notificado_a': request.POST.get('rap_notif_notificado_a', '').strip(),
+                                    'fecha': request.POST.get('rap_notif_fecha') or None,
+                                    'hora': request.POST.get('rap_notif_hora') or None,
+                                }
+                            )
                     else:
                         errores = True
 
@@ -670,6 +812,19 @@ def ayudante_wizard_paso4(request, sim_id):
                             raee.pm = sim.militares.first()
                         raee.save()
                         raee_existente = raee
+
+                        # Procesar notificación de RAEE
+                        raee_notif_tipo = request.POST.get('raee_notif_tipo', '').strip()
+                        if raee_notif_tipo:
+                            Notificacion.objects.update_or_create(
+                                recurso_tsp=raee,
+                                defaults={
+                                    'tipo': raee_notif_tipo,
+                                    'notificado_a': request.POST.get('raee_notif_notificado_a', '').strip(),
+                                    'fecha': request.POST.get('raee_notif_fecha') or None,
+                                    'hora': request.POST.get('raee_notif_hora') or None,
+                                }
+                            )
                     else:
                         errores = True
 
@@ -679,6 +834,19 @@ def ayudante_wizard_paso4(request, sim_id):
                         autotsp.sim = sim
                         autotsp.save()
                         autotsp_existente = autotsp
+
+                        # Procesar notificación de Auto TSP
+                        autotsp_notif_tipo = request.POST.get('autotsp_notif_tipo', '').strip()
+                        if autotsp_notif_tipo:
+                            Notificacion.objects.update_or_create(
+                                autotsp=autotsp,
+                                defaults={
+                                    'tipo': autotsp_notif_tipo,
+                                    'notificado_a': request.POST.get('autotsp_notif_notificado_a', '').strip(),
+                                    'fecha': request.POST.get('autotsp_notif_fecha') or None,
+                                    'hora': request.POST.get('autotsp_notif_hora') or None,
+                                }
+                            )
                     else:
                         errores = True
 

@@ -15,10 +15,23 @@
     {% endfor %}
   {% endif %}
 
-  <!-- Información calculada -->
+  <!-- ADVERTENCIA: Sin año de egreso -->
+  {% if pm.anio_promocion is None %}
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <strong>⚠️ Advertencia:</strong> No hay datos de <strong>Año de Egreso</strong> para este personal.
+    <br/>
+    <small>
+      • Sin esta información, <strong>no se puede calcular el grado esperado</strong> ni los años de servicio.<br/>
+      • El <strong>grado mostrado en reportes será el del sumario</strong> (del documento histórico).<br/>
+      • Si cuenta con este dato, complételo en el campo "Año de Egreso" abajo.
+    </small>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% else %}
+  <!-- Información calculada cuando SÍ hay año de egreso -->
   {% if años_servicio is not None %}
   <div class="alert alert-info py-2 mb-3">
-    <strong>Años de servicio:</strong> {{ años_servicio }} años
+    <strong>✅ Años de servicio:</strong> {{ años_servicio }} años
     {% if grado_esperado %}
       &nbsp;|&nbsp; <strong>Grado esperado:</strong> {{ grado_esperado }}
     {% endif %}
@@ -26,6 +39,7 @@
       &nbsp;|&nbsp; <strong>Estado calculado:</strong> {{ estado_calculado }}
     {% endif %}
   </div>
+  {% endif %}
   {% endif %}
 
   <form method="post">
@@ -45,21 +59,41 @@
       </div>
 
       <div class="col-6">
-        <label class="form-label fw-semibold">Grado Actual</label>
-        <select name="grado" class="form-select">
+        <label class="form-label fw-semibold">
+          Grado Actual
+          {% if pm.anio_promocion is None %}<span class="badge bg-danger">DEL DOCUMENTO</span>{% endif %}
+        </label>
+        <select name="grado" class="form-select {% if pm.anio_promocion is None %}border-danger{% endif %}">
           <option value="">---------</option>
           {% for val, label in grado_choices %}
             <option value="{{ val }}" {% if pm.grado == val %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
+        {% if pm.anio_promocion is None %}
+        <div class="form-text text-danger">
+          <strong>⚠️</strong> Sin año de egreso, este es el grado del sumario histórico.
+        </div>
+        {% else %}
+        <div class="form-text">
+          Grado registrado actualmente.
+        </div>
+        {% endif %}
       </div>
 
       <div class="col-6">
-        <label class="form-label fw-semibold">Año de Egreso</label>
-        <input type="number" name="anio_promocion" class="form-control"
+        <label class="form-label fw-semibold">
+          Año de Egreso
+          {% if pm.anio_promocion is None %}<span class="badge bg-warning text-dark">FALTA</span>{% else %}<span class="badge bg-success">✓ OK</span>{% endif %}
+        </label>
+        <input type="number" name="anio_promocion" class="form-control {% if pm.anio_promocion is None %}border-warning{% endif %}"
                value="{{ pm.anio_promocion|default:'' }}"
                placeholder="Ej: 2000" min="1950" max="2100">
-        <div class="form-text">Año en que egresó de la institución militar.</div>
+        <div class="form-text">
+          Año en que egresó de la institución militar.
+          {% if pm.anio_promocion is None %}
+            <strong class="text-warning">Este campo es crítico para calcular carrera.</strong>
+          {% endif %}
+        </div>
       </div>
 
       <div class="col-6">
@@ -73,19 +107,24 @@
 
       <!-- No ascendió — campo clave -->
       <div class="col-12">
-        <div class="card border-warning">
+        <div class="card {% if pm.anio_promocion %}border-warning{% else %}border-danger{% endif %}">
           <div class="card-body py-3">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="no_ascendio"
-                     id="noAscendio" {% if pm.no_ascendio %}checked{% endif %}>
+                     id="noAscendio" {% if pm.no_ascendio %}checked{% endif %} {% if pm.anio_promocion is None %}disabled{% endif %}>
               <label class="form-check-label fw-semibold" for="noAscendio">
                 No ascendió al grado correspondiente
               </label>
             </div>
             <div class="form-text mt-1">
-              Marcar cuando el militar se quedó en un grado inferior al que le
-              correspondería por su año de egreso (por sanción, baja temporal u
-              otra razón). El sistema dejará de calcular el grado esperado.
+              {% if pm.anio_promocion %}
+                Marcar cuando el militar se quedó en un grado inferior al que le
+                correspondería por su año de egreso (por sanción, baja temporal u
+                otra razón). El sistema dejará de calcular el grado esperado.
+              {% else %}
+                <strong class="text-danger">⚠️ Este campo requiere un Año de Egreso registrado.</strong>
+                Completa primero el año de egreso para poder usar esta opción.
+              {% endif %}
             </div>
 
             {% if grado_esperado and pm.grado != grado_esperado and not pm.no_ascendio %}

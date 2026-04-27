@@ -645,6 +645,137 @@ AUTOTPENotificacionForm = NotificacionForm
 
 
 # ============================================================
+# FORMULARIOS EXTENDIDOS CON NOTIFICACIÓN INTEGRADA (AYUDANTE)
+# ============================================================
+
+class ResolucionConNotificacionForm(forms.Form):
+    """Formulario que incluye Resolución + Notificación opcional (para registro histórico)"""
+
+    # Campos de Resolución
+    sim = forms.ModelChoiceField(queryset=SIM.objects.all(),
+                                 widget=forms.Select(attrs={'class': 'form-control'}),
+                                 label='Sumario')
+    pm = forms.ModelChoiceField(queryset=PM.objects.all(),
+                                widget=forms.Select(attrs={'class': 'form-control'}),
+                                label='Personal Militar Implicado')
+    numero = forms.CharField(max_length=15,
+                            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 05/26'}),
+                            label='Número de Resolución')
+    fecha = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                           label='Fecha de Resolución')
+    tipo = forms.ChoiceField(choices=Resolucion.TIPO_CHOICES,
+                            widget=forms.Select(attrs={'class': 'form-control'}),
+                            label='Tipo de Resolución')
+    texto = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                                         'placeholder': 'Texto de la resolución'}),
+                           label='Texto de la Resolución')
+
+    # Campos de Notificación (opcionales)
+    notif_tipo = forms.ChoiceField(choices=[('', 'Sin notificación')] + list(Notificacion.NOTIF_CHOICES),
+                                   widget=forms.Select(attrs={'class': 'form-control'}),
+                                   required=False, label='Tipo de Notificación')
+    notif_notificado_a = forms.CharField(max_length=100, required=False,
+                                        widget=forms.TextInput(attrs={'class': 'form-control',
+                                                                     'placeholder': 'Persona / dirección notificada'}),
+                                        label='Notificado a')
+    notif_fecha = forms.DateField(required=False,
+                                 widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                 label='Fecha de Notificación')
+    notif_hora = forms.TimeField(required=False,
+                                widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+                                label='Hora de Notificación')
+
+
+class RAPConNotificacionForm(forms.Form):
+    """Recurso de Apelación + Notificación opcional"""
+
+    sim = forms.ModelChoiceField(queryset=SIM.objects.all(),
+                                 widget=forms.Select(attrs={'class': 'form-control'}),
+                                 label='Sumario')
+    pm = forms.ModelChoiceField(queryset=PM.objects.all(),
+                                widget=forms.Select(attrs={'class': 'form-control'}),
+                                label='Personal Militar')
+    resolucion = forms.ModelChoiceField(queryset=Resolucion.objects.filter(instancia='PRIMERA'),
+                                       widget=forms.Select(attrs={'class': 'form-control'}),
+                                       label='Resolución Recurrida')
+    fecha_presentacion = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                        label='Fecha de Presentación')
+    numero_oficio = forms.CharField(max_length=30, required=False,
+                                   widget=forms.TextInput(attrs={'class': 'form-control'}),
+                                   label='Número de Oficio')
+    fecha_oficio = forms.DateField(required=False,
+                                  widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                  label='Fecha de Oficio')
+    numero = forms.CharField(max_length=15,
+                            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/26'}),
+                            label='Número del RAP')
+    fecha = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                           label='Fecha del RAP')
+    texto = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+                           label='Texto del RAP')
+    tipo = forms.ChoiceField(choices=RecursoTSP.TIPO_CHOICES,
+                            widget=forms.Select(attrs={'class': 'form-control'}),
+                            label='Tipo de RAP')
+
+    # Notificación opcional
+    notif_tipo = forms.ChoiceField(choices=[('', 'Sin notificación')] + list(Notificacion.NOTIF_CHOICES),
+                                   widget=forms.Select(attrs={'class': 'form-control'}),
+                                   required=False, label='Tipo de Notificación')
+    notif_notificado_a = forms.CharField(max_length=100, required=False,
+                                        widget=forms.TextInput(attrs={'class': 'form-control'}),
+                                        label='Notificado a')
+    notif_fecha = forms.DateField(required=False,
+                                 widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                 label='Fecha de Notificación')
+    notif_hora = forms.TimeField(required=False,
+                                widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+                                label='Hora de Notificación')
+
+
+class AUTOTPEHistoricoConNotificacionForm(forms.Form):
+    """Auto TPE + Notificación + Memorándum opcionales"""
+
+    sim = forms.ModelChoiceField(queryset=SIM.objects.all(),
+                                 widget=forms.Select(attrs={'class': 'form-control'}),
+                                 label='Sumario')
+    pm = forms.ModelChoiceField(queryset=PM.objects.all(),
+                                widget=forms.Select(attrs={'class': 'form-control'}),
+                                label='Personal Militar')
+    numero = forms.CharField(max_length=15,
+                            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 04/26'}),
+                            label='Número del Auto')
+    fecha = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                           label='Fecha del Auto')
+    tipo = forms.ChoiceField(choices=AUTOTPE.TIPO_CHOICES,
+                            widget=forms.Select(attrs={'class': 'form-control'}),
+                            label='Tipo de Auto')
+    texto = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+                           label='Texto del Auto')
+
+    # Notificación opcional
+    notif_tipo = forms.ChoiceField(choices=[('', 'Sin notificación')] + list(Notificacion.NOTIF_CHOICES),
+                                   widget=forms.Select(attrs={'class': 'form-control'}),
+                                   required=False, label='Tipo de Notificación')
+    notif_notificado_a = forms.CharField(max_length=100, required=False,
+                                        widget=forms.TextInput(attrs={'class': 'form-control'}),
+                                        label='Notificado a')
+    notif_fecha = forms.DateField(required=False,
+                                 widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                 label='Fecha de Notificación')
+    notif_hora = forms.TimeField(required=False,
+                                widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+                                label='Hora de Notificación')
+
+    # Memorándum (solo para AUTOTPE tipo EJECUTORIA)
+    memo_numero = forms.CharField(max_length=60, required=False,
+                                 widget=forms.TextInput(attrs={'class': 'form-control'}),
+                                 label='Número de Memorándum (si ejecutoria)')
+    memo_fecha = forms.DateField(required=False,
+                                widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+                                label='Fecha del Memorándum')
+
+
+# ============================================================
 # FORMULARIOS WIZARD AYUDANTE
 # ============================================================
 

@@ -305,6 +305,7 @@
 
       <div class="button-group">
         <button type="submit" name="action" value="buscar" class="btn btn-primary">🔍 Buscar Militares</button>
+        <button type="reset" class="btn btn-secondary">🗑️ Limpiar</button>
       </div>
     </form>
   </div>
@@ -359,7 +360,7 @@
       <div class="military-sims">
         <strong>Sumarios:</strong> {{ mil.historial.sumarios.count }}<br>
         {% for sim in mil.historial.sumarios %}
-          • {{ sim.codigo }} ({{ sim.get_estado_display }})<br>
+          • <a href="{% url 'detalles_sim' sim.id %}" style="color: #185FA5; text-decoration: none; font-weight: 500;">{{ sim.codigo }}</a> ({{ sim.get_estado_display }})<br>
         {% endfor %}
       </div>
     </div>

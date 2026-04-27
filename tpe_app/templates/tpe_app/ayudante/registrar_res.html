@@ -163,6 +163,66 @@
                             <small class="text-muted d-block mt-1">Copie el texto de la resolución</small>
                         </div>
 
+                        <!-- SECCIÓN DE NOTIFICACIÓN (opcional) -->
+                        <div class="card bg-light mt-4 mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
+                            </div>
+                            <div class="card-body">
+                                <!-- Tipo de Notificación -->
+                                <div class="mb-3">
+                                    <label for="{{ form.notif_tipo.id_for_label }}" class="form-label">
+                                        {{ form.notif_tipo.label }}
+                                    </label>
+                                    {{ form.notif_tipo }}
+                                    {% if form.notif_tipo.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.notif_tipo.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Notificado a -->
+                                <div class="mb-3">
+                                    <label for="{{ form.notif_notificado_a.id_for_label }}" class="form-label">
+                                        {{ form.notif_notificado_a.label }}
+                                    </label>
+                                    {{ form.notif_notificado_a }}
+                                    {% if form.notif_notificado_a.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.notif_notificado_a.errors }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Fecha y Hora de Notificación -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.notif_fecha.id_for_label }}" class="form-label">
+                                            {{ form.notif_fecha.label }}
+                                        </label>
+                                        {{ form.notif_fecha }}
+                                        {% if form.notif_fecha.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {{ form.notif_fecha.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.notif_hora.id_for_label }}" class="form-label">
+                                            {{ form.notif_hora.label }}
+                                        </label>
+                                        {{ form.notif_hora }}
+                                        {% if form.notif_hora.errors %}
+                                            <div class="text-danger small mt-1">
+                                                {{ form.notif_hora.errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Botones -->
                         <div class="d-flex gap-2 justify-content-end pt-3">
                             <a href="{% url 'ayudante_lista_res' %}" class="btn btn-secondary">

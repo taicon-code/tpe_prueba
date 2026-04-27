@@ -122,20 +122,53 @@
 
                         <hr class="my-4">
 
-                        <!-- Memorándum (opcional) -->
-                        <h5 class="mb-3 text-secondary">
-                            <i class="bi bi-file-earmark me-2"></i>Datos del Memorándum (Opcional)
-                        </h5>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ memo_form.numero.label }}</label>
-                                {{ memo_form.numero }}
-                                <small class="text-muted d-block mt-1">Número de memorándum (si aplica)</small>
+                        <!-- Notificación (opcional) -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ memo_form.fecha.label }}</label>
-                                {{ memo_form.fecha }}
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">{{ form.notif_tipo.label }}</label>
+                                        {{ form.notif_tipo }}
+                                        {% if form.notif_tipo.errors %}<div class="text-danger small mt-1">{{ form.notif_tipo.errors }}</div>{% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">{{ form.notif_notificado_a.label }}</label>
+                                        {{ form.notif_notificado_a }}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">{{ form.notif_fecha.label }}</label>
+                                        {{ form.notif_fecha }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">{{ form.notif_hora.label }}</label>
+                                        {{ form.notif_hora }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Memorándum (opcional) -->
+                        <div class="card bg-light mb-4">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0">📋 Datos del Memorándum (opcional - solo para Ejecutoria)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">{{ form.memo_numero.label }}</label>
+                                        {{ form.memo_numero }}
+                                        <small class="text-muted d-block mt-1">Número de memorándum (si aplica)</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">{{ form.memo_fecha.label }}</label>
+                                        {{ form.memo_fecha }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -149,7 +182,7 @@
 
             <div class="alert alert-info mt-4">
                 <i class="bi bi-info-circle me-2"></i>
-                <strong>Nota:</strong> Los campos del memorándum son opcionales. Complételos solo si el auto incluye memorándum.
+                <strong>Nota:</strong> Los campos de notificación y memorándum son opcionales. Complételos solo si corresponde.
             </div>
         </div>
     </div>

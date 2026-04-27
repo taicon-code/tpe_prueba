@@ -296,16 +296,30 @@ El sistema distingue dos conceptos de grado:
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `anio_promocion` | IntegerField | Año de egreso (ej: `2000`). Base para todos los cálculos. |
+| `anio_promocion` | IntegerField | Año de egreso (ej: `2000`). Base para todos los cálculos. **CRÍTICO: sin este dato no se puede calcular grado esperado.** |
 | `no_ascendio` | BooleanField | Marcar cuando el militar no ascendió al grado que le correspondía. |
 
 ### Propiedades calculadas (sin columna en BD)
 
 ```python
-pm.años_servicio             # año_actual - anio_promocion
-pm.grado_esperado            # grado según escalafón y años (None si no_ascendio=True)
-pm.estado_carrera_calculado  # ACTIVO / SERVICIO ACTIVO / LETRA A / SERVICIO PASIVO
+pm.años_servicio             # año_actual - anio_promocion → None si falta anio_promocion
+pm.grado_esperado            # grado según escalafón y años (None si no_ascendio=True o si falta anio_promocion)
+pm.estado_carrera_calculado  # ACTIVO / SERVICIO ACTIVO / LETRA A / SERVICIO PASIVO → None si falta anio_promocion
 ```
+
+### ⚠️ IMPORTANTE: Cuando falta Año de Egreso
+
+Si **NO hay `anio_promocion`** registrado (casos históricos):
+
+| Situación | Comportamiento | En pantalla |
+|-----------|---|---|
+| Cálculo de carrera | No se puede calcular | `grado_esperado` = None |
+| Años de servicio | No se puede calcular | `años_servicio` = None |
+| Grado mostrado | Se usa el `pm.grado` actual | Badge **"DOC"** indica grado del documento |
+| En reportes | Grado del sumario histórico | Con advertencia si falta año |
+| Campo "No ascendió" | DESHABILITADO | Requiere `anio_promocion` para funcionar |
+
+**Recomendación:** El campo `Año de Egreso` tiene una advertencia visual en la interfaz de edición (`/ayudante/pm/<id>/editar/`) cuando falta este dato crítico.
 
 ### Tabla de ascensos (regla: N años completos + 1 día)
 
