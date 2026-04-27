@@ -291,13 +291,15 @@
       {% csrf_token %}
 
       <div class="form-group">
-        <label for="lista_apellidos">Apellidos (Paterno, Materno) — uno por línea</label>
-        <textarea id="lista_apellidos" name="lista_apellidos" placeholder="VARGAS, FLORES&#10;RODRIGUEZ, LOPEZ&#10;GUTIERREZ, SANTOS"></textarea>
+        <label for="lista_apellidos">Apellidos y Nombre — uno por línea</label>
+        <textarea id="lista_apellidos" name="lista_apellidos" placeholder="VARGAS, FLORES&#10;RODRIGUEZ, LOPEZ, JUAN&#10;GUTIERREZ, SANTOS, PEDRO"></textarea>
         <div class="form-help">
-          <strong>Formato:</strong> APELLIDO_PATERNO, APELLIDO_MATERNO (separados por coma)<br>
-          Una línea por militar. Ejemplo:<br>
-          VARGAS, FLORES<br>
-          RODRIGUEZ, LOPEZ
+          <strong>Formato:</strong> PATERNO, MATERNO &nbsp;|&nbsp; PATERNO, MATERNO, NOMBRE<br>
+          Si no tiene apellido paterno, dejar vacío antes de la coma.<br>
+          Ejemplos:<br>
+          VARGAS, FLORES &nbsp;&nbsp;<em>→ todos los Vargas Flores</em><br>
+          VARGAS, FLORES, JUAN &nbsp;&nbsp;<em>→ solo el que se llama Juan</em><br>
+          , QUISPE, PEDRO &nbsp;&nbsp;<em>→ sin paterno, solo materno Quispe y nombre Pedro</em>
         </div>
       </div>
 

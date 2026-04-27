@@ -180,15 +180,17 @@ def busqueda_por_lotes(request):
                 if len(partes) >= 2:
                     ap = partes[0].upper()
                     am = partes[1].upper()
+                    nb = partes[2].upper() if len(partes) >= 3 else None
 
-                    # Buscar militar con este AP y AM
-                    pm = PM.objects.filter(
-                        paterno__iexact=ap,
-                        materno__iexact=am
-                    ).first()
+                    filtro = PM.objects.filter(materno__iexact=am)
+                    if ap:
+                        filtro = filtro.filter(paterno__iexact=ap)
+                    else:
+                        filtro = filtro.filter(Q(paterno='') | Q(paterno__isnull=True))
+                    if nb:
+                        filtro = filtro.filter(nombre__icontains=nb)
 
-                    if pm:
-                        # Obtener historial del militar
+                    for pm in filtro:
                         historial = _obtener_historial_completo(pm.id)
                         if historial:
                             militares_encontrados.append({
@@ -237,13 +239,17 @@ def export_batch_pdf(request):
         if len(partes) >= 2:
             ap = partes[0].upper()
             am = partes[1].upper()
+            nb = partes[2].upper() if len(partes) >= 3 else None
 
-            pm = PM.objects.filter(
-                paterno__iexact=ap,
-                materno__iexact=am
-            ).first()
+            filtro = PM.objects.filter(materno__iexact=am)
+            if ap:
+                filtro = filtro.filter(paterno__iexact=ap)
+            else:
+                filtro = filtro.filter(Q(paterno='') | Q(paterno__isnull=True))
+            if nb:
+                filtro = filtro.filter(nombre__icontains=nb)
 
-            if pm:
+            for pm in filtro:
                 historial = _obtener_historial_completo(pm.id)
                 if historial:
                     militares.append({
@@ -452,13 +458,17 @@ def export_batch_excel(request):
         if len(partes) >= 2:
             ap = partes[0].upper()
             am = partes[1].upper()
+            nb = partes[2].upper() if len(partes) >= 3 else None
 
-            pm = PM.objects.filter(
-                paterno__iexact=ap,
-                materno__iexact=am
-            ).first()
+            filtro = PM.objects.filter(materno__iexact=am)
+            if ap:
+                filtro = filtro.filter(paterno__iexact=ap)
+            else:
+                filtro = filtro.filter(Q(paterno='') | Q(paterno__isnull=True))
+            if nb:
+                filtro = filtro.filter(nombre__icontains=nb)
 
-            if pm:
+            for pm in filtro:
                 historial = _obtener_historial_completo(pm.id)
                 if historial:
                     militares.append({
