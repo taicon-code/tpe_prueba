@@ -250,37 +250,6 @@ class PM(models.Model):
             return 'SERVICIO PASIVO'
 
 
-# ============================================================
-# MODELO 2: ABOG — Abogados del Tribunal
-# ============================================================
-class ABOG(models.Model):
-
-    ci          = models.DecimalField(max_digits=13, decimal_places=0, unique=True, null=True, blank=True, verbose_name='Cédula de Identidad')
-    grado       = models.CharField(max_length=20, null=True, blank=True, verbose_name='Grado')
-    arma        = models.CharField(max_length=20, null=True, blank=True, verbose_name='Arma')
-    especialidad = models.CharField(max_length=30, null=True, blank=True, verbose_name='Especialidad')
-    nombre      = models.CharField(max_length=50, verbose_name='Nombre')
-    paterno     = models.CharField(max_length=50, verbose_name='Apellido Paterno')
-    materno     = models.CharField(max_length=50, null=True, blank=True, verbose_name='Apellido Materno')
-
-    class Meta:
-        db_table            = 'abog'
-        verbose_name        = 'Abogado'
-        verbose_name_plural = 'Abogados'
-        ordering            = ['paterno', 'nombre']
-
-    def __str__(self):
-        return f"{self.grado} {self.arma} {self.nombre} {self.paterno}"
-
-    def save(self, *args, **kwargs):
-        self.grado       = self.grado.upper()       if self.grado       else self.grado
-        self.arma        = self.arma.upper()        if self.arma        else self.arma
-        self.nombre      = self.nombre.upper()      if self.nombre      else self.nombre
-        self.paterno     = self.paterno.upper()     if self.paterno     else self.paterno
-        self.materno     = self.materno.upper()     if self.materno     else self.materno
-        self.especialidad = self.especialidad.upper() if self.especialidad else self.especialidad
-        super().save(*args, **kwargs)
-
 
 # ============================================================
 # MODELO 2B: VOCAL_TPE — Vocales del Tribunal
@@ -291,9 +260,10 @@ class VOCAL_TPE(models.Model):
         ('PRESIDENTE',       'Presidente'),
         ('VICEPRESIDENTE',   'Vicepresidente'),
         ('VOCAL',            'Vocal'),
-        ('SECRETARIO_ACTAS', 'Secretario de Actas'),
-        ('ASESOR_JEFE',      'Asesor Jurídico Supervisor'),
         ('RELATOR',          'Vocal Relator'),
+        ('SECRETARIO_ACTAS', 'Secretario de Actas'),
+        ('ASESOR_JEFE',      'Asesor Jurídico del Dpto. I-PERS'),
+        ('ASESOR_JURIDICO',  'Asesor Jurídico del Comando General'),
     ]
 
     pm       = models.ForeignKey(PM, on_delete=models.RESTRICT, verbose_name='Militar')
@@ -402,16 +372,16 @@ class SIM(models.Model):
         'NOTIFICADO_RR':        'PROCESO_EN_EL_TPE',
         'EN_ESPERA_RAP':        'PROCESO_EN_EL_TPE',
         'ELEVADO_TSP':          'PROCESO_EN_EL_TSP',
-        'EN_AGENDA_EJECUTORIA': 'PROCESO_CONCLUIDO_TPE',
-        'EN_EJECUTORIA':        'PROCESO_EN_EL_TPE',
-        'EJECUTORIA_NOTIFICADA':'PROCESO_EN_EL_TPE',
-        'PENDIENTE_ARCHIVO':    'PROCESO_EN_EL_TPE',
+        'EN_AGENDA_EJECUTORIA': 'PROCESO_EN_EL_TPE',        # aún reversible, no concluido
+        'EN_EJECUTORIA':        'PROCESO_EN_EL_TPE',        # auto firmado, pendiente notificar
+        'EJECUTORIA_NOTIFICADA':'PROCESO_CONCLUIDO_TPE',   # notificado con fecha+hora → concluye
+        'PENDIENTE_ARCHIVO':    'PROCESO_CONCLUIDO_TPE',
         'CONCLUIDO':            'PROCESO_CONCLUIDO_TPE',
         'MEMORANDUM_RETORNADO': 'PROCESO_EJECUTADO',
     }
 
     militares = models.ManyToManyField(PM, through='PM_SIM', verbose_name='Militares investigados')
-    abogados  = models.ManyToManyField('ABOG', through='ABOG_SIM', verbose_name='Abogados asignados')
+    abogados  = models.ManyToManyField(PM, through='ABOG_SIM', related_name='sumarios_como_abogado', verbose_name='Abogados asignados')
 
     codigo             = models.CharField(max_length=25, db_index=True, verbose_name='Código SIM', help_text='Formato: PREFIJO-NUM/AÑO (ej: DJE-95/25)')
     version            = models.IntegerField(default=1, verbose_name='Versión', help_text='1=original, 2=1ª reapertura, etc.')
@@ -531,8 +501,9 @@ class PM_SIM(models.Model):
 # ============================================================
 class ABOG_SIM(models.Model):
 
-    sim  = models.ForeignKey(SIM,  on_delete=models.CASCADE,  verbose_name='Sumario')
-    abog = models.ForeignKey(ABOG, on_delete=models.RESTRICT, verbose_name='Abogado')
+    sim      = models.ForeignKey(SIM, on_delete=models.CASCADE,  verbose_name='Sumario')
+    abogado  = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Abogado',
+                                 related_name='asignaciones_abogado')
     es_responsable = models.BooleanField(
         default=False,
         verbose_name='Responsable de carpeta',
@@ -543,11 +514,11 @@ class ABOG_SIM(models.Model):
         db_table            = 'abog_sim'
         verbose_name        = 'Abogado en Sumario'
         verbose_name_plural = 'Abogados en Sumario'
-        unique_together     = ('sim', 'abog')
+        unique_together     = ('sim', 'abogado')
 
     def __str__(self):
         marca = ' [RESP]' if self.es_responsable else ''
-        return f"{self.abog} → {self.sim.codigo}{marca}"
+        return f"{self.abogado} → {self.sim.codigo}{marca}"
 
 
 # ============================================================
@@ -584,11 +555,12 @@ class CustodiaSIM(models.Model):
     sim              = models.ForeignKey(SIM, on_delete=models.CASCADE,
                                          related_name='custodias', verbose_name='Sumario')
     tipo_custodio    = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name='Tipo de Custodio')
-    abog             = models.ForeignKey('ABOG', on_delete=models.SET_NULL,
-                                         null=True, blank=True, verbose_name='Abogado')
-    abog_destino     = models.ForeignKey('ABOG', on_delete=models.SET_NULL,
-                                         null=True, blank=True, related_name='custodias_destino',
-                                         verbose_name='Abogado Destino')
+    abogado          = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                                         null=True, blank=True, verbose_name='Abogado',
+                                         related_name='custodias_como_abogado')
+    abogado_destino  = models.ForeignKey(PM, on_delete=models.SET_NULL,
+                                         null=True, blank=True, verbose_name='Abogado Destino',
+                                         related_name='custodias_como_destino')
     usuario          = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
                                          null=True, blank=True, related_name='custodias_registradas',
                                          verbose_name='Usuario que registró')
@@ -663,8 +635,10 @@ class DICTAMEN(models.Model):
     conclusion = models.CharField(max_length=255, null=True, blank=True, verbose_name='Conclusión / Recomendación')
     agenda     = models.ForeignKey(AGENDA, on_delete=models.CASCADE, verbose_name='Agenda')
     sim        = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
-    abog       = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
-    pm         = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
+    abogado    = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
+                   related_name='dictamenes_como_abogado')
+    pm         = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
+                   related_name='dictamenes_como_militar')
     secretario = models.ForeignKey(
         VOCAL_TPE, on_delete=models.SET_NULL, null=True, blank=True,
         verbose_name='Secretario de Actas que confirma',
@@ -782,7 +756,8 @@ class AUTOTPE(models.Model):
     ]
 
     sim            = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
-    abog           = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
+    abogado        = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
+                        related_name='autos_como_abogado')
     agenda         = models.ForeignKey(AGENDA, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Agenda')
     vocal_excusado = models.ForeignKey('VOCAL_TPE', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Vocal Excusado')
     pm             = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
@@ -942,9 +917,11 @@ class Resolucion(models.Model):
 
     instancia          = models.CharField(max_length=20, choices=INSTANCIA_CHOICES, default='PRIMERA', verbose_name='Instancia')
     sim                = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
-    abog               = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
+    abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
+                             related_name='resoluciones_como_abogado')
     agenda             = models.ForeignKey(AGENDA, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Agenda')
-    pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
+    pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
+                             related_name='resoluciones_como_militar')
     dictamen           = models.ForeignKey('DICTAMEN', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Dictamen origen (solo PRIMERA)')
     resolucion_origen  = models.ForeignKey(
         'self', on_delete=models.PROTECT, null=True, blank=True,
@@ -1027,8 +1004,10 @@ class RecursoTSP(models.Model):
 
     instancia          = models.CharField(max_length=25, choices=INSTANCIA_CHOICES, default='APELACION', verbose_name='Instancia')
     sim                = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
-    abog               = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado')
-    pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
+    abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
+                             related_name='recursos_tsp_como_abogado')
+    pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
+                             related_name='recursos_tsp_como_militar')
     resolucion         = models.ForeignKey(Resolucion, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Resolución impugnada (solo APELACION)')
     recurso_origen     = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True,
                                            related_name='aclaraciones',
@@ -1166,22 +1145,21 @@ class PerfilUsuario(models.Model):
         ('BUSCADOR',           'Buscador (General)'),
     ]
 
-    # Roles que requieren vinculación a PM (todo el personal que no es abogado ni vocal)
+    # Todos los roles requieren vinculación a PM (fuente única de identidad)
     ROLES_CON_PM = {
         'MASTER', 'ADMINISTRADOR', 'AYUDANTE',
         'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR',
+        'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR', 'ABOGADO',
         'ASESOR_JEFE', 'ASESOR_JURIDICO', 'BUSCADOR',
     }
 
-    user    = models.OneToOneField('auth.User', on_delete=models.CASCADE, verbose_name='Usuario del sistema')
-    rol     = models.CharField(max_length=20, choices=ROL_CHOICES, verbose_name='Rol/Perfil')
-    abogado = models.ForeignKey(ABOG, on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='Vinculado a Abogado')
-    vocal   = models.ForeignKey(VOCAL_TPE, on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='Vinculado a Vocal TPE')
-    pm      = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
-                                verbose_name='Vinculado a Personal Militar')
-    activo  = models.BooleanField(default=True, verbose_name='Usuario activo')
+    user   = models.OneToOneField('auth.User', on_delete=models.CASCADE, verbose_name='Usuario del sistema')
+    rol    = models.CharField(max_length=20, choices=ROL_CHOICES, verbose_name='Rol/Perfil')
+    vocal  = models.ForeignKey(VOCAL_TPE, on_delete=models.SET_NULL, null=True, blank=True,
+                               verbose_name='Vinculado a Vocal TPE')
+    pm     = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
+                               verbose_name='Vinculado a Personal Militar')
+    activo = models.BooleanField(default=True, verbose_name='Usuario activo')
 
     class Meta:
         db_table            = 'perfil_usuario'
@@ -1191,17 +1169,14 @@ class PerfilUsuario(models.Model):
     def __str__(self):
         if self.pm:
             return f"{self.pm.grado} {self.pm.paterno} [{self.get_rol_display()}]"
-        if self.abogado:
-            return f"{self.abogado.grado} {self.abogado.paterno} [{self.get_rol_display()}]"
+        if self.vocal:
+            return f"{self.vocal.pm.paterno} [{self.get_rol_display()}]"
         return f"{self.user.username} ({self.get_rol_display()})"
 
     @property
     def grado(self):
-        """Grado del usuario, sin importar si es PM, abogado o vocal."""
         if self.pm:
             return self.pm.grado
-        if self.abogado:
-            return self.abogado.grado
         if self.vocal:
             return self.vocal.pm.grado
         return ''
@@ -1210,8 +1185,6 @@ class PerfilUsuario(models.Model):
     def nombre_completo(self):
         if self.pm:
             return f"{self.pm.grado} {self.pm.nombre} {self.pm.paterno}".strip()
-        if self.abogado:
-            return f"{self.abogado.grado} {self.abogado.nombre} {self.abogado.paterno}".strip()
         if self.vocal:
             return str(self.vocal.pm)
         return self.user.get_full_name() or self.user.username
