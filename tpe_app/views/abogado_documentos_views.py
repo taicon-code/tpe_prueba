@@ -17,9 +17,9 @@ from ..utils.numeracion import next_num_yy
 
 def _get_abogado_or_403(request):
     perfil = getattr(request.user, "perfilusuario", None)
-    if not perfil or not getattr(perfil, "abogado", None):
+    if not perfil or not getattr(perfil, "pm", None):
         raise PermissionDenied()
-    return perfil.abogado
+    return perfil.pm
 
 
 @rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
@@ -30,15 +30,15 @@ def abogado_sumario_detalle(request, sim_id: int):
         pk=sim_id,
     )
 
-    dictamenes       = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-id")
+    dictamenes       = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abogado").order_by("-id")
     resoluciones     = list(
         Resolucion.objects.filter(sim=sim, instancia='PRIMERA')
-        .select_related("agenda", "abog", "dictamen").order_by("-fecha")
+        .select_related("agenda", "abogado", "dictamen").order_by("-fecha")
     )
     reconsideraciones = Resolucion.objects.filter(
         sim=sim, instancia='RECONSIDERACION'
-    ).select_related("resolucion_origen", "agenda", "abog").order_by("-fecha")
-    autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-fecha", "-id")
+    ).select_related("resolucion_origen", "agenda", "abogado").order_by("-fecha")
+    autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abogado").order_by("-fecha", "-id")
 
     # Adjuntar PDF a cada Resolucion y AUTOTPE
     for res in resoluciones:
@@ -55,20 +55,20 @@ def abogado_sumario_detalle(request, sim_id: int):
     # rrs_asignados → asignado por RR (Etapa 2, solo puede operar sobre sus propios documentos)
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
     rrs_asignados = list(
-        Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION', abog=abogado)
+        Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION', abogado=abogado)
         .select_related("resolucion_origen").order_by("-fecha")
     )
 
     # Verificar si este abogado es el responsable de la carpeta
     es_responsable = ABOG_SIM.objects.filter(
-        sim=sim, abog=abogado, es_responsable=True
+        sim=sim, abogado=abogado, es_responsable=True
     ).exists()
 
     # Custodia activa (solo relevante para el responsable — botón entregar)
     tiene_custodia = CustodiaSIM.objects.filter(
         sim=sim,
         fecha_entrega__isnull=True,
-        abog=abogado
+        abogado=abogado
     ).exists()
     custodio_actual = sim.custodio_actual()
 
@@ -103,7 +103,7 @@ def abogado_sumario_detalle(request, sim_id: int):
     context = {
         "sim": sim,
         "abogado": abogado,
-        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim, es_responsable=True).select_related('abog'),
+        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim, es_responsable=True).select_related('abogado'),
         "investigados": sim.militares.all(),
         "dictamenes": dictamenes,
         "resoluciones": resoluciones,
@@ -130,7 +130,7 @@ def abogado_dictamen_crear(request, sim_id: int):
     # Verificar que el abogado esté asignado al SIM (no requiere custodia)
     if not sim.abogados.filter(pk=abogado.pk).exists():
         rr_asignado = Resolucion.objects.filter(
-            sim=sim, abog=abogado, instancia='RECONSIDERACION'
+            sim=sim, abogado=abogado, instancia='RECONSIDERACION'
         ).exists()
         if not rr_asignado:
             messages.error(request, "❌ No está asignado a este sumario.")
@@ -168,7 +168,7 @@ def abogado_dictamen_crear(request, sim_id: int):
                             DICTAMEN.objects.create(
                                 agenda=agenda,
                                 sim=sim,
-                                abog=abogado,
+                                abogado=abogado,
                                 pm=pm,
                                 numero=dic_num,
                                 conclusion=conclusion or None,
@@ -189,7 +189,7 @@ def abogado_dictamen_crear(request, sim_id: int):
                         DICTAMEN.objects.create(
                             agenda=agenda,
                             sim=sim,
-                            abog=abogado,
+                            abogado=abogado,
                             numero=dic_num,
                             conclusion=conclusion or None,
                         )
@@ -217,7 +217,7 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
 
     # Seguridad: solo puede crear RES desde un dictamen propio si accede via RR (Etapa 2)
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
-    if not es_via_sim and dictamen.abog != abogado:
+    if not es_via_sim and dictamen.abogado != abogado:
         messages.error(request, "No tiene autorización para crear una RES desde este dictamen.")
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
@@ -236,7 +236,7 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
                     Resolucion.objects.create(
                         instancia='PRIMERA',
                         sim=sim,
-                        abog=abogado,
+                        abogado=abogado,
                         agenda=dictamen.agenda if dictamen.agenda_id else None,
                         dictamen=dictamen,
                         pm=dictamen.pm,
@@ -280,7 +280,7 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
                     sim=sim,
                     resolucion_origen=res,
                     agenda=res.agenda,
-                    abog=abogado,
+                    abogado=abogado,
                     pm=res.pm,
                     numero=rr_num or '',
                     fecha=rr_fec or None,
@@ -308,7 +308,7 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
 
     # Seguridad: solo puede crear Auto desde un dictamen propio si accede via RR (Etapa 2)
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
-    if not es_via_sim and dictamen.abog != abogado:
+    if not es_via_sim and dictamen.abogado != abogado:
         messages.error(request, "No tiene autorización para crear un Auto desde este dictamen.")
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
@@ -328,7 +328,7 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
                 AUTOTPE.objects.create(
                     sim=sim,
                     pm=dictamen.pm,
-                    abog=abogado,
+                    abogado=abogado,
                     agenda=dictamen.agenda if dictamen.agenda_id else None,
                     numero=tpe_num,
                     fecha=tpe_fec or None,
@@ -384,7 +384,7 @@ def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
 
                 AUTOTPE.objects.create(
                     sim=sim,
-                    abog=abogado,
+                    abogado=abogado,
                     pm=resolucion.pm,
                     resolucion=resolucion,
                     numero=tpe_num,
@@ -451,7 +451,7 @@ def abogado_auto_excusa_crear(request, sim_id: int):
                     auto = AUTOTPE.objects.create(
                         sim=sim,
                         pm=pm,
-                        abog=abogado,
+                        abogado=abogado,
                         agenda=agenda,
                         vocal_excusado=vocal,
                         numero=tpe_num,
@@ -485,7 +485,7 @@ def abogado_confirmar_recepcion(request, sim_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
 
     custodia = CustodiaSIM.objects.filter(
-        sim=sim, abog=abogado, estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
+        sim=sim, abogado=abogado, estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
     ).first()
 
     if not custodia:
@@ -527,7 +527,7 @@ def abogado_devolver_carpeta(request, sim_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
 
     custodia = CustodiaSIM.objects.filter(
-        sim=sim, abog=abogado, estado='RECIBIDA_CONFORME', fecha_entrega__isnull=True
+        sim=sim, abogado=abogado, estado='RECIBIDA_CONFORME', fecha_entrega__isnull=True
     ).first()
 
     if not custodia:
@@ -545,7 +545,7 @@ def abogado_devolver_carpeta(request, sim_id: int):
                 CustodiaSIM.objects.create(
                     sim=sim,
                     tipo_custodio='ADMIN2_ARCHIVO',
-                    abog=abogado,
+                    abogado=abogado,
                     usuario=request.user,
                     motivo='REVISION',
                     estado='PENDIENTE_CONFIRMACION',

@@ -13,7 +13,7 @@ from django.urls import reverse
 from datetime import date
 from ..decorators import rol_requerido
 from ..models import (
-    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, ABOG, VOCAL_TPE, Resolucion, RecursoTSP
+    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP
 )
 from ..forms import (
     RESForm, NotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, MemorandumForm,
@@ -24,7 +24,7 @@ from ..forms import (
 @rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
 def ayudante_dashboard(request):
     """Dashboard principal del AYUDANTE"""
-    from ..models import DocumentoAdjunto, ABOG
+    from ..models import DocumentoAdjunto
 
     # Últimos SIM registrados
     ultimos_sim = SIM.objects.all().order_by('-fecha_registro')[:10]

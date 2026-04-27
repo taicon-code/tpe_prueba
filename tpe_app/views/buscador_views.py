@@ -709,7 +709,7 @@ def export_custodia_pdf(request, sim_id):
             custodia_data.append([
                 tz.localtime(custodia.fecha_recepcion).strftime('%d/%m/%Y\n%H:%M'),
                 custodia.get_tipo_custodio_display(),
-                custodia.abog.paterno if custodia.abog else '-',
+                custodia.abogado.paterno if custodia.abogado else '-',
                 custodia.get_estado_display(),
                 tz.localtime(custodia.fecha_entrega).strftime('%d/%m/%Y\n%H:%M') if custodia.fecha_entrega else 'Activa',
                 Paragraph(observacion, cell_style),

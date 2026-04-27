@@ -11,15 +11,15 @@ def abogado_dashboard(request):
     
     perfil = request.user.perfilusuario
     
-    # Si el abogado no está vinculado a ABOG, mostrar error
-    if not perfil.abogado:
-        context = {'error': 'Tu usuario no está vinculado a un registro de abogado'}
+    # Si el abogado no está vinculado a PM, mostrar error
+    if not perfil.pm:
+        context = {'error': 'Tu usuario no está vinculado a un registro de Personal Militar'}
         return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
-    
+
     # ✅ NUEVO v3.1: Sumarios CON CUSTODIA ACTIVA (que NO son solicitudes)
     # Obtener IDs de SIM donde el abogado tiene custodia activa
     sim_ids_con_custodia = CustodiaSIM.objects.filter(
-        abog=perfil.abogado,
+        abogado=perfil.pm,
         fecha_entrega__isnull=True
     ).values_list('sim_id', flat=True)
 
@@ -39,7 +39,7 @@ def abogado_dashboard(request):
     mis_recursos = list(
         Resolucion.objects.filter(
             instancia='RECONSIDERACION',
-            abog=perfil.abogado,
+            abogado=perfil.pm,
         )
         .select_related('sim', 'resolucion_origen', 'pm')
         .prefetch_related('sim__militares')
@@ -74,18 +74,18 @@ def abogado_dashboard(request):
         pendientes_ej = por_res_ej + por_rr_ej
 
     context = {
-        'abogado': perfil.abogado,
+        'abogado': perfil.pm,
         'mis_sumarios': mis_sumarios,
         'mis_solicitudes': mis_solicitudes,
         'mis_recursos': mis_recursos,
         'total_asignados': total_asignados,
         'total_res': Resolucion.objects.filter(
-            instancia='PRIMERA', abog=perfil.abogado
+            instancia='PRIMERA', abogado=perfil.pm
         ).count(),
         'total_rr': Resolucion.objects.filter(
             instancia='RECONSIDERACION', sim__pk__in=sim_ids_con_custodia
         ).count(),
-        'total_autotpe': AUTOTPE.objects.filter(abog=perfil.abogado).count(),
+        'total_autotpe': AUTOTPE.objects.filter(abogado=perfil.pm).count(),
         'pendientes_ejecutoria': pendientes_ej,
         'total_pendientes_ejecutoria': len(pendientes_ej),
     }
@@ -118,7 +118,7 @@ def abogado_entregar_carpeta(request, sim_id):
                     custodia_abogado = CustodiaSIM.objects.filter(
                         sim=sim,
                         fecha_entrega__isnull=True,
-                        abog=perfil.abogado
+                        abogado=perfil.pm
                     ).first()
 
                     if not custodia_abogado:
@@ -134,9 +134,9 @@ def abogado_entregar_carpeta(request, sim_id):
                     CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio='ADMIN2_ARCHIVO',
-                        abog=perfil.abogado,
+                        abogado=perfil.pm,
                         usuario=request.user,
-                        observacion=f'Recibida de {perfil.abogado.grado} {perfil.abogado.paterno}. {form.cleaned_data.get("observacion", "")}',
+                        observacion=f'Recibida de {perfil.pm.grado} {perfil.pm.paterno}. {form.cleaned_data.get("observacion", "")}',
                         estado='PENDIENTE_CONFIRMACION'
                     )
 
