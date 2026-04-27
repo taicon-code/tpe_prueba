@@ -10,12 +10,12 @@ from datetime import date, timedelta
 import calendar
 import json
 from ..decorators import rol_requerido
-from ..models import SIM, PM, ABOG, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE
+from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 
 
-@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR', 'ADMINISTRATIVO')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def admin1_dashboard(request):
     """Dashboard específico para ADMIN1_AGENDADOR - Gestión de agendas y sumarios"""
 
@@ -29,7 +29,7 @@ def admin1_dashboard(request):
     if perfil.rol == 'ADMIN3_NOTIFICADOR':
         return redirect('admin3_dashboard')
 
-    # Si no, es Admin1 o ADMINISTRATIVO - mostrar dashboard
+    # Si no, es Admin1 — mostrar dashboard
     query = (request.GET.get('q') or '').strip()
 
     filtros_q = Q()
@@ -79,7 +79,7 @@ def admin1_dashboard(request):
 
     # RR por agendar — calcular fecha límite 25 días y color de alerta
     rr_sin_asignar = list(
-        Resolucion.objects.filter(instancia='RECONSIDERACION', abog__isnull=True)
+        Resolucion.objects.filter(instancia='RECONSIDERACION', abogado__isnull=True)
         .select_related('sim', 'resolucion_origen')
         .order_by('-fecha_presentacion')
     )
@@ -259,7 +259,7 @@ def registrar_sumario(request):
     return render(request, 'tpe_app/admin1/registrar_sumario.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def agendar_sumario(request):
     """Formulario para agendar un sumario a una agenda existente"""
 
@@ -283,7 +283,7 @@ def agendar_sumario(request):
                     for i, abog in enumerate(abogados_list):
                         ABOG_SIM.objects.create(
                             sim=sumario,
-                            abog=abog,
+                            abogado=abog,
                             es_responsable=(i == 0),
                         )
 
@@ -348,7 +348,7 @@ def registrar_rr(request):
 
     return render(request, 'tpe_app/admin1/registrar_rr.html', {'form': form})
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def agendar_rr(request):
     """Formulario para agendar un Recurso de Reconsideración (Resolucion RECONSIDERACION)"""
     if request.method == 'POST':
@@ -358,7 +358,7 @@ def agendar_rr(request):
             abogado = form.cleaned_data['abogado']
             fecha_agenda = form.cleaned_data['fecha_agenda']
 
-            rr.abog = abogado
+            rr.abogado = abogado
             rr.save()
 
             messages.success(
@@ -376,7 +376,7 @@ def agendar_rr(request):
     context = {
         'form': form,
         'rr_pendientes': Resolucion.objects.filter(
-            instancia='RECONSIDERACION', abog__isnull=True
+            instancia='RECONSIDERACION', abogado__isnull=True
         ).count(),
     }
     return render(request, 'tpe_app/admin1/agendar_rr.html', context)
@@ -386,7 +386,7 @@ def agendar_rr(request):
 # Gestión de Abogados asignados a un SIM
 # ============================================================
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def gestionar_abogados_sim(request, sim_id):
     """Agregar o quitar abogados de un sumario ya agendado, elegir responsable"""
     sim = get_object_or_404(SIM, pk=sim_id)
@@ -403,7 +403,7 @@ def gestionar_abogados_sim(request, sim_id):
                 for abog_pk in nuevos_abogados:
                     ABOG_SIM.objects.create(
                         sim=sim,
-                        abog_id=abog_pk,
+                        abogado_id=abog_pk,
                         es_responsable=(str(abog_pk) == responsable_id),
                     )
 
@@ -413,7 +413,7 @@ def gestionar_abogados_sim(request, sim_id):
     else:
         form = GestionarAbogadosSIMForm(initial={'abogados': sim.abogados.all()})
 
-    abogados_actuales = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
+    abogados_actuales = ABOG_SIM.objects.filter(sim=sim).select_related('abogado')
     responsable_actual = ABOG_SIM.objects.filter(sim=sim, es_responsable=True).first()
     investigados = sim.militares.all()
 
@@ -431,7 +431,7 @@ def gestionar_abogados_sim(request, sim_id):
 # ✅ NUEVO v3.2: Gestión de Agendas (Admin1)
 # ============================================================
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def crear_agenda(request):
     """Admin1 crea una nueva agenda"""
 
@@ -543,7 +543,7 @@ def crear_agenda(request):
     return render(request, 'tpe_app/admin1/crear_agenda.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def lista_agendas(request):
     """Lista todas las agendas con su estado y opciones de edición"""
 
@@ -578,7 +578,7 @@ def ver_agenda_detalle(request, ag_id):
     return render(request, 'tpe_app/admin1/ver_agenda_detalle.html', context)
 
 
-@rol_requerido('ADMINISTRATIVO', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def editar_agenda_resultado(request, ag_id):
     """Admin1 registra el resultado de una agenda (realizada/suspendida/reprogramada)"""
 
@@ -640,10 +640,10 @@ def admin1_ordenar_ejecutoria(request, res_id):
     abog2_user = User.objects.filter(
         perfilusuario__rol='ABOG2_AUTOS',
         perfilusuario__activo=True,
-        perfilusuario__abogado__isnull=False
-    ).select_related('perfilusuario__abogado').first()
+        perfilusuario__pm__isnull=False
+    ).select_related('perfilusuario__pm').first()
 
-    abog_destino = abog2_user.perfilusuario.abogado if abog2_user else None
+    abog_destino = abog2_user.perfilusuario.pm if abog2_user else None
 
     if not abog_destino:
         messages.error(request, '❌ No hay abogado ABOG2_AUTOS activo asignado. Contactar administrador.')

@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import datetime
 from ..decorators import rol_requerido
-from ..models import SIM, ABOG, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE
+from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE
 
 
 # ============================================================
@@ -50,14 +50,14 @@ def admin2_dashboard(request):
     for custodia in custodias_admin2_activas:
         if custodia.sim.custodio_actual() and custodia.sim.custodio_actual().id == custodia.id:
             # Abogados de primera instancia (ABOG_SIM)
-            abog_primera = ABOG_SIM.objects.filter(sim=custodia.sim).select_related('abog')
-            custodia.abog_primera_list = [a.abog for a in abog_primera]
+            abog_primera = ABOG_SIM.objects.filter(sim=custodia.sim).select_related('abogado')
+            custodia.abog_primera_list = [a.abogado for a in abog_primera]
 
             # Abogado de RR si existe
             rr = Resolucion.objects.filter(
-                sim=custodia.sim, instancia='RECONSIDERACION', abog__isnull=False
-            ).select_related('abog').last()
-            custodia.abog_rr = rr.abog if rr else None
+                sim=custodia.sim, instancia='RECONSIDERACION', abogado__isnull=False
+            ).select_related('abogado').last()
+            custodia.abog_rr = rr.abogado if rr else None
 
             carpetas_en_poder.append(custodia)
 
@@ -70,7 +70,7 @@ def admin2_dashboard(request):
         motivo='EJECUTORIA',
         estado='RECIBIDA_CONFORME',
         fecha_entrega__isnull=True
-    ).select_related('sim', 'abog_destino').order_by('-fecha_recepcion')
+    ).select_related('sim', 'abogado_destino').order_by('-fecha_recepcion')
 
     para_ejecutoria = []
     for custodia in custodias_ejecutoria:
@@ -128,8 +128,8 @@ def admin2_dashboard(request):
 
         # No incluir archivados/concluidos
         if not has_active_custody and sim.estado not in ['PROCESO_CONCLUIDO_TPE', 'PROCESO_EJECUTADO']:
-            abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abog')
-            sim.abogados_asignados = [a.abog for a in abog_primera]
+            abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abogado')
+            sim.abogados_asignados = [a.abogado for a in abog_primera]
             sims_pendientes_entregar.append(sim)
 
     # Ordenar por fecha de ingreso descendente
@@ -179,7 +179,7 @@ def admin2_dashboard(request):
                 Q(militares__nombre__icontains=query)
             )
             sims = SIM.objects.filter(filtros_q).distinct()
-            historial_sim = CustodiaSIM.objects.filter(sim__in=sims).select_related('abog').order_by('fecha_recepcion')
+            historial_sim = CustodiaSIM.objects.filter(sim__in=sims).select_related('abogado').order_by('fecha_recepcion')
         except Exception:
             historial_sim = []
 
@@ -237,7 +237,13 @@ def admin2_entregar_carpeta(request, sim_id):
             messages.error(request, '❌ Debe seleccionar abogado (excepto para Archivado)')
         else:
             try:
-                abog = ABOG.objects.get(pk=abog_id) if abog_id else None
+                abog = PM.objects.filter(
+                    pk=abog_id,
+                    perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR', 'ABOGADO']
+                ).first() if abog_id else None
+                if abog_id and not abog:
+                    messages.error(request, '❌ El personal seleccionado no tiene rol de abogado en el sistema.')
+                    return redirect('admin2_dashboard')
                 fecha_oficio = None
                 if fecha_oficio_str:
                     fecha_oficio = datetime.strptime(fecha_oficio_str, '%Y-%m-%d').date()
@@ -252,7 +258,7 @@ def admin2_entregar_carpeta(request, sim_id):
                     custodia_nueva = CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio=tipo_custodio,
-                        abog=abog,
+                        abogado=abog,
                         usuario=request.user,
                         observacion=observacion or None,
                         motivo=motivo,
@@ -263,13 +269,13 @@ def admin2_entregar_carpeta(request, sim_id):
 
                     messages.success(request, f'✅ Carpeta entregada correctamente')
                     return redirect('admin2_dashboard')
-            except ABOG.DoesNotExist:
+            except PM.DoesNotExist:
                 messages.error(request, '❌ Abogado no encontrado')
             except Exception as e:
                 messages.error(request, f'❌ Error: {str(e)}')
 
     # Obtener abogados disponibles
-    abogados = ABOG.objects.all().order_by('paterno')
+    abogados = PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno')
 
     # Tipos de custodia disponibles para entregar
     TIPOS_CUSTODIA = [
@@ -303,10 +309,10 @@ def admin2_entregar_carpeta(request, sim_id):
     pre_llenar_abog = None
     mensaje_orden = None
 
-    if orden_ejecutoria and orden_ejecutoria.abog_destino:
+    if orden_ejecutoria and orden_ejecutoria.abogado_destino:
         pre_llenar_tipo = 'ABOG_AUTOS'
-        pre_llenar_abog = orden_ejecutoria.abog_destino.pk
-        mensaje_orden = f'📋 Orden: Entregar a ABOG2 ({orden_ejecutoria.abog_destino.paterno}) para Ejecutoria'
+        pre_llenar_abog = orden_ejecutoria.abogado_destino.pk
+        mensaje_orden = f'Orden: Entregar a ABOG2 ({orden_ejecutoria.abogado_destino.paterno}) para Ejecutoria'
 
     context = {
         'sim': sim,
@@ -331,7 +337,7 @@ def admin2_recibir_carpeta(request, sim_id):
     custodio_actual = sim.custodio_actual()
 
     # Verificar que la carpeta esté en poder de un abogado
-    if not custodio_actual or not custodio_actual.abog:
+    if not custodio_actual or not custodio_actual.abogado:
         messages.error(request, "❌ La carpeta no está en poder de un abogado")
         return redirect('admin2_dashboard')
 
@@ -348,14 +354,14 @@ def admin2_recibir_carpeta(request, sim_id):
                 CustodiaSIM.objects.create(
                     sim=sim,
                     tipo_custodio='ADMIN2_ARCHIVO',
-                    abog=custodio_actual.abog,
+                    abogado=custodio_actual.abogado,
                     usuario=request.user,
                     observacion=observacion or None
                 )
 
                 messages.success(
                     request,
-                    f'✅ Carpeta recibida de {custodio_actual.abog.grado} {custodio_actual.abog.paterno}'
+                    f'✅ Carpeta recibida de {custodio_actual.abogado.grado} {custodio_actual.abogado.paterno}'
                 )
                 return redirect('admin2_dashboard')
         except Exception as e:

@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, CustodiaSIM, AGENDA, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, Notificacion, Memorandum
+from .models import SIM, PM, PM_SIM, CustodiaSIM, AGENDA, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, Notificacion, Memorandum
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -223,7 +223,7 @@ class AgendarSumarioForm(forms.Form):
         empty_label='Seleccione un sumario...'
     )
     abogados = forms.ModelMultipleChoiceField(
-        queryset=ABOG.objects.all().order_by('paterno', 'nombre'),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         label='Abogado(s) Asignado(s)',
         widget=forms.CheckboxSelectMultiple(),
     )
@@ -243,7 +243,7 @@ class AgendarSumarioForm(forms.Form):
 class GestionarAbogadosSIMForm(forms.Form):
 
     abogados = forms.ModelMultipleChoiceField(
-        queryset=ABOG.objects.all().order_by('paterno', 'nombre'),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         label='Abogados asignados',
         widget=forms.CheckboxSelectMultiple(),
     )
@@ -346,7 +346,7 @@ class AgendarRRForm(forms.Form):
         empty_label='Seleccione un recurso...'
     )
     abogado = forms.ModelChoiceField(
-        queryset=ABOG.objects.all().order_by('paterno', 'nombre'),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         label='Abogado Asignado',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un abogado...'
@@ -375,24 +375,24 @@ class CustodiaSIMForm(forms.ModelForm):
 
     class Meta:
         model = CustodiaSIM
-        fields = ['tipo_custodio', 'abog', 'observacion']
+        fields = ['tipo_custodio', 'abogado', 'observacion']
         widgets = {
             'tipo_custodio': forms.Select(attrs={'class': 'form-control'}),
-            'abog':          forms.Select(attrs={'class': 'form-control'}),
+            'abogado':       forms.Select(attrs={'class': 'form-control'}),
             'observacion':   forms.Textarea(attrs={'class': 'form-control', 'rows': 3,
                                                    'placeholder': 'Notas sobre la entrega (opcional)'}),
         }
         labels = {
             'tipo_custodio': 'Tipo de Custodio',
-            'abog':          'Abogado (si aplica)',
+            'abogado':       'Abogado (si aplica)',
             'observacion':   'Observación',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['abog'].queryset = ABOG.objects.all()
-        self.fields['abog'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
-        self.fields['abog'].required = False
+        self.fields['abogado'].queryset = PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre')
+        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
+        self.fields['abogado'].required = False
 
 
 class EntregarCarpetaAbogadoForm(forms.Form):
@@ -410,13 +410,12 @@ class EntregarCarpetaForm(forms.Form):
             ('ABOG_ASESOR', 'Abogado Asesor (1ra. Resolución)'),
             ('ABOG_RR',     'Abogado (Recurso de Reconsideración)'),
             ('ABOG_AUTOS',  'Abogado Autos (Ejecutoria)'),
-            ('ABOG_RAP',    'Abogado 3 (RAP/Búsqueda)'),
         ],
         widget=forms.Select(attrs={'class': 'form-control'}),
         label='Tipo de Custodia'
     )
     abogado = forms.ModelChoiceField(
-        queryset=ABOG.objects.all(),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         widget=forms.Select(attrs={'class': 'form-control'}),
         label='Abogado que recibe'
     )
@@ -625,19 +624,19 @@ class AutoEjecutoriaForm(forms.ModelForm):
 
     class Meta:
         model = AUTOTPE
-        fields = ['numero', 'fecha', 'texto', 'abog']
+        fields = ['numero', 'fecha', 'texto', 'abogado']
         widgets = {
-            'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/26'}),
-            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'texto':  forms.Textarea(attrs={'class': 'form-control', 'rows': 5,
-                                            'placeholder': 'Texto del Auto de Ejecutoria...'}),
-            'abog':   forms.Select(attrs={'class': 'form-control'}),
+            'numero':  forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/26'}),
+            'fecha':   forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'texto':   forms.Textarea(attrs={'class': 'form-control', 'rows': 5,
+                                             'placeholder': 'Texto del Auto de Ejecutoria...'}),
+            'abogado': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'numero': 'Número del Auto',
-            'fecha':  'Fecha del Auto',
-            'texto':  'Texto del Auto de Ejecutoria',
-            'abog':   'Abogado',
+            'numero':  'Número del Auto',
+            'fecha':   'Fecha del Auto',
+            'texto':   'Texto del Auto de Ejecutoria',
+            'abogado': 'Abogado',
         }
 
 
