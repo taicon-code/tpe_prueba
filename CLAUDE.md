@@ -75,8 +75,7 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 | Modelo       | Tabla BD      | PK    | Descripción |
 |--------------|---------------|-------|-------------|
-| `PM`         | `pm`          | `id`  | Personal Militar |
-| `ABOG`       | `abog`        | `id`  | Abogados del Tribunal |
+| `PM`         | `pm`          | `id`  | Personal Militar (incluye abogados — tabla unificada desde v4.0) |
 | `VOCAL_TPE`  | `vocal_tpe`   | `id`  | Vocales (Presidente, Vicepresidente, Vocal, Secretario de Actas) |
 | `SIM`        | `sim`         | `id`  | Sumario Informativo Militar (tabla central) |
 
@@ -120,28 +119,35 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 | `SIM` | `codigo`, `version`, `origen` (FK self), `motivo_reapertura`, `fecha_ingreso`, `estado`, `fase`, `objeto`, `resumen`, `auto_final`, `tipo` |
 | `PM_SIM` | `pm`, `sim`, `grado_en_fecha` |
 | `AGENDA` | `numero`, `tipo`, `estado`, `fecha_prog`, `fecha_real` |
-| `DICTAMEN` | `sim`, `agenda`, `abog`, `pm`, `secretario`, `numero`, `conclusion`, `conclusion_secretario`, `fecha_confirmacion` |
-| `Resolucion` | `instancia`, `sim`, `abog`, `agenda`, `pm`, `dictamen`, `resolucion_origen`, `numero`, `fecha`, `texto`, `tipo`, `resumen`, `fecha_presentacion`, `fecha_limite`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
-| `AUTOTPE` | `sim`, `abog`, `agenda`, `pm`, `resolucion`, `recurso_tsp`, `numero`, `fecha`, `texto`, `tipo`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif`, `memo_numero`, `memo_fecha`, `memo_fecha_entrega` |
-| `RecursoTSP` | `instancia`, `sim`, `abog`, `pm`, `resolucion`, `recurso_origen`, `fecha_presentacion`, `numero_oficio`, `fecha_oficio`, `fecha_limite`, `tipo`, `numero`, `fecha`, `texto`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
+| `DICTAMEN` | `sim`, `agenda`, `abogado`, `pm`, `secretario`, `numero`, `conclusion`, `conclusion_secretario`, `fecha_confirmacion` |
+| `Resolucion` | `instancia`, `sim`, `abogado`, `agenda`, `pm`, `dictamen`, `resolucion_origen`, `numero`, `fecha`, `texto`, `tipo`, `resumen`, `fecha_presentacion`, `fecha_limite`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
+| `AUTOTPE` | `sim`, `abogado`, `agenda`, `pm`, `resolucion`, `recurso_tsp`, `numero`, `fecha`, `texto`, `tipo`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif`, `memo_numero`, `memo_fecha`, `memo_fecha_entrega` |
+| `RecursoTSP` | `instancia`, `sim`, `abogado`, `pm`, `resolucion`, `recurso_origen`, `fecha_presentacion`, `numero_oficio`, `fecha_oficio`, `fecha_limite`, `tipo`, `numero`, `fecha`, `texto`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
 | `DocumentoAdjunto` | `tabla`, `registro_id`, `tipo`, `archivo`, `nombre`, `fecha_registro` |
 
 ---
 
 ## Roles de usuario del sistema
 
-| Rol            | Vista principal | Responsabilidades |
-|----------------|-----------------|-------------------|
-| **ADMIN1**     | `admin1_views.py` | Ingresa SIM, asigna abogados, crea agendas, ordena ejecutoria |
-| **ADMIN2**     | `admin2_views.py` | Gestiona custodia/entrega de carpetas entre actores |
-| **ADMIN3**     | `admin3_views.py` | Envía notificaciones a terceros |
-| **ABOG1**      | `abogado_views.py` | Crea dictámenes, resoluciones, autos |
-| **ABOG2**      | `abogado_views.py` | Crea autos sin agenda previa (Excusa, Ejecutoria) |
-| **ABOG3**      | `abogado_views.py` | Confirma entrega de carpetas, suscribe autos |
-| **VOCAL**      | `vocal_views.py` | Secretario de Actas: modifica dictámenes, registra votos y asistencia |
-| **ASESOR_JEFE**| `asesor_jefe_views.py` | Monitoreo de agendas y estadísticas (solo lectura) |
-| **AYUDANTE**   | `ayudante_views.py` | Registra resoluciones históricas, notificaciones, RAEE |
-| **BUSCADOR**   | `buscador_views.py` | Consulta historial de personal (requiere login) |
+> **IMPORTANTE:** Los nombres de rol son exactamente como aparecen en `PerfilUsuario.ROL_CHOICES` y en los decoradores `@rol_requerido(...)`. Usar estos nombres exactos al buscar en el código.
+
+| Rol (nombre en código)  | Vista principal          | Responsabilidades |
+|-------------------------|--------------------------|-------------------|
+| `ADMIN1_AGENDADOR`      | `admin1_views.py`        | Ingresa SIM, asigna abogados, crea agendas, ordena ejecutoria |
+| `ADMIN2_ARCHIVO`        | `admin2_views.py`        | Gestiona custodia/entrega de carpetas entre actores |
+| `ADMIN3_NOTIFICADOR`    | `admin3_views.py`        | Envía notificaciones a terceros |
+| `ABOG1_ASESOR`          | `abogado_views.py`       | Crea dictámenes, resoluciones (1ra instancia y RR) |
+| `ABOG2_AUTOS`           | `abogado_views.py`       | Crea autos sin agenda previa (Excusa, Ejecutoria) |
+| `ABOG3_BUSCADOR`        | `abogado_views.py`       | Búsqueda de antecedentes, confirma entrega de carpetas |
+| `SECRETARIO_ACTAS`      | `vocal_views.py`         | Modifica dictámenes, registra votos y asistencia del tribunal |
+| `ASESOR_JEFE`           | `asesor_jefe_views.py`   | Monitoreo de agendas y estadísticas (solo lectura) |
+| `ASESOR_JURIDICO`       | `buscador_views.py`      | Consulta historial de personal (sin voto ni firma) |
+| `AYUDANTE`              | `ayudante_views.py`      | Registra resoluciones históricas, notificaciones, RAEE |
+| `BUSCADOR`              | `buscador_views.py`      | Consulta historial de personal (requiere login) |
+| `MASTER`                | `admin1_views.py`        | Control total del sistema |
+| `ADMINISTRADOR`         | `admin1_views.py`        | Administrador de sistemas |
+
+> **Rol eliminado:** `ADMINISTRATIVO` fue eliminado en la limpieza v4.0. Ya no existe en ROL_CHOICES ni en ningún decorador.
 
 ### Seguridad de vistas
 - Todas las vistas usan `@rol_requerido` o `@login_required` (decorators.py).
