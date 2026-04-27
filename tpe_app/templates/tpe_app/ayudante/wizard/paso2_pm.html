@@ -167,7 +167,6 @@
 <script>
 document.getElementById('add-form').addEventListener('click', function() {
     const container = document.getElementById('formset-container');
-    const formCount = container.querySelectorAll('.formset-row').length;
     const totalForms = document.querySelector('#id_pm_sim_set-TOTAL_FORMS');
     const newFormIndex = parseInt(totalForms.value);
 
@@ -175,24 +174,22 @@ document.getElementById('add-form').addEventListener('click', function() {
     if (!firstForm) return;
 
     const newForm = firstForm.cloneNode(true);
-    newForm.querySelectorAll('input[type="text"], input[type="number"], select, input[type="date"], input[type="file"]').forEach(field => {
+
+    // Reemplazar índices en TODOS los campos (inputs, selects, etc.)
+    newForm.querySelectorAll('input[type="text"], input[type="number"], select, input[type="date"], input[type="file"], input[type="checkbox"]').forEach(field => {
         const name = field.getAttribute('name');
         if (name) {
-            const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
+            // Usar regex para encontrar -NÚMERO- y reemplazarlo con -newFormIndex-
+            const newName = name.replace(/-\d+-/, `-${newFormIndex}-`);
             field.setAttribute('name', newName);
             field.setAttribute('id', `id_${newName}`);
-            field.value = '';
-        }
-    });
 
-    // Resetear todos los checkboxes (DELETE y no_ascendio)
-    newForm.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        const name = cb.getAttribute('name');
-        if (name) {
-            const newName = name.replace(`-${formCount}`, `-${newFormIndex}`);
-            cb.setAttribute('name', newName);
-            cb.setAttribute('id', `id_${newName}`);
-            cb.checked = false;
+            // Limpiar valores en inputs normales, no en checkboxes
+            if (field.type !== 'checkbox') {
+                field.value = '';
+            } else {
+                field.checked = false;
+            }
         }
     });
 

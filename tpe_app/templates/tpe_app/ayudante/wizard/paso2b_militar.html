@@ -1,0 +1,125 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🏠</span>
+        <span class="lk-text">Inicio</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Ingreso</span>
+
+    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link active">
+        <span class="lk-icon">⚡</span>
+        <span class="lk-text">Ingreso Rápido (Wizard)</span>
+    </a>
+
+    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="sb-link">
+        <span class="lk-icon">📤</span>
+        <span class="lk-text">Agregar PDF a RES</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Consultas</span>
+
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Buscar Antecedentes</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-3">
+        <a href="{% url 'ayudante_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver al Inicio
+        </a>
+    </div>
+
+    {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=paso_actual %}
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-people-fill me-2"></i>
+                Seleccionar Militar — {{ sim.codigo }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-4">
+                Se encontraron <strong>{{ militares.count }}</strong> militar(es) en este sumario.
+                <br>
+                <small class="text-muted">Selecciona uno para llenar sus documentos (Resoluciones, Autos, etc.)</small>
+            </p>
+
+            <form method="POST" class="d-flex flex-column gap-2">
+                {% csrf_token %}
+
+                {% for militar in militares %}
+                <div class="card border-0 bg-light p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">
+                                {{ militar.grado }} {{ militar.paterno }} {{ militar.materno }}, {{ militar.nombre }}
+                            </div>
+                            <div class="text-muted small">
+                                CI: {{ militar.ci }} | {{ militar.arma }} | {{ militar.especialidad }}
+                            </div>
+                        </div>
+                        <button type="submit" name="pm_id" value="{{ militar.id }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-arrow-right me-1"></i>Procesar
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+
+            </form>
+
+            {% if militares.count == 0 %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                No hay militares agregados a este sumario.
+                <a href="{% url 'ayudante_wizard_paso2' sim.pk %}" class="alert-link">Volver a Paso 2 para agregar militares.</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+        <div class="d-flex gap-2">
+            <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-house"></i> Inicio
+            </a>
+            <a href="{% url 'ayudante_wizard_paso2' sim.pk %}" class="btn btn-outline-secondary">← Atrás</a>
+        </div>
+        <div>
+            <a href="{% url 'ayudante_wizard_resumen' sim.pk %}" class="btn btn-outline-primary">
+                Saltar a Resumen →
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.card.border-0.bg-light {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent !important;
+}
+
+.card.border-0.bg-light:hover {
+    background-color: #e7f3ff !important;
+    border-left-color: #0d6efd !important;
+}
+</style>
+
+{% endblock %}

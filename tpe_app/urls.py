@@ -56,8 +56,11 @@ urlpatterns = [
     # ✅ NUEVO v3.3: Wizard de ingreso rápido histórico (4 pasos)
     path('ayudante/wizard/paso1/', views.ayudante_wizard_paso1, name='ayudante_wizard_paso1'),
     path('ayudante/wizard/<int:sim_id>/paso2/', views.ayudante_wizard_paso2, name='ayudante_wizard_paso2'),
+    path('ayudante/wizard/<int:sim_id>/paso2b/', views.ayudante_wizard_paso2b, name='ayudante_wizard_paso2b'),
     path('ayudante/wizard/<int:sim_id>/paso3/', views.ayudante_wizard_paso3, name='ayudante_wizard_paso3'),
+    path('ayudante/wizard/<int:sim_id>/paso3/<int:pm_id>/', views.ayudante_wizard_paso3, name='ayudante_wizard_paso3'),
     path('ayudante/wizard/<int:sim_id>/paso4/', views.ayudante_wizard_paso4, name='ayudante_wizard_paso4'),
+    path('ayudante/wizard/<int:sim_id>/paso4/<int:pm_id>/', views.ayudante_wizard_paso4, name='ayudante_wizard_paso4'),
     path('ayudante/wizard/<int:sim_id>/resumen/', views.ayudante_wizard_resumen, name='ayudante_wizard_resumen'),
     path('ayudante/wizard/buscar-sim/', views.ayudante_wizard_buscar_sim, name='ayudante_wizard_buscar_sim'),
 

@@ -71,6 +71,7 @@ from .ayudante_views import (
     ayudante_registrar_autotpe,
     ayudante_wizard_paso1,
     ayudante_wizard_paso2,
+    ayudante_wizard_paso2b,
     ayudante_wizard_paso3,
     ayudante_wizard_paso4,
     ayudante_wizard_resumen,

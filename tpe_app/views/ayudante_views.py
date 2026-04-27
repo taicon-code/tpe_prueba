@@ -545,7 +545,7 @@ def ayudante_wizard_paso2(request, sim_id):
 
         if action == 'skip':
             if sim.militares.exists():
-                return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
+                return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
             else:
                 messages.warning(request, 'Debe haber al menos un militar antes de continuar.')
 
@@ -554,33 +554,43 @@ def ayudante_wizard_paso2(request, sim_id):
             if formset.is_valid():
                 try:
                     with transaction.atomic():
+                        guardados = 0
                         for inline_form in formset:
-                            if not inline_form.cleaned_data:
+                            # Verificar si hay algún dato en el formulario
+                            cleaned = inline_form.cleaned_data
+                            if not cleaned or (not cleaned.get('ci') and not cleaned.get('nombre') and not cleaned.get('pm')):
                                 continue
-                            if inline_form.cleaned_data.get('DELETE'):
+
+                            # Si está marcado para eliminar, eliminar
+                            if cleaned.get('DELETE'):
                                 pm_sim_pk = inline_form.instance.pk
                                 if pm_sim_pk:
                                     PM_SIM.objects.filter(pk=pm_sim_pk).delete()
                                 continue
 
-                            # Caso 1: PM ya existía en BD
-                            pm = inline_form.cleaned_data.get('pm')
+                            # Caso 1: PM ya existía en BD (seleccionado del dropdown)
+                            pm = cleaned.get('pm')
 
                             # Caso 2: PM nuevo — crearlo con los datos del formulario
                             if not pm:
-                                pm_data = inline_form.cleaned_data.get('pm_data')
-                                if pm_data:
+                                pm_data = cleaned.get('pm_data')
+                                if pm_data and isinstance(pm_data, dict) and pm_data.get('ci'):
                                     pm = PM.objects.create(**pm_data)
 
+                            # Si tenemos un PM (nuevo o existente), crear la relación PM_SIM
                             if pm:
-                                grado_fecha = inline_form.cleaned_data.get('pmsim_grado_en_fecha') or None
+                                grado_fecha = cleaned.get('pmsim_grado_en_fecha') or None
                                 pm_sim, _ = PM_SIM.objects.get_or_create(sim=sim, pm=pm)
                                 if grado_fecha:
                                     pm_sim.grado_en_fecha = grado_fecha
                                     pm_sim.save(update_fields=['grado_en_fecha'])
+                                guardados += 1
 
-                    messages.success(request, 'Militares guardados correctamente.')
-                    return redirect('ayudante_wizard_paso3', sim_id=sim.pk)
+                    if guardados > 0:
+                        messages.success(request, f'{guardados} militar(es) guardado(s) correctamente.')
+                        return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
+                    else:
+                        messages.warning(request, 'No se encontraron militares para guardar. Agregue al menos uno.')
                 except Exception as e:
                     messages.error(request, f'Error: {str(e)}')
             else:
@@ -600,12 +610,51 @@ def ayudante_wizard_paso2(request, sim_id):
 
 
 @rol_requerido('AYUDANTE')
-def ayudante_wizard_paso3(request, sim_id):
-    """PASO 3 — Primera Resolución + RR opcional"""
+def ayudante_wizard_paso2b(request, sim_id):
+    """PASO 2.5 — Seleccionar militar para llenar documentos"""
+    sim = get_object_or_404(SIM, pk=sim_id)
+    militares = sim.militares.all().order_by('paterno', 'nombre')
+
+    if not militares.exists():
+        messages.warning(request, 'Debe agregar al menos un militar antes de continuar.')
+        return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
+
+    if request.method == 'POST':
+        pm_id = request.POST.get('pm_id')
+        if pm_id:
+            try:
+                pm = PM.objects.get(id=pm_id, pm_sim__sim=sim)
+                return redirect('ayudante_wizard_paso3', sim_id=sim.pk, pm_id=pm.pk)
+            except PM.DoesNotExist:
+                messages.error(request, 'Militar no encontrado en este sumario.')
+        else:
+            messages.error(request, 'Debe seleccionar un militar.')
+
+    return render(request, 'tpe_app/ayudante/wizard/paso2b_militar.html', {
+        'sim': sim,
+        'militares': militares,
+        'paso_actual': '2.5',
+        'total_pasos': 4,
+    })
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_wizard_paso3(request, sim_id, pm_id=None):
+    """PASO 3 — Primera Resolución + RR opcional (para un militar específico)"""
     sim = get_object_or_404(SIM, pk=sim_id)
 
-    res_existente = Resolucion.objects.filter(sim=sim, instancia='PRIMERA').first()
-    rr_existente = Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION').first()
+    # Determinar qué militar estamos procesando
+    if pm_id:
+        pm = get_object_or_404(PM, id=pm_id, pm_sim__sim=sim)
+    else:
+        # Retrocompatibilidad: usar el primer militar si no se especifica
+        pm = sim.militares.first()
+        if not pm:
+            messages.warning(request, 'No hay militares en este sumario.')
+            return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
+
+    res_existente = Resolucion.objects.filter(sim=sim, pm=pm, instancia='PRIMERA').first()
+    rr_existente = Resolucion.objects.filter(sim=sim, pm=pm, instancia='RECONSIDERACION').first()
 
     if request.method == 'POST':
         action = request.POST.get('action', 'save')
@@ -625,8 +674,7 @@ def ayudante_wizard_paso3(request, sim_id):
                 if guardar_res and res_form.is_valid():
                     res = res_form.save(commit=False)
                     res.sim = sim
-                    if not res.pm:
-                        res.pm = sim.militares.first()
+                    res.pm = pm
                     res.save()
                     res_existente = res
 
@@ -681,7 +729,7 @@ def ayudante_wizard_paso3(request, sim_id):
 
                 if not errores:
                     messages.success(request, 'Resoluciones guardadas correctamente.')
-                    return redirect('ayudante_wizard_paso4', sim_id=sim.pk)
+                    return redirect('ayudante_wizard_paso4', sim_id=sim.pk, pm_id=pm.pk)
 
         except Exception as e:
             messages.error(request, f'Error al guardar: {str(e)}')
@@ -693,34 +741,58 @@ def ayudante_wizard_paso3(request, sim_id):
         res_form = WizardRESForm(instance=res_existente, prefix='res')
         rr_form = WizardRRForm(instance=rr_existente, prefix='rr')
 
-    res_form.fields['pm'].queryset = sim.militares.all()
+    # Solo mostrar el militar actual, no permitir cambio
+    res_form.fields['pm'].queryset = PM.objects.filter(id=pm.id)
+    res_form.fields['pm'].initial = pm
+
+    # Obtener otros militares para el botón "Siguiente"
+    otros_militares = sim.militares.exclude(id=pm.id).order_by('paterno', 'nombre')
 
     return render(request, 'tpe_app/ayudante/wizard/paso3_resoluciones.html', {
         'sim': sim,
+        'pm': pm,
         'res_form': res_form,
         'rr_form': rr_form,
         'res_existente': res_existente,
         'rr_existente': rr_existente,
+        'otros_militares': otros_militares,
         'paso_actual': 3,
         'total_pasos': 4,
     })
 
 
 @rol_requerido('AYUDANTE')
-def ayudante_wizard_paso4(request, sim_id):
-    """PASO 4 — Auto TPE, RAP, RAEE, Auto TSP (todos opcionales)"""
+def ayudante_wizard_paso4(request, sim_id, pm_id=None):
+    """PASO 4 — Auto TPE, RAP, RAEE, Auto TSP (para un militar específico)"""
     sim = get_object_or_404(SIM, pk=sim_id)
 
-    autotpe_existente = AUTOTPE.objects.filter(sim=sim).first()
-    rap_existente = RecursoTSP.objects.filter(sim=sim, instancia='APELACION').first()
-    raee_existente = RecursoTSP.objects.filter(sim=sim, instancia='ACLARACION_ENMIENDA').first()
+    # Determinar qué militar estamos procesando
+    if pm_id:
+        pm = get_object_or_404(PM, id=pm_id, pm_sim__sim=sim)
+    else:
+        # Retrocompatibilidad: usar el primer militar si no se especifica
+        pm = sim.militares.first()
+        if not pm:
+            messages.warning(request, 'No hay militares en este sumario.')
+            return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
+
+    autotpe_existente = AUTOTPE.objects.filter(sim=sim, pm=pm).first()
+    rap_existente = RecursoTSP.objects.filter(sim=sim, pm=pm, instancia='APELACION').first()
+    raee_existente = RecursoTSP.objects.filter(sim=sim, pm=pm, instancia='ACLARACION_ENMIENDA').first()
     autotsp_existente = AUTOTSP.objects.filter(sim=sim).first()
+
+    # Obtener otros militares para el botón "Siguiente"
+    otros_militares = sim.militares.exclude(id=pm.id).order_by('paterno', 'nombre')
 
     if request.method == 'POST':
         action = request.POST.get('action', 'save')
 
         if action == 'skip':
-            return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
+            # Si hay otros militares, volver a paso 2.5, si no ir al resumen
+            if otros_militares.exists():
+                return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
+            else:
+                return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
 
         guardar_autotpe = request.POST.get('guardar_autotpe') == '1'
         guardar_rap = request.POST.get('guardar_rap') == '1'
@@ -739,8 +811,7 @@ def ayudante_wizard_paso4(request, sim_id):
                     if autotpe_form.is_valid():
                         auto = autotpe_form.save(commit=False)
                         auto.sim = sim
-                        if not auto.pm:
-                            auto.pm = sim.militares.first()
+                        auto.pm = pm
                         auto.save()
                         autotpe_existente = auto
 
@@ -779,9 +850,8 @@ def ayudante_wizard_paso4(request, sim_id):
                     if rap_form.is_valid():
                         rap = rap_form.save(commit=False)
                         rap.sim = sim
+                        rap.pm = pm
                         rap.instancia = 'APELACION'
-                        if not rap.pm:
-                            rap.pm = sim.militares.first()
                         rap.save()
                         if sim.fase not in ['ELEVADO_TSP', 'CONCLUIDO']:
                             sim.fase = 'ELEVADO_TSP'
@@ -807,9 +877,8 @@ def ayudante_wizard_paso4(request, sim_id):
                     if raee_form.is_valid():
                         raee = raee_form.save(commit=False)
                         raee.sim = sim
+                        raee.pm = pm
                         raee.instancia = 'ACLARACION_ENMIENDA'
-                        if not raee.pm:
-                            raee.pm = sim.militares.first()
                         raee.save()
                         raee_existente = raee
 
@@ -852,7 +921,11 @@ def ayudante_wizard_paso4(request, sim_id):
 
                 if not errores:
                     messages.success(request, 'Documentos guardados correctamente.')
-                    return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
+                    # Si hay otros militares, volver a paso 2.5, si no ir al resumen
+                    if otros_militares.exists():
+                        return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
+                    else:
+                        return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
 
         except Exception as e:
             messages.error(request, f'Error al guardar: {str(e)}')
@@ -866,10 +939,13 @@ def ayudante_wizard_paso4(request, sim_id):
         raee_form = WizardRAEEForm(instance=raee_existente, prefix='raee', sim=sim)
         autotsp_form = WizardAUTOTSPForm(instance=autotsp_existente, prefix='autotsp')
 
-    autotpe_form.fields['pm'].queryset = sim.militares.all()
+    # Solo mostrar el militar actual, no permitir cambio
+    autotpe_form.fields['pm'].queryset = PM.objects.filter(id=pm.id)
+    autotpe_form.fields['pm'].initial = pm
 
     return render(request, 'tpe_app/ayudante/wizard/paso4_autos.html', {
         'sim': sim,
+        'pm': pm,
         'autotpe_form': autotpe_form,
         'rap_form': rap_form,
         'raee_form': raee_form,
@@ -878,6 +954,7 @@ def ayudante_wizard_paso4(request, sim_id):
         'rap_existente': rap_existente,
         'raee_existente': raee_existente,
         'autotsp_existente': autotsp_existente,
+        'otros_militares': otros_militares,
         'paso_actual': 4,
         'total_pasos': 4,
     })
