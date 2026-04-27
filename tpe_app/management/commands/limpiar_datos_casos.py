@@ -120,19 +120,17 @@ class Command(BaseCommand):
             PM.objects.all().delete()
             self.stdout.write(f"  ❌ Personal Militar (PM) eliminados: {n}")
 
-        from tpe_app.models import ABOG
         from django.contrib.auth.models import User
 
         self.stdout.write(self.style.SUCCESS(f"""
-╔══════════════════════════════════════════════════════════════╗
-║                ✅ LIMPIEZA COMPLETADA                        ║
-╠══════════════════════════════════════════════════════════════╣
-║  DATOS CONSERVADOS:                                          ║
-║    👤 Usuarios del sistema : {User.objects.count():>4}                         ║
-║    ⚖️  Abogados             : {ABOG.objects.count():>4}                         ║
-╠══════════════════════════════════════════════════════════════╣
-║  ⚠️  PENDIENTE MANUAL:                                       ║
-║    Volver a registrar los Vocales TPE (Presidente,           ║
-║    Vicepresidente, Vocal, Secretario de Actas)               ║
-╚══════════════════════════════════════════════════════════════╝
++--------------------------------------------------------------+
+|                LIMPIEZA COMPLETADA                           |
++--------------------------------------------------------------+
+|  DATOS CONSERVADOS:                                          |
+|    Usuarios del sistema: {User.objects.count():>4}                              |
++--------------------------------------------------------------+
+|  PENDIENTE MANUAL:                                           |
+|    Volver a registrar los Vocales TPE (Presidente,           |
+|    Vicepresidente, Vocal, Secretario de Actas)               |
++--------------------------------------------------------------+
 """))

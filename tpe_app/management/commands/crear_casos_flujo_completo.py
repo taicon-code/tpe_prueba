@@ -27,7 +27,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import date, timedelta
 from tpe_app.models import (
-    PM, ABOG, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
+    PM, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
     AGENDA, DICTAMEN, AUTOTPE, CustodiaSIM,
     Resolucion, RecursoTSP, Notificacion,
     PerfilUsuario, add_business_days
@@ -62,11 +62,10 @@ class Command(BaseCommand):
         agendas = self._crear_agendas()
         self.stdout.write(self.style.SUCCESS('[OK] Agendas creadas'))
 
-        # Obtener ABOGs (abogados)
-        abog_objs = ABOG.objects.all()[:3]
-        abog_1 = abog_objs[0] if len(abog_objs) > 0 else None
-        abog_2 = abog_objs[1] if len(abog_objs) > 1 else None
-        abog_3 = abog_objs[2] if len(abog_objs) > 2 else None
+        # Obtener PM abogados
+        abog_1 = abogados.get('abog1')
+        abog_2 = abogados.get('abog2')
+        abog_3 = abogados.get('abog3')
         vocal_obj = VOCAL_TPE.objects.first()
 
         self.stdout.write('\n[*] Caso 1: SOLICITUD DE ASCENSO (SASJUR-25/25)...')
@@ -111,11 +110,17 @@ class Command(BaseCommand):
             ('buscador_flujo', 'buscar123', 'BUSCADOR', None, None),
         ]
 
-        abog_refs = {
-            'abog1': ABOG.objects.filter(paterno='RODRIGUEZ').first(),
-            'abog2': ABOG.objects.filter(paterno='LLANOS').first(),
-            'abog3': ABOG.objects.filter(paterno='SALINAS').first(),
-        }
+        abog_refs = {}
+        for ci, grado, escalafon, arma, nombre, paterno, materno, key in [
+            (60000001, 'MY.',    'OFICIAL SUPERIOR',    'INF.', 'JORGE',    'RODRIGUEZ', 'SALINAS', 'abog1'),
+            (60000002, 'CAP.',   'OFICIAL SUBALTERNO',  'INT.', 'PATRICIA', 'LLANOS',    'VERA',    'abog2'),
+            (60000003, 'SBTTE.', 'OFICIAL SUBALTERNO',  'COM.', 'LUIS',     'SALINAS',   'PINTO',   'abog3'),
+        ]:
+            pm_a, _ = PM.objects.get_or_create(ci=ci, defaults=dict(
+                escalafon=escalafon, grado=grado, arma=arma,
+                nombre=nombre, paterno=paterno, materno=materno, estado='ACTIVO'
+            ))
+            abog_refs[key] = pm_a
 
         pm_vocal, _ = PM.objects.get_or_create(
             ci=40000001, defaults=dict(
@@ -145,7 +150,7 @@ class Command(BaseCommand):
                 vocal_obj = vocal_refs.get(vocal_key) if vocal_key else None
 
                 PerfilUsuario.objects.create(
-                    user=user, rol=rol, abogado=abog_obj, vocal=vocal_obj, activo=True
+                    user=user, rol=rol, pm=abog_obj, vocal=vocal_obj, activo=True
                 )
                 self.stdout.write(f'   [OK] {rol:20} -> {username}')
             else:
@@ -183,9 +188,10 @@ class Command(BaseCommand):
             (60000002, 'CAP.', 'INT.', 'PATRICIA', 'LLANOS', 'VERA'),
             (60000003, 'SBTTE.', 'COM.', 'LUIS', 'SALINAS', 'PINTO'),
         ]):
-            abog, _ = ABOG.objects.get_or_create(ci=ci, defaults=dict(
+            abog, _ = PM.objects.get_or_create(ci=ci, defaults=dict(
+                escalafon='OFICIAL SUPERIOR' if grado == 'MY.' else 'OFICIAL SUBALTERNO',
                 grado=grado, arma=arma, nombre=nombre,
-                paterno=paterno, materno=materno
+                paterno=paterno, materno=materno, estado='ACTIVO'
             ))
             abog_list[f'abog{i+1}'] = abog
 
@@ -221,8 +227,8 @@ class Command(BaseCommand):
         pm1, pm2 = pm_military['pm1'], pm_military['pm2']
         PM_SIM.objects.create(sim=sim, pm=pm1)
         PM_SIM.objects.create(sim=sim, pm=pm2)
-        ABOG_SIM.objects.create(sim=sim, abog=abog1)
-        ABOG_SIM.objects.create(sim=sim, abog=abog2)
+        ABOG_SIM.objects.create(sim=sim, abogado=abog1)
+        ABOG_SIM.objects.create(sim=sim, abogado=abog2)
 
         sim.estado = 'PROCESO_EN_EL_TPE'
         sim.fase = 'PARA_DICTAMEN'
@@ -236,18 +242,18 @@ class Command(BaseCommand):
         self.stdout.write(f'   > Custodia: ADMIN2_ARCHIVO')
 
         CustodiaSIM.objects.create(
-            sim=sim, tipo_custodio='ABOG_ASESOR', abog=abog1,
+            sim=sim, tipo_custodio='ABOG_ASESOR', abogado=abog1,
             estado='PENDIENTE_CONFIRMACION', usuario=admin2
         )
         self.stdout.write(f'   > Custodia: ABOG_ASESOR (ABOG1)')
 
         dic1 = DICTAMEN.objects.create(
-            sim=sim, pm=pm1, abog=abog1, agenda=agendas['ag1'],
+            sim=sim, pm=pm1, abogado=abog1, agenda=agendas['ag1'],
             numero='01/26', conclusion='SE RECOMIENDA APROBAR ASCENSO POR MERITOS',
             estado='PENDIENTE'
         )
 
-        cust1 = CustodiaSIM.objects.filter(sim=sim, abog=abog1).first()
+        cust1 = CustodiaSIM.objects.filter(sim=sim, abogado=abog1).first()
         if cust1:
             cust1.estado = 'RECIBIDA_CONFORME'
             cust1.fecha_entrega = None
@@ -256,17 +262,17 @@ class Command(BaseCommand):
         self.stdout.write(f'   > Dictamen PM1: APROBADO')
 
         CustodiaSIM.objects.create(
-            sim=sim, tipo_custodio='ABOG_ASESOR', abog=abog2,
+            sim=sim, tipo_custodio='ABOG_ASESOR', abogado=abog2,
             estado='PENDIENTE_CONFIRMACION', usuario=admin2
         )
 
         dic2 = DICTAMEN.objects.create(
-            sim=sim, pm=pm2, abog=abog2, agenda=agendas['ag1'],
+            sim=sim, pm=pm2, abogado=abog2, agenda=agendas['ag1'],
             numero='02/26', conclusion='SE RECOMIENDA DENEGAR ASCENSO - FALTA ANTIGUEDAD',
             estado='PENDIENTE'
         )
 
-        cust2 = CustodiaSIM.objects.filter(sim=sim, abog=abog2).first()
+        cust2 = CustodiaSIM.objects.filter(sim=sim, abogado=abog2).first()
         if cust2:
             cust2.estado = 'RECIBIDA_CONFORME'
             cust2.fecha_entrega = None
@@ -288,7 +294,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > Vocal: Confirma dictamenes')
 
         res1 = Resolucion.objects.create(
-            sim=sim, pm=pm1, abog=abog1, agenda=agendas['ag1'], dictamen=dic1,
+            sim=sim, pm=pm1, abogado=abog1, agenda=agendas['ag1'], dictamen=dic1,
             instancia='PRIMERA', numero='01/26', fecha=date(2026, 4, 23),
             tipo='SOLICITUD_ASCENSO',
             texto=f'APROBADO ASCENSO DE {pm1.grado} {pm1.paterno}',
@@ -297,7 +303,7 @@ class Command(BaseCommand):
             notificado_a=f'{pm1.grado} {pm1.paterno}', fecha=date(2026, 4, 24))
 
         res2 = Resolucion.objects.create(
-            sim=sim, pm=pm2, abog=abog2, agenda=agendas['ag1'], dictamen=dic2,
+            sim=sim, pm=pm2, abogado=abog2, agenda=agendas['ag1'], dictamen=dic2,
             instancia='PRIMERA', numero='02/26', fecha=date(2026, 4, 23),
             tipo='SOLICITUD_ASCENSO',
             texto=f'DENEGADA SOLICITUD ASCENSO {pm2.grado} {pm2.paterno}',
@@ -307,7 +313,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > RES 01/26 (PROCEDENTE) y 02/26 (IMPROCEDENTE)')
 
         auto = AUTOTPE.objects.create(
-            sim=sim, pm=pm1, abog=abog2, resolucion=res1,
+            sim=sim, pm=pm1, abogado=abog2, resolucion=res1,
             tipo='AUTO_EJECUTORIA', numero='01/26',
             fecha=date(2026, 4, 25),
             texto='EJECUTORIADA RESOLUCION 01/26 ASCENSO APROBADO',
@@ -335,7 +341,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > {sim.codigo}: Ingresa (SIM de oficio)')
 
         PM_SIM.objects.create(sim=sim, pm=pm)
-        ABOG_SIM.objects.create(sim=sim, abog=abog2)
+        ABOG_SIM.objects.create(sim=sim, abogado=abog2)
 
         sim.estado = 'PROCESO_EN_EL_TPE'
         sim.fase = 'PARA_DICTAMEN'
@@ -347,14 +353,14 @@ class Command(BaseCommand):
         )
 
         dic = DICTAMEN.objects.create(
-            sim=sim, pm=pm, abog=abog2, agenda=agendas['ag2'],
+            sim=sim, pm=pm, abogado=abog2, agenda=agendas['ag2'],
             numero='01/26', conclusion='DE OFICIO - PROCEDE SOBRESEIMIENTO PREVENTIVO',
             estado='CONFIRMADO'
         )
         self.stdout.write(f'   > Sin RES (de oficio) - Directo a Auto')
 
         auto = AUTOTPE.objects.create(
-            sim=sim, pm=pm, abog=abog3, agenda=agendas['ag2'],
+            sim=sim, pm=pm, abogado=abog3, agenda=agendas['ag2'],
             tipo='AUTO_EJECUTORIA', numero='02/26',
             fecha=date(2026, 3, 25),
             texto='AUTO DE EJECUCION DE OFICIO - SOBRESEIMIENTO PREVENTIVO',
@@ -378,7 +384,7 @@ class Command(BaseCommand):
     def _caso_multi_militar_apelaciones(self, abog1, admin2, vocal, agendas, pm_military):
         """CASO 3: Sumario con 3 militares - diferentes destinos"""
         pm1, pm2, pm3 = pm_military['pm4'], pm_military['pm5'], pm_military['pm6']
-        abog2 = ABOG.objects.filter(paterno='LLANOS').first() or abog1
+        abog2 = PM.objects.filter(ci=60000002).first() or abog1
 
         sim = SIM.objects.create(
             codigo='DJE-FLUJO-02/26',
@@ -394,8 +400,8 @@ class Command(BaseCommand):
         PM_SIM.objects.create(sim=sim, pm=pm2)
         PM_SIM.objects.create(sim=sim, pm=pm3)
 
-        ABOG_SIM.objects.create(sim=sim, abog=abog1)
-        ABOG_SIM.objects.create(sim=sim, abog=abog2)
+        ABOG_SIM.objects.create(sim=sim, abogado=abog1)
+        ABOG_SIM.objects.create(sim=sim, abogado=abog2)
 
         sim.estado = 'PROCESO_EN_EL_TPE'
         sim.fase = 'PARA_DICTAMEN'
@@ -407,21 +413,21 @@ class Command(BaseCommand):
         )
 
         dic1 = DICTAMEN.objects.create(
-            sim=sim, pm=pm1, abog=abog1, agenda=agendas['ag2'],
+            sim=sim, pm=pm1, abogado=abog1, agenda=agendas['ag2'],
             numero='01/26', conclusion='SANCION ADMINISTRATIVA POR 30 DIAS',
             estado='CONFIRMADO',
             secretario=vocal, conclusion_secretario='CONFIRMADO', fecha_confirmacion=date(2026, 3, 15)
         )
 
         dic2 = DICTAMEN.objects.create(
-            sim=sim, pm=pm2, abog=abog1, agenda=agendas['ag2'],
+            sim=sim, pm=pm2, abogado=abog1, agenda=agendas['ag2'],
             numero='02/26', conclusion='SANCION DISCIPLINARIA RETIRO OBLIGATORIO',
             estado='CONFIRMADO',
             secretario=vocal, conclusion_secretario='CONFIRMADO', fecha_confirmacion=date(2026, 3, 15)
         )
 
         dic3 = DICTAMEN.objects.create(
-            sim=sim, pm=pm3, abog=abog2, agenda=agendas['ag2'],
+            sim=sim, pm=pm3, abogado=abog2, agenda=agendas['ag2'],
             numero='03/26', conclusion='SANCION POR NEGLIGENCIA - LETRA B',
             estado='CONFIRMADO',
             secretario=vocal, conclusion_secretario='CONFIRMADO', fecha_confirmacion=date(2026, 3, 15)
@@ -429,7 +435,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > Dictamenes: PM1, PM2, PM3 confirmados')
 
         res1 = Resolucion.objects.create(
-            sim=sim, pm=pm1, abog=abog1, agenda=agendas['ag2'], dictamen=dic1,
+            sim=sim, pm=pm1, abogado=abog1, agenda=agendas['ag2'], dictamen=dic1,
             instancia='PRIMERA', numero='03/26', fecha=date(2026, 3, 20),
             tipo='ADMINISTRATIVO',
             texto=f'SANCION ADMINISTRATIVA A {pm1.grado} {pm1.paterno} - 30 DIAS',
@@ -438,7 +444,7 @@ class Command(BaseCommand):
             notificado_a=f'{pm1.grado} {pm1.paterno}', fecha=date(2026, 3, 21))
 
         res2 = Resolucion.objects.create(
-            sim=sim, pm=pm2, abog=abog1, agenda=agendas['ag2'], dictamen=dic2,
+            sim=sim, pm=pm2, abogado=abog1, agenda=agendas['ag2'], dictamen=dic2,
             instancia='PRIMERA', numero='04/26', fecha=date(2026, 3, 20),
             tipo='SANCION_RETIRO_OBLIGATORIO',
             texto=f'SANCION RETIRO OBLIGATORIO A {pm2.grado} {pm2.paterno}',
@@ -447,7 +453,7 @@ class Command(BaseCommand):
             notificado_a=f'{pm2.grado} {pm2.paterno}', fecha=date(2026, 3, 21))
 
         res3 = Resolucion.objects.create(
-            sim=sim, pm=pm3, abog=abog2, agenda=agendas['ag2'], dictamen=dic3,
+            sim=sim, pm=pm3, abogado=abog2, agenda=agendas['ag2'], dictamen=dic3,
             instancia='PRIMERA', numero='05/26', fecha=date(2026, 3, 20),
             tipo='SANCION_LETRA_B',
             texto=f'SANCION LETRA B A {pm3.grado} {pm3.paterno}',
@@ -457,7 +463,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > RES 03/26, 04/26, 05/26 emitidas')
 
         auto1 = AUTOTPE.objects.create(
-            sim=sim, pm=pm1, abog=abog1, resolucion=res1,
+            sim=sim, pm=pm1, abogado=abog1, resolucion=res1,
             tipo='AUTO_EJECUTORIA', numero='03/26',
             fecha=date(2026, 4, 5),
             texto=f'EJECUTORIADA RESOLUCION 03/26 CONTRA {pm1.grado} {pm1.paterno}',
@@ -467,7 +473,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > PM1: CONFORMADO - RES 03/26 > Auto > CONCLUIDO')
 
         rr2 = Resolucion.objects.create(
-            sim=sim, pm=pm2, abog=abog1, agenda=agendas['ag3'],
+            sim=sim, pm=pm2, abogado=abog1, agenda=agendas['ag3'],
             instancia='RECONSIDERACION', resolucion_origen=res2,
             numero='06/26', fecha_presentacion=date(2026, 4, 1),
             resumen='PROCEDENCIA'
@@ -475,7 +481,7 @@ class Command(BaseCommand):
         self.stdout.write(f'   > PM2: Presenta RR (pendiente resolucion)')
 
         rr3 = Resolucion.objects.create(
-            sim=sim, pm=pm3, abog=abog2, agenda=agendas['ag3'],
+            sim=sim, pm=pm3, abogado=abog2, agenda=agendas['ag3'],
             instancia='RECONSIDERACION', resolucion_origen=res3,
             numero='07/26', fecha_presentacion=date(2026, 3, 28),
             resumen='IMPROCEDENCIA',
@@ -484,7 +490,7 @@ class Command(BaseCommand):
         )
 
         rap3 = RecursoTSP.objects.create(
-            sim=sim, pm=pm3, abog=abog2, resolucion=rr3,
+            sim=sim, pm=pm3, abogado=abog2, resolucion=rr3,
             instancia='APELACION',
             fecha_presentacion=date(2026, 4, 8),
             numero_oficio='OFI-FLUJO-001/26',
