@@ -9,6 +9,9 @@ Uso:
 """
 import secrets
 import string
+from datetime import date
+from pathlib import Path
+
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -238,21 +241,31 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f'  + {pm.grado} {pm.nombre} {pm.paterno} -> usuario "{username}" creado'))
 
-        # ── 3. TABLA DE CREDENCIALES ──────────────────────────────────────────
+        # ── 3. CREDENCIALES → archivo en D:\ ─────────────────────────────────
         if credenciales:
-            self.stdout.write(self.style.MIGRATE_HEADING(
-                '\n+--------------------------------------------------------------+\n'
-                '|     CREDENCIALES GENERADAS --- GUARDAR CON SEGURIDAD        |\n'
-                '+--------------------------------------------------------------+'
-            ))
-            self.stdout.write(
-                f'\n  {"USUARIO":<20} {"CONTRASENA":<16} {"ROL":<22} NOMBRE\n'
-                f'  {"-"*20} {"-"*16} {"-"*22} {"-"*30}'
-            )
-            for grado, nombre, paterno, usr, pwd, rol in credenciales:
-                self.stdout.write(
-                    f'  {usr:<20} {pwd:<16} {rol:<22} {grado} {nombre} {paterno}')
-            self.stdout.write('')
+            archivo = Path(f'D:/tpe_credenciales_tribunal_{date.today().strftime("%Y-%m-%d")}.txt')
+            try:
+                lineas = [
+                    'CREDENCIALES TRIBUNAL TPE — Gestión 2026\n',
+                    f'Generado: {date.today()}\n',
+                    '=' * 62 + '\n',
+                    f'{"USUARIO":<20} {"CONTRASENA":<16} {"ROL":<22} NOMBRE\n',
+                    f'{"-"*20} {"-"*16} {"-"*22} {"-"*30}\n',
+                ]
+                for grado, nombre, paterno, usr, pwd, rol in credenciales:
+                    lineas.append(f'{usr:<20} {pwd:<16} {rol:<22} {grado} {nombre} {paterno}\n')
+                archivo.write_text(''.join(lineas), encoding='utf-8')
+                self.stdout.write(self.style.SUCCESS(
+                    f'\n[OK] Credenciales guardadas en: {archivo}'
+                ))
+                self.stdout.write(self.style.WARNING(
+                    '     ATENCION: Proteger ese archivo. No compartir por correo ni mensajeria.'
+                ))
+            except Exception as exc:
+                self.stdout.write(self.style.ERROR(f'[ERROR] No se pudo escribir en D:\\: {exc}'))
+                self.stdout.write(self.style.WARNING(
+                    '   Los usuarios fueron creados. Anota las credenciales desde el panel admin.'
+                ))
         else:
             self.stdout.write('\n  (No se generaron nuevas credenciales)\n')
 

@@ -232,13 +232,13 @@ class Command(BaseCommand):
                     lineas.append(f'{usr:<12} {pwd:<14} {rol:<20} {grado} {nombre} {paterno}\n')
                 archivo.write_text(''.join(lineas), encoding='utf-8')
                 self.stdout.write(self.style.SUCCESS(
-                    f'\n✅ Credenciales guardadas en: {archivo}'
+                    f'\n[OK] Credenciales guardadas en: {archivo}'
                 ))
                 self.stdout.write(self.style.WARNING(
-                    '   ⚠️  Proteger ese archivo. No compartir por correo ni mensajería.'
+                    '     ATENCION: Proteger ese archivo. No compartir por correo ni mensajeria.'
                 ))
             except Exception as exc:
-                self.stdout.write(self.style.ERROR(f'❌ No se pudo escribir en D:\\: {exc}'))
+                self.stdout.write(self.style.ERROR(f'[ERROR] No se pudo escribir en D:\\: {exc}'))
                 self.stdout.write(self.style.WARNING(
                     '   Los usuarios fueron creados. Anota las credenciales desde el panel admin.'
                 ))
