@@ -91,6 +91,7 @@ DATABASES = {
         'PASSWORD': env('DB_PASSWORD'),
         'HOST': env('DB_HOST', default='127.0.0.1'),
         'PORT': env('DB_PORT', default='3306'),
+        'CONN_MAX_AGE': 60,
     }
 }
 
@@ -136,7 +137,11 @@ STATIC_URL = '/static/'
 
 # STATIC_ROOT es donde Django copia los archivos en producción
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = (
+    'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    if not DEBUG
+    else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+)
 
 # Media files (fotos PM, PDFs adjuntos) — ruta configurable en .env
 MEDIA_URL = '/media/'
