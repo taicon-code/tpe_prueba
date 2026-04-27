@@ -1,0 +1,111 @@
+{% extends "tpe_app/base.html" %}
+{% block title %}Editar Personal Militar{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 680px;">
+
+  <h4 class="mb-1">Editar Personal Militar</h4>
+  <p class="text-muted mb-4">{{ pm.grado }} {{ pm.nombre }} {{ pm.paterno }} {{ pm.materno }}</p>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+        {{ msg }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Información calculada -->
+  {% if años_servicio is not None %}
+  <div class="alert alert-info py-2 mb-3">
+    <strong>Años de servicio:</strong> {{ años_servicio }} años
+    {% if grado_esperado %}
+      &nbsp;|&nbsp; <strong>Grado esperado:</strong> {{ grado_esperado }}
+    {% endif %}
+    {% if estado_calculado %}
+      &nbsp;|&nbsp; <strong>Estado calculado:</strong> {{ estado_calculado }}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+    <div class="row g-3">
+
+      <div class="col-6">
+        <label class="form-label fw-semibold">Escalafón</label>
+        <select name="escalafon" class="form-select">
+          <option value="">---------</option>
+          {% for val, label in escalafon_choices %}
+            <option value="{{ val }}" {% if pm.escalafon == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6">
+        <label class="form-label fw-semibold">Grado Actual</label>
+        <select name="grado" class="form-select">
+          <option value="">---------</option>
+          {% for val, label in grado_choices %}
+            <option value="{{ val }}" {% if pm.grado == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6">
+        <label class="form-label fw-semibold">Año de Egreso</label>
+        <input type="number" name="anio_promocion" class="form-control"
+               value="{{ pm.anio_promocion|default:'' }}"
+               placeholder="Ej: 2000" min="1950" max="2100">
+        <div class="form-text">Año en que egresó de la institución militar.</div>
+      </div>
+
+      <div class="col-6">
+        <label class="form-label fw-semibold">Estado</label>
+        <select name="estado" class="form-select">
+          {% for val, label in estado_choices %}
+            <option value="{{ val }}" {% if pm.estado == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- No ascendió — campo clave -->
+      <div class="col-12">
+        <div class="card border-warning">
+          <div class="card-body py-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="no_ascendio"
+                     id="noAscendio" {% if pm.no_ascendio %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="noAscendio">
+                No ascendió al grado correspondiente
+              </label>
+            </div>
+            <div class="form-text mt-1">
+              Marcar cuando el militar se quedó en un grado inferior al que le
+              correspondería por su año de egreso (por sanción, baja temporal u
+              otra razón). El sistema dejará de calcular el grado esperado.
+            </div>
+
+            {% if grado_esperado and pm.grado != grado_esperado and not pm.no_ascendio %}
+            <div class="alert alert-warning py-2 mt-2 mb-0">
+              <strong>Atención:</strong> el grado actual <strong>{{ pm.grado }}</strong>
+              no coincide con el esperado <strong>{{ grado_esperado }}</strong>.
+              Si no ascendió, marque la casilla de arriba.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      <a href="{{ request.GET.next|default:'ayudante_dashboard' }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

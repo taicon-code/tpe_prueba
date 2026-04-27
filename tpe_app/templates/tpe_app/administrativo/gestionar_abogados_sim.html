@@ -1,7 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Gestionar Abogados - {{ sim.SIM_COD }}{% endblock %}
-{% block navbar_title %}⚖️ Gestionar Abogados — {{ sim.SIM_COD }}{% endblock %}
+{% block title %}Gestionar Abogados - {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}⚖️ Gestionar Abogados — {{ sim.codigo }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
@@ -10,21 +10,21 @@
     </a>
 </div>
 
-<h1 style="margin-bottom: 1.5rem; color: #1e3c72;">⚖️ Gestionar Abogados — {{ sim.SIM_COD }}</h1>
+<h1 style="margin-bottom: 1.5rem; color: #1e3c72;">⚖️ Gestionar Abogados — {{ sim.codigo }}</h1>
 
 <!-- Info del sumario -->
 <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #2196f3; background: #f0f7ff;">
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
         <div>
-            <strong style="color: #1565c0;">Sumario:</strong> {{ sim.SIM_COD }}<br>
-            <strong style="color: #1565c0;">Estado:</strong> {{ sim.get_SIM_ESTADO_display }}<br>
-            <strong style="color: #1565c0;">Resumen:</strong> {{ sim.SIM_RESUM|truncatewords:15|default:"—" }}
+            <strong style="color: #1565c0;">Sumario:</strong> {{ sim.codigo }}<br>
+            <strong style="color: #1565c0;">Estado:</strong> {{ sim.get_estado_display }}<br>
+            <strong style="color: #1565c0;">Resumen:</strong> {{ sim.resumen|truncatewords:15|default:"—" }}
         </div>
         <div>
             <strong style="color: #1565c0;">Militares investigados:</strong>
             <ul style="margin: 0.25rem 0 0 1rem; padding: 0;">
                 {% for pm in investigados %}
-                <li style="font-size: 0.9rem;">{{ pm.PM_GRADO }} {{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}</li>
+                <li style="font-size: 0.9rem;">{{ pm.grado }} {{ pm.nombre }} {{ pm.paterno }}</li>
                 {% empty %}
                 <li style="color: #9ca3af;">Sin investigados</li>
                 {% endfor %}
@@ -40,7 +40,7 @@
     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
         {% for asig in abogados_actuales %}
         <span style="background: {% if asig.es_responsable %}#dbeafe; color: #1e40af; border: 1px solid #93c5fd;{% else %}#dcfce7; color: #166534; border: 1px solid #bbf7d0;{% endif %} padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-            {{ asig.abog.AB_GRADO }} {{ asig.abog.AB_NOMBRE }} {{ asig.abog.AB_PATERNO }}
+            {{ asig.abogado.grado }} {{ asig.abogado.nombre }} {{ asig.abogado.paterno }}
             {% if asig.es_responsable %} 📂 Responsable{% endif %}
         </span>
         {% endfor %}
@@ -139,7 +139,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     var checkboxes = document.querySelectorAll('.abogados-checkboxes input[type="checkbox"]');
     var respContainer = document.getElementById('responsable-options');
-    var responsableActualId = '{{ responsable_actual.abog_id|default:"" }}';
+    var responsableActualId = '{{ responsable_actual.id|default:"" }}';
 
     function actualizarResponsable() {
         var seleccionados = [];

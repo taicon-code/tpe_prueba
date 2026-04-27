@@ -97,39 +97,57 @@
                     </small>
                 </div>
 
-                <!-- Campo de abogado (solo se muestra para rol ABOGADO) -->
+                <!-- Campo de abogado (solo para roles ABOG*) -->
                 <div id="abogado-field" style="display: none;">
                     <label for="abogado" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
-                        Vinculación a abogado <span style="color: #ef4444;">*</span>
+                        Vinculación a Abogado <span style="color: #ef4444;">*</span>
                     </label>
                     <select id="abogado" name="abogado" class="form-control">
                         <option value="">-- Seleccionar abogado --</option>
                         {% for abog in abogados %}
                         <option value="{{ abog.id }}">
-                            {{ abog.AB_PATERNO }} {{ abog.AB_MATERNO }} (CI: {{ abog.AB_CI }})
+                            {{ abog.grado }} {{ abog.nombre }} {{ abog.paterno }} (CI: {{ abog.ci }})
                         </option>
                         {% endfor %}
                     </select>
                     <small style="color: #6b7280; display: block; margin-top: .3rem;">
-                        ⚠️ Requerido para rol ABOGADO
+                        Requerido para roles de Abogado
                     </small>
                 </div>
 
-                <!-- Campo de vocal (solo se muestra para rol VOCAL_TPE) -->
+                <!-- Campo de vocal (solo para rol VOCAL_TPE) -->
                 <div id="vocal-field" style="display: none;">
                     <label for="vocal" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
-                        Vinculación a vocal del tribunal <span style="color: #ef4444;">*</span>
+                        Vinculación a Vocal del Tribunal <span style="color: #ef4444;">*</span>
                     </label>
                     <select id="vocal" name="vocal" class="form-control">
                         <option value="">-- Seleccionar vocal --</option>
-                        {% for vocal in vocales %}
-                        <option value="{{ vocal.id }}">
-                            {{ vocal.get_cargo_display }} — {{ vocal.pm }}
+                        {% for v in vocales %}
+                        <option value="{{ v.id }}">
+                            {{ v.get_cargo_display }} — {{ v.pm.grado }} {{ v.pm.nombre }} {{ v.pm.paterno }}
                         </option>
                         {% endfor %}
                     </select>
                     <small style="color: #6b7280; display: block; margin-top: .3rem;">
-                        ⚠️ Requerido para rol VOCAL_TPE
+                        Requerido para rol VOCAL_TPE
+                    </small>
+                </div>
+
+                <!-- Campo de PM (para todos los demás roles militares) -->
+                <div id="pm-field" style="display: none;">
+                    <label for="pm" style="display: block; margin-bottom: .4rem; color: #374151; font-weight: 500; font-size: .9rem;">
+                        Personal Militar vinculado <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select id="pm" name="pm" class="form-control">
+                        <option value="">-- Buscar por apellido --</option>
+                        {% for p in personal %}
+                        <option value="{{ p.id }}">
+                            {{ p.grado }} {{ p.nombre }} {{ p.paterno }} {{ p.materno }} (CI: {{ p.ci }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: #6b7280; display: block; margin-top: .3rem;">
+                        Requerido para roles administrativos y de gestión
                     </small>
                 </div>
             </div>
@@ -159,36 +177,58 @@
 </div>
 
 <script>
-function mostrarAbogados() {
-    const rolSelect = document.getElementById('rol');
+const ROLES_ABOG = ['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR', 'ABOGADO'];
+const ROLES_CON_PM = [{% for r in roles_con_pm %}'{{ r }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+
+function actualizarCamposRol() {
+    const rol = document.getElementById('rol').value;
+
     const abogadoField = document.getElementById('abogado-field');
     const abogadoSelect = document.getElementById('abogado');
     const vocalField = document.getElementById('vocal-field');
     const vocalSelect = document.getElementById('vocal');
+    const pmField = document.getElementById('pm-field');
+    const pmSelect = document.getElementById('pm');
 
-    if (rolSelect.value === 'ABOGADO') {
+    // Ocultar y limpiar todo primero
+    [abogadoField, vocalField, pmField].forEach(f => f.style.display = 'none');
+    [abogadoSelect, vocalSelect, pmSelect].forEach(s => { s.required = false; s.value = ''; });
+
+    if (ROLES_ABOG.includes(rol)) {
         abogadoField.style.display = 'block';
         abogadoSelect.required = true;
-        vocalField.style.display = 'none';
-        vocalSelect.required = false;
-        vocalSelect.value = '';
-    } else if (rolSelect.value === 'VOCAL_TPE') {
+    } else if (rol === 'SECRETARIO_ACTAS') {
         vocalField.style.display = 'block';
         vocalSelect.required = true;
-        abogadoField.style.display = 'none';
-        abogadoSelect.required = false;
-        abogadoSelect.value = '';
-    } else {
-        abogadoField.style.display = 'none';
-        abogadoSelect.required = false;
-        abogadoSelect.value = '';
-        vocalField.style.display = 'none';
-        vocalSelect.required = false;
-        vocalSelect.value = '';
+    } else if (ROLES_CON_PM.includes(rol)) {
+        pmField.style.display = 'block';
+        pmSelect.required = true;
     }
 }
 
-// Ejecutar al cargar la página
-document.addEventListener('DOMContentLoaded', mostrarAbogados);
+document.addEventListener('DOMContentLoaded', function() {
+    actualizarCamposRol();
+
+    // Filtro de búsqueda en tiempo real para el selector de PM
+    const pmSelect = document.getElementById('pm');
+    const pmField = document.getElementById('pm-field');
+    const inputBusqueda = document.createElement('input');
+    inputBusqueda.type = 'text';
+    inputBusqueda.placeholder = 'Escriba apellido para filtrar...';
+    inputBusqueda.className = 'form-control';
+    inputBusqueda.style.marginBottom = '.4rem';
+    pmField.insertBefore(inputBusqueda, pmSelect);
+
+    const opcionesOriginales = Array.from(pmSelect.options);
+    inputBusqueda.addEventListener('input', function() {
+        const termino = this.value.toUpperCase();
+        pmSelect.innerHTML = '';
+        opcionesOriginales.forEach(opt => {
+            if (!termino || opt.text.toUpperCase().includes(termino)) {
+                pmSelect.appendChild(opt.cloneNode(true));
+            }
+        });
+    });
+});
 </script>
 {% endblock %}

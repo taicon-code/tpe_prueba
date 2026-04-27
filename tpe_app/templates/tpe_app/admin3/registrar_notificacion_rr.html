@@ -60,7 +60,7 @@
                 <p class="text-muted">Registre los datos de notificación del Recurso de Reconsideración</p>
                 <div class="alert alert-light border">
                     <strong>Recurso RR:</strong> {{ rr.RR_NUM }}<br>
-                    <strong>Sumario:</strong> {{ rr.sim.SIM_COD }}<br>
+                    <strong>Sumario:</strong> {{ rr.sim.codigo }}<br>
                     <strong>Fecha de Presentación:</strong> {{ rr.RR_FECPRESEN|date:"d/m/Y" }}
                 </div>
             </div>
@@ -80,25 +80,44 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="RR_FECNOT" class="form-label">
-                                    Fecha de Notificación <span class="text-danger">*</span>
+                                <label for="{{ form.fecha.id_for_label }}" class="form-label">
+                                    {{ form.fecha.label }} <span class="text-danger">*</span>
                                 </label>
-                                <input type="date" class="form-control" id="RR_FECNOT" name="RR_FECNOT" required>
+                                {{ form.fecha }}
+                                {% if form.fecha.errors %}
+                                    <div class="text-danger small mt-1">{{ form.fecha.errors }}</div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="RR_HORNOT" class="form-label">
-                                    Hora de Notificación
+                                <label for="{{ form.hora.id_for_label }}" class="form-label">
+                                    {{ form.hora.label }}
                                 </label>
-                                <input type="time" class="form-control" id="RR_HORNOT" name="RR_HORNOT">
+                                {{ form.hora }}
+                                {% if form.hora.errors %}
+                                    <div class="text-danger small mt-1">{{ form.hora.errors }}</div>
+                                {% endif %}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="RR_NOT" class="form-label">
-                                Notificado a (persona)
+                            <label for="{{ form.notificado_a.id_for_label }}" class="form-label">
+                                {{ form.notificado_a.label }}
                             </label>
-                            <input type="text" class="form-control" id="RR_NOT" name="RR_NOT" placeholder="Nombre de la persona que recibió la notificación">
-                            <small class="text-muted d-block mt-1">Ej: Juan Pérez García</small>
+                            {{ form.notificado_a }}
+                            {% if form.notificado_a.errors %}
+                                <div class="text-danger small mt-1">{{ form.notificado_a.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">Nombre de la persona que recibió la notificación</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                {{ form.tipo.label }}
+                            </label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}
+                                <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end pt-3">

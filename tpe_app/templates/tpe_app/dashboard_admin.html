@@ -52,8 +52,8 @@
         <tbody>
             {% for sim in sumarios_recientes %}
             <tr>
-                <td><strong>{{ sim.SIM_COD }}</strong></td>
-                <td>{{ sim.SIM_RESUM|truncatewords:10 }}</td>
+                <td><strong>{{ sim.codigo }}</strong></td>
+                <td>{{ sim.resumen|truncatewords:10 }}</td>
                 <td>
                     {% for abog in sim.abogados.all %}
                         {{ abog }}{% if not forloop.last %}, {% endif %}
@@ -62,15 +62,15 @@
                     {% endfor %}
                 </td>
                 <td>
-                    {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                    {% if sim.estado == 'PARA_AGENDA' %}
                         <span class="badge badge-orange">Para Agenda</span>
-                    {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                    {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
                         <span class="badge badge-green">En TPE</span>
                     {% else %}
                         <span class="badge badge-purple">En TSP</span>
                     {% endif %}
                 </td>
-                <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"-" }}</td>
+                <td>{{ sim.fecha_ingreso|date:"d/m/Y"|default:"-" }}</td>
             </tr>
             {% empty %}
             <tr>
@@ -131,8 +131,8 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if perfil.abogado %}
-                        ✓ {{ perfil.abogado.AB_PATERNO }} {{ perfil.abogado.AB_MATERNO }}
+                    {% if perfil.pm %}
+                        ✓ {{ perfil.pm.paterno }} {{ perfil.pm.materno }}
                     {% else %}
                         —
                     {% endif %}

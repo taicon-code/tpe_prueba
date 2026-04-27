@@ -12,28 +12,28 @@
 
 <!-- INFORMACIÓN DEL SUMARIO -->
 <div class="card" style="margin-bottom: 2rem; border: 2px solid #1e3c72;">
-    <h2 style="margin-top: 0; color: #1e3c72;">📋 Sumario: {{ sim.SIM_COD }}</h2>
+    <h2 style="margin-top: 0; color: #1e3c72;">📋 Sumario: {{ sim.codigo }}</h2>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Tipo de Sumario</p>
             <p style="font-size: 1rem; font-weight: 600; color: #1e3c72; margin: 0.3rem 0;">
-                {{ sim.get_SIM_TIPO_display }}
+                {{ sim.get_tipo_display }}
             </p>
         </div>
         <div>
             <p style="color: #666; font-size: 0.9rem; margin: 0;">Estado</p>
             <p style="font-size: 1rem; font-weight: 600; margin: 0.3rem 0;">
-                {% if sim.SIM_ESTADO == 'PARA_AGENDA' %}
+                {% if sim.estado == 'PARA_AGENDA' %}
                     <span class="badge badge-blue">Para Agenda</span>
-                {% elif sim.SIM_ESTADO == 'PROCESO_EN_EL_TPE' %}
+                {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
                     <span class="badge badge-orange">En Proceso</span>
-                {% elif sim.SIM_ESTADO == 'EN_APELACION_TSP' %}
+                {% elif sim.estado == 'EN_APELACION_TSP' %}
                     <span class="badge badge-red">En Apelación</span>
-                {% elif sim.SIM_ESTADO == 'CONCLUIDO' %}
+                {% elif sim.estado == 'CONCLUIDO' %}
                     <span class="badge badge-green">Concluido</span>
                 {% else %}
-                    {{ sim.get_SIM_ESTADO_display }}
+                    {{ sim.get_estado_display }}
                 {% endif %}
             </p>
         </div>
@@ -44,11 +44,11 @@
         {% if custodia_actual %}
             <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0.5rem;">
                 <p style="margin: 0.5rem 0; font-weight: 600; color: #92400e;">
-                    🎯 La carpeta está en: <strong>{{ custodia_actual.tipo_custodio_display }}</strong>
+                    🎯 La carpeta está en: <strong>{{ custodia_actual.get_tipo_custodio_display }}</strong>
                 </p>
-                {% if custodia_actual.abog %}
+                {% if custodia_actual.abogado %}
                     <p style="margin: 0.5rem 0; color: #92400e;">
-                        👤 Abogado: <strong>{{ custodia_actual.abog.AB_GRADO }} {{ custodia_actual.abog.AB_PATERNO }} {{ custodia_actual.abog.AB_MATERNO }}</strong>
+                        👤 Abogado: <strong>{{ custodia_actual.abogado.grado }} {{ custodia_actual.abogado.paterno }} {{ custodia_actual.abogado.materno }}</strong>
                     </p>
                 {% endif %}
                 <p style="margin: 0.5rem 0; color: #92400e;">
@@ -99,21 +99,21 @@
                         {{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}
                     </td>
                     <td style="font-weight: 600;">
-                        {{ custodia.tipo_custodio_display }}
+                        {{ custodia.get_tipo_custodio_display }}
                         {% if custodia == custodia_actual %}
                             <span style="background: #fbbf24; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; margin-left: 0.5rem;">ACTUAL</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if custodia.abog %}
-                            {{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}
+                        {% if custodia.abogado %}
+                            {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         {% else %}
                             <span style="color: #999;">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if custodia.estado == 'RECIBIDA_CONFORME' %}
-                            <span class="badge badge-green">Activa</span>
+                            <span class="badge badge-green">Radicada</span>
                         {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
                             <span class="badge badge-orange">Pendiente</span>
                         {% else %}
@@ -146,7 +146,7 @@
     </div>
 
     <!-- RESUMEN FINAL (si SIM está archivado) -->
-    {% if sim.SIM_ESTADO == 'PROCESO_CONCLUIDO_TPE' or sim.SIM_FASE == 'CONCLUIDO' %}
+    {% if sim.estado == 'PROCESO_CONCLUIDO_TPE' or sim.fase == 'CONCLUIDO' %}
     <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 2px solid #10b981; border-radius: 8px; padding: 1.5rem;">
         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
             <span style="font-size: 1.5rem;">✓</span>

@@ -100,11 +100,11 @@
                 {% for sim_group in custodias_por_sim %}
                     {% for custodia in sim_group.list %}
                     <tr>
-                        <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                        <td><strong>{{ custodia.sim.codigo }}</strong></td>
                         <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
                         <td style="font-size: 0.85rem;">
-                            {% if custodia.abog %}
-                                <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
+                            {% if custodia.abogado %}
+                                <strong>{{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}</strong>
                             {% elif custodia.tipo_custodio == 'ADMIN2_ARCHIVO' %}
                                 <span style="background: #dbeafe; color: #1e40af; padding: 0.15rem 0.35rem; border-radius: 3px; font-weight: 600; font-size: 0.8rem;">📁 Archivo SIM</span>
                             {% elif custodia.tipo_custodio == 'ARCHIVO' %}
@@ -126,7 +126,7 @@
                             {% if custodia.fecha_entrega %}
                                 {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
                             {% else %}
-                                <span style="color: #f97316; font-weight: 600;">↔ Activa</span>
+                                <span style="color: #f97316; font-weight: 600;">📍 Radicado en<br/>{{ custodia.get_tipo_custodio_display }}</span>
                             {% endif %}
                         </td>
                         <td style="font-size: 0.85rem;">
@@ -200,11 +200,11 @@
         <tbody>
             {% for sim in sims_pendientes_entregar %}
             <tr style="background: #fef2f2;">
-                <td><strong>{{ sim.SIM_COD }}</strong></td>
-                <td style="white-space: nowrap;">{{ sim.SIM_FECING|date:"d/m/Y" }}</td>
+                <td><strong>{{ sim.codigo }}</strong></td>
+                <td style="white-space: nowrap;">{{ sim.fecha_ingreso|date:"d/m/Y" }}</td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
@@ -212,13 +212,13 @@
                 <td style="font-size: 0.9rem;">
                     {% for abog in sim.abogados_asignados %}
                         <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
-                            {{ abog.AB_GRADO }} {{ abog.AB_PATERNO }}
+                            {{ abog.grado }} {{ abog.paterno }}
                         </span>
                     {% endfor %}
                 </td>
                 <td>
                     <span style="background: #fee2e2; color: #991b1b; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                        {{ sim.get_SIM_ESTADO_display }}
+                        {{ sim.get_estado_display }}
                     </span>
                 </td>
                 <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
@@ -263,29 +263,29 @@
         <tbody>
             {% for custodia in carpetas_en_poder %}
             <tr>
-                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                <td><strong>{{ custodia.sim.codigo }}</strong></td>
                 <td style="white-space: nowrap;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in custodia.sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.9rem;">
-                    {% if custodia.abog_primera_list %}
-                        {% for abog in custodia.abog_primera_list %}
+                    {% if custodia.abogado_primera_list %}
+                        {% for abog in custodia.abogado_primera_list %}
                             <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
-                                {{ abog.AB_GRADO }} {{ abog.AB_PATERNO }}
+                                {{ abog.grado }} {{ abog.paterno }}
                             </span>
                         {% endfor %}
                     {% endif %}
-                    {% if custodia.abog_rr %}
+                    {% if custodia.abogado_rr %}
                         <span style="background: #fed7aa; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
-                            🔄 {{ custodia.abog_rr.AB_GRADO }} {{ custodia.abog_rr.AB_PATERNO }} (RR)
+                            🔄 {{ custodia.abogado_rr.grado }} {{ custodia.abogado_rr.paterno }} (RR)
                         </span>
                     {% endif %}
-                    {% if not custodia.abog_primera_list and not custodia.abog_rr %}
+                    {% if not custodia.abogado_primera_list and not custodia.abogado_rr %}
                         <span style="color: #9ca3af;">Sin asignar aún</span>
                     {% endif %}
                 </td>
@@ -332,18 +332,18 @@
         <tbody>
             {% for custodia in carpetas_admin2_pendientes %}
             <tr>
-                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                <td><strong>{{ custodia.sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in custodia.sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abog %}
+                    {% if custodia.abogado %}
                         <span style="background: #fecaca; color: #7f1d1d; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">
-                            {{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}
+                            {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         </span>
                     {% else %}
                         <span style="color: #9ca3af;">Otros</span>
@@ -394,18 +394,18 @@
         <tbody>
             {% for custodia in carpetas_pendientes %}
             <tr>
-                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                <td><strong>{{ custodia.sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in custodia.sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abog %}
+                    {% if custodia.abogado %}
                         <span style="background: #fecaca; color: #7f1d1d; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">
-                            {{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}
+                            {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         </span>
                     {% else %}
                         <span style="color: #9ca3af;">—</span>
@@ -459,17 +459,17 @@
         <tbody>
             {% for custodia in carpetas_prestadas %}
             <tr>
-                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                <td><strong>{{ custodia.sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in custodia.sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem;">
-                    {% if custodia.abog %}
-                        <strong>{{ custodia.abog.AB_GRADO }} {{ custodia.abog.AB_PATERNO }}</strong>
+                    {% if custodia.abogado %}
+                        <strong>{{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}</strong>
                     {% else %}
                         <span style="background: #fecaca; color: #991b1b; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
                             {{ custodia.get_tipo_custodio_display }}
@@ -531,18 +531,18 @@
         <tbody>
             {% for custodia in para_ejecutoria %}
             <tr>
-                <td><strong>{{ custodia.sim.SIM_COD }}</strong></td>
+                <td><strong>{{ custodia.sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in custodia.sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abog_destino %}
+                    {% if custodia.abogado_destino %}
                         <span style="background: #dbeafe; color: #1e40af; padding: 0.3rem 0.6rem; border-radius: 4px;">
-                            ABOG2 - {{ custodia.abog_destino.AB_PATERNO }}
+                            ABOG2 - {{ custodia.abogado_destino.paterno }}
                         </span>
                     {% else %}
                         <span style="color: #9ca3af;">—</span>
@@ -593,23 +593,23 @@
         <tbody>
             {% for sim in sims_pendiente_archivo %}
             <tr>
-                <td><strong>{{ sim.SIM_COD }}</strong></td>
+                <td><strong>{{ sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO|default:"" }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado|default:"" }} {{ pm.paterno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem;">
                     {% if sim.auto_ejecutoria %}
-                        <strong>{{ sim.auto_ejecutoria.TPE_NUM|default:"—" }}</strong>
-                        <span style="color: #6b7280;">{{ sim.auto_ejecutoria.TPE_FECNOT|date:"d/m/Y"|default:"" }}</span>
+                        <strong>{{ sim.auto_ejecutoria.numero|default:"—" }}</strong>
+                        <span style="color: #6b7280;">{{ sim.auto_ejecutoria.notificacion.fecha|date:"d/m/Y"|default:"" }}</span>
                     {% else %}—{% endif %}
                 </td>
                 <td style="font-size: 0.85rem;">
-                    {% if sim.auto_ejecutoria and sim.auto_ejecutoria.TPE_MEMO_NUM %}
-                        <span style="color: #d97706; font-weight: 600;">📄 {{ sim.auto_ejecutoria.TPE_MEMO_NUM }}</span>
+                    {% if sim.auto_ejecutoria and sim.auto_ejecutoria.memorandum %}
+                        <span style="color: #d97706; font-weight: 600;">📄 {{ sim.auto_ejecutoria.memorandum.numero }}</span>
                     {% else %}
                         <span style="color: #9ca3af;">Sin memo</span>
                     {% endif %}
@@ -652,14 +652,14 @@
         <tbody>
             {% for sim in sims_con_memo_pendiente %}
             <tr>
-                <td><strong>{{ sim.SIM_COD }}</strong></td>
+                <td><strong>{{ sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in sim.militares.all %}
-                        <span style="display: block;">{{ pm.PM_GRADO|default:"" }} {{ pm.PM_PATERNO }}</span>
+                        <span style="display: block;">{{ pm.grado|default:"" }} {{ pm.paterno }}</span>
                     {% empty %}—{% endfor %}
                 </td>
-                <td><strong>{{ sim.auto_ejecutoria.TPE_MEMO_NUM }}</strong></td>
-                <td>{{ sim.auto_ejecutoria.TPE_MEMO_FEC|date:"d/m/Y"|default:"—" }}</td>
+                <td><strong>{{ sim.auto_ejecutoria.memorandum.numero }}</strong></td>
+                <td>{{ sim.auto_ejecutoria.memorandum.fecha|date:"d/m/Y"|default:"—" }}</td>
                 <td>
                     <a href="{% url 'admin2_registrar_retorno_memo' sim.auto_ejecutoria.id %}"
                        class="btn" style="background: #d97706; color: #fff; font-size: 0.8rem; padding: 0.3rem 0.75rem;">

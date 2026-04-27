@@ -6,23 +6,23 @@
 
     <div class="alert alert-success">
         <strong>✓ Sumario cargado exitosamente</strong><br>
-        Se ha registrado completamente el sumario {{ sim.SIM_COD }} en el sistema.
+        Se ha registrado completamente el sumario {{ sim.codigo }} en el sistema.
     </div>
 
     <!-- Datos del SIM -->
     <div class="card mb-3">
         <div class="card-header">
-            <strong>Sumario: {{ sim.SIM_COD }}</strong>
+            <strong>Sumario: {{ sim.codigo }}</strong>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>Tipo:</strong> {{ sim.SIM_TIPO }}</p>
-                    <p><strong>Fase:</strong> <span class="badge" style="background-color: {{ sim.get_fase_color }};">{{ sim.get_SIM_FASE_display }}</span></p>
-                    <p><strong>Fecha Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y" }}</p>
+                    <p><strong>Tipo:</strong> {{ sim.tipo }}</p>
+                    <p><strong>Fase:</strong> <span class="badge" style="background-color: {{ sim.get_fase_color }};">{{ sim.get_fase_display }}</span></p>
+                    <p><strong>Fecha Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y" }}</p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Resumen:</strong> {{ sim.SIM_RESUM }}</p>
+                    <p><strong>Resumen:</strong> {{ sim.resumen }}</p>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
             <div class="list-group">
                 {% for pm in sim.militares.all %}
                     <div class="list-group-item">
-                        {{ pm.PM_GRADO }} {{ pm.PM_PATERNO }}, {{ pm.PM_NOMBRE }} — CI: {{ pm.PM_CI }}
+                        {{ pm.grado }} {{ pm.paterno }}, {{ pm.nombre }} — CI: {{ pm.ci }}
                     </div>
                 {% endfor %}
             </div>
@@ -64,19 +64,19 @@
                     <tbody>
                         {% for res in resoluciones %}
                         <tr>
-                            <td><strong>{{ res.RES_NUM }}</strong></td>
-                            <td>{{ res.RES_FEC|date:"d/m/Y" }}</td>
+                            <td><strong>{{ res.numero }}</strong></td>
+                            <td>{{ res.fecha|date:"d/m/Y" }}</td>
                             <td>
-                                {% if res.RES_INSTANCIA == 'PRIMERA' %}
+                                {% if res.instancia == 'PRIMERA' %}
                                     <span class="badge bg-primary">RES</span>
                                 {% else %}
                                     <span class="badge bg-secondary">RR</span>
                                 {% endif %}
-                                {{ res.get_RES_TIPO_display|default:"---" }}
+                                {{ res.get_tipo_display|default:"---" }}
                             </td>
                             <td>
-                                {% if res.RES_FECNOT %}
-                                    <span class="badge bg-success">{{ res.RES_FECNOT|date:"d/m/Y" }}</span>
+                                {% if res.notificacion %}
+                                    <span class="badge bg-success">{{ res.notificacion.fecha|date:"d/m/Y" }}</span>
                                 {% else %}
                                     <span class="text-muted">---</span>
                                 {% endif %}
@@ -100,8 +100,8 @@
             <div class="list-group">
                 {% for auto in autos_tpe %}
                 <div class="list-group-item">
-                    <strong>{{ auto.TPE_NUM }}</strong> — {{ auto.get_TPE_TIPO_display|default:"---" }}
-                    <br><small class="text-muted">Fecha: {{ auto.TPE_FEC|date:"d/m/Y" }}</small>
+                    <strong>{{ auto.numero }}</strong> — {{ auto.get_tipo_display|default:"---" }}
+                    <br><small class="text-muted">Fecha: {{ auto.fecha|date:"d/m/Y" }}</small>
                 </div>
                 {% endfor %}
             </div>
@@ -119,13 +119,13 @@
             <div class="list-group">
                 {% for recurso in recursos_tsp %}
                 <div class="list-group-item">
-                    <strong>{{ recurso.TSP_NUM }}</strong>
-                    {% if recurso.TSP_INSTANCIA == 'APELACION' %}
+                    <strong>{{ recurso.numero }}</strong>
+                    {% if recurso.instancia == 'APELACION' %}
                         <span class="badge bg-info">RAP</span>
                     {% else %}
                         <span class="badge bg-secondary">RAEE</span>
                     {% endif %}
-                    <br><small class="text-muted">Fecha: {{ recurso.TSP_FEC|date:"d/m/Y" }}</small>
+                    <br><small class="text-muted">Fecha: {{ recurso.fecha|date:"d/m/Y" }}</small>
                 </div>
                 {% endfor %}
             </div>
@@ -143,8 +143,8 @@
             <div class="list-group">
                 {% for auto in autos_tsp %}
                 <div class="list-group-item">
-                    <strong>{{ auto.TSP_NUM }}</strong> — {{ auto.get_TSP_TIPO_display|default:"---" }}
-                    <br><small class="text-muted">Fecha: {{ auto.TSP_FEC|date:"d/m/Y" }}</small>
+                    <strong>{{ auto.numero }}</strong> — {{ auto.get_tipo_display|default:"---" }}
+                    <br><small class="text-muted">Fecha: {{ auto.fecha|date:"d/m/Y" }}</small>
                 </div>
                 {% endfor %}
             </div>

@@ -6,10 +6,14 @@
 
 {% block sidebar_nav %}
 {% if user.is_authenticated %}
-    <span class="sb-group-label">Panel Principal</span>
+    <span class="sb-group-label">Búsqueda</span>
     <a href="{% url 'buscador_dashboard' %}" class="sb-link active">
         <span class="lk-icon">🔍</span>
-        <span class="lk-text">Buscar</span>
+        <span class="lk-text">Búsqueda Individual</span>
+    </a>
+    <a href="{% url 'busqueda_lotes' %}" class="sb-link">
+        <span class="lk-icon">📋</span>
+        <span class="lk-text">Búsqueda por Lotes</span>
     </a>
     <hr class="sb-divider">
     <a href="{% url 'logout' %}" class="sb-link">
@@ -21,6 +25,49 @@
 
 {% block content %}
 <style>
+  /* Tabs */
+  .tabs-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    background: #f3f4f6;
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+  }
+
+  .tab-link {
+    flex: 1;
+    padding: 12px 16px;
+    text-align: center;
+    background: #f3f4f6;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #666;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .tab-link:hover {
+    background: #e5e7eb;
+    color: #333;
+  }
+
+  .tab-link.active {
+    background: linear-gradient(135deg, #185FA5 0%, #1a3a52 100%);
+    color: #fff;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
   .search-container {
     background: linear-gradient(135deg, #185FA5 0%, #1a3a52 100%);
     border-radius: 12px;
@@ -386,17 +433,37 @@
   }
 </style>
 
-<div class="search-container">
-  <h1>Buscar Personas y Sumarios</h1>
-  <p>Busca por CI, nombre, apellido o código DJE</p>
+<!-- TABS DE BÚSQUEDA -->
+<div class="tabs-nav">
+  <a href="{% url 'buscador_dashboard' %}" class="tab-link active">
+    🔍 Búsqueda Individual
+  </a>
+  <a href="{% url 'busqueda_lotes' %}" class="tab-link">
+    📋 Búsqueda por Lotes
+  </a>
+</div>
 
-  <form method="GET" action="" class="search-box">
-    <input type="text" name="q" value="{{ query }}" placeholder="Ej: 7309870 | DANIELA | DJE-001/24">
-    <button type="submit">Buscar</button>
-  </form>
+<div class="tab-content active" id="individual-tab">
+  <div class="search-container">
+    <h1>Buscar Personas y Sumarios</h1>
+    <p>Busca por CI, nombre, apellido o código DJE</p>
 
-  <div class="search-info">
-    💡 Búsqueda rápida: CI exacto, nombre, apellido, o código DJE
+    <form method="GET" action="" class="search-box">
+      <input type="text" name="q" value="{{ query }}" placeholder="Ej: 7309870 | DANIELA | DJE-001/24">
+      <button type="submit">Buscar</button>
+    </form>
+
+    <form method="GET" action="" class="search-box mt-2" style="max-width: 360px;">
+      <input type="number" name="promocion" value="{{ promocion }}"
+             placeholder="Año de egreso: Ej: 2000" min="1950" max="2100"
+             style="border-radius: 6px 0 0 6px;">
+      <button type="submit" style="background:#6366f1;">Buscar Promoción</button>
+    </form>
+
+    <div class="search-info">
+      Búsqueda rápida: CI exacto, nombre, apellido, o código DJE &nbsp;|&nbsp;
+      Búsqueda por promoción: todos los militares de un año de egreso
+    </div>
   </div>
 </div>
 
@@ -407,34 +474,62 @@
     <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
       <!-- Foto del militar -->
       <div style="flex-shrink: 0;">
-        {% if personal_seleccionado.PM_FOTO %}
-          <img src="{{ personal_seleccionado.PM_FOTO.url }}" alt="Foto"
+        {% if personal_seleccionado.foto %}
+          <img src="{{ personal_seleccionado.foto.url }}" alt="Foto"
                style="width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 3px solid #185FA5; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
         {% else %}
           <div style="width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, #1e3c72, #2a5298); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: #fff; border: 3px solid #185FA5;">
-            {{ personal_seleccionado.PM_NOMBRE|first }}{{ personal_seleccionado.PM_PATERNO|first }}
+            {{ personal_seleccionado.nombre|first }}{{ personal_seleccionado.paterno|first }}
           </div>
         {% endif %}
       </div>
       <!-- Datos principales -->
       <div style="flex: 1;">
-        <h2 style="margin: 0 0 0.25rem 0;">{{ personal_seleccionado.PM_NOMBRE }} {{ personal_seleccionado.PM_PATERNO }} {% if personal_seleccionado.PM_MATERNO %}{{ personal_seleccionado.PM_MATERNO }}{% endif %}</h2>
+        <h2 style="margin: 0 0 0.25rem 0;">{{ personal_seleccionado.nombre }} {{ personal_seleccionado.paterno }} {% if personal_seleccionado.materno %}{{ personal_seleccionado.materno }}{% endif %}</h2>
         <div style="font-size: 0.9rem; color: #185FA5; font-weight: 600; margin-bottom: 0.75rem;">
-          {{ personal_seleccionado.get_PM_GRADO_display|default:"" }}{% if personal_seleccionado.PM_ARMA %} — {{ personal_seleccionado.get_PM_ARMA_display }}{% endif %}{% if personal_seleccionado.PM_ESPEC %} — {{ personal_seleccionado.PM_ESPEC }}{% endif %}
+          {{ personal_seleccionado.get_grado_display|default:"" }}{% if personal_seleccionado.arma %} — {{ personal_seleccionado.get_arma_display }}{% endif %}{% if personal_seleccionado.especialidad %} — {{ personal_seleccionado.especialidad }}{% endif %}
         </div>
         <div class="historial-datos">
           <div class="dato-item">
             <span class="dato-label">CI:</span>
-            <span class="dato-valor">{{ personal_seleccionado.PM_CI|default:"—" }}</span>
+            <span class="dato-valor">{{ personal_seleccionado.ci|default:"—" }}</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Escalafón:</span>
-            <span class="dato-valor">{{ personal_seleccionado.get_PM_ESCALAFON_display|default:"N/A" }}</span>
+            <span class="dato-valor">{{ personal_seleccionado.get_escalafon_display|default:"N/A" }}</span>
           </div>
           <div class="dato-item">
             <span class="dato-label">Estado:</span>
-            <span class="dato-valor">{{ personal_seleccionado.get_PM_ESTADO_display }}</span>
+            <span class="dato-valor">{{ personal_seleccionado.get_estado_display }}</span>
           </div>
+          {% if personal_seleccionado.anio_promocion %}
+          <div class="dato-item">
+            <span class="dato-label">Año de Egreso:</span>
+            <span class="dato-valor">{{ personal_seleccionado.anio_promocion }}
+              {% if personal_seleccionado.años_servicio %}
+                <small class="text-muted">({{ personal_seleccionado.años_servicio }} años de servicio)</small>
+              {% endif %}
+            </span>
+          </div>
+          {% endif %}
+          {% if personal_seleccionado.grado_esperado %}
+          <div class="dato-item">
+            <span class="dato-label">Grado esperado:</span>
+            <span class="dato-valor">
+              {{ personal_seleccionado.grado_esperado }}
+              {% if personal_seleccionado.no_ascendio %}
+                <span class="badge bg-warning text-dark ms-1">No ascendió</span>
+              {% elif personal_seleccionado.grado != personal_seleccionado.grado_esperado %}
+                <span class="badge bg-secondary ms-1">Pendiente verificar</span>
+              {% endif %}
+            </span>
+          </div>
+          {% elif personal_seleccionado.no_ascendio %}
+          <div class="dato-item">
+            <span class="dato-label">Ascenso:</span>
+            <span class="dato-valor"><span class="badge bg-warning text-dark">No ascendió al grado correspondiente</span></span>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -442,12 +537,18 @@
 
   <!-- EXPORT BUTTONS -->
   <div class="export-buttons">
-    <a href="{% url 'export_pdfs_zip' personal_seleccionado.pm_id %}" class="btn-export btn-export-pdf" style="background: #3b82f6; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-      📄 Descargar Reporte PDF
+    <a href="{% url 'export_pdfs_zip' personal_seleccionado.id %}" class="btn-export btn-export-pdf" style="background: #3b82f6; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      Descargar Reporte PDF
     </a>
-    <a href="{% url 'export_excel' personal_seleccionado.pm_id %}" class="btn-export btn-export-excel" style="background: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-      📊 Descargar Excel
+    <a href="{% url 'export_excel' personal_seleccionado.id %}" class="btn-export btn-export-excel" style="background: #10b981; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      Descargar Excel
     </a>
+    {% if request.user.perfilusuario.rol in 'AYUDANTE,ADMIN1_AGENDADOR' %}
+    <a href="{% url 'ayudante_editar_pm' personal_seleccionado.id %}?next={{ request.path }}{% if request.GET.q %}%3Fq%3D{{ request.GET.q }}{% endif %}"
+       style="background: #f59e0b; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+      Editar Datos / Marcar No Ascendio
+    </a>
+    {% endif %}
   </div>
 
   <!-- STATS -->
@@ -474,12 +575,12 @@
     <h3>Sumarios ({{ historial.sumarios.count }})</h3>
     {% for sim in historial.sumarios %}
     <div class="sumario-item">
-      <div class="sumario-codigo">{{ sim.SIM_COD }} - {{ sim.get_SIM_TIPO_display }}</div>
+      <div class="sumario-codigo">{{ sim.codigo }} - {{ sim.get_tipo_display }}</div>
       <div class="sumario-info">
-        <strong>Objeto:</strong> {{ sim.SIM_OBJETO }}<br>
-        <strong>Resumen:</strong> {{ sim.SIM_RESUM|truncatewords:15 }}<br>
-        <strong>Fecha Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }} |
-        <strong>Estado:</strong> {{ sim.get_SIM_ESTADO_display }}
+        <strong>Objeto:</strong> {{ sim.objeto }}<br>
+        <strong>Resumen:</strong> {{ sim.resumen|truncatewords:15 }}<br>
+        <strong>Fecha Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }} |
+        <strong>Estado:</strong> {{ sim.get_estado_display }}
       </div>
     </div>
     {% endfor %}
@@ -495,13 +596,13 @@
     <div style="background: #f9fafb; border-left: 4px solid #185FA5; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 6px;">
       <!-- Encabezado del Sumario -->
       <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #185FA5;">{{ sim.SIM_COD }} - {{ sim.get_SIM_TIPO_display }}</h4>
+        <h4 style="margin: 0 0 0.5rem 0; color: #185FA5;">{{ sim.codigo }} - {{ sim.get_tipo_display }}</h4>
         <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">
-          <strong>Objeto:</strong> {{ sim.SIM_OBJETO }}
+          <strong>Objeto:</strong> {{ sim.objeto }}
         </div>
         <div style="font-size: 0.9rem; color: #666;">
-          <span style="display: inline-block; margin-right: 1.5rem;"><strong>Ingreso:</strong> {{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</span>
-          <span><strong>Estado:</strong> {{ sim.get_SIM_ESTADO_display }}</span>
+          <span style="display: inline-block; margin-right: 1.5rem;"><strong>Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</span>
+          <span><strong>Estado:</strong> {{ sim.get_estado_display }}</span>
         </div>
       </div>
 
@@ -512,7 +613,7 @@
           <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; font-size: 0.85rem;">
             <div style="grid-column: 1 / -1;">
               <span style="font-weight: 700; color: #185FA5; display: inline-block; margin-right: 0.5rem;">Nº Resolución:</span>
-              <span style="font-weight: 600;">{{ res.RES_NUM|default:"N/A" }}</span>
+              <span style="font-weight: 600;">{{ res.numero|default:"N/A" }}</span>
               {% with docs=res.documentoadjunto_set.all %}
                 {% for doc in docs %}
                   <a href="{{ doc.archivo.url }}" target="_blank" style="margin-left: 0.5rem; color: #3b82f6; text-decoration: none;">📥 Descargar</a>
@@ -521,19 +622,19 @@
             </div>
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Fecha:</span>
-              <span>{{ res.RES_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+              <span>{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span>
             </div>
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Tipo:</span>
-              <span>{{ res.get_RES_TIPO_display|default:"N/A" }}</span>
+              <span>{{ res.get_tipo_display|default:"N/A" }}</span>
             </div>
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Notificación:</span>
-              <span>{{ res.RES_TIPO_NOTIF|default:"N/A" }}</span>
+              <span>{{ res.notificacion.tipo|default:"N/A" }}</span>
             </div>
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Fecha Notificación:</span>
-              <span>{{ res.RES_FECNOT|date:"d/m/Y"|default:"N/A" }}</span>
+              <span>{{ res.notificacion.fecha|date:"d/m/Y"|default:"N/A" }}</span>
             </div>
           </div>
         </div>
@@ -547,26 +648,26 @@
           <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; font-size: 0.85rem;">
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Auto TPE Nº:</span>
-              <span>{{ auto.TPE_NUM|default:"S/N" }}</span>
+              <span>{{ auto.numero|default:"S/N" }}</span>
             </div>
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Fecha:</span>
-              <span>{{ auto.TPE_FEC|date:"d/m/Y"|default:"N/A" }}</span>
+              <span>{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
             </div>
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Disposición:</span>
-              <span>{{ auto.get_TPE_TIPO_display|default:"N/A" }}</span>
+              <span>{{ auto.get_tipo_display|default:"N/A" }}</span>
             </div>
-            {% if auto.TPE_FECNOT %}
+            {% if auto.notificacion %}
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Notificación:</span>
-              <span>{{ auto.TPE_TIPO_NOTIF|default:"N/A" }} - {{ auto.TPE_FECNOT|date:"d/m/Y" }}</span>
+              <span>{{ auto.notificacion.tipo|default:"N/A" }} - {{ auto.notificacion.fecha|date:"d/m/Y" }}</span>
             </div>
             {% endif %}
-            {% if auto.TPE_MEMO_NUM %}
+            {% if auto.memorandum %}
             <div>
               <span style="font-weight: 700; color: #185FA5; display: block;">Memorandum:</span>
-              <span>Nº {{ auto.TPE_MEMO_NUM }} ({{ auto.TPE_MEMO_FEC|date:"d/m/Y"|default:"N/A" }})</span>
+              <span>Nº {{ auto.memorandum.numero }} ({{ auto.memorandum.fecha|date:"d/m/Y"|default:"N/A" }})</span>
             </div>
             {% endif %}
           </div>
@@ -595,39 +696,39 @@
 
   <div class="pm-cards">
     {% for pm in resultados_pm %}
-    <div class="pm-card" onclick="window.location.href='?q={{ pm.PM_CI }}'">
+    <div class="pm-card" onclick="window.location.href='?q={{ pm.ci }}'">
       <div class="pm-card-header">
         <!-- Foto o avatar con iniciales -->
         <div style="margin-bottom: 0.75rem;">
-          {% if pm.PM_FOTO %}
-            <img src="{{ pm.PM_FOTO.url }}" alt="Foto"
+          {% if pm.foto %}
+            <img src="{{ pm.foto.url }}" alt="Foto"
                  style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #185FA5; margin: 0 auto; display: block;">
           {% else %}
             <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #1e3c72, #2a5298); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; color: #fff; margin: 0 auto;">
-              {{ pm.PM_NOMBRE|first }}{{ pm.PM_PATERNO|first }}
+              {{ pm.nombre|first }}{{ pm.paterno|first }}
             </div>
           {% endif %}
         </div>
-        <h3>{{ pm.PM_NOMBRE }} {{ pm.PM_PATERNO }}</h3>
-        <p><strong>{{ pm.get_PM_GRADO_display|default:"N/A" }}</strong></p>
-        {% if pm.PM_ESPEC %}<p style="font-size: 0.78rem; color: #185FA5; margin: 2px 0;">{{ pm.PM_ESPEC }}</p>{% endif %}
+        <h3>{{ pm.nombre }} {{ pm.paterno }}</h3>
+        <p><strong>{{ pm.get_grado_display|default:"N/A" }}</strong></p>
+        {% if pm.especialidad %}<p style="font-size: 0.78rem; color: #185FA5; margin: 2px 0;">{{ pm.especialidad }}</p>{% endif %}
       </div>
       <div class="pm-card-body">
         <div class="info-row">
           <span class="label">CI:</span>
-          <span class="value">{{ pm.PM_CI|default:"—" }}</span>
+          <span class="value">{{ pm.ci|default:"—" }}</span>
         </div>
         <div class="info-row">
           <span class="label">Arma:</span>
-          <span class="value">{{ pm.get_PM_ARMA_display|default:"N/A" }}</span>
+          <span class="value">{{ pm.get_arma_display|default:"N/A" }}</span>
         </div>
         <div class="info-row">
           <span class="label">Escalafón:</span>
-          <span class="value">{{ pm.get_PM_ESCALAFON_display|default:"N/A" }}</span>
+          <span class="value">{{ pm.get_escalafon_display|default:"N/A" }}</span>
         </div>
         <div class="info-row">
           <span class="label">Estado:</span>
-          <span class="value">{{ pm.get_PM_ESTADO_display }}</span>
+          <span class="value">{{ pm.get_estado_display }}</span>
         </div>
       </div>
     </div>
@@ -658,18 +759,18 @@
     <tbody>
       {% for sim in resultados_sim %}
       <tr>
-        <td class="sim-codigo"><a href="{% url 'detalles_sim' sim.id %}" style="color: #185FA5; text-decoration: underline; cursor: pointer; font-weight: 700;">{{ sim.SIM_COD }}</a></td>
+        <td class="sim-codigo"><a href="{% url 'detalles_sim' sim.id %}" style="color: #185FA5; text-decoration: underline; cursor: pointer; font-weight: 700;">{{ sim.codigo }}</a></td>
         <td>
           {% for militar in sim.militares.all %}
-            <div style="font-size: 0.85rem; margin-bottom: 4px;">{{ militar.PM_GRADO }} {{ militar.PM_NOMBRE }} {{ militar.PM_PATERNO }}</div>
+            <div style="font-size: 0.85rem; margin-bottom: 4px;">{{ militar.grado }} {{ militar.nombre }} {{ militar.paterno }}</div>
           {% empty %}
             <span style="color: #999;">—</span>
           {% endfor %}
         </td>
-        <td>{{ sim.get_SIM_TIPO_display|truncatewords:2 }}</td>
-        <td>{{ sim.SIM_RESUM|truncatewords:8 }}</td>
-        <td>{{ sim.SIM_FECING|date:"d/m/Y"|default:"N/A" }}</td>
-        <td>{{ sim.get_SIM_ESTADO_display }}</td>
+        <td>{{ sim.get_tipo_display|truncatewords:2 }}</td>
+        <td>{{ sim.resumen|truncatewords:8 }}</td>
+        <td>{{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</td>
+        <td>{{ sim.get_estado_display }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -692,5 +793,7 @@
   <p style="color: #ccc; font-size: 0.9rem;">Ejemplos: 7309870 | DANIELA | DJE-001/24</p>
 </div>
 {% endif %}
+
+</div>
 
 {% endblock %}

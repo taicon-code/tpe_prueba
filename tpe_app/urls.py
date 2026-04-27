@@ -30,6 +30,13 @@ urlpatterns = [
     path('vocal/dashboard/', views.vocal_dashboard, name='vocal_dashboard'),
     path('vocal/agenda/<int:ag_id>/', views.vocal_agenda_detalle, name='vocal_agenda_detalle'),
     path('vocal/dictamen/<int:dic_id>/confirmar/', views.vocal_confirmar_dictamen, name='vocal_confirmar_dictamen'),
+    path('vocal/agenda/<int:ag_id>/asistencia/', views.vocal_registrar_asistencia, name='vocal_registrar_asistencia'),
+    path('vocal/dictamen/<int:dic_id>/votos/', views.vocal_registrar_votos, name='vocal_registrar_votos'),
+
+    # ✅ NUEVO: Asesor Jefe - Supervisor del sistema
+    path('asesor-jefe/dashboard/', views.asesor_jefe_dashboard, name='asesor_jefe_dashboard'),
+    path('asesor-jefe/agendas/', views.asesor_jefe_agendas, name='asesor_jefe_agendas'),
+    path('asesor-jefe/estadisticas/', views.asesor_jefe_estadisticas, name='asesor_jefe_estadisticas'),
 
     # ✅ NUEVO: Ayudante - Registro de datos históricos
     path('ayudante/', views.ayudante_dashboard, name='ayudante_dashboard'),
@@ -42,6 +49,9 @@ urlpatterns = [
     path('ayudante/rap/nuevo/', views.ayudante_registrar_rap, name='ayudante_registrar_rap'),
     path('ayudante/raee/nuevo/', views.ayudante_registrar_raee, name='ayudante_registrar_raee'),
     path('ayudante/autotpe/nuevo/', views.ayudante_registrar_autotpe, name='ayudante_registrar_autotpe'),
+
+    # Edición de Personal Militar (grado actual, año egreso, no ascendió)
+    path('ayudante/pm/<int:pm_id>/editar/', views.ayudante_editar_pm, name='ayudante_editar_pm'),
 
     # ✅ NUEVO v3.3: Wizard de ingreso rápido histórico (4 pasos)
     path('ayudante/wizard/paso1/', views.ayudante_wizard_paso1, name='ayudante_wizard_paso1'),
@@ -85,6 +95,11 @@ urlpatterns = [
     path('buscador/sim/<int:sim_id>/exportar/excel/', views.export_sim_excel, name='export_sim_excel'),
     path('buscador/sim/<int:sim_id>/custodia/pdf/', views.export_custodia_pdf, name='export_custodia_pdf'),
     path('buscador/pm/<int:pm_id>/foto/', views.upload_foto_pm, name='upload_foto_pm'),
+
+    # ✅ NUEVO v3.5: Búsqueda por lotes y exportación
+    path('buscador/lotes/', views.busqueda_por_lotes, name='busqueda_lotes'),
+    path('buscador/lotes/exportar/pdf/', views.export_batch_pdf, name='export_batch_pdf'),
+    path('buscador/lotes/exportar/excel/', views.export_batch_excel, name='export_batch_excel'),
 
     # Exportación de historial (desde buscador_dashboard)
     path('buscador/dashboard/<int:personal_id>/exportar/pdfs/', views.export_person_pdfs_zip, name='export_pdfs_zip'),

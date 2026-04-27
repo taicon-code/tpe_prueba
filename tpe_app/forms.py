@@ -1,66 +1,61 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, ABOG, CustodiaSIM, AGENDA, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP
+from .models import SIM, PM, PM_SIM, CustodiaSIM, AGENDA, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, Notificacion, Memorandum
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
+
 class SIMForm(forms.ModelForm):
-    """Formulario para crear un nuevo sumario"""
-    
+
     class Meta:
         model = SIM
-        fields = [
-            'SIM_COD', 'SIM_FECING', 'SIM_TIPO', 
-            'SIM_OBJETO', 'SIM_RESUM', 'SIM_AUTOFINAL'
-        ]
+        fields = ['codigo', 'fecha_ingreso', 'numero_carpeta', 'tipo', 'objeto', 'resumen', 'auto_final']
         widgets = {
-            'SIM_COD': forms.TextInput(attrs={
+            'codigo': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ejemplo: DJE-123/25, SASJUR-25/25, SDISCAPE-86/25',
                 'autocomplete': 'off',
                 'spellcheck': 'false'
             }),
-            'SIM_FECING': forms.DateInput(attrs={
+            'fecha_ingreso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'numero_carpeta': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'placeholder': 'Ej: 85',
+                'min': '1',
             }),
-            'SIM_TIPO': forms.Select(attrs={'class': 'form-control'}),
-            'SIM_OBJETO': forms.Textarea(attrs={
+            'tipo': forms.Select(attrs={'class': 'form-control'}),
+            'objeto': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
                 'placeholder': 'Establecer las circunstancias que motivaron...'
             }),
-            'SIM_RESUM': ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
-            'SIM_AUTOFINAL': forms.Textarea(attrs={
+            'resumen': ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
+            'auto_final': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'Dictamen o auto final del sumario (opcional)'
             }),
         }
         labels = {
-            'SIM_COD': 'Código del Sumario',
-            'SIM_FECING': 'Fecha de Ingreso al TPE',
-            'SIM_TIPO': 'Tipo de Sumario',
-            'SIM_OBJETO': 'Objeto del Sumario',
-            'SIM_RESUM': 'Resumen',
-            'SIM_AUTOFINAL': 'Auto Final / Dictamen',
+            'codigo':          'Código del Sumario',
+            'fecha_ingreso':   'Fecha de Ingreso al TPE',
+            'numero_carpeta':  'N° Carpeta Física',
+            'tipo':            'Tipo de Sumario',
+            'objeto':          'Objeto del Sumario',
+            'resumen':         'Resumen',
+            'auto_final':      'Auto Final / Dictamen',
         }
 
-    def clean_SIM_COD(self):
-        """Validar que el código no exista ya (considera SIM_VERSION para reaperturas)"""
-        cod = self.cleaned_data.get('SIM_COD')
+    def clean_codigo(self):
+        cod = self.cleaned_data.get('codigo')
         if cod:
             cod = cod.upper()
-            version = self.cleaned_data.get('SIM_VERSION', 1)
-
-            # Si es edición de un SIM existente, permitir el mismo código
+            version = self.cleaned_data.get('version', 1)
             if self.instance and self.instance.pk:
-                existentes = SIM.objects.filter(SIM_COD=cod, SIM_VERSION=version).exclude(pk=self.instance.pk)
+                existentes = SIM.objects.filter(codigo=cod, version=version).exclude(pk=self.instance.pk)
             else:
-                # Si es nuevo SIM, verificar si (SIM_COD, SIM_VERSION) ya existe
-                existentes = SIM.objects.filter(SIM_COD=cod, SIM_VERSION=version)
-
+                existentes = SIM.objects.filter(codigo=cod, version=version)
             if existentes.exists():
                 raise forms.ValidationError(
                     f'El código {cod} versión {version} ya existe. '
@@ -70,240 +65,198 @@ class SIMForm(forms.ModelForm):
 
 
 class PMSIMForm(forms.ModelForm):
-    """Formulario para agregar militares investigados al sumario"""
-    
-    PM_CI = forms.CharField(
-        label='CI del Militar',
-        max_length=13,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ingrese CI',
-            'list': 'pm_list'
-        })
-    )
 
-    PM_NOMBRE = forms.CharField(
-        label='Nombre',
-        max_length=25,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Nombre(s)',
-            'autocomplete': 'off'
-        })
+    ci = forms.CharField(
+        label='CI del Militar', max_length=13, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese CI', 'list': 'pm_list'})
     )
-
-    PM_PATERNO = forms.CharField(
-        label='Apellido Paterno',
-        max_length=25,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Apellido paterno',
-            'autocomplete': 'off'
-        })
+    nombre = forms.CharField(
+        label='Nombre', max_length=25, required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre(s)', 'autocomplete': 'off'})
     )
-
-    PM_MATERNO = forms.CharField(
-        label='Apellido Materno',
-        max_length=25,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Apellido materno (opcional)'
-        })
+    paterno = forms.CharField(
+        label='Apellido Paterno', max_length=25, required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido paterno', 'autocomplete': 'off'})
     )
-
-    PM_ESCALAFON = forms.ChoiceField(
-        label='Escalafón',
-        required=False,
+    materno = forms.CharField(
+        label='Apellido Materno', max_length=25, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido materno (opcional)'})
+    )
+    escalafon = forms.ChoiceField(
+        label='Escalafón', required=False,
         choices=[('', '---------')] + list(PM.ESCALAFON_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-
-    PM_GRADO = forms.ChoiceField(
-        label='Grado',
-        required=False,
+    grado = forms.ChoiceField(
+        label='Grado', required=False,
         choices=[('', '---------')] + list(PM.GRADO_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-
-    PM_ARMA = forms.ChoiceField(
-        label='Arma',
-        required=False,
+    arma = forms.ChoiceField(
+        label='Arma', required=False,
         choices=[('', '---------')] + list(PM.ARMA_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-
-    PM_ESPEC = forms.CharField(
-        label='Especialidad',
-        max_length=15,
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ej: INFANTERÍA, BLINDADOS...'
-        })
+    especialidad = forms.CharField(
+        label='Especialidad', max_length=15, required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: INFANTERÍA, BLINDADOS...'})
     )
-
-    PM_FOTO = forms.ImageField(
-        label='Foto',
-        required=False,
+    foto = forms.ImageField(
+        label='Foto', required=False,
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'})
+    )
+    anio_promocion = forms.IntegerField(
+        label='Año de Egreso', required=False, min_value=1950, max_value=2100,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2000'})
+    )
+    grado_en_fecha = forms.ChoiceField(
+        label='Grado al momento del sumario', required=False,
+        choices=[('', '---------')] + list(PM.GRADO_CHOICES),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+    )
+    no_ascendio = forms.BooleanField(
+        label='No ascendió al grado correspondiente', required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
 
     class Meta:
         model = PM_SIM
-        fields = []  # Solo usamos los campos personalizados
+        fields = []
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Si ya tiene PM asignado, precargar datos (para edición/errores)
-        if self.instance and getattr(self.instance, 'pm_id', None):
+        if self.instance and getattr(self.instance, 'pk', None):
             pm = self.instance.pm
-            self.fields['PM_CI'].initial = '' if pm.PM_CI is None else str(pm.PM_CI)
-            self.fields['PM_NOMBRE'].initial = pm.PM_NOMBRE
-            self.fields['PM_PATERNO'].initial = pm.PM_PATERNO
-            self.fields['PM_MATERNO'].initial = pm.PM_MATERNO
-            self.fields['PM_ESCALAFON'].initial = pm.PM_ESCALAFON
-            self.fields['PM_GRADO'].initial = pm.PM_GRADO
-            self.fields['PM_ARMA'].initial = pm.PM_ARMA
-            self.fields['PM_ESPEC'].initial = pm.PM_ESPEC
-    
+            self.fields['ci'].initial          = '' if pm.ci is None else str(pm.ci)
+            self.fields['nombre'].initial      = pm.nombre
+            self.fields['paterno'].initial     = pm.paterno
+            self.fields['materno'].initial     = pm.materno
+            self.fields['escalafon'].initial   = pm.escalafon
+            self.fields['grado'].initial       = pm.grado
+            self.fields['arma'].initial        = pm.arma
+            self.fields['especialidad'].initial = pm.especialidad
+            self.fields['anio_promocion'].initial = pm.anio_promocion
+            self.fields['no_ascendio'].initial = pm.no_ascendio
+            self.fields['grado_en_fecha'].initial = self.instance.grado_en_fecha
+
     def clean(self):
         cleaned_data = super().clean()
 
-        # Si es un form marcado para eliminar, no validar más
         if cleaned_data.get('DELETE'):
             return cleaned_data
 
-        ci = (cleaned_data.get('PM_CI') or '').strip()
-        nombre = (cleaned_data.get('PM_NOMBRE') or '').strip().upper()
-        paterno = (cleaned_data.get('PM_PATERNO') or '').strip().upper()
-        materno = (cleaned_data.get('PM_MATERNO') or '').strip().upper()
-        escalafon = cleaned_data.get('PM_ESCALAFON') or None
-        grado = cleaned_data.get('PM_GRADO') or None
-        arma = cleaned_data.get('PM_ARMA') or None
-        espec = (cleaned_data.get('PM_ESPEC') or '').strip() or None
+        ci          = (cleaned_data.get('ci') or '').strip()
+        nombre      = (cleaned_data.get('nombre') or '').strip().upper()
+        paterno     = (cleaned_data.get('paterno') or '').strip().upper()
+        materno     = (cleaned_data.get('materno') or '').strip().upper()
+        escalafon   = cleaned_data.get('escalafon') or None
+        grado       = cleaned_data.get('grado') or None
+        arma        = cleaned_data.get('arma') or None
+        especialidad = (cleaned_data.get('especialidad') or '').strip() or None
+        anio_promocion = cleaned_data.get('anio_promocion') or None
+        no_ascendio = cleaned_data.get('no_ascendio') or False
+        grado_fecha = cleaned_data.get('grado_en_fecha') or None
 
-        # Form vacío: permitirlo (útil cuando agregas/quitas filas dinámicamente)
+        cleaned_data['pmsim_grado_en_fecha'] = grado_fecha
+
         if not any([ci, nombre, paterno, materno, escalafon, grado, arma]):
             return cleaned_data
 
-        # Exigir nombre y paterno como mínimo
         if not nombre:
-            self.add_error('PM_NOMBRE', 'Ingrese el nombre del militar.')
+            self.add_error('nombre', 'Ingrese el nombre del militar.')
         if not paterno:
-            self.add_error('PM_PATERNO', 'Ingrese el apellido paterno del militar.')
+            self.add_error('paterno', 'Ingrese el apellido paterno del militar.')
 
         if self.errors:
             return cleaned_data
 
-        # PRIORIDAD 1: Buscar por CI (si se ingresó)
         pm = None
         if ci:
             if not ci.isdigit():
-                self.add_error('PM_CI', 'El CI debe contener solo números.')
+                self.add_error('ci', 'El CI debe contener solo números.')
                 return cleaned_data
-            pm = PM.objects.filter(PM_CI=ci).first()
+            pm = PM.objects.filter(ci=ci).first()
 
-        # PRIORIDAD 2: Buscar por Nombre + Paterno + Materno (si no encontró por CI)
         if not pm:
-            query = PM.objects.filter(PM_NOMBRE=nombre, PM_PATERNO=paterno)
+            query = PM.objects.filter(nombre=nombre, paterno=paterno)
             if materno:
-                query = query.filter(PM_MATERNO=materno)
+                query = query.filter(materno=materno)
             pm = query.first()
 
-        # Si encontró PM existente, reutilizarlo
         if pm:
             cleaned_data['pm'] = pm
             return cleaned_data
 
-        # Si no encontró, preparar datos para crear nuevo PM
         cleaned_data['pm_data'] = {
-            'PM_CI': ci or None,
-            'PM_ESCALAFON': escalafon,
-            'PM_GRADO': grado,
-            'PM_ARMA': arma,
-            'PM_ESPEC': espec,
-            'PM_NOMBRE': nombre,
-            'PM_PATERNO': paterno,
-            'PM_MATERNO': materno or None,
+            'ci':          ci or None,
+            'escalafon':   escalafon,
+            'grado':       grado,
+            'arma':        arma,
+            'especialidad': especialidad,
+            'nombre':      nombre,
+            'paterno':     paterno,
+            'materno':     materno or None,
+            'anio_promocion': anio_promocion,
+            'no_ascendio': no_ascendio,
         }
         return cleaned_data
 
 
-# Formset para agregar múltiples militares al sumario
 PMSIMFormSet = inlineformset_factory(
-    SIM,                    # Modelo padre
-    PM_SIM,                 # Modelo hijo
-    form=PMSIMForm,
-    extra=0,                # Mostrar 1 formulario vacío por defecto (lo fuerza min_num)
-    can_delete=True,        # Permitir eliminar militares
-    min_num=1,              # Al menos 1 militar es obligatorio
-    validate_min=True
+    SIM, PM_SIM, form=PMSIMForm,
+    extra=0, can_delete=True, min_num=1, validate_min=True
 )
 
 
 class AgendarSumarioForm(forms.Form):
-    """Formulario para agendar un sumario a una agenda existente"""
 
-    # ✅ NUEVO v3.2: Seleccionar agenda existente (en lugar de fecha suelta)
     agenda = forms.ModelChoiceField(
-        queryset=AGENDA.objects.filter(AG_ESTADO='PROGRAMADA').order_by('AG_FECPROG'),
+        queryset=AGENDA.objects.filter(estado='PROGRAMADA').order_by('fecha_prog'),
         label='Agenda',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione una agenda...'
     )
-
     sumario = forms.ModelChoiceField(
-        queryset=SIM.objects.filter(SIM_ESTADO='PARA_AGENDA', abogados__isnull=True),
+        queryset=SIM.objects.filter(estado='PARA_AGENDA', abogados__isnull=True),
         label='Sumario a Agendar',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un sumario...'
     )
-
     abogados = forms.ModelMultipleChoiceField(
-        queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         label='Abogado(s) Asignado(s)',
         widget=forms.CheckboxSelectMultiple(),
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Personalizar displays
-        # ✅ Mostrar sumario con código, militares involucrados y resumen
+
         def sumario_display(obj):
-            militares = ", ".join([f"{pm.PM_GRADO} {pm.PM_PATERNO}" for pm in obj.militares.all()[:2]])
-            return f"{obj.SIM_COD} — {militares} — {obj.SIM_RESUM[:40]}"
+            militares = ", ".join([f"{pm.grado} {pm.paterno}" for pm in obj.militares.all()[:2]])
+            return f"{obj.codigo} — {militares} — {obj.resumen[:40]}"
 
         self.fields['sumario'].label_from_instance = sumario_display
-        self.fields['abogados'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
-        # ✅ Mostrar número, tipo y fecha en el dropdown de agendas
-        self.fields['agenda'].label_from_instance = lambda obj: f"[{obj.AG_NUM}] {obj.get_AG_TIPO_display()} — {obj.AG_FECPROG.strftime('%d/%m/%Y') if obj.AG_FECPROG else '—'}"
+        self.fields['abogados'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
+        self.fields['agenda'].label_from_instance = lambda obj: f"[{obj.numero}] {obj.get_tipo_display()} — {obj.fecha_prog.strftime('%d/%m/%Y') if obj.fecha_prog else '—'}"
 
 
 class GestionarAbogadosSIMForm(forms.Form):
-    """Agregar o quitar abogados de un sumario ya agendado"""
 
     abogados = forms.ModelMultipleChoiceField(
-        queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         label='Abogados asignados',
         widget=forms.CheckboxSelectMultiple(),
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['abogados'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+        self.fields['abogados'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
 
 
-# ✅ NUEVO v3.2: Formularios para gestionar agendas
 class AgendaForm(forms.ModelForm):
-    """Crear o editar una agenda"""
 
-    AG_NUM = forms.CharField(
-        max_length=50,
-        label='Número de Agenda',
+    numero = forms.CharField(
+        max_length=50, label='Número de Agenda',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej: 1ra. Reunión/26 o AG-001/26',
@@ -313,28 +266,23 @@ class AgendaForm(forms.ModelForm):
 
     class Meta:
         model = AGENDA
-        fields = ['AG_NUM', 'AG_TIPO', 'AG_FECPROG']
+        fields = ['numero', 'tipo', 'fecha_prog']
         widgets = {
-            'AG_TIPO': forms.Select(attrs={'class': 'form-control'}),
-            'AG_FECPROG': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+            'tipo':       forms.Select(attrs={'class': 'form-control'}),
+            'fecha_prog': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
-            'AG_TIPO': 'Tipo de Agenda',
-            'AG_FECPROG': 'Fecha Programada',
+            'tipo':       'Tipo de Agenda',
+            'fecha_prog': 'Fecha Programada',
         }
 
 
 class AgendaResultadoForm(forms.ModelForm):
-    """Registrar resultado de una agenda (realizada/suspendida/reprogramada)"""
 
-    # Opciones limitadas: no se puede volver a PROGRAMADA
-    AG_ESTADO = forms.ChoiceField(
+    estado = forms.ChoiceField(
         choices=[
-            ('REALIZADA', 'Realizada (sesión se realizó)'),
-            ('SUSPENDIDA', 'Suspendida (sin nueva fecha aún)'),
+            ('REALIZADA',    'Realizada (sesión se realizó)'),
+            ('SUSPENDIDA',   'Suspendida (sin nueva fecha aún)'),
             ('REPROGRAMADA', 'Reprogramada (nueva fecha)'),
         ],
         widget=forms.RadioSelect(attrs={'class': 'form-check-input', 'style': 'display: block; margin: 0;'}),
@@ -343,33 +291,27 @@ class AgendaResultadoForm(forms.ModelForm):
 
     class Meta:
         model = AGENDA
-        fields = ['AG_ESTADO', 'AG_FECREAL']
+        fields = ['estado', 'fecha_real']
         widgets = {
-            'AG_FECREAL': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+            'fecha_real': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
-            'AG_FECREAL': 'Fecha Realizada (si aplica)',
+            'fecha_real': 'Fecha Realizada (si aplica)',
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        estado = cleaned_data.get('AG_ESTADO')
-        fecreal = cleaned_data.get('AG_FECREAL')
-
-        # Si es REALIZADA, AG_FECREAL es obligatoria
-        if estado == 'REALIZADA' and not fecreal:
+        estado   = cleaned_data.get('estado')
+        fecha_real = cleaned_data.get('fecha_real')
+        if estado == 'REALIZADA' and not fecha_real:
             raise forms.ValidationError('La fecha realizada es obligatoria si la sesión fue realizada.')
-
         return cleaned_data
 
+
 class RegistrarRRForm(forms.ModelForm):
-    """Formulario para registrar un Recurso de Reconsideración (Resolucion con INSTANCIA=RECONSIDERACION)"""
 
     resolucion_origen = forms.ModelChoiceField(
-        queryset=Resolucion.objects.filter(RES_INSTANCIA='PRIMERA').order_by('-RES_FEC'),
+        queryset=Resolucion.objects.filter(instancia='PRIMERA').order_by('-fecha'),
         label='Primera Resolución a Apelar',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione la Resolución original...'
@@ -377,58 +319,52 @@ class RegistrarRRForm(forms.ModelForm):
 
     class Meta:
         model = Resolucion
-        fields = ['resolucion_origen', 'RES_RESUM', 'RES_FECPRESEN']
+        fields = ['resolucion_origen', 'resumen', 'fecha_presentacion']
         widgets = {
-            'RES_RESUM': forms.Select(attrs={'class': 'form-control'}),
-            'RES_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'resumen':            forms.Select(attrs={'class': 'form-control'}),
+            'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
-            'RES_RESUM': 'Tipo de Recurso',
-            'RES_FECPRESEN': 'Fecha de Presentación del Recurso',
+            'resumen':            'Tipo de Recurso',
+            'fecha_presentacion': 'Fecha de Presentación del Recurso',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         def res_label(obj):
-            pm_info = f" - {obj.pm.PM_GRADO} {obj.pm.PM_PATERNO}" if obj.pm else ""
-            return f"RES {obj.RES_NUM}{pm_info} (SIM: {obj.sim.SIM_COD})"
+            pm_info = f" - {obj.pm.grado} {obj.pm.paterno}" if obj.pm else ""
+            return f"RES {obj.numero}{pm_info} (SIM: {obj.sim.codigo})"
         self.fields['resolucion_origen'].label_from_instance = res_label
 
 
 class AgendarRRForm(forms.Form):
-    """Formulario para agendar un Recurso de Reconsideración"""
 
     rr = forms.ModelChoiceField(
-        queryset=Resolucion.objects.filter(RES_INSTANCIA='RECONSIDERACION', agenda__isnull=True),
+        queryset=Resolucion.objects.filter(instancia='RECONSIDERACION', agenda__isnull=True),
         label='Recurso de Reconsideración a Agendar',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un recurso...'
     )
-
     abogado = forms.ModelChoiceField(
-        queryset=ABOG.objects.all().order_by('AB_PATERNO', 'AB_NOMBRE'),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         label='Abogado Asignado',
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un abogado...'
     )
-
     fecha_agenda = forms.DateField(
         label='Fecha de Agenda/Reunión',
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
-        })
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         def rr_label(obj):
             origen = obj.resolucion_origen
-            pm_info = f" - {origen.pm.PM_GRADO} {origen.pm.PM_PATERNO}" if (origen and origen.pm) else ""
-            origen_num = origen.RES_NUM if origen else 'S/N'
-            return f"RR sobre RES {origen_num}{pm_info} (SIM: {obj.sim.SIM_COD})"
+            pm_info = f" - {origen.pm.grado} {origen.pm.paterno}" if (origen and origen.pm) else ""
+            origen_num = origen.numero if origen else 'S/N'
+            return f"RR sobre RES {origen_num}{pm_info} (SIM: {obj.sim.codigo})"
         self.fields['rr'].label_from_instance = rr_label
-        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
 
 
 # ============================================================
@@ -436,94 +372,70 @@ class AgendarRRForm(forms.Form):
 # ============================================================
 
 class CustodiaSIMForm(forms.ModelForm):
-    """Formulario para registrar custodia de una carpeta SIM"""
 
     class Meta:
         model = CustodiaSIM
-        fields = ['tipo_custodio', 'abog', 'observacion']
+        fields = ['tipo_custodio', 'abogado', 'observacion']
         widgets = {
             'tipo_custodio': forms.Select(attrs={'class': 'form-control'}),
-            'abog': forms.Select(attrs={'class': 'form-control'}),
-            'observacion': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Notas sobre la entrega (opcional)'
-            }),
+            'abogado':       forms.Select(attrs={'class': 'form-control'}),
+            'observacion':   forms.Textarea(attrs={'class': 'form-control', 'rows': 3,
+                                                   'placeholder': 'Notas sobre la entrega (opcional)'}),
         }
         labels = {
             'tipo_custodio': 'Tipo de Custodio',
-            'abog': 'Abogado (si aplica)',
-            'observacion': 'Observación',
+            'abogado':       'Abogado (si aplica)',
+            'observacion':   'Observación',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Listar todos los abogados disponibles
-        self.fields['abog'].queryset = ABOG.objects.all()
-        self.fields['abog'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
-        # Campo opcional
-        self.fields['abog'].required = False
+        self.fields['abogado'].queryset = PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre')
+        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
+        self.fields['abogado'].required = False
 
 
 class EntregarCarpetaAbogadoForm(forms.Form):
-    """Formulario para que el ABOGADO entregue carpeta a Archivo SIM"""
-
     observacion = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 4,
-            'placeholder': 'Ej: "Carpeta completa con dictamen y resolución", "Documentos en buen estado", etc.'
-        }),
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+            'placeholder': 'Ej: "Carpeta completa con dictamen y resolución"'}),
         label='Observaciones al entregar'
     )
 
 
 class EntregarCarpetaForm(forms.Form):
-    """Formulario para que ADMIN2 entregue carpeta a un abogado"""
-
     tipo_custodio = forms.ChoiceField(
         choices=[
             ('ABOG_ASESOR', 'Abogado Asesor (1ra. Resolución)'),
-            ('ABOG_RR', 'Abogado (Recurso de Reconsideración)'),
-            ('ABOG_AUTOS', 'Abogado Autos (Ejecutoria)'),
-            ('ABOG_RAP', 'Abogado 3 (RAP/Búsqueda)'),
+            ('ABOG_RR',     'Abogado (Recurso de Reconsideración)'),
+            ('ABOG_AUTOS',  'Abogado Autos (Ejecutoria)'),
         ],
         widget=forms.Select(attrs={'class': 'form-control'}),
         label='Tipo de Custodia'
     )
-
     abogado = forms.ModelChoiceField(
-        queryset=ABOG.objects.all(),
+        queryset=PM.objects.filter(perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR']).order_by('paterno', 'nombre'),
         widget=forms.Select(attrs={'class': 'form-control'}),
         label='Abogado que recibe'
     )
-
     observacion = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Notas sobre la entrega (opcional)'
-        }),
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3,
+            'placeholder': 'Notas sobre la entrega (opcional)'}),
         label='Observación'
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.AB_GRADO} {obj.AB_NOMBRE} {obj.AB_PATERNO}"
+        self.fields['abogado'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
 
 
 class RecibirCarpetaForm(forms.Form):
-    """Formulario para recibir carpeta de vuelta de un abogado (Admin2)"""
-
     observacion = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Estado de la carpeta, notas (opcional)'
-        }),
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3,
+            'placeholder': 'Estado de la carpeta, notas (opcional)'}),
         label='Observación',
         help_text='Ej: carpeta completa, falta documento, etc.'
     )
@@ -534,571 +446,342 @@ class RecibirCarpetaForm(forms.Form):
 # ============================================================
 
 class RESForm(forms.ModelForm):
-    """Formulario para registrar una Resolución PRIMERA histórica sin dictamen previo"""
 
     class Meta:
         model = Resolucion
-        fields = [
-            'sim', 'pm', 'RES_NUM', 'RES_FEC', 'RES_TIPO', 'RES_RESOL'
-        ]
+        fields = ['sim', 'pm', 'numero', 'fecha', 'tipo', 'texto']
         widgets = {
-            'sim': forms.Select(attrs={'class': 'form-control'}),
-            'pm': forms.Select(attrs={'class': 'form-control'}),
-            'RES_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: 05/26',
-            }),
-            'RES_FEC': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'RES_TIPO': forms.Select(attrs={'class': 'form-control'}),
-            'RES_RESOL': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Texto de la resolución'
-            }),
+            'sim':    forms.Select(attrs={'class': 'form-control'}),
+            'pm':     forms.Select(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 05/26'}),
+            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo':   forms.Select(attrs={'class': 'form-control'}),
+            'texto':  forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                            'placeholder': 'Texto de la resolución'}),
         }
         labels = {
-            'sim': 'Sumario',
-            'pm': 'Personal Militar Implicado',
-            'RES_NUM': 'Número de Resolución',
-            'RES_FEC': 'Fecha de Resolución',
-            'RES_TIPO': 'Tipo de Resolución',
-            'RES_RESOL': 'Texto de la Resolución',
+            'sim':    'Sumario',
+            'pm':     'Personal Militar Implicado',
+            'numero': 'Número de Resolución',
+            'fecha':  'Fecha de Resolución',
+            'tipo':   'Tipo de Resolución',
+            'texto':  'Texto de la Resolución',
         }
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        obj.RES_INSTANCIA = 'PRIMERA'
+        obj.instancia = 'PRIMERA'
         if commit:
             obj.save()
         return obj
 
 
-class RESNotificacionForm(forms.ModelForm):
-    """Formulario para registrar notificación de una Resolución existente (PRIMERA o RECONSIDERACION)"""
+class NotificacionForm(forms.ModelForm):
+    """Formulario unificado para registrar la notificación de cualquier documento."""
 
     class Meta:
-        model = Resolucion
-        fields = [
-            'RES_FECNOT', 'RES_HORNOT', 'RES_NOT', 'RES_TIPO_NOTIF'
-        ]
+        model = Notificacion
+        fields = ['tipo', 'notificado_a', 'fecha', 'hora']
         widgets = {
-            'RES_FECNOT': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'RES_HORNOT': forms.TimeInput(attrs={
-                'class': 'form-control',
-                'type': 'time'
-            }),
-            'RES_NOT': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Quién notificó'
-            }),
-            'RES_TIPO_NOTIF': forms.Select(attrs={'class': 'form-control'}),
+            'fecha':        forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'hora':         forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'notificado_a': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Persona / dirección notificada'}),
+            'tipo':         forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'RES_FECNOT': 'Fecha de Notificación',
-            'RES_HORNOT': 'Hora de Notificación',
-            'RES_NOT': 'Notificado a (persona)',
-            'RES_TIPO_NOTIF': 'Tipo de Notificación',
+            'fecha':        'Fecha de Notificación',
+            'hora':         'Hora de Notificación',
+            'notificado_a': 'Notificado a (persona / dirección)',
+            'tipo':         'Tipo de Notificación',
         }
+
+
+# Alias por compatibilidad con imports existentes
+RESNotificacionForm = NotificacionForm
 
 
 class RAPForm(forms.ModelForm):
-    """Formulario para registrar un Recurso de Apelación al TSP histórico (RecursoTSP.APELACION)"""
 
     class Meta:
         model = RecursoTSP
         fields = [
-            'sim', 'pm', 'resolucion', 'TSP_FECPRESEN', 'TSP_OFI', 'TSP_FECOFI',
-            'TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_TIPO'
+            'sim', 'pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio',
+            'numero', 'fecha', 'texto', 'tipo'
         ]
         widgets = {
-            'sim': forms.Select(attrs={'class': 'form-control'}),
-            'pm': forms.Select(attrs={'class': 'form-control'}),
-            'resolucion': forms.Select(attrs={'class': 'form-control'}),
-            'TSP_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'TSP_OFI': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de oficio'}),
-            'TSP_FECOFI': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'TSP_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: 03/26',
-            }),
-            'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
-                'placeholder': 'Texto del recurso'}),
-            'TSP_TIPO': forms.Select(attrs={'class': 'form-control'}),
+            'sim':                forms.Select(attrs={'class': 'form-control'}),
+            'pm':                 forms.Select(attrs={'class': 'form-control'}),
+            'resolucion':         forms.Select(attrs={'class': 'form-control'}),
+            'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'numero_oficio':      forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de oficio'}),
+            'fecha_oficio':       forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'numero':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/26'}),
+            'fecha':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'texto':              forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                                       'placeholder': 'Texto del recurso'}),
+            'tipo':               forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'sim': 'Sumario',
-            'pm': 'Personal Militar',
-            'resolucion': 'Resolución RR impugnada (opcional)',
-            'TSP_FECPRESEN': 'Fecha de Presentación',
-            'TSP_OFI': 'Número de Oficio',
-            'TSP_FECOFI': 'Fecha de Oficio',
-            'TSP_NUM': 'Número del RAP',
-            'TSP_FEC': 'Fecha del RAP',
-            'TSP_RESOL': 'Texto del RAP',
-            'TSP_TIPO': 'Tipo de RAP',
+            'sim':                'Sumario',
+            'pm':                 'Personal Militar',
+            'resolucion':         'Resolución RR impugnada (opcional)',
+            'fecha_presentacion': 'Fecha de Presentación',
+            'numero_oficio':      'Número de Oficio',
+            'fecha_oficio':       'Fecha de Oficio',
+            'numero':             'Número del RAP',
+            'fecha':              'Fecha del RAP',
+            'texto':              'Texto del RAP',
+            'tipo':               'Tipo de RAP',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['resolucion'].queryset = Resolucion.objects.filter(
-            RES_INSTANCIA='RECONSIDERACION'
-        )
+        self.fields['resolucion'].queryset = Resolucion.objects.filter(instancia='RECONSIDERACION')
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.TSP_INSTANCIA = 'APELACION'
+        instance.instancia = 'APELACION'
         if commit:
             instance.save()
         return instance
 
 
 class RAEEForm(forms.ModelForm):
-    """Formulario para registrar un RAEE (RecursoTSP.ACLARACION_ENMIENDA) histórico"""
 
     class Meta:
         model = RecursoTSP
-        fields = [
-            'sim', 'pm', 'recurso_origen', 'TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_RESUM'
-        ]
+        fields = ['sim', 'pm', 'recurso_origen', 'numero', 'fecha', 'texto']
         widgets = {
-            'sim': forms.Select(attrs={'class': 'form-control'}),
-            'pm': forms.Select(attrs={'class': 'form-control'}),
+            'sim':           forms.Select(attrs={'class': 'form-control'}),
+            'pm':            forms.Select(attrs={'class': 'form-control'}),
             'recurso_origen': forms.Select(attrs={'class': 'form-control'}),
-            'TSP_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: 02/26',
-            }),
-            'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
-                'placeholder': 'Texto de la aclaración/enmienda'}),
-            'TSP_RESUM': forms.TextInput(attrs={'class': 'form-control',
-                'placeholder': 'Resumen breve'}),
+            'numero':        forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 02/26'}),
+            'fecha':         forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'texto':         forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                                   'placeholder': 'Texto de la aclaración/enmienda'}),
         }
         labels = {
-            'sim': 'Sumario',
-            'pm': 'Personal Militar',
+            'sim':           'Sumario',
+            'pm':            'Personal Militar',
             'recurso_origen': 'Recurso de Apelación (RAP) origen',
-            'TSP_NUM': 'Número del RAEE',
-            'TSP_FEC': 'Fecha del RAEE',
-            'TSP_RESOL': 'Texto del RAEE',
-            'TSP_RESUM': 'Resumen',
+            'numero':        'Número del RAEE',
+            'fecha':         'Fecha del RAEE',
+            'texto':         'Texto del RAEE',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(
-            TSP_INSTANCIA='APELACION'
-        )
+        self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(instancia='APELACION')
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        instance.TSP_INSTANCIA = 'ACLARACION_ENMIENDA'
+        instance.instancia = 'ACLARACION_ENMIENDA'
         if commit:
             instance.save()
         return instance
 
 
 class AUTOTPEHistoricoForm(forms.ModelForm):
-    """Formulario para registrar un Auto del TPE histórico (incluyendo memorándum)"""
 
     class Meta:
         model = AUTOTPE
-        fields = [
-            'sim', 'pm', 'TPE_NUM', 'TPE_FEC', 'TPE_TIPO', 'TPE_RESOL',
-            'TPE_MEMO_NUM', 'TPE_MEMO_FEC', 'TPE_MEMO_ENTREGA'
-        ]
+        fields = ['sim', 'pm', 'numero', 'fecha', 'tipo', 'texto']
         widgets = {
-            'sim': forms.Select(attrs={'class': 'form-control'}),
-            'pm': forms.Select(attrs={'class': 'form-control'}),
-            'TPE_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: 04/26',
-            }),
-            'TPE_FEC': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'TPE_TIPO': forms.Select(attrs={'class': 'form-control'}),
-            'TPE_RESOL': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Texto del auto'
-            }),
-            'TPE_MEMO_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Número de memorándum (opcional)'
-            }),
-            'TPE_MEMO_FEC': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'TPE_MEMO_ENTREGA': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+            'sim':    forms.Select(attrs={'class': 'form-control'}),
+            'pm':     forms.Select(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 04/26'}),
+            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo':   forms.Select(attrs={'class': 'form-control'}),
+            'texto':  forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Texto del auto'}),
         }
         labels = {
-            'sim': 'Sumario',
-            'pm': 'Personal Militar',
-            'TPE_NUM': 'Número del Auto',
-            'TPE_FEC': 'Fecha del Auto',
-            'TPE_TIPO': 'Tipo de Auto',
-            'TPE_RESOL': 'Texto del Auto',
-            'TPE_MEMO_NUM': 'Número de Memorándum',
-            'TPE_MEMO_FEC': 'Fecha del Memorándum',
-            'TPE_MEMO_ENTREGA': 'Fecha de Entrega del Memorándum',
+            'sim':    'Sumario',
+            'pm':     'Personal Militar',
+            'numero': 'Número del Auto',
+            'fecha':  'Fecha del Auto',
+            'tipo':   'Tipo de Auto',
+            'texto':  'Texto del Auto',
+        }
+
+
+class MemorandumForm(forms.ModelForm):
+    """Registra el memorándum asociado a un Auto de Ejecutoria."""
+
+    class Meta:
+        model = Memorandum
+        fields = ['numero', 'fecha']
+        widgets = {
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'N° Memorándum'}),
+            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'numero': 'Número de Memorándum',
+            'fecha':  'Fecha del Memorándum',
         }
 
 
 class AutoEjecutoriaForm(forms.ModelForm):
-    """Formulario para crear Auto de Ejecutoria desde caso pendiente (RES sin RR o RR sin RAP)"""
 
     class Meta:
         model = AUTOTPE
-        fields = ['TPE_NUM', 'TPE_FEC', 'TPE_RESOL', 'abog']
+        fields = ['numero', 'fecha', 'texto', 'abogado']
         widgets = {
-            'TPE_NUM': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: 07/26',
-            }),
-            'TPE_FEC': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-            }),
-            'TPE_RESOL': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 5,
-                'placeholder': 'Texto del Auto de Ejecutoria...',
-            }),
-            'abog': forms.Select(attrs={'class': 'form-control'}),
+            'numero':  forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/26'}),
+            'fecha':   forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'texto':   forms.Textarea(attrs={'class': 'form-control', 'rows': 5,
+                                             'placeholder': 'Texto del Auto de Ejecutoria...'}),
+            'abogado': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'TPE_NUM': 'Número del Auto',
-            'TPE_FEC': 'Fecha del Auto',
-            'TPE_RESOL': 'Texto del Auto de Ejecutoria',
-            'abog': 'Abogado',
+            'numero':  'Número del Auto',
+            'fecha':   'Fecha del Auto',
+            'texto':   'Texto del Auto de Ejecutoria',
+            'abogado': 'Abogado',
         }
 
 
-class AUTOTPENotificacionForm(forms.ModelForm):
-    """Formulario para registrar notificación de un Auto TPE existente"""
-
-    class Meta:
-        model = AUTOTPE
-        fields = [
-            'TPE_FECNOT', 'TPE_HORNOT', 'TPE_NOT', 'TPE_TIPO_NOTIF'
-        ]
-        widgets = {
-            'TPE_FECNOT': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'TPE_HORNOT': forms.TimeInput(attrs={
-                'class': 'form-control',
-                'type': 'time'
-            }),
-            'TPE_NOT': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Quién notificó'
-            }),
-            'TPE_TIPO_NOTIF': forms.Select(attrs={'class': 'form-control'}),
-        }
-        labels = {
-            'TPE_FECNOT': 'Fecha de Notificación',
-            'TPE_HORNOT': 'Hora de Notificación',
-            'TPE_NOT': 'Notificado a (persona)',
-            'TPE_TIPO_NOTIF': 'Tipo de Notificación',
-        }
+# Alias por compatibilidad con imports existentes
+AUTOTPENotificacionForm = NotificacionForm
 
 
-# ============================================================================
-# FORMULARIOS PARA WIZARD DE INGRESO RÁPIDO — AYUDANTE
-# ============================================================================
+# ============================================================
+# FORMULARIOS WIZARD AYUDANTE
+# ============================================================
 
 class WizardSIMForm(SIMForm):
-    # Sin patrón HTML5 para evitar alertas del navegador
-    SIM_COD = forms.CharField(
-        label='Código del Sumario',
-        max_length=25,
-        required=True,
+    codigo = forms.CharField(
+        label='Código del Sumario', max_length=25, required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ejemplo: DJE-123/25, SASJUR-25/25, SDISCAPE-86/25',
-            'autocomplete': 'off',
-            'spellcheck': 'false'
+            'autocomplete': 'off', 'spellcheck': 'false'
         })
     )
-
-    # Opcionales en el wizard para datos históricos
-    SIM_OBJETO = forms.CharField(
-        label='Objeto del Sumario',
-        required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 4,
-            'placeholder': 'Establecer las circunstancias que motivaron...'
-        })
+    objeto = forms.CharField(
+        label='Objeto del Sumario', required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+            'placeholder': 'Establecer las circunstancias que motivaron...'})
     )
-
-    SIM_RESUM = forms.CharField(
-        label='Resumen',
-        max_length=200,
-        required=False,
+    resumen = forms.CharField(
+        label='Resumen', max_length=200, required=False,
         widget=ResumenConOpcionesWidget(opciones=RESUMEN_CHOICES),
     )
-
-    SIM_TIPO = forms.ChoiceField(
-        label='Tipo de Sumario',
-        required=False,
+    tipo = forms.ChoiceField(
+        label='Tipo de Sumario', required=False,
         choices=[('', '---------')] + list(SIM.TIPO_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-
-    SIM_FASE = forms.ChoiceField(
+    fase = forms.ChoiceField(
         choices=[('', '---------')] + list(SIM.FASE_CHOICES),
-        required=False,
-        label='Fase del Sumario',
+        required=False, label='Fase del Sumario',
         widget=forms.Select(attrs={'class': 'form-control'}),
         help_text='Seleccione la fase en que quedó este sumario histórico'
     )
 
     class Meta(SIMForm.Meta):
-        fields = SIMForm.Meta.fields + ['SIM_FASE']
+        fields = SIMForm.Meta.fields + ['fase']
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        if not obj.SIM_OBJETO:
-            obj.SIM_OBJETO = ''
-        if not obj.SIM_RESUM:
-            obj.SIM_RESUM = ''
-        if not obj.SIM_TIPO:
-            obj.SIM_TIPO = 'DISCIPLINARIO'
-        fase = self.cleaned_data.get('SIM_FASE')
+        if not obj.objeto:   obj.objeto = ''
+        if not obj.resumen:  obj.resumen = ''
+        if not obj.tipo:     obj.tipo = 'DISCIPLINARIO'
+        fase = self.cleaned_data.get('fase')
         if fase:
-            obj.SIM_FASE = fase
+            obj.fase = fase
         if commit:
             obj.save()
         return obj
 
 
 class WizardRESForm(RESForm):
-    RES_NUM = forms.CharField(
-        label='Número de Resolución',
-        max_length=10,
-        required=False,
+    numero = forms.CharField(
+        label='Número de Resolución', max_length=10, required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 05/26 (opcional)'})
-    )
-    RES_TIPO_NOTIF = forms.ChoiceField(
-        choices=[('', 'Sin notificación aún')] + list(Resolucion.NOTIF_CHOICES),
-        required=False,
-        label='Tipo de Notificación',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    RES_NOT = forms.CharField(
-        max_length=100, required=False,
-        label='Notificado a',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre/Dirección/Periódico'})
-    )
-    RES_FECNOT = forms.DateField(
-        required=False,
-        label='Fecha de Notificación',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
-    )
-    RES_HORNOT = forms.TimeField(
-        required=False,
-        label='Hora de Notificación',
-        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
     )
 
     class Meta(RESForm.Meta):
-        fields = ['pm', 'RES_NUM', 'RES_FEC', 'RES_TIPO', 'RES_RESOL']
+        fields = ['pm', 'numero', 'fecha', 'tipo', 'texto']
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        obj.RES_INSTANCIA = 'PRIMERA'
-        obj.RES_TIPO_NOTIF = self.cleaned_data.get('RES_TIPO_NOTIF') or None
-        obj.RES_NOT = self.cleaned_data.get('RES_NOT') or None
-        obj.RES_FECNOT = self.cleaned_data.get('RES_FECNOT') or None
-        obj.RES_HORNOT = self.cleaned_data.get('RES_HORNOT') or None
+        obj.instancia = 'PRIMERA'
         if commit:
             obj.save()
         return obj
 
 
 class WizardRRForm(forms.ModelForm):
-    RES_NUM = forms.CharField(
-        label='Número de RR',
-        max_length=10,
-        required=False,
+    numero = forms.CharField(
+        label='Número de RR', max_length=10, required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'})
-    )
-    RES_TIPO_NOTIF = forms.ChoiceField(
-        choices=[('', 'Sin notificación aún')] + list(Resolucion.NOTIF_CHOICES),
-        required=False, label='Tipo de Notificación',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    RES_NOT = forms.CharField(
-        max_length=100, required=False, label='Notificado a',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    RES_FECNOT = forms.DateField(
-        required=False, label='Fecha Notificación RR',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
-    )
-    RES_HORNOT = forms.TimeField(
-        required=False,
-        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
     )
 
     class Meta:
         model = Resolucion
-        fields = ['RES_NUM', 'RES_FEC', 'RES_RESOL', 'RES_RESUM', 'RES_FECPRESEN']
+        fields = ['numero', 'fecha', 'texto', 'resumen', 'fecha_presentacion']
         widgets = {
-            'RES_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'}),
-            'RES_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'RES_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'RES_RESUM': forms.Select(attrs={'class': 'form-control'}),
-            'RES_FECPRESEN': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'numero':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'}),
+            'fecha':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'texto':              forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'resumen':            forms.Select(attrs={'class': 'form-control'}),
+            'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
-            'RES_NUM': 'Número del RR',
-            'RES_FEC': 'Fecha del RR',
-            'RES_RESOL': 'Texto del RR',
-            'RES_RESUM': 'Resultado (PROCEDENCIA/IMPROCEDENCIA)',
-            'RES_FECPRESEN': 'Fecha de Presentación del Recurso',
+            'numero':             'Número del RR',
+            'fecha':              'Fecha del RR',
+            'texto':              'Texto del RR',
+            'resumen':            'Resultado (PROCEDENCIA/IMPROCEDENCIA)',
+            'fecha_presentacion': 'Fecha de Presentación del Recurso',
         }
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        obj.RES_INSTANCIA = 'RECONSIDERACION'
-        obj.RES_TIPO_NOTIF = self.cleaned_data.get('RES_TIPO_NOTIF') or None
-        obj.RES_NOT = self.cleaned_data.get('RES_NOT') or None
-        obj.RES_FECNOT = self.cleaned_data.get('RES_FECNOT') or None
-        obj.RES_HORNOT = self.cleaned_data.get('RES_HORNOT') or None
+        obj.instancia = 'RECONSIDERACION'
         if commit:
             obj.save()
         return obj
 
 
 class WizardAUTOTPEForm(AUTOTPEHistoricoForm):
-    TPE_TIPO_NOTIF = forms.ChoiceField(
-        choices=[('', 'Sin notificación aún')] + list(AUTOTPE.NOTIF_CHOICES),
-        required=False, label='Tipo de Notificación',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    TPE_NOT = forms.CharField(
-        max_length=100, required=False, label='Notificado a',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    TPE_FECNOT = forms.DateField(
-        required=False, label='Fecha Notificación Auto',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
-    )
-    TPE_HORNOT = forms.TimeField(
-        required=False,
-        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
-    )
 
     class Meta(AUTOTPEHistoricoForm.Meta):
-        fields = ['pm', 'TPE_NUM', 'TPE_FEC', 'TPE_TIPO', 'TPE_RESOL', 'TPE_MEMO_NUM', 'TPE_MEMO_FEC', 'TPE_MEMO_ENTREGA']
-
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        obj.TPE_TIPO_NOTIF = self.cleaned_data.get('TPE_TIPO_NOTIF') or None
-        obj.TPE_NOT = self.cleaned_data.get('TPE_NOT') or None
-        obj.TPE_FECNOT = self.cleaned_data.get('TPE_FECNOT') or None
-        obj.TPE_HORNOT = self.cleaned_data.get('TPE_HORNOT') or None
-        if commit:
-            obj.save()
-        return obj
+        fields = ['pm', 'numero', 'fecha', 'tipo', 'texto']
 
 
 class WizardRAPForm(RAPForm):
-    TSP_TIPO_NOTIF = forms.ChoiceField(
-        choices=[('', 'Sin notificación aún')] + list(RecursoTSP.NOTIF_CHOICES),
-        required=False, label='Tipo Notificación',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    TSP_NOT = forms.CharField(
-        max_length=100, required=False, label='Notificado a',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    TSP_FECNOT = forms.DateField(
-        required=False, label='Fecha Notificación',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
-    )
-    TSP_HORNOT = forms.TimeField(
-        required=False,
-        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
-    )
 
     class Meta(RAPForm.Meta):
-        fields = ['pm', 'resolucion', 'TSP_FECPRESEN', 'TSP_OFI', 'TSP_FECOFI', 'TSP_NUM', 'TSP_FEC', 'TSP_TIPO', 'TSP_RESOL']
+        fields = ['pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio', 'numero', 'fecha', 'tipo', 'texto']
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
         if sim:
             self.fields['pm'].queryset = sim.militares.all()
-            self.fields['resolucion'].queryset = Resolucion.objects.filter(
-                sim=sim, RES_INSTANCIA='RECONSIDERACION'
-            )
+            self.fields['resolucion'].queryset = Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION')
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        obj.TSP_INSTANCIA = 'APELACION'
-        obj.TSP_TIPO_NOTIF = self.cleaned_data.get('TSP_TIPO_NOTIF') or None
-        obj.TSP_NOT = self.cleaned_data.get('TSP_NOT') or None
-        obj.TSP_FECNOT = self.cleaned_data.get('TSP_FECNOT') or None
-        obj.TSP_HORNOT = self.cleaned_data.get('TSP_HORNOT') or None
+        obj.instancia = 'APELACION'
         if commit:
             obj.save()
         return obj
 
 
 class WizardRAEEForm(RAEEForm):
-    TSP_TIPO_NOTIF = forms.ChoiceField(
-        choices=[('', 'Sin notificación aún')] + list(RecursoTSP.NOTIF_CHOICES),
-        required=False, label='Tipo Notificación',
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-    TSP_NOT = forms.CharField(
-        max_length=100, required=False, label='Notificado a',
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    TSP_FECNOT = forms.DateField(
-        required=False, label='Fecha Notificación',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
-    )
-    TSP_HORNOT = forms.TimeField(
-        required=False,
-        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'})
-    )
 
     class Meta(RAEEForm.Meta):
-        fields = ['pm', 'recurso_origen', 'TSP_NUM', 'TSP_FEC', 'TSP_RESOL', 'TSP_RESUM']
+        fields = ['pm', 'recurso_origen', 'numero', 'fecha', 'texto']
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
         if sim:
             self.fields['pm'].queryset = sim.militares.all()
-            self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(
-                sim=sim, TSP_INSTANCIA='APELACION'
-            )
+            self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(sim=sim, instancia='APELACION')
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        obj.TSP_INSTANCIA = 'ACLARACION_ENMIENDA'
-        obj.TSP_TIPO_NOTIF = self.cleaned_data.get('TSP_TIPO_NOTIF') or None
-        obj.TSP_NOT = self.cleaned_data.get('TSP_NOT') or None
-        obj.TSP_FECNOT = self.cleaned_data.get('TSP_FECNOT') or None
-        obj.TSP_HORNOT = self.cleaned_data.get('TSP_HORNOT') or None
+        obj.instancia = 'ACLARACION_ENMIENDA'
         if commit:
             obj.save()
         return obj
@@ -1107,30 +790,21 @@ class WizardRAEEForm(RAEEForm):
 class WizardAUTOTSPForm(forms.ModelForm):
     class Meta:
         model = AUTOTSP
-        fields = ['TSP_NUM', 'TSP_FEC', 'TSP_TIPO', 'TSP_RESOL', 'TSP_TIPO_NOTIF', 'TSP_NOT', 'TSP_FECNOT', 'TSP_HORNOT']
+        fields = ['numero', 'fecha', 'tipo', 'texto']
         widgets = {
-            'TSP_NUM': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/24'}),
-            'TSP_FEC': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'TSP_TIPO': forms.Select(attrs={'class': 'form-control'}),
-            'TSP_RESOL': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'TSP_TIPO_NOTIF': forms.Select(attrs={'class': 'form-control'}),
-            'TSP_NOT': forms.TextInput(attrs={'class': 'form-control'}),
-            'TSP_FECNOT': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'TSP_HORNOT': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/24'}),
+            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'tipo':   forms.Select(attrs={'class': 'form-control'}),
+            'texto':  forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
         labels = {
-            'TSP_NUM': 'Número del Auto TSP',
-            'TSP_FEC': 'Fecha del Auto TSP',
-            'TSP_TIPO': 'Tipo de Auto TSP',
-            'TSP_RESOL': 'Texto del Auto TSP',
-            'TSP_TIPO_NOTIF': 'Tipo de Notificación',
-            'TSP_NOT': 'Notificado a',
-            'TSP_FECNOT': 'Fecha Notificación',
-            'TSP_HORNOT': 'Hora Notificación',
+            'numero': 'Número del Auto TSP',
+            'fecha':  'Fecha del Auto TSP',
+            'tipo':   'Tipo de Auto TSP',
+            'texto':  'Texto del Auto TSP',
         }
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
         for f in self.fields:
             self.fields[f].required = False
-

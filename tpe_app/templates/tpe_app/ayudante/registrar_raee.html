@@ -5,41 +5,45 @@
 
 {% block sidebar_nav %}
 {% if user.is_authenticated %}
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
         <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
         <span class="lk-text">Home</span>
     </a>
 
-    <a href="{% url 'buscador_dashboard' %}" class="sb-link" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold;">
-        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
-        <span class="lk-text">Buscar</span>
-    </a>
-
     <hr class="sb-divider">
+    <p style="font-size: 0.75rem; text-transform: uppercase; color: #999; margin: 0.5rem 0.5rem; font-weight: bold;">📋 Registro Histórico</p>
 
-    <a href="{% url 'registrar_sumario' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar SIM</span>
-    </a>
-    <a href="{% url 'registrar_rr' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar RR</span>
-    </a>
     <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar RES</span>
     </a>
     <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar RAP</span>
     </a>
-    <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link active">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+    <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar RAEE</span>
     </a>
     <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar Auto TPE</span>
+    </a>
+
+    <hr class="sb-divider">
+    <p style="font-size: 0.75rem; text-transform: uppercase; color: #999; margin: 0.5rem 0.5rem; font-weight: bold;">📊 Consultas</p>
+
+    <a href="{% url 'ayudante_lista_res' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Resoluciones por Año</span>
+    </a>
+    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📌</span>
+        <span class="lk-text">RES sin PDF</span>
+    </a>
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
+        <span class="lk-text">Buscar Personal</span>
     </a>
 
     <hr class="sb-divider">
@@ -94,25 +98,25 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_NUM.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_NUM }}
+                                <label class="form-label">{{ form.numero.label }} <span class="text-danger">*</span></label>
+                                {{ form.numero }}
                                 <small class="text-muted d-block mt-1">Formato: NN/AA</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">{{ form.TSP_FEC.label }} <span class="text-danger">*</span></label>
-                                {{ form.TSP_FEC }}
+                                <label class="form-label">{{ form.fecha.label }} <span class="text-danger">*</span></label>
+                                {{ form.fecha }}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.TSP_RESUM.label }}</label>
-                            {{ form.TSP_RESUM }}
+                            <label class="form-label">{{ form.resumen.label }}</label>
+                            {{ form.resumen }}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.TSP_RESOL.label }} <span class="text-danger">*</span></label>
-                            {{ form.TSP_RESOL }}
-                            {% if form.TSP_RESOL.errors %}<div class="text-danger small mt-1">{{ form.TSP_RESOL.errors }}</div>{% endif %}
+                            <label class="form-label">{{ form.texto.label }} <span class="text-danger">*</span></label>
+                            {{ form.texto }}
+                            {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end pt-3">

@@ -1,7 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Crear RES - {{ sim.SIM_COD }}{% endblock %}
-{% block navbar_title %}📄 Crear Resolución — {{ sim.SIM_COD }}{% endblock %}
+{% block title %}Crear RES - {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}📄 Crear Resolución — {{ sim.codigo }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
@@ -12,8 +12,8 @@
 
 <h1 style="margin-bottom: 1rem; color: #1e3c72;">📄 Crear Primera Resolución (RES)</h1>
 <div class="card" style="max-width: 1000px; margin: 0 auto;">
-    <p style="margin: 0 0 0.75rem 0;"><strong>Sumario:</strong> {{ sim.SIM_COD }}</p>
-    <p style="margin: 0 0 1rem 0;"><strong>Dictamen:</strong> {{ dictamen.DIC_NUM|default:"S/N" }} — {{ dictamen.agenda }}</p>
+    <p style="margin: 0 0 0.75rem 0;"><strong>Sumario:</strong> {{ sim.codigo }}</p>
+    <p style="margin: 0 0 1rem 0;"><strong>Dictamen:</strong> {{ dictamen.numero|default:"S/N" }} — {{ dictamen.agenda }}</p>
 
     <form method="post">
         {% csrf_token %}
@@ -21,11 +21,11 @@
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Fecha</label>
-                <input class="form-control" type="date" name="RES_FEC" required />
+                <input class="form-control" type="date" name="fecha" required />
             </div>
             <div>
                 <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Tipo</label>
-                <select class="form-control" name="RES_TIPO" required>
+                <select class="form-control" name="tipo" required>
                     <option value="">---------</option>
                     {% for v, label in tipos %}
                         <option value="{{ v }}">{{ label }}</option>
@@ -36,7 +36,7 @@
 
         <div style="margin-top: 1rem;">
             <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Resolución</label>
-            <textarea class="form-control" name="RES_RESOL" rows="8" required placeholder="Texto de la resolución..."></textarea>
+            <textarea class="form-control" name="texto" rows="8" required placeholder="Texto de la resolución..."></textarea>
         </div>
 
         <div style="display:flex; gap: 0.75rem; margin-top: 1.25rem;">

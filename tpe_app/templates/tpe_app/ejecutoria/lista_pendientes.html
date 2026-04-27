@@ -51,16 +51,16 @@
         <tbody>
             {% for res in por_res %}
             <tr>
-                <td><strong>{{ res.sim.SIM_COD }}</strong></td>
-                <td>{{ res.RES_NUM }}</td>
+                <td><strong>{{ res.sim.codigo }}</strong></td>
+                <td>{{ res.numero }}</td>
                 <td style="font-size: 0.85rem;">
                     {% if res.pm %}
-                        {{ res.pm.PM_GRADO }} {{ res.pm.PM_PATERNO }} {{ res.pm.PM_MATERNO }}
+                        {{ res.pm.grado }} {{ res.pm.paterno }} {{ res.pm.materno }}
                     {% elif res.dictamen.pm %}
-                        {{ res.dictamen.pm.PM_GRADO }} {{ res.dictamen.pm.PM_PATERNO }} {{ res.dictamen.pm.PM_MATERNO }}
+                        {{ res.dictamen.pm.grado }} {{ res.dictamen.pm.paterno }} {{ res.dictamen.pm.materno }}
                     {% else %}—{% endif %}
                 </td>
-                <td>{{ res.RES_FECNOT|date:"d/m/Y" }}</td>
+                <td>{{ res.notificacion.fecha|date:"d/m/Y" }}</td>
                 <td style="color: #dc2626; font-weight: 600;">{{ res.fecha_limite|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <span style="background: #fee2e2; color: #dc2626; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
@@ -107,16 +107,16 @@
         <tbody>
             {% for rr in por_rr %}
             <tr>
-                <td><strong>{{ rr.sim.SIM_COD }}</strong></td>
-                <td>{{ rr.RES_NUM }}</td>
+                <td><strong>{{ rr.sim.codigo }}</strong></td>
+                <td>{{ rr.numero }}</td>
                 <td style="font-size: 0.85rem;">
                     {% if rr.pm %}
-                        {{ rr.pm.PM_GRADO }} {{ rr.pm.PM_PATERNO }} {{ rr.pm.PM_MATERNO }}
+                        {{ rr.pm.grado }} {{ rr.pm.paterno }} {{ rr.pm.materno }}
                     {% elif rr.resolucion_origen.pm %}
-                        {{ rr.resolucion_origen.pm.PM_GRADO }} {{ rr.resolucion_origen.pm.PM_PATERNO }} {{ rr.resolucion_origen.pm.PM_MATERNO }}
+                        {{ rr.resolucion_origen.pm.grado }} {{ rr.resolucion_origen.pm.paterno }} {{ rr.resolucion_origen.pm.materno }}
                     {% else %}—{% endif %}
                 </td>
-                <td>{{ rr.RES_FECNOT|date:"d/m/Y" }}</td>
+                <td>{{ rr.notificacion.fecha|date:"d/m/Y" }}</td>
                 <td style="color: #b45309; font-weight: 600;">{{ rr.fecha_limite|date:"d/m/Y" }}</td>
                 <td style="text-align: center;">
                     <span style="background: #fef3c7; color: #b45309; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">

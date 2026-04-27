@@ -1,0 +1,269 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Dashboard - Asesor Jefe{% endblock %}
+{% block navbar_title %}📊 Supervisor del Sistema TPE{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        font-size: 1rem;
+        color: #6b7280;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: #fff;
+        border-left: 4px solid #1e3c72;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .stat-card.para-agenda {
+        border-left-color: #3b82f6;
+    }
+
+    .stat-card.en-proceso {
+        border-left-color: #f59e0b;
+    }
+
+    .stat-card.en-apelacion {
+        border-left-color: #ef4444;
+    }
+
+    .stat-card.concluido {
+        border-left-color: #10b981;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1e3c72;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .agenda-item {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+
+    .agenda-item:hover {
+        border-color: #1e3c72;
+        box-shadow: 0 4px 6px rgba(30, 60, 114, 0.1);
+    }
+
+    .agenda-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .agenda-num {
+        font-weight: 700;
+        color: #1e3c72;
+        font-size: 1rem;
+    }
+
+    .agenda-fecha {
+        font-size: 0.9rem;
+        color: #6b7280;
+    }
+
+    .agenda-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .agenda-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #374151;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-yellow { background: #fef3c7; color: #d97706; }
+    .badge-red { background: #fee2e2; color: #dc2626; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+
+    .menu-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .menu-btn {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 1.25rem 1.5rem;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .menu-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 12px rgba(30, 60, 114, 0.2);
+    }
+
+    .menu-icon {
+        font-size: 2rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #9ca3af;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">📊 Supervisor del Sistema</h1>
+    <p class="page-subtitle">Monitoreo general de procesos del Tribunal de Personal</p>
+</div>
+
+<!-- ── ESTADÍSTICAS GLOBALES ──────────────────────────── -->
+<div class="stats-grid">
+    <div class="stat-card para-agenda">
+        <div class="stat-label">Pendiente Agendar</div>
+        <div class="stat-value">{{ resumen.para_agenda }}</div>
+    </div>
+    <div class="stat-card en-proceso">
+        <div class="stat-label">En Proceso</div>
+        <div class="stat-value">{{ resumen.en_proceso }}</div>
+    </div>
+    <div class="stat-card en-apelacion">
+        <div class="stat-label">En Apelación</div>
+        <div class="stat-value">{{ resumen.en_apelacion }}</div>
+    </div>
+    <div class="stat-card concluido">
+        <div class="stat-label">Concluidos</div>
+        <div class="stat-value">{{ resumen.concluido }}</div>
+    </div>
+</div>
+
+<!-- ── MENÚ RÁPIDO ──────────────────────────── -->
+<h2 class="section-title">🔍 Navegación Rápida</h2>
+<div class="menu-section">
+    <a href="{% url 'asesor_jefe_agendas' %}" class="menu-btn">
+        <span class="menu-icon">📅</span>
+        <span>Ver Agendas</span>
+    </a>
+    <a href="{% url 'asesor_jefe_estadisticas' %}" class="menu-btn">
+        <span class="menu-icon">📈</span>
+        <span>Estadísticas</span>
+    </a>
+    <a href="{% url 'buscador_dashboard' %}" class="menu-btn">
+        <span class="menu-icon">🔎</span>
+        <span>Buscar Sumarios</span>
+    </a>
+</div>
+
+<!-- ── PRÓXIMAS AGENDAS ──────────────────────────── -->
+<h2 class="section-title">📅 Próximas Agendas (próximos 30 días)</h2>
+
+{% if proximas_agendas %}
+    {% for agenda in proximas_agendas %}
+    <div class="agenda-item">
+        <div class="agenda-header">
+            <span class="agenda-num">{{ agenda.numero }}</span>
+            <span class="agenda-fecha">{{ agenda.fecha_prog|date:"d/m/Y" }}</span>
+        </div>
+        <div class="agenda-stats">
+            <div class="agenda-stat">
+                <span class="badge badge-blue">{{ agenda.sims_count }} Sumarios</span>
+            </div>
+            {% if agenda.dictamenes_pendientes > 0 %}
+            <div class="agenda-stat">
+                <span class="badge badge-yellow">⏳ {{ agenda.dictamenes_pendientes }} Pendientes</span>
+            </div>
+            {% endif %}
+            <div class="agenda-stat">
+                <span>{{ agenda.tipo }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <p>No hay agendas próximas en los próximos 30 días</p>
+    </div>
+{% endif %}
+
+<!-- ── ESTADÍSTICAS DEL MES ──────────────────────────── -->
+<h2 class="section-title">📊 Estadísticas de este mes</h2>
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Sumarios Ingresados</div>
+        <div class="stat-value">{{ estadisticas.sims_ingresados_mes }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Resoluciones Emitidas</div>
+        <div class="stat-value">{{ estadisticas.resoluciones_mes }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Autos Emitidos</div>
+        <div class="stat-value">{{ estadisticas.autos_mes }}</div>
+    </div>
+</div>
+
+{% endblock %}

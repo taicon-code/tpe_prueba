@@ -1,0 +1,388 @@
+{% extends 'tpe_app/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Registrar Votos de Vocales{% endblock %}
+{% block navbar_title %}🗳️ Registrar Votos del Tribunal{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: .875rem;
+        margin-bottom: 1.25rem;
+    }
+    .back-link:hover { color: #1e3c72; }
+
+    .banner {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #fff;
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: .75rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-item { display: flex; flex-direction: column; gap: .15rem; }
+    .info-item .lbl { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #9ca3af; }
+    .info-item .val { font-size: .9rem; color: #111827; font-weight: 500; }
+
+    .section-card { margin-bottom: 1.75rem; }
+    .section-card .card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: .85rem;
+    }
+
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+        background: #f8fafc;
+        border-left: 4px solid #1e3c72;
+        padding: 1rem;
+        border-radius: 6px;
+    }
+
+    .summary-card .label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-card .value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e3c72;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    th {
+        background: #f8fafc;
+        color: #1e3c72;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.75rem;
+        text-align: left;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    tr:hover {
+        background: #f9fafb;
+    }
+
+    .grado-col { min-width: 80px; }
+    .nombre-col { min-width: 150px; }
+    .cargo-col { min-width: 120px; }
+    .voto-col { min-width: 160px; }
+    .obs-col { min-width: 200px; }
+
+    .voto-select {
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background: #fff;
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .voto-select:focus {
+        outline: none;
+        border-color: #1e3c72;
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+
+    .obs-textarea {
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        width: 100%;
+        min-height: 50px;
+        font-family: inherit;
+        resize: vertical;
+    }
+
+    .obs-textarea:focus {
+        outline: none;
+        border-color: #1e3c72;
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+
+    .badge-aprueba {
+        background: #dcfce7;
+        color: #16a34a;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .badge-rechaza {
+        background: #fee2e2;
+        color: #dc2626;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .badge-abstiene {
+        background: #fef3c7;
+        color: #d97706;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #1e3c72;
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background: #2a5298;
+    }
+
+    .btn-secondary {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+    .btn-secondary:hover {
+        background: #d1d5db;
+    }
+
+    .btn-success {
+        background: #059669;
+        color: #fff;
+    }
+
+    .btn-success:hover {
+        background: #047857;
+    }
+
+    .warning-box {
+        background: #fffbeb;
+        border-left: 4px solid #f59e0b;
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1.5rem;
+        color: #78350f;
+        font-size: 0.9rem;
+    }
+</style>
+
+<!-- Volver -->
+<a href="{% url 'vocal_agenda_detalle' agenda.pk %}" class="back-link">← Volver a la Agenda</a>
+
+<!-- ── BANNER ──────────────────────────── -->
+<div class="banner">
+    <h1>🗳️ Registrar Votos del Tribunal</h1>
+    <p>Registra el voto de cada vocal presente en el dictamen</p>
+</div>
+
+<!-- ── INFORMACIÓN DEL DICTAMEN ──────────────────────────── -->
+<div class="card section-card">
+    <div class="card-title">📋 Información del Dictamen</div>
+
+    <div class="info-grid">
+        <div class="info-item">
+            <span class="lbl">Sumario</span>
+            <span class="val">{{ dictamen.sim.codigo }}</span>
+        </div>
+        <div class="info-item">
+            <span class="lbl">Militar</span>
+            <span class="val">{{ dictamen.pm.grado|default:"" }} {{ dictamen.pm.nombre }} {{ dictamen.pm.paterno }}</span>
+        </div>
+        <div class="info-item">
+            <span class="lbl">Abogado Asesor</span>
+            <span class="val">{{ dictamen.abogado.nombre|default:"—" }}</span>
+        </div>
+        <div class="info-item">
+            <span class="lbl">Número de Dictamen</span>
+            <span class="val">{{ dictamen.numero|default:"S/N" }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- ── TABLA DE VOTOS ──────────────────────────── -->
+<form method="POST" class="card section-card" id="votosForm">
+    {% csrf_token %}
+
+    <div class="card-title">🗳️ Votos de los Vocales Presentes</div>
+
+    {% if not vocales_presentes %}
+    <div class="warning-box">
+        ⚠️ No hay vocales marcados como PRESENTES en esta sesión. Por favor, registra la asistencia primero.
+    </div>
+    {% else %}
+
+    <!-- Resumen en tiempo real -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="label">A Favor (Aprueba)</div>
+            <div class="value" id="contador-aprueba">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">En Contra (Rechaza)</div>
+            <div class="value" id="contador-rechaza">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Se Abstiene</div>
+            <div class="value" id="contador-abstiene">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">Resultado Esperado</div>
+            <div class="value" id="resultado-esperado">—</div>
+        </div>
+    </div>
+
+    <!-- Tabla de votos -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th class="grado-col">Grado</th>
+                    <th class="nombre-col">Nombre</th>
+                    <th class="cargo-col">Cargo en TPE</th>
+                    <th class="voto-col">Voto</th>
+                    <th class="obs-col">Observaciones / Considerandos</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for vocal_obj in vocales_presentes %}
+                {% with voto_valor=votos|get_item:vocal_obj.pk %}
+                <tr>
+                    <td class="grado-col">{{ vocal_obj.pm.grado }}</td>
+                    <td class="nombre-col">{{ vocal_obj.pm.nombre }} {{ vocal_obj.pm.paterno }}</td>
+                    <td class="cargo-col">{{ vocal_obj.get_cargo_display }}</td>
+                    <td class="voto-col">
+                        <select name="voto_{{ vocal_obj.pk }}" class="voto-select" onchange="actualizarContadores()">
+                            <option value="">— Seleccionar —</option>
+                            <option value="APRUEBA" {% if voto_valor == 'APRUEBA' %}selected{% endif %}>✓ Aprueba</option>
+                            <option value="RECHAZA" {% if voto_valor == 'RECHAZA' %}selected{% endif %}>✗ Rechaza</option>
+                            <option value="ABSTIENE" {% if voto_valor == 'ABSTIENE' %}selected{% endif %}>◐ Se abstiene</option>
+                        </select>
+                    </td>
+                    <td class="obs-col">
+                        <textarea
+                            name="observacion_{{ vocal_obj.pk }}"
+                            class="obs-textarea"
+                            placeholder="Ej: Porque el procedimiento fue incorrecto..."></textarea>
+                    </td>
+                </tr>
+                {% endwith %}
+            {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #9ca3af;">No hay vocales presentes registrados</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% endif %}
+
+    <!-- Botones de acción -->
+    <div class="action-buttons">
+        <a href="{% url 'vocal_agenda_detalle' agenda.pk %}" class="btn btn-secondary">
+            ← Cancelar
+        </a>
+        {% if vocales_presentes %}
+        <button type="submit" class="btn btn-success">
+            ✓ Registrar Votos
+        </button>
+        {% endif %}
+    </div>
+</form>
+
+<script>
+function actualizarContadores() {
+    const selects = document.querySelectorAll('select[name^="voto_"]');
+    let aprueba = 0, rechaza = 0, abstiene = 0;
+
+    selects.forEach(select => {
+        const valor = select.value;
+        if (valor === 'APRUEBA') aprueba++;
+        else if (valor === 'RECHAZA') rechaza++;
+        else if (valor === 'ABSTIENE') abstiene++;
+    });
+
+    document.getElementById('contador-aprueba').textContent = aprueba;
+    document.getElementById('contador-rechaza').textContent = rechaza;
+    document.getElementById('contador-abstiene').textContent = abstiene;
+
+    // Calcular resultado
+    let resultado = '—';
+    if (aprueba > 0 || rechaza > 0) {
+        if (aprueba > rechaza) resultado = '✓ PROCEDENTE';
+        else if (rechaza > aprueba) resultado = '✗ IMPROCEDENTE';
+        else if (aprueba === rechaza) resultado = '◐ MIXTO';
+    }
+    document.getElementById('resultado-esperado').textContent = resultado;
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', actualizarContadores);
+</script>
+
+{% endblock %}

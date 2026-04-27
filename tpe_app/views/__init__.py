@@ -13,7 +13,15 @@ from .abogado_documentos_views import (
     abogado_confirmar_recepcion,
     abogado_devolver_carpeta,
 )
-from .buscador_views import buscador_dashboard, upload_foto_pm, detalles_sim, export_custodia_pdf
+from .buscador_views import (
+    buscador_dashboard,
+    busqueda_por_lotes,
+    upload_foto_pm,
+    detalles_sim,
+    export_custodia_pdf,
+    export_batch_pdf,
+    export_batch_excel,
+)
 from .admin1_views import (
     admin1_dashboard,
     registrar_sumario,
@@ -43,7 +51,13 @@ from .admin3_views import (
     admin3_dashboard,
 )
 from .export_views import export_person_pdfs_zip, export_person_excel, export_person_historial_pdf, export_sim_pdf, export_sim_excel
-from .vocal_views import vocal_dashboard, vocal_agenda_detalle, vocal_confirmar_dictamen
+from .vocal_views import (
+    vocal_dashboard,
+    vocal_agenda_detalle,
+    vocal_confirmar_dictamen,
+    vocal_registrar_asistencia,
+    vocal_registrar_votos,
+)
 from .ayudante_views import (
     ayudante_dashboard,
     ayudante_lista_res,
@@ -61,8 +75,14 @@ from .ayudante_views import (
     ayudante_wizard_paso4,
     ayudante_wizard_resumen,
     ayudante_wizard_buscar_sim,
+    ayudante_editar_pm,
 )
 from .ejecutoria_views import (
     pendientes_ejecutoria,
     crear_auto_ejecutoria,
+)
+from .asesor_jefe_views import (
+    asesor_jefe_dashboard,
+    asesor_jefe_agendas,
+    asesor_jefe_estadisticas,
 )

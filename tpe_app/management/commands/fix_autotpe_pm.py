@@ -37,7 +37,7 @@ class Command(BaseCommand):
             if not pm:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"⚠️  Auto {auto.TPE_NUM} ({auto.get_TPE_TIPO_display()}) - Sumario {auto.sim.SIM_COD} sin militares"
+                        f"⚠️  Auto {auto.numero} ({auto.get_tipo_display()}) - Sumario {auto.sim.codigo} sin militares"
                     )
                 )
                 ignorados += 1
@@ -49,7 +49,7 @@ class Command(BaseCommand):
             count += 1
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"✅ Auto {auto.TPE_NUM} ({auto.get_TPE_TIPO_display()}) - PM desde {origen}: {pm.PM_GRADO} {pm.PM_PATERNO}, {pm.PM_NOMBRE}"
+                    f"✅ Auto {auto.numero} ({auto.get_tipo_display()}) - PM desde {origen}: {pm.grado} {pm.paterno}, {pm.nombre}"
                 )
             )
 

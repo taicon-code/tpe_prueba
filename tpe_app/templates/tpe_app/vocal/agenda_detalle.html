@@ -1,7 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Agenda {{ agenda.AG_FECPROG|date:"d/m/Y" }} - Secretario{% endblock %}
-{% block navbar_title %}📋 Agenda {{ agenda.AG_FECPROG|date:"d/m/Y" }}{% endblock %}
+{% block title %}Agenda {{ agenda.fecha_prog|date:"d/m/Y" }} - Secretario{% endblock %}
+{% block navbar_title %}📋 Agenda {{ agenda.fecha_prog|date:"d/m/Y" }}{% endblock %}
 
 {% block content %}
 <style>
@@ -173,7 +173,7 @@
 
 <!-- ── BANNER AGENDA ──────────────────────────── -->
 <div class="agenda-banner">
-    <h1>📋 {{ agenda.AG_FECPROG|date:"d/m/Y" }}</h1>
+    <h1>📋 {{ agenda.fecha_prog|date:"d/m/Y" }}</h1>
     <p>{{ agenda.AG_DESC|default:"Agenda del tribunal" }}</p>
 </div>
 
@@ -185,37 +185,37 @@
         {% for sim_pk, grupo in dictamenes_por_sim.items %}
         <div class="dic-grupo">
             <div class="dic-grupo-header">
-                📁 {{ grupo.sim.SIM_COD }} — {{ grupo.sim.get_SIM_TIPO_display }}
+                📁 {{ grupo.sim.codigo }} — {{ grupo.sim.get_tipo_display }}
             </div>
 
             {% for dic in grupo.dictamenes %}
             <div class="dic-item">
-                <div class="dic-estado {% if dic.DIC_ESTADO == 'PENDIENTE' %}pendiente{% elif dic.DIC_ESTADO == 'CONFIRMADO' %}confirmado{% else %}modificado{% endif %}">
-                    {% if dic.DIC_ESTADO == 'PENDIENTE' %}🔔{% elif dic.DIC_ESTADO == 'CONFIRMADO' %}✓{% else %}◐{% endif %}
+                <div class="dic-estado {% if dic.estado == 'PENDIENTE' %}pendiente{% elif dic.estado == 'CONFIRMADO' %}confirmado{% else %}modificado{% endif %}">
+                    {% if dic.estado == 'PENDIENTE' %}🔔{% elif dic.estado == 'CONFIRMADO' %}✓{% else %}◐{% endif %}
                 </div>
 
                 <div class="dic-info">
                     <div class="dic-info-header">
-                        {{ dic.pm.PM_GRADO|default:"" }} {{ dic.pm.PM_NOMBRE }} {{ dic.pm.PM_PATERNO }}{% if dic.pm.PM_MATERNO %} {{ dic.pm.PM_MATERNO }}{% endif %}
+                        {{ dic.pm.grado|default:"" }} {{ dic.pm.nombre }} {{ dic.pm.paterno }}{% if dic.pm.materno %} {{ dic.pm.materno }}{% endif %}
                     </div>
                     <div class="dic-info-sub">
-                        Abogado: {{ dic.abog.ABOG_NOMBRE|default:"—" }}
-                        | Conclusión: <span class="dic-concl">{{ dic.DIC_CONCL|default:"—" }}</span>
+                        Abogado: {{ dic.abogado.nombre|default:"—" }}
+                        | Conclusión: <span class="dic-concl">{{ dic.conclusion|default:"—" }}</span>
                     </div>
-                    {% if dic.DIC_ESTADO != 'PENDIENTE' %}
+                    {% if dic.estado != 'PENDIENTE' %}
                     <div class="dic-info-sub" style="color: #059669;">
-                        ✓ Confirmado por {{ dic.secretario.get_cargo_display }} — {{ dic.DIC_CONFIR_FEC|date:"d/m/Y" }}
+                        ✓ Confirmado por {{ dic.secretario.get_cargo_display }} — {{ dic.fecha_confirmacion|date:"d/m/Y" }}
                     </div>
                     {% endif %}
                 </div>
 
-                {% if dic.DIC_ESTADO == 'PENDIENTE' %}
+                {% if dic.estado == 'PENDIENTE' %}
                 <a href="{% url 'vocal_confirmar_dictamen' dic.pk %}" class="btn-confirmar">
                     Confirmar
                 </a>
                 {% else %}
                 <span style="font-size: 0.8rem; color: #6b7280;">
-                    {{ dic.get_DIC_ESTADO_display }}
+                    {{ dic.get_estado_display }}
                 </span>
                 {% endif %}
             </div>
@@ -244,11 +244,11 @@
         <tbody>
             {% for rr in rr_en_agenda %}
             <tr>
-                <td><strong>{{ rr.RES_NUM|default:"S/N" }}</strong></td>
-                <td>{{ rr.sim.SIM_COD }}</td>
-                <td>{{ rr.pm.PM_GRADO|default:"—" }} {{ rr.pm.PM_NOMBRE|default:"—" }} {{ rr.pm.PM_PATERNO|default:"" }}</td>
-                <td>{{ rr.RES_FEC|date:"d/m/Y"|default:"—" }}</td>
-                <td style="max-width: 200px;">{{ rr.RES_RESUM|default:"—" }}</td>
+                <td><strong>{{ rr.numero|default:"S/N" }}</strong></td>
+                <td>{{ rr.sim.codigo }}</td>
+                <td>{{ rr.pm.grado|default:"—" }} {{ rr.pm.nombre|default:"—" }} {{ rr.pm.paterno|default:"" }}</td>
+                <td>{{ rr.fecha|date:"d/m/Y"|default:"—" }}</td>
+                <td style="max-width: 200px;">{{ rr.resumen|default:"—" }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -273,11 +273,11 @@
         <tbody>
             {% for auto in autos_en_agenda %}
             <tr>
-                <td><strong>{{ auto.TPE_NUM|default:"S/N" }}</strong></td>
-                <td>{{ auto.sim.SIM_COD }}</td>
-                <td>{{ auto.pm.PM_GRADO|default:"—" }} {{ auto.pm.PM_NOMBRE|default:"—" }} {{ auto.pm.PM_PATERNO|default:"" }}</td>
-                <td>{{ auto.get_TPE_TIPO_display|default:"—" }}</td>
-                <td>{{ auto.TPE_FEC|date:"d/m/Y"|default:"—" }}</td>
+                <td><strong>{{ auto.numero|default:"S/N" }}</strong></td>
+                <td>{{ auto.sim.codigo }}</td>
+                <td>{{ auto.pm.grado|default:"—" }} {{ auto.pm.nombre|default:"—" }} {{ auto.pm.paterno|default:"" }}</td>
+                <td>{{ auto.get_tipo_display|default:"—" }}</td>
+                <td>{{ auto.fecha|date:"d/m/Y"|default:"—" }}</td>
             </tr>
             {% endfor %}
         </tbody>

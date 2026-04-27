@@ -1,6 +1,6 @@
 {% extends 'tpe_app/base.html' %}
 
-{% block title %}Subir PDF - Resolución {{ res.RES_NUM }}{% endblock %}
+{% block title %}Subir PDF - Resolución {{ res.numero }}{% endblock %}
 {% block navbar_title %}📤 Subir PDF de Resolución{% endblock %}
 
 {% block content %}
@@ -19,19 +19,19 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Número RES:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.RES_NUM }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.numero }}</p>
             </div>
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Tipo:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.get_RES_TIPO_display }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.get_tipo_display }}</p>
             </div>
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Sumario:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.sim.SIM_COD }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.sim.codigo }}</p>
             </div>
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fecha:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.RES_FEC|date:"d/m/Y" }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ res.fecha|date:"d/m/Y" }}</p>
             </div>
             {% if pdf_existente %}
             <div style="grid-column: 1 / -1;">

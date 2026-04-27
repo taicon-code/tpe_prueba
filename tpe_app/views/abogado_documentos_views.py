@@ -17,9 +17,9 @@ from ..utils.numeracion import next_num_yy
 
 def _get_abogado_or_403(request):
     perfil = getattr(request.user, "perfilusuario", None)
-    if not perfil or not getattr(perfil, "abogado", None):
+    if not perfil or not getattr(perfil, "pm", None):
         raise PermissionDenied()
-    return perfil.abogado
+    return perfil.pm
 
 
 @rol_requerido("ABOGADO", "ABOG1_ASESOR", "ABOG2_AUTOS", "ABOG3_BUSCADOR")
@@ -30,45 +30,45 @@ def abogado_sumario_detalle(request, sim_id: int):
         pk=sim_id,
     )
 
-    dictamenes       = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-id")
+    dictamenes       = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abogado").order_by("-id")
     resoluciones     = list(
-        Resolucion.objects.filter(sim=sim, RES_INSTANCIA='PRIMERA')
-        .select_related("agenda", "abog", "dictamen").order_by("-RES_FEC")
+        Resolucion.objects.filter(sim=sim, instancia='PRIMERA')
+        .select_related("agenda", "abogado", "dictamen").order_by("-fecha")
     )
     reconsideraciones = Resolucion.objects.filter(
-        sim=sim, RES_INSTANCIA='RECONSIDERACION'
-    ).select_related("resolucion_origen", "agenda", "abog").order_by("-RES_FEC")
-    autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abog").order_by("-TPE_FEC", "-id")
+        sim=sim, instancia='RECONSIDERACION'
+    ).select_related("resolucion_origen", "agenda", "abogado").order_by("-fecha")
+    autos_tpe        = AUTOTPE.objects.filter(sim=sim).select_related("agenda", "abogado").order_by("-fecha", "-id")
 
     # Adjuntar PDF a cada Resolucion y AUTOTPE
     for res in resoluciones:
-        doc = DocumentoAdjunto.objects.filter(DOC_TABLA='resolucion', DOC_ID_REG=res.pk).first()
-        res.pdf_url = doc.DOC_RUTA.url if doc else None
+        doc = DocumentoAdjunto.objects.filter(resolucion_id=res.pk).first()
+        res.pdf_url = doc.archivo.url if doc else None
 
     autos_tpe = list(autos_tpe)
     for auto in autos_tpe:
-        doc = DocumentoAdjunto.objects.filter(DOC_TABLA='autotpe', DOC_ID_REG=auto.pk).first()
-        auto.pdf_url = doc.DOC_RUTA.url if doc else None
+        doc = DocumentoAdjunto.objects.filter(autotpe_id=auto.pk).first()
+        auto.pdf_url = doc.archivo.url if doc else None
 
     # Determinar el rol del abogado en este SIM:
     # es_via_sim → asignado directamente al SIM (Etapa 1, acceso completo)
     # rrs_asignados → asignado por RR (Etapa 2, solo puede operar sobre sus propios documentos)
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
     rrs_asignados = list(
-        Resolucion.objects.filter(sim=sim, RES_INSTANCIA='RECONSIDERACION', abog=abogado)
-        .select_related("resolucion_origen").order_by("-RES_FEC")
+        Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION', abogado=abogado)
+        .select_related("resolucion_origen").order_by("-fecha")
     )
 
     # Verificar si este abogado es el responsable de la carpeta
     es_responsable = ABOG_SIM.objects.filter(
-        sim=sim, abog=abogado, es_responsable=True
+        sim=sim, abogado=abogado, es_responsable=True
     ).exists()
 
     # Custodia activa (solo relevante para el responsable — botón entregar)
     tiene_custodia = CustodiaSIM.objects.filter(
         sim=sim,
         fecha_entrega__isnull=True,
-        abog=abogado
+        abogado=abogado
     ).exists()
     custodio_actual = sim.custodio_actual()
 
@@ -86,7 +86,7 @@ def abogado_sumario_detalle(request, sim_id: int):
 
     # Documentos adjuntos al SIM (PDFs escaneados)
     documentos_sim = DocumentoAdjunto.objects.filter(
-        DOC_TABLA='sim', DOC_ID_REG=sim.pk
+        sim_id=sim.pk
     ).order_by('-id')
 
     # Identificar si el abogado es ABOG2 (ejecutoria)
@@ -94,7 +94,7 @@ def abogado_sumario_detalle(request, sim_id: int):
     es_abog2 = perfil and perfil.rol == 'ABOG2_AUTOS'
 
     # Para Abog2: verificar acceso via autos asignados
-    autos_asignados = [a for a in autos_tpe if a.abog_id == abogado.pk]
+    autos_asignados = [a for a in autos_tpe if a.id == abogado.pk]
 
     # Validar acceso: Abog2 puede ver si tiene custodia activa (aún sin autos), autos asignados, o asignación via SIM/RR
     if es_abog2 and not autos_asignados and not es_via_sim and not rrs_asignados and not tiene_custodia:
@@ -103,7 +103,7 @@ def abogado_sumario_detalle(request, sim_id: int):
     context = {
         "sim": sim,
         "abogado": abogado,
-        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim, es_responsable=True).select_related('abog'),
+        "abogados_asignados": ABOG_SIM.objects.filter(sim=sim, es_responsable=True).select_related('abogado'),
         "investigados": sim.militares.all(),
         "dictamenes": dictamenes,
         "resoluciones": resoluciones,
@@ -130,14 +130,14 @@ def abogado_dictamen_crear(request, sim_id: int):
     # Verificar que el abogado esté asignado al SIM (no requiere custodia)
     if not sim.abogados.filter(pk=abogado.pk).exists():
         rr_asignado = Resolucion.objects.filter(
-            sim=sim, abog=abogado, RES_INSTANCIA='RECONSIDERACION'
+            sim=sim, abogado=abogado, instancia='RECONSIDERACION'
         ).exists()
         if not rr_asignado:
             messages.error(request, "❌ No está asignado a este sumario.")
             return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     militares = list(sim.militares.all())
-    agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
+    agendas = AGENDA.objects.all().order_by("-fecha_prog")
 
     if request.method == "POST":
         agenda_id = request.POST.get("agenda") or ""
@@ -155,43 +155,43 @@ def abogado_dictamen_crear(request, sim_id: int):
                     if militares:
                         # Crear un dictamen por cada militar del sumario
                         for pm in militares:
-                            conclusion = (request.POST.get(f"DIC_CONCL_{pm.pk}") or "").strip()
+                            conclusion = (request.POST.get(f"conclusion_{pm.pk}") or "").strip()
                             dic_num = None
 
                             if autogenerar:
                                 existentes = list(
-                                    DICTAMEN.objects.filter(DIC_NUM__isnull=False)
-                                    .values_list("DIC_NUM", flat=True)
+                                    DICTAMEN.objects.filter(numero__isnull=False)
+                                    .values_list("numero", flat=True)
                                 )
                                 dic_num = next_num_yy(existentes, today=date.today())
 
                             DICTAMEN.objects.create(
                                 agenda=agenda,
                                 sim=sim,
-                                abog=abogado,
+                                abogado=abogado,
                                 pm=pm,
-                                DIC_NUM=dic_num,
-                                DIC_CONCL=conclusion or None,
+                                numero=dic_num,
+                                conclusion=conclusion or None,
                             )
                             dictamenes_creados += 1
                     else:
                         # Fallback: si no hay militares, crear un dictamen sin PM
-                        conclusion = (request.POST.get("DIC_CONCL") or "").strip()
+                        conclusion = (request.POST.get("conclusion") or "").strip()
                         dic_num = None
 
                         if autogenerar:
                             existentes = list(
-                                DICTAMEN.objects.filter(DIC_NUM__isnull=False)
-                                .values_list("DIC_NUM", flat=True)
+                                DICTAMEN.objects.filter(numero__isnull=False)
+                                .values_list("numero", flat=True)
                             )
                             dic_num = next_num_yy(existentes, today=date.today())
 
                         DICTAMEN.objects.create(
                             agenda=agenda,
                             sim=sim,
-                            abog=abogado,
-                            DIC_NUM=dic_num,
-                            DIC_CONCL=conclusion or None,
+                            abogado=abogado,
+                            numero=dic_num,
+                            conclusion=conclusion or None,
                         )
                         dictamenes_creados = 1
 
@@ -217,14 +217,14 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
 
     # Seguridad: solo puede crear RES desde un dictamen propio si accede via RR (Etapa 2)
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
-    if not es_via_sim and dictamen.abog != abogado:
+    if not es_via_sim and dictamen.abogado != abogado:
         messages.error(request, "No tiene autorización para crear una RES desde este dictamen.")
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     if request.method == "POST":
-        res_fec = request.POST.get("RES_FEC") or ""
-        res_tipo = request.POST.get("RES_TIPO") or ""
-        res_resol = (request.POST.get("RES_RESOL") or "").strip()
+        res_fec = request.POST.get("fecha") or ""
+        res_tipo = request.POST.get("tipo") or ""
+        res_resol = (request.POST.get("texto") or "").strip()
 
         if not res_fec or not res_tipo or not res_resol:
             messages.error(request, "Complete Fecha, Tipo y Resolución.")
@@ -234,16 +234,16 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
                     res_num = next_resolucion_num()
 
                     Resolucion.objects.create(
-                        RES_INSTANCIA='PRIMERA',
+                        instancia='PRIMERA',
                         sim=sim,
-                        abog=abogado,
+                        abogado=abogado,
                         agenda=dictamen.agenda if dictamen.agenda_id else None,
                         dictamen=dictamen,
                         pm=dictamen.pm,
-                        RES_NUM=res_num,
-                        RES_FEC=res_fec,
-                        RES_TIPO=res_tipo,
-                        RES_RESOL=res_resol,
+                        numero=res_num,
+                        fecha=res_fec,
+                        tipo=res_tipo,
+                        texto=res_resol,
                     )
                 messages.success(request, f"✅ RES creada ({res_num}).")
                 return redirect("abogado_sumario_detalle", sim_id=sim.pk)
@@ -263,7 +263,7 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
 def abogado_rr_crear(request, sim_id: int, res_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
-    res = get_object_or_404(Resolucion, pk=res_id, sim=sim, RES_INSTANCIA='PRIMERA')
+    res = get_object_or_404(Resolucion, pk=res_id, sim=sim, instancia='PRIMERA')
 
     if request.method == "POST":
         rr_fec = request.POST.get("RR_FEC") or ""
@@ -276,16 +276,16 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
                 rr_num = next_resolucion_num() if autogen else None
 
                 Resolucion.objects.create(
-                    RES_INSTANCIA='RECONSIDERACION',
+                    instancia='RECONSIDERACION',
                     sim=sim,
                     resolucion_origen=res,
                     agenda=res.agenda,
-                    abog=abogado,
+                    abogado=abogado,
                     pm=res.pm,
-                    RES_NUM=rr_num or '',
-                    RES_FEC=rr_fec or None,
-                    RES_RESUM=rr_resum,
-                    RES_RESOL=rr_resol or None,
+                    numero=rr_num or '',
+                    fecha=rr_fec or None,
+                    resumen=rr_resum,
+                    texto=rr_resol or None,
                 )
             messages.success(request, f"✅ RR creada ({rr_num or 'S/N'}).")
             return redirect("abogado_sumario_detalle", sim_id=sim.pk)
@@ -308,32 +308,32 @@ def abogado_autotpe_crear(request, sim_id: int, dictamen_id: int):
 
     # Seguridad: solo puede crear Auto desde un dictamen propio si accede via RR (Etapa 2)
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
-    if not es_via_sim and dictamen.abog != abogado:
+    if not es_via_sim and dictamen.abogado != abogado:
         messages.error(request, "No tiene autorización para crear un Auto desde este dictamen.")
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     if request.method == "POST":
-        tpe_fec = request.POST.get("TPE_FEC") or ""
-        tpe_tipo = request.POST.get("TPE_TIPO") or ""
-        tpe_resol = (request.POST.get("TPE_RESOL") or "").strip()
+        tpe_fec = request.POST.get("fecha") or ""
+        tpe_tipo = request.POST.get("tipo") or ""
+        tpe_resol = (request.POST.get("texto") or "").strip()
         autogen = request.POST.get("autogenerar_numero") == "1"
 
         try:
             with transaction.atomic():
                 tpe_num = None
                 if autogen:
-                    existentes = list(AUTOTPE.objects.values_list("TPE_NUM", flat=True))
+                    existentes = list(AUTOTPE.objects.values_list("numero", flat=True))
                     tpe_num = next_num_yy(existentes, today=date.today())
 
                 AUTOTPE.objects.create(
                     sim=sim,
                     pm=dictamen.pm,
-                    abog=abogado,
+                    abogado=abogado,
                     agenda=dictamen.agenda if dictamen.agenda_id else None,
-                    TPE_NUM=tpe_num,
-                    TPE_FEC=tpe_fec or None,
-                    TPE_TIPO=tpe_tipo or None,
-                    TPE_RESOL=tpe_resol or None,
+                    numero=tpe_num,
+                    fecha=tpe_fec or None,
+                    tipo=tpe_tipo or None,
+                    texto=tpe_resol or None,
                 )
             messages.success(request, f"✅ Auto TPE creado ({tpe_num or 'S/N'}).")
             return redirect("abogado_sumario_detalle", sim_id=sim.pk)
@@ -360,7 +360,7 @@ def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
         Resolucion.objects
         .filter(sim=sim)
         .select_related('pm')
-        .order_by('-RES_FEC')
+        .order_by('-fecha')
         .first()
     )
 
@@ -369,32 +369,32 @@ def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     if request.method == "POST":
-        tpe_fec = request.POST.get("TPE_FEC") or ""
-        tpe_resol = (request.POST.get("TPE_RESOL") or "").strip()
+        tpe_fec = request.POST.get("fecha") or ""
+        tpe_resol = (request.POST.get("texto") or "").strip()
         autogen = request.POST.get("autogenerar_numero") == "1"
 
         try:
             with transaction.atomic():
                 tpe_num = None
                 if autogen:
-                    existentes = list(AUTOTPE.objects.values_list("TPE_NUM", flat=True))
+                    existentes = list(AUTOTPE.objects.values_list("numero", flat=True))
                     from ..utils.numeracion import next_num_yy
                     from datetime import date
                     tpe_num = next_num_yy(existentes, today=date.today())
 
                 AUTOTPE.objects.create(
                     sim=sim,
-                    abog=abogado,
+                    abogado=abogado,
                     pm=resolucion.pm,
                     resolucion=resolucion,
-                    TPE_NUM=tpe_num,
-                    TPE_FEC=tpe_fec or None,
-                    TPE_TIPO='AUTO_EJECUTORIA',
-                    TPE_RESOL=tpe_resol or None,
+                    numero=tpe_num,
+                    fecha=tpe_fec or None,
+                    tipo='AUTO_EJECUTORIA',
+                    texto=tpe_resol or None,
                 )
 
                 # Marcar SIM como concluido en el TPE (estado: PROCESO_CONCLUIDO_TPE)
-                sim.SIM_ESTADO = 'PROCESO_CONCLUIDO_TPE'
+                sim.estado = 'PROCESO_CONCLUIDO_TPE'
                 sim.save()
 
                 messages.success(request, f"✅ Auto de Ejecutoria {tpe_num or 'S/N'} creado correctamente")
@@ -417,13 +417,13 @@ def abogado_auto_excusa_crear(request, sim_id: int):
 
     # Cargar vocales activos
     vocales = VOCAL_TPE.objects.filter(activo=True).select_related("pm")
-    agendas = AGENDA.objects.all().order_by("-AG_FECPROG")
+    agendas = AGENDA.objects.all().order_by("-fecha_prog")
 
     if request.method == "POST":
         vocal_id = request.POST.get("vocal_id") or ""
         agenda_id = request.POST.get("agenda") or ""
-        fecha_str = request.POST.get("TPE_FEC") or ""
-        resolucion = (request.POST.get("TPE_RESOL") or "").strip()
+        fecha_str = request.POST.get("fecha") or ""
+        resolucion = (request.POST.get("texto") or "").strip()
 
         if not vocal_id or not agenda_id or not fecha_str:
             messages.error(request, "Complete Vocal, Agenda y Fecha.")
@@ -437,8 +437,8 @@ def abogado_auto_excusa_crear(request, sim_id: int):
 
                     if request.POST.get("autogenerar_numero") == "1":
                         existentes = list(
-                            AUTOTPE.objects.filter(TPE_NUM__isnull=False)
-                            .values_list("TPE_NUM", flat=True)
+                            AUTOTPE.objects.filter(numero__isnull=False)
+                            .values_list("numero", flat=True)
                         )
                         tpe_num = next_num_yy(existentes, today=date.today())
 
@@ -451,13 +451,13 @@ def abogado_auto_excusa_crear(request, sim_id: int):
                     auto = AUTOTPE.objects.create(
                         sim=sim,
                         pm=pm,
-                        abog=abogado,
+                        abogado=abogado,
                         agenda=agenda,
                         vocal_excusado=vocal,
-                        TPE_NUM=tpe_num,
-                        TPE_FEC=fecha_str,
-                        TPE_TIPO="AUTO_EXCUSA",
-                        TPE_RESOL=resolucion or None,
+                        numero=tpe_num,
+                        fecha=fecha_str,
+                        tipo="AUTO_EXCUSA",
+                        texto=resolucion or None,
                     )
 
                 messages.success(request, f"✅ Auto de Excusa creado ({tpe_num or 'S/N'}).")
@@ -485,7 +485,7 @@ def abogado_confirmar_recepcion(request, sim_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
 
     custodia = CustodiaSIM.objects.filter(
-        sim=sim, abog=abogado, estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
+        sim=sim, abogado=abogado, estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
     ).first()
 
     if not custodia:
@@ -527,7 +527,7 @@ def abogado_devolver_carpeta(request, sim_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
 
     custodia = CustodiaSIM.objects.filter(
-        sim=sim, abog=abogado, estado='RECIBIDA_CONFORME', fecha_entrega__isnull=True
+        sim=sim, abogado=abogado, estado='RECIBIDA_CONFORME', fecha_entrega__isnull=True
     ).first()
 
     if not custodia:
@@ -545,7 +545,7 @@ def abogado_devolver_carpeta(request, sim_id: int):
                 CustodiaSIM.objects.create(
                     sim=sim,
                     tipo_custodio='ADMIN2_ARCHIVO',
-                    abog=abogado,
+                    abogado=abogado,
                     usuario=request.user,
                     motivo='REVISION',
                     estado='PENDIENTE_CONFIRMACION',

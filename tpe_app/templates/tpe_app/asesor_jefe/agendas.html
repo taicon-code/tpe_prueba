@@ -1,0 +1,152 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Agendas - Asesor Jefe{% endblock %}
+{% block navbar_title %}📅 Monitoreo de Agendas{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #6b7280;
+        text-decoration: none;
+        font-size: 0.875rem;
+        margin-bottom: 1.25rem;
+    }
+    .back-link:hover { color: #1e3c72; }
+
+    .page-header {
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #1e3c72;
+        margin-bottom: 0.5rem;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+    th {
+        background: #f8fafc;
+        color: #1e3c72;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 1rem;
+        text-align: left;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    tr:hover {
+        background: #f9fafb;
+    }
+
+    .num-col { min-width: 100px; }
+    .fecha-col { min-width: 100px; }
+    .tipo-col { min-width: 100px; }
+    .sims-col { min-width: 80px; text-align: center; }
+    .militar-col { min-width: 80px; text-align: center; }
+    .pendientes-col { min-width: 100px; text-align: center; }
+    .confirmados-col { min-width: 100px; text-align: center; }
+
+    .badge {
+        display: inline-block;
+        padding: 0.35rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-yellow { background: #fef3c7; color: #d97706; }
+    .badge-green { background: #dcfce7; color: #16a34a; }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #9ca3af;
+    }
+</style>
+
+<a href="{% url 'asesor_jefe_dashboard' %}" class="back-link">← Volver al Dashboard</a>
+
+<div class="page-header">
+    <h1 class="page-title">📅 Monitoreo de Agendas - {{ mes }}</h1>
+    <p style="color: #6b7280;">Seguimiento detallado de todas las sesiones del tribunal</p>
+</div>
+
+{% if agendas %}
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th class="num-col">Nº Agenda</th>
+                <th class="fecha-col">Fecha</th>
+                <th class="tipo-col">Tipo</th>
+                <th class="sims-col">Sumarios</th>
+                <th class="militar-col">Militares</th>
+                <th class="pendientes-col">⏳ Pendientes</th>
+                <th class="confirmados-col">✓ Confirmados</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for agenda in agendas %}
+            <tr>
+                <td class="num-col"><strong>{{ agenda.numero }}</strong></td>
+                <td class="fecha-col">{{ agenda.fecha_prog|date:"d/m/Y" }}</td>
+                <td class="tipo-col">
+                    {% if agenda.tipo == 'ORDINARIA' %}
+                        <span class="badge badge-blue">ORDINARIA</span>
+                    {% else %}
+                        <span class="badge badge-yellow">EXTRAORDINARIA</span>
+                    {% endif %}
+                </td>
+                <td class="sims-col"><span class="badge badge-blue">{{ agenda.sims_count }}</span></td>
+                <td class="militar-col">{{ agenda.militares_count }}</td>
+                <td class="pendientes-col">
+                    {% if agenda.dictamenes_pendientes > 0 %}
+                        <span class="badge badge-yellow">{{ agenda.dictamenes_pendientes }}</span>
+                    {% else %}
+                        <span style="color: #9ca3af;">—</span>
+                    {% endif %}
+                </td>
+                <td class="confirmados-col">
+                    {% if agenda.dictamenes_confirmados > 0 %}
+                        <span class="badge badge-green">{{ agenda.dictamenes_confirmados }}</span>
+                    {% else %}
+                        <span style="color: #9ca3af;">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p style="font-size: 1.1rem;">📭 No hay agendas programadas para este mes</p>
+</div>
+{% endif %}
+
+{% endblock %}

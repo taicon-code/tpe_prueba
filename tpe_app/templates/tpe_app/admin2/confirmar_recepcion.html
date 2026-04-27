@@ -19,22 +19,22 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Código:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.SIM_COD }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.codigo }}</p>
             </div>
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Tipo:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.get_SIM_TIPO_display }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.get_tipo_display }}</p>
             </div>
             <div style="grid-column: 1 / -1;">
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Resumen:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.SIM_RESUM }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.resumen }}</p>
             </div>
             <div style="grid-column: 1 / -1;">
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Entregada por:</strong></p>
                 <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
-                    {% if custodio_actual.abog %}
+                    {% if custodio_actual.abogado %}
                         <span style="background: #fecaca; color: #991b1b; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">
-                            {{ custodio_actual.abog.AB_GRADO }} {{ custodio_actual.abog.AB_PATERNO }}
+                            {{ custodio_actual.abogado.grado }} {{ custodio_actual.abogado.paterno }}
                         </span>
                     {% else %}
                         {{ custodio_actual.get_tipo_custodio_display }}

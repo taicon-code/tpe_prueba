@@ -16,19 +16,19 @@
 
     <!-- Info del SIM -->
     <div class="card" style="background: #fffbeb; border-left: 4px solid #d97706; margin-bottom: 1.5rem;">
-        <h3 style="margin-top: 0; color: #92400e;">📄 Memorándum N° {{ auto.TPE_MEMO_NUM }}</h3>
+        <h3 style="margin-top: 0; color: #92400e;">📄 Memorándum N° {{ auto.memorandum.numero }}</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Sumario:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ sim.SIM_COD }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ sim.codigo }}</p>
             </div>
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>N° Auto Ejecutoria:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ auto.TPE_NUM|default:"—" }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-weight: 600;">{{ auto.numero|default:"—" }}</p>
             </div>
             <div>
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fecha Emisión Memo:</strong></p>
-                <p style="margin: 0.3rem 0 0 0; color: #333;">{{ auto.TPE_MEMO_FEC|date:"d/m/Y"|default:"—" }}</p>
+                <p style="margin: 0.3rem 0 0 0; color: #333;">{{ auto.memorandum.fecha|date:"d/m/Y"|default:"—" }}</p>
             </div>
         </div>
     </div>

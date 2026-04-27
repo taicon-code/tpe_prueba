@@ -5,41 +5,45 @@
 
 {% block sidebar_nav %}
 {% if user.is_authenticated %}
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
         <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
         <span class="lk-text">Home</span>
     </a>
 
-    <a href="{% url 'buscador_dashboard' %}" class="sb-link" style="background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold;">
-        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
-        <span class="lk-text">Buscar</span>
-    </a>
-
     <hr class="sb-divider">
+    <p style="font-size: 0.75rem; text-transform: uppercase; color: #999; margin: 0.5rem 0.5rem; font-weight: bold;">📋 Registro Histórico</p>
 
-    <a href="{% url 'registrar_sumario' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar SIM</span>
-    </a>
-    <a href="{% url 'registrar_rr' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Registrar RR</span>
-    </a>
     <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar RES</span>
     </a>
     <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar RAP</span>
     </a>
     <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar RAEE</span>
     </a>
     <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
         <span class="lk-text">Registrar Auto TPE</span>
+    </a>
+
+    <hr class="sb-divider">
+    <p style="font-size: 0.75rem; text-transform: uppercase; color: #999; margin: 0.5rem 0.5rem; font-weight: bold;">📊 Consultas</p>
+
+    <a href="{% url 'ayudante_lista_res' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
+        <span class="lk-text">Resoluciones por Año</span>
+    </a>
+    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">📌</span>
+        <span class="lk-text">RES sin PDF</span>
+    </a>
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
+        <span class="lk-text">Buscar Personal</span>
     </a>
 
     <hr class="sb-divider">
@@ -123,23 +127,23 @@
                             {% for res in resoluciones %}
                             <tr>
                                 <td class="text-center text-nowrap">
-                                    <small class="text-muted">{{ res.pm.PM_GRADO|default:"—" }}</small>
+                                    <small class="text-muted">{{ res.pm.grado|default:"—" }}</small>
                                 </td>
                                 <td>
-                                    <strong>{{ res.pm.PM_PATERNO }}</strong>
+                                    <strong>{{ res.pm.paterno }}</strong>
                                 </td>
-                                <td>{{ res.pm.PM_NOMBRE }}</td>
+                                <td>{{ res.pm.nombre }}</td>
                                 <td class="text-center">
-                                    <code class="bg-light p-1">{{ res.sim.SIM_COD }}</code>
+                                    <code class="bg-light p-1">{{ res.sim.codigo }}</code>
                                 </td>
                                 <td class="text-center">
-                                    <code class="bg-light p-1">{{ res.RES_NUM }}</code>
+                                    <code class="bg-light p-1">{{ res.numero }}</code>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">{{ res.get_RES_TIPO_display|truncatewords:3 }}</span>
+                                    <span class="badge bg-info">{{ res.get_tipo_display|truncatewords:3 }}</span>
                                 </td>
                                 <td class="text-center">
-                                    <small>{{ res.RES_FEC|date:"d/m/Y" }}</small>
+                                    <small>{{ res.fecha|date:"d/m/Y" }}</small>
                                 </td>
                                 <td class="text-center">
                                     <a href="{% url 'subir_pdf_res' res.id %}"
