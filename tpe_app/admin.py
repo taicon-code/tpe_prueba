@@ -183,9 +183,9 @@ class MemorandumInline(admin.StackedInline):
 
 @admin.register(Resolucion)
 class ResolucionAdmin(admin.ModelAdmin):
-    list_display  = ('numero', 'instancia', 'sim', 'abogado', 'tipo', 'resumen', 'fecha', 'alerta_plazo')
+    list_display  = ('numero', 'instancia', 'sim', 'abogado', 'tipo', 'fecha', 'alerta_plazo')
     search_fields = ('numero', 'sim__codigo', 'abogado__paterno')
-    list_filter   = ('instancia', 'tipo', 'resumen')
+    list_filter   = ('instancia', 'tipo')
     inlines       = [NotificacionInline]
 
     fieldsets = (
@@ -196,7 +196,7 @@ class ResolucionAdmin(admin.ModelAdmin):
             'fields': ('sim', 'pm', 'abogado', 'agenda', 'dictamen', 'resolucion_origen',)
         }),
         ('DISPOSICIÓN RESOLUTIVA', {
-            'fields': ('numero', 'fecha', 'texto', 'tipo', 'resumen',)
+            'fields': ('numero', 'fecha', 'texto', 'tipo',)
         }),
         ('PLAZOS (RECONSIDERACION)', {
             'fields': ('fecha_presentacion', 'fecha_limite',)

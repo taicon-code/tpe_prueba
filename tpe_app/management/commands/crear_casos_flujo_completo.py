@@ -476,7 +476,7 @@ class Command(BaseCommand):
             sim=sim, pm=pm2, abogado=abog1, agenda=agendas['ag3'],
             instancia='RECONSIDERACION', resolucion_origen=res2,
             numero='06/26', fecha_presentacion=date(2026, 4, 1),
-            resumen='PROCEDENCIA'
+            tipo='PROCEDENCIA'
         )
         self.stdout.write(f'   > PM2: Presenta RR (pendiente resolucion)')
 
@@ -484,7 +484,7 @@ class Command(BaseCommand):
             sim=sim, pm=pm3, abogado=abog2, agenda=agendas['ag3'],
             instancia='RECONSIDERACION', resolucion_origen=res3,
             numero='07/26', fecha_presentacion=date(2026, 3, 28),
-            resumen='IMPROCEDENCIA',
+            tipo='IMPROCEDENCIA',
             fecha=date(2026, 4, 5),
             texto='EL TRIBUNAL RECHAZA RECURSO - MANTIENE SANCION LETRA B'
         )

@@ -739,7 +739,6 @@ class Command(BaseCommand):
                     'fecha_presentacion': fec_pres,
                     'fecha_limite': fec_lim,
                     'texto': resol,
-                    'resumen': (truncar(resol, 20) or None),
                     'agenda': ag,
                 },
             )

@@ -109,11 +109,6 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">{{ form.resumen.label }}</label>
-                            {{ form.resumen }}
-                        </div>
-
-                        <div class="mb-3">
                             <label class="form-label">{{ form.texto.label }} <span class="text-danger">*</span></label>
                             {{ form.texto }}
                             {% if form.texto.errors %}<div class="text-danger small mt-1">{{ form.texto.errors }}</div>{% endif %}

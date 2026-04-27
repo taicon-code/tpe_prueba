@@ -16,7 +16,7 @@ Nombres de columna esperados en el Excel (primera línea del encabezado):
   Hoja 2_PM:     ci, escalafon, grado, arma, especialidad, nombre, paterno, materno, estado, anio_promocion
   Hoja 3_PM_SIM: codigo, ci, grado_en_fecha
   Hoja 4_RES:    codigo, numero, fecha, tipo, texto, tipo_notif, notif_a, fecha_notif, hora_notif
-  Hoja 5_RR:     codigo, res_numero, fecha_presentacion, numero, fecha, texto, resumen,
+  Hoja 5_RR:     codigo, res_numero, fecha_presentacion, numero, fecha, texto, tipo,
                  tipo_notif, notif_a, fecha_notif, hora_notif
   Hoja 6_RAP:    codigo, fecha_presentacion, numero_oficio, fecha_oficio, numero, fecha, tipo, texto,
                  tipo_notif, notif_a, fecha_notif, hora_notif
@@ -480,8 +480,8 @@ class Command(BaseCommand):
                 if not numero_rr:
                     self._registrar_skip(hoja, num_fila, f"{cod}: numero del RR vacío"); continue
 
-                resum_raw = _str(fila.get("resumen"))
-                resum_val = resum_raw[:20] if resum_raw else None
+                tipo_raw = _str(fila.get("tipo"))
+                tipo_val = tipo_raw[:100] if tipo_raw else None
 
                 rr = Resolucion.objects.create(
                     sim=sim,
@@ -491,7 +491,7 @@ class Command(BaseCommand):
                     fecha_presentacion=_parse_fecha(fila.get("fecha_presentacion")),
                     fecha=_parse_fecha(fila.get("fecha")),
                     texto=(_str(fila.get("texto")) or "").upper() or None,
-                    resumen=resum_val,
+                    tipo=tipo_val,
                 )
                 t = _str(fila.get("tipo_notif"))
                 if t:

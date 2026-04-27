@@ -248,7 +248,7 @@
                 <td>{{ rr.sim.codigo }}</td>
                 <td>{{ rr.pm.grado|default:"—" }} {{ rr.pm.nombre|default:"—" }} {{ rr.pm.paterno|default:"" }}</td>
                 <td>{{ rr.fecha|date:"d/m/Y"|default:"—" }}</td>
-                <td style="max-width: 200px;">{{ rr.resumen|default:"—" }}</td>
+                <td style="max-width: 200px;">{{ rr.get_tipo_display|default:"—" }}</td>
             </tr>
             {% endfor %}
         </tbody>

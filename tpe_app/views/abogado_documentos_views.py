@@ -284,7 +284,7 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
                     pm=res.pm,
                     numero=rr_num or '',
                     fecha=rr_fec or None,
-                    resumen=rr_resum,
+                    tipo=rr_resum,
                     texto=rr_resol or None,
                 )
             messages.success(request, f"✅ RR creada ({rr_num or 'S/N'}).")

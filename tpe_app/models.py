@@ -908,9 +908,6 @@ class Resolucion(models.Model):
         ('SOLICITUD_ART_117_(Fallecimiento)',  'Solicitud Artículo 117 (Fallecimiento)'),
         ('SOLICITUD_ART_118_(Invalidez Sldo)', 'Solicitud Artículo 118 (Invalidez Sldo)'),
         ('OTRO', 'Otro'),
-    ]
-
-    RESUM_CHOICES = [
         ('PROCEDENCIA',   'Procedencia a su Recurso de Reconsideración'),
         ('IMPROCEDENCIA', 'Improcedencia a su Recurso de Reconsideración'),
     ]
@@ -931,8 +928,7 @@ class Resolucion(models.Model):
     numero             = models.CharField(max_length=15, db_index=True, verbose_name='Número de Resolución')
     fecha              = models.DateField(null=True, blank=True, verbose_name='Fecha')
     texto              = models.TextField(null=True, blank=True, verbose_name='Resolución')
-    tipo               = models.CharField(max_length=100, choices=TIPO_CHOICES, null=True, blank=True, verbose_name='Tipo (PRIMERA)')
-    resumen            = models.CharField(max_length=20, choices=RESUM_CHOICES, null=True, blank=True, verbose_name='Resumen (RECONSIDERACION)')
+    tipo               = models.CharField(max_length=100, choices=TIPO_CHOICES, null=True, blank=True, verbose_name='Tipo')
     fecha_presentacion = models.DateField(null=True, blank=True, verbose_name='Fecha Presentación (RECONSIDERACION)')
     fecha_limite       = models.DateField(null=True, blank=True, verbose_name='Fecha Límite 15 días (RECONSIDERACION)')
 

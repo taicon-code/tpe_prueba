@@ -319,13 +319,13 @@ class RegistrarRRForm(forms.ModelForm):
 
     class Meta:
         model = Resolucion
-        fields = ['resolucion_origen', 'resumen', 'fecha_presentacion']
+        fields = ['resolucion_origen', 'tipo', 'fecha_presentacion']
         widgets = {
-            'resumen':            forms.Select(attrs={'class': 'form-control'}),
+            'tipo':               forms.Select(attrs={'class': 'form-control'}),
             'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
-            'resumen':            'Tipo de Recurso',
+            'tipo':               'Resultado (PROCEDENCIA/IMPROCEDENCIA)',
             'fecha_presentacion': 'Fecha de Presentación del Recurso',
         }
 
@@ -850,19 +850,19 @@ class WizardRRForm(forms.ModelForm):
 
     class Meta:
         model = Resolucion
-        fields = ['numero', 'fecha', 'texto', 'resumen', 'fecha_presentacion']
+        fields = ['numero', 'fecha', 'texto', 'tipo', 'fecha_presentacion']
         widgets = {
             'numero':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'}),
             'fecha':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'texto':              forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'resumen':            forms.Select(attrs={'class': 'form-control'}),
+            'tipo':               forms.Select(attrs={'class': 'form-control'}),
             'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
         labels = {
             'numero':             'Número del RR',
             'fecha':              'Fecha del RR',
             'texto':              'Texto del RR',
-            'resumen':            'Resultado (PROCEDENCIA/IMPROCEDENCIA)',
+            'tipo':               'Resultado (PROCEDENCIA/IMPROCEDENCIA)',
             'fecha_presentacion': 'Fecha de Presentación del Recurso',
         }
 

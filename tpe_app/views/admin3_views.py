@@ -26,7 +26,7 @@ def admin3_dashboard(request):
     for rr in recursos:
         rr.RR_FEC = rr.fecha
         rr.RR_NUM = rr.numero
-        rr.RR_RESUM = rr.resumen
+        rr.RR_RESUM = rr.get_tipo_display()
         rr.RR_FECPRESEN = rr.fecha_presentacion
 
     # AUTOS TPE por notificar

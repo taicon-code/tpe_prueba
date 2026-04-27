@@ -545,7 +545,7 @@
                 <td><strong>{{ rr.numero|default:"S/N" }}</strong></td>
                 <td style="white-space:nowrap;">{{ rr.fecha|date:"d/m/Y"|default:"-" }}</td>
                 <td style="white-space:nowrap;"><strong>{{ rr.resolucion_origen.numero|default:"-" }}</strong></td>
-                <td style="max-width:200px; word-break:break-word;">{{ rr.get_resumen_display|default:"-" }}</td>
+                <td style="max-width:200px; word-break:break-word;">{{ rr.get_tipo_display|default:"-" }}</td>
                 <td style="max-width:200px; word-break:break-word;">{{ rr.texto|truncatewords:10|default:"-" }}</td>
             </tr>
             {% endfor %}
