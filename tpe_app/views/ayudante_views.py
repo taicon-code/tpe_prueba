@@ -6,7 +6,7 @@ Vistas para el rol AYUDANTE - Registro de datos históricos y búsqueda de antec
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.utils import timezone
 from django.http import JsonResponse
 from django.urls import reverse
@@ -46,17 +46,31 @@ def ayudante_dashboard(request):
         .exclude(id__in=res_con_pdf).count()
     )
 
-    # Contadores
+    # Contadores generales
     total_sim = SIM.objects.count()
-    total_pm = PM.objects.count()
     total_res = Resolucion.objects.filter(instancia='PRIMERA').count()
-    total_res_sin_notif = Resolucion.objects.filter(
-        instancia='PRIMERA', notificacion__isnull=True
-    ).count()
-    total_rr = Resolucion.objects.filter(instancia='RECONSIDERACION').count()
-    total_rap = RecursoTSP.objects.filter(instancia='APELACION').count()
     total_autotpe = AUTOTPE.objects.count()
-    total_autotpe_sin_notif = AUTOTPE.objects.filter(notificacion__isnull=True).count()
+
+    # Autos sin PDF
+    autos_con_pdf = set(
+        DocumentoAdjunto.objects.filter(autotpe__isnull=False).values_list('autotpe_id', flat=True)
+    )
+    total_autotpe_sin_pdf = AUTOTPE.objects.exclude(id__in=autos_con_pdf).count()
+
+    # RES por año (solo instancia PRIMERA)
+    res_por_anio = list(
+        Resolucion.objects.filter(instancia='PRIMERA')
+        .values('fecha__year')
+        .annotate(total=Count('id'))
+        .order_by('-fecha__year')
+    )
+
+    # Autos TPE por año
+    autos_por_anio = list(
+        AUTOTPE.objects.values('fecha__year')
+        .annotate(total=Count('id'))
+        .order_by('-fecha__year')
+    )
 
     context = {
         'ultimos_sim': ultimos_sim,
@@ -64,13 +78,11 @@ def ayudante_dashboard(request):
         'res_sin_pdf': res_sin_pdf,
         'total_res_sin_pdf': total_res_sin_pdf,
         'total_sim': total_sim,
-        'total_pm': total_pm,
         'total_res': total_res,
-        'total_res_sin_notif': total_res_sin_notif,
-        'total_rr': total_rr,
-        'total_rap': total_rap,
         'total_autotpe': total_autotpe,
-        'total_autotpe_sin_notif': total_autotpe_sin_notif,
+        'total_autotpe_sin_pdf': total_autotpe_sin_pdf,
+        'res_por_anio': res_por_anio,
+        'autos_por_anio': autos_por_anio,
     }
 
     return render(request, 'tpe_app/ayudante/dashboard.html', context)
