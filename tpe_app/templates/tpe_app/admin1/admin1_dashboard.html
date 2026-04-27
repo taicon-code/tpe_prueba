@@ -122,8 +122,8 @@
                 <td style="font-size: 0.85rem;">
                     {% with c=sim.custodio_actual %}
                         {% if c %}
-                            {% if c.abog %}
-                                <strong style="font-size: 0.8rem;">{{ c.abog.grado }} {{ c.abog.paterno }}</strong>
+                            {% if c.abogado %}
+                                <strong style="font-size: 0.8rem;">{{ c.abogado.grado }} {{ c.abogado.paterno }}</strong>
                             {% elif c.tipo_custodio == 'ADMIN2_ARCHIVO' %}
                                 <span style="background: #dbeafe; color: #1e40af; padding: 0.15rem 0.35rem; border-radius: 3px; font-weight: 600; font-size: 0.8rem;">📁 Archivo SIM</span>
                             {% else %}

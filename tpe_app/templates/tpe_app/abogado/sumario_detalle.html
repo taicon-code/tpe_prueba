@@ -150,8 +150,8 @@
                         <strong>⏳ Pendiente su confirmación de recepción</strong><br>
                         <small style="color: #6b7280; font-size: 0.85rem;">
                             Entregada por
-                            {% if custodio_actual.abog %}
-                                <strong>{{ custodio_actual.abog.grado }} {{ custodio_actual.abog.paterno }}</strong>
+                            {% if custodio_actual.abogado %}
+                                <strong>{{ custodio_actual.abogado.grado }} {{ custodio_actual.abogado.paterno }}</strong>
                             {% elif admin2_user %}
                                 <strong>{{ admin2_user.first_name }} {{ admin2_user.last_name }}</strong>
                             {% else %}
@@ -170,8 +170,8 @@
                             {% endif %}
                         </strong><br>
                         <small style="color: #6b7280; font-size: 0.85rem;">
-                            {% if custodio_actual.abog %}
-                                Entregada por <strong>{{ custodio_actual.abog.grado }} {{ custodio_actual.abog.paterno }}</strong>.
+                            {% if custodio_actual.abogado %}
+                                Entregada por <strong>{{ custodio_actual.abogado.grado }} {{ custodio_actual.abogado.paterno }}</strong>.
                             {% endif %}
                             Es el custodio actual. Puede continuar con su trabajo.
                         </small>
@@ -263,14 +263,14 @@
     {% if abogados_asignados %}
     <div style="display: flex; flex-direction: column; gap: 1rem;">
         {% for asig in abogados_asignados %}
-        <div style="background: {% if asig.abog.pk == abogado.pk %}#dbeafe{% else %}#f3f4f6{% endif %}; border: 2px solid {% if asig.abog.pk == abogado.pk %}#93c5fd{% else %}#e5e7eb{% endif %}; border-radius: 10px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="background: {% if asig.abogado.pk == abogado.pk %}#dbeafe{% else %}#f3f4f6{% endif %}; border: 2px solid {% if asig.abogado.pk == abogado.pk %}#93c5fd{% else %}#e5e7eb{% endif %}; border-radius: 10px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <p style="margin: 0; font-weight: 700; color: {% if asig.abog.pk == abogado.pk %}#1e40af{% else %}#374151{% endif %}; font-size: 0.95rem;">
-                    {{ asig.abog.grado }} {{ asig.abog.nombre }} {{ asig.abog.paterno }}
-                    {% if asig.abog.pk == abogado.pk %} (Usted){% endif %}
+                <p style="margin: 0; font-weight: 700; color: {% if asig.abogado.pk == abogado.pk %}#1e40af{% else %}#374151{% endif %}; font-size: 0.95rem;">
+                    {{ asig.abogado.grado }} {{ asig.abogado.nombre }} {{ asig.abogado.paterno }}
+                    {% if asig.abogado.pk == abogado.pk %} (Usted){% endif %}
                 </p>
                 <small style="color: #6b7280; font-size: 0.8rem; margin-top: 0.25rem; display: block;">
-                    {% if custodio_actual and custodio_actual.abog.id == asig.abog.id %}
+                    {% if custodio_actual and custodio_actual.abogado.id == asig.abogado.id %}
                         {% if custodio_actual.estado == 'PENDIENTE_CONFIRMACION' %}
                             ⏳ <strong>Pendiente su confirmación de recepción</strong>
                         {% else %}
@@ -281,7 +281,7 @@
                     {% endif %}
                 </small>
             </div>
-            <span style="background: {% if custodio_actual and custodio_actual.abog.id == asig.abog.id %}#10b981{% else %}#9ca3af{% endif %}; color: #fff; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;">
+            <span style="background: {% if custodio_actual and custodio_actual.abogado.id == asig.abogado.id %}#10b981{% else %}#9ca3af{% endif %}; color: #fff; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.75rem; font-weight: 700; white-space: nowrap;">
                 📂 RESPONSABLE
             </span>
         </div>
@@ -369,7 +369,7 @@
         {% if rr.resolucion_origen.dictamen %}
         <div style="font-size: 0.85rem; color: #374151; line-height: 1.6;">
             <div><strong>Dictamen origen:</strong> {{ rr.resolucion_origen.dictamen.numero|default:"S/N" }} ({{ rr.resolucion_origen.dictamen.conclusion|default:"—" }})</div>
-            <div><strong>Abogado que dictaminó:</strong> {{ rr.resolucion_origen.abog|default:"—" }}</div>
+            <div><strong>Abogado que dictaminó:</strong> {{ rr.resolucion_origen.abogado|default:"—" }}</div>
             <div><strong>Militar:</strong> {{ rr.resolucion_origen.pm.grado|default:"" }} {{ rr.resolucion_origen.pm.nombre|default:"" }} {{ rr.resolucion_origen.pm.paterno|default:"" }}</div>
         </div>
         {% endif %}

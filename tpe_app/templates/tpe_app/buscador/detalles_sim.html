@@ -523,9 +523,9 @@
         <div style="color: #047857; margin-top: 0.25rem;">{{ custodia_actual.get_tipo_custodio_display }}</div>
       </div>
     </div>
-    {% if custodia_actual.abog %}
+    {% if custodia_actual.abogado %}
     <div style="color: #065f46; margin-bottom: 0.5rem;">
-      <strong>Abogado:</strong> {{ custodia_actual.abog.grado }} {{ custodia_actual.abog.paterno }} {{ custodia_actual.abog.materno }}
+      <strong>Abogado:</strong> {{ custodia_actual.abogado.grado }} {{ custodia_actual.abogado.paterno }} {{ custodia_actual.abogado.materno }}
     </div>
     {% endif %}
     <div style="color: #065f46; margin-bottom: 0.5rem;">
@@ -550,9 +550,9 @@
       <div class="timeline-date">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</div>
       <div class="timeline-custodio">{{ custodia.get_tipo_custodio_display }}</div>
 
-      {% if custodia.abog %}
+      {% if custodia.abogado %}
       <div class="timeline-info">
-        👤 <strong>{{ custodia.abog.grado }} {{ custodia.abog.paterno }}</strong>
+        👤 <strong>{{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}</strong>
       </div>
       {% endif %}
 

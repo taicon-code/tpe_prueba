@@ -103,8 +103,8 @@
                         <td><strong>{{ custodia.sim.codigo }}</strong></td>
                         <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
                         <td style="font-size: 0.85rem;">
-                            {% if custodia.abog %}
-                                <strong>{{ custodia.abog.grado }} {{ custodia.abog.paterno }}</strong>
+                            {% if custodia.abogado %}
+                                <strong>{{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}</strong>
                             {% elif custodia.tipo_custodio == 'ADMIN2_ARCHIVO' %}
                                 <span style="background: #dbeafe; color: #1e40af; padding: 0.15rem 0.35rem; border-radius: 3px; font-weight: 600; font-size: 0.8rem;">📁 Archivo SIM</span>
                             {% elif custodia.tipo_custodio == 'ARCHIVO' %}
@@ -273,19 +273,19 @@
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.9rem;">
-                    {% if custodia.abog_primera_list %}
-                        {% for abog in custodia.abog_primera_list %}
+                    {% if custodia.abogado_primera_list %}
+                        {% for abog in custodia.abogado_primera_list %}
                             <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
                                 {{ abog.grado }} {{ abog.paterno }}
                             </span>
                         {% endfor %}
                     {% endif %}
-                    {% if custodia.abog_rr %}
+                    {% if custodia.abogado_rr %}
                         <span style="background: #fed7aa; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
-                            🔄 {{ custodia.abog_rr.grado }} {{ custodia.abog_rr.paterno }} (RR)
+                            🔄 {{ custodia.abogado_rr.grado }} {{ custodia.abogado_rr.paterno }} (RR)
                         </span>
                     {% endif %}
-                    {% if not custodia.abog_primera_list and not custodia.abog_rr %}
+                    {% if not custodia.abogado_primera_list and not custodia.abogado_rr %}
                         <span style="color: #9ca3af;">Sin asignar aún</span>
                     {% endif %}
                 </td>
@@ -341,9 +341,9 @@
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abog %}
+                    {% if custodia.abogado %}
                         <span style="background: #fecaca; color: #7f1d1d; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">
-                            {{ custodia.abog.grado }} {{ custodia.abog.paterno }}
+                            {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         </span>
                     {% else %}
                         <span style="color: #9ca3af;">Otros</span>
@@ -403,9 +403,9 @@
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abog %}
+                    {% if custodia.abogado %}
                         <span style="background: #fecaca; color: #7f1d1d; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">
-                            {{ custodia.abog.grado }} {{ custodia.abog.paterno }}
+                            {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         </span>
                     {% else %}
                         <span style="color: #9ca3af;">—</span>
@@ -468,8 +468,8 @@
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem;">
-                    {% if custodia.abog %}
-                        <strong>{{ custodia.abog.grado }} {{ custodia.abog.paterno }}</strong>
+                    {% if custodia.abogado %}
+                        <strong>{{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}</strong>
                     {% else %}
                         <span style="background: #fecaca; color: #991b1b; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
                             {{ custodia.get_tipo_custodio_display }}
@@ -540,9 +540,9 @@
                     {% endfor %}
                 </td>
                 <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abog_destino %}
+                    {% if custodia.abogado_destino %}
                         <span style="background: #dbeafe; color: #1e40af; padding: 0.3rem 0.6rem; border-radius: 4px;">
-                            ABOG2 - {{ custodia.abog_destino.paterno }}
+                            ABOG2 - {{ custodia.abogado_destino.paterno }}
                         </span>
                     {% else %}
                         <span style="color: #9ca3af;">—</span>

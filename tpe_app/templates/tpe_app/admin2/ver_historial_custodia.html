@@ -46,9 +46,9 @@
                 <p style="margin: 0.5rem 0; font-weight: 600; color: #92400e;">
                     🎯 La carpeta está en: <strong>{{ custodia_actual.get_tipo_custodio_display }}</strong>
                 </p>
-                {% if custodia_actual.abog %}
+                {% if custodia_actual.abogado %}
                     <p style="margin: 0.5rem 0; color: #92400e;">
-                        👤 Abogado: <strong>{{ custodia_actual.abog.grado }} {{ custodia_actual.abog.paterno }} {{ custodia_actual.abog.materno }}</strong>
+                        👤 Abogado: <strong>{{ custodia_actual.abogado.grado }} {{ custodia_actual.abogado.paterno }} {{ custodia_actual.abogado.materno }}</strong>
                     </p>
                 {% endif %}
                 <p style="margin: 0.5rem 0; color: #92400e;">
@@ -105,8 +105,8 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if custodia.abog %}
-                            {{ custodia.abog.grado }} {{ custodia.abog.paterno }}
+                        {% if custodia.abogado %}
+                            {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         {% else %}
                             <span style="color: #999;">—</span>
                         {% endif %}

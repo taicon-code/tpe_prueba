@@ -199,7 +199,7 @@
                         {{ dic.pm.grado|default:"" }} {{ dic.pm.nombre }} {{ dic.pm.paterno }}{% if dic.pm.materno %} {{ dic.pm.materno }}{% endif %}
                     </div>
                     <div class="dic-info-sub">
-                        Abogado: {{ dic.abog.ABOG_NOMBRE|default:"—" }}
+                        Abogado: {{ dic.abogado.nombre|default:"—" }}
                         | Conclusión: <span class="dic-concl">{{ dic.conclusion|default:"—" }}</span>
                     </div>
                     {% if dic.estado != 'PENDIENTE' %}

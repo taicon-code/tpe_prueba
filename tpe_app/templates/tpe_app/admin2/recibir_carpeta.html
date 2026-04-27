@@ -32,8 +32,8 @@
             <div style="grid-column: 1 / -1;">
                 <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Actualmente en poder de:</strong></p>
                 <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">
-                    {% if custodio_actual.abog %}
-                        {{ custodio_actual.abog.grado }} {{ custodio_actual.abog.paterno }}
+                    {% if custodio_actual.abogado %}
+                        {{ custodio_actual.abogado.grado }} {{ custodio_actual.abogado.paterno }}
                     {% else %}
                         {{ custodio_actual.get_tipo_custodio_display }}
                     {% endif %}
