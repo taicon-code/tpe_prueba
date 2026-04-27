@@ -22,7 +22,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import date
 from tpe_app.models import (
-    PM, ABOG, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
+    PM, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
     AGENDA, DICTAMEN, AUTOTPE, AUTOTSP,
     Resolucion, RecursoTSP, Notificacion,
     PerfilUsuario,
@@ -53,7 +53,6 @@ class Command(BaseCommand):
             PM_SIM.objects.all().delete()
             SIM.objects.all().delete()
             PM.objects.all().delete()
-            ABOG.objects.all().delete()
             VOCAL_TPE.objects.all().delete()
             self.stdout.write(self.style.SUCCESS('   Datos borrados.\n'))
 
@@ -103,18 +102,18 @@ class Command(BaseCommand):
         ))
         self.stdout.write(self.style.SUCCESS('   ✅ 8 militares creados'))
 
-        # ── 2. ABOGADOS ───────────────────────────────────────────────────────
-        self.stdout.write('⚖️  Creando Abogados...')
+        # ── 2. PM ABOGADOS (demos — registrados como Personal Militar) ───────
+        self.stdout.write('⚖️  Creando PM Abogados (demo)...')
 
-        abog1, _ = ABOG.objects.get_or_create(ci=20000001, defaults=dict(
-            grado='MY.', arma='INF.',
-            nombre='JORGE', paterno='RODRIGUEZ', materno='SALINAS',
+        abog1, _ = PM.objects.get_or_create(ci=20000001, defaults=dict(
+            escalafon='OFICIAL SUPERIOR', grado='MY.', arma='INF.',
+            nombre='JORGE', paterno='RODRIGUEZ', materno='SALINAS', estado='ACTIVO',
         ))
-        abog2, _ = ABOG.objects.get_or_create(ci=20000002, defaults=dict(
-            grado='CAP.', arma='INT.',
-            nombre='PATRICIA', paterno='LLANOS', materno='VERA',
+        abog2, _ = PM.objects.get_or_create(ci=20000002, defaults=dict(
+            escalafon='OFICIAL SUBALTERNO', grado='CAP.', arma='INT.',
+            nombre='PATRICIA', paterno='LLANOS', materno='VERA', estado='ACTIVO',
         ))
-        self.stdout.write(self.style.SUCCESS('   ✅ 2 abogados creados'))
+        self.stdout.write(self.style.SUCCESS('   ✅ 2 PM abogados demo creados'))
 
         # ── 3. VOCALES TPE ────────────────────────────────────────────────────
         self.stdout.write('🎖️  Creando Vocales del Tribunal...')
@@ -140,12 +139,12 @@ class Command(BaseCommand):
 
         # ── 4. USUARIOS ───────────────────────────────────────────────────────
         self.stdout.write('👤 Creando Usuarios del sistema...')
-        self._crear_usuario('admin',    'admin123',    'ADMINISTRADOR', None, None)
-        self._crear_usuario('abogado1', 'abog123',     'ABOGADO',       abog1, None)
-        self._crear_usuario('abogado2', 'abog123',     'ABOGADO',       abog2, None)
+        self._crear_usuario('admin',    'admin123',    'ADMINISTRADOR',   None,  None)
+        self._crear_usuario('abogado1', 'abog123',     'ABOG1_ASESOR',   abog1, None)
+        self._crear_usuario('abogado2', 'abog123',     'ABOG2_AUTOS',    abog2, None)
         self._crear_usuario('secretario', 'sec123',   'SECRETARIO_ACTAS', None, vocal_sec)
-        self._crear_usuario('adminvista', 'admin123',  'ADMINISTRATIVO', None, None)
-        self._crear_usuario('buscador1', 'buscar123',  'BUSCADOR',      None, None)
+        self._crear_usuario('adminvista', 'admin123',  'ADMIN1_AGENDADOR', None, None)
+        self._crear_usuario('buscador1', 'buscar123',  'BUSCADOR',        None, None)
         self.stdout.write(self.style.SUCCESS('   ✅ 6 usuarios creados'))
 
         # ── 5. AGENDAS ────────────────────────────────────────────────────────
@@ -189,7 +188,7 @@ class Command(BaseCommand):
         ))
         PM_SIM.objects.get_or_create(sim=sim1, pm=pm_tte)
         PM_SIM.objects.get_or_create(sim=sim1, pm=pm_sgto)  # dos implicados
-        ABOG_SIM.objects.get_or_create(sim=sim1, abog=abog1)
+        ABOG_SIM.objects.get_or_create(sim=sim1, abogado=abog1)
         self.stdout.write('   📌 Escenario 1: DJE-001/26 → PARA AGENDA (2 implicados)')
 
         # ─────────────────────────────────────────────────────────────────────
@@ -203,14 +202,14 @@ class Command(BaseCommand):
             resumen='MALTRATO AL PERSONAL',
         ))
         PM_SIM.objects.get_or_create(sim=sim2, pm=pm_cap)
-        ABOG_SIM.objects.get_or_create(sim=sim2, abog=abog1)
+        ABOG_SIM.objects.get_or_create(sim=sim2, abogado=abog1)
 
         dic2, _ = DICTAMEN.objects.get_or_create(
             sim=sim2, agenda=agenda1,
             defaults=dict(
                 numero='01/26',
                 conclusion='SE RECOMIENDA LA SANCION DISCIPLINARIA POR MALTRATO AL PERSONAL',
-                abog=abog1,
+                abogado=abog1,
                 pm=pm_cap,
                 estado='PENDIENTE',
             )
@@ -228,14 +227,14 @@ class Command(BaseCommand):
             resumen='HURTO DE ARMAMENTO',
         ))
         PM_SIM.objects.get_or_create(sim=sim3, pm=pm_my)
-        ABOG_SIM.objects.get_or_create(sim=sim3, abog=abog2)
+        ABOG_SIM.objects.get_or_create(sim=sim3, abogado=abog2)
 
         dic3, _ = DICTAMEN.objects.get_or_create(
             sim=sim3, agenda=agenda1,
             defaults=dict(
                 numero='02/26',
                 conclusion='SE RECOMIENDA SANCION ARRESTO POR 60 DIAS',
-                abog=abog2, pm=pm_my,
+                abogado=abog2, pm=pm_my,
                 estado='CONFIRMADO',
                 secretario=vocal_sec,
                 conclusion_secretario='CONFIRMADO EL DICTAMEN SIN MODIFICACIONES',
@@ -248,7 +247,7 @@ class Command(BaseCommand):
                 fecha=date(2026, 2, 20),
                 tipo='SANCION_ARRESTO',
                 texto='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: SANCIONAR AL MY. ROBERTO FLORES CONDORI CON 60 DIAS DE ARRESTO.',
-                abog=abog2, agenda=agenda1, dictamen=dic3, pm=pm_my,
+                abogado=abog2, agenda=agenda1, dictamen=dic3, pm=pm_my,
             ))
         Notificacion.objects.get_or_create(resolucion=res3, defaults=dict(
             tipo='FIRMA', notificado_a='MY. ROBERTO FLORES CONDORI', fecha=date(2026, 2, 21)
@@ -258,7 +257,7 @@ class Command(BaseCommand):
             numero='08/26',
             fecha=date(2026, 3, 15),
             texto='SE DECLARA EJECUTORIADA LA RESOLUCION NRO. 15/26 DEL TRIBUNAL DE PERSONAL.',
-            abog=abog2, agenda=agenda2, pm=pm_my, resolucion=res3,
+            abogado=abog2, agenda=agenda2, pm=pm_my, resolucion=res3,
         ))
         Notificacion.objects.get_or_create(autotpe=auto3, defaults=dict(
             tipo='FIRMA', notificado_a='MY. ROBERTO FLORES CONDORI', fecha=date(2026, 3, 16)
@@ -276,14 +275,14 @@ class Command(BaseCommand):
             resumen='COBROS IRREGULARES',
         ))
         PM_SIM.objects.get_or_create(sim=sim4, pm=pm_tcnl)
-        ABOG_SIM.objects.get_or_create(sim=sim4, abog=abog1)
+        ABOG_SIM.objects.get_or_create(sim=sim4, abogado=abog1)
 
         dic4, _ = DICTAMEN.objects.get_or_create(
             sim=sim4, agenda=agenda1,
             defaults=dict(
                 numero='03/26',
                 conclusion='SE RECOMIENDA SANCION LETRA B POR COBROS IRREGULARES',
-                abog=abog1, pm=pm_tcnl,
+                abogado=abog1, pm=pm_tcnl,
                 estado='MODIFICADO',
                 secretario=vocal_sec,
                 conclusion_secretario='SE MODIFICA: SE RECOMIENDA ARCHIVO DE OBRADOS POR INSUFICIENCIA PROBATORIA',
@@ -296,7 +295,7 @@ class Command(BaseCommand):
                 fecha=date(2026, 2, 1),
                 tipo='SANCION_LETRA_B',
                 texto='EL TRIBUNAL RESUELVE: SANCIONAR AL TCNL. MARIO GUTIERREZ LOPEZ CON LETRA B (PERDIDA DE ANTIGUEDAD).',
-                abog=abog1, agenda=agenda1, dictamen=dic4, pm=pm_tcnl,
+                abogado=abog1, agenda=agenda1, dictamen=dic4, pm=pm_tcnl,
             ))
         Notificacion.objects.get_or_create(resolucion=res4, defaults=dict(
             tipo='CEDULON', notificado_a='TCNL. MARIO GUTIERREZ LOPEZ', fecha=date(2026, 2, 3)
@@ -309,7 +308,7 @@ class Command(BaseCommand):
                 fecha=None,
                 texto=None,
                 resumen='PROCEDENCIA',
-                abog=abog1, agenda=agenda2, pm=pm_tcnl,
+                abogado=abog1, agenda=agenda2, pm=pm_tcnl,
             ))
         self.stdout.write('   📌 Escenario 4: DJE-004/26 → RES emitida + RR pendiente (MODIFICADO por Secretario)')
 
@@ -324,14 +323,14 @@ class Command(BaseCommand):
             resumen='INDISCIPLINA Y ABANDONO',
         ))
         PM_SIM.objects.get_or_create(sim=sim5, pm=pm_cnl)
-        ABOG_SIM.objects.get_or_create(sim=sim5, abog=abog2)
+        ABOG_SIM.objects.get_or_create(sim=sim5, abogado=abog2)
 
         dic5, _ = DICTAMEN.objects.get_or_create(
             sim=sim5, agenda=agenda1,
             defaults=dict(
                 numero='04/26',
                 conclusion='SE RECOMIENDA SANCION RETIRO OBLIGATORIO',
-                abog=abog2, pm=pm_cnl,
+                abogado=abog2, pm=pm_cnl,
                 estado='CONFIRMADO',
                 secretario=vocal_sec,
                 conclusion_secretario='CONFIRMADO',
@@ -344,7 +343,7 @@ class Command(BaseCommand):
                 fecha=date(2025, 12, 10),
                 tipo='SANCION_RETIRO_OBLIGATORIO',
                 texto='EL TRIBUNAL RESUELVE: SANCIONAR AL CNL. CARLOS MENDOZA TORREZ CON RETIRO OBLIGATORIO.',
-                abog=abog2, agenda=agenda1, dictamen=dic5, pm=pm_cnl,
+                abogado=abog2, agenda=agenda1, dictamen=dic5, pm=pm_cnl,
             ))
         Notificacion.objects.get_or_create(resolucion=res5, defaults=dict(
             tipo='EDICTO', notificado_a='PERIODICO LA RAZON', fecha=date(2025, 12, 15)
@@ -357,7 +356,7 @@ class Command(BaseCommand):
                 fecha=date(2026, 1, 10),
                 texto='EL TRIBUNAL RESUELVE: MANTENER EN TODOS SUS TERMINOS LA RESOLUCION NRO. 52/25.',
                 resumen='IMPROCEDENCIA',
-                abog=abog2, agenda=agenda2, pm=pm_cnl,
+                abogado=abog2, agenda=agenda2, pm=pm_cnl,
             ))
         rap5, _ = RecursoTSP.objects.get_or_create(
             sim=sim5, instancia='APELACION', resolucion=rr5,
@@ -380,14 +379,14 @@ class Command(BaseCommand):
             resumen='FALTA LISTA Y ABANDONO',
         ))
         PM_SIM.objects.get_or_create(sim=sim6, pm=pm_sof)
-        ABOG_SIM.objects.get_or_create(sim=sim6, abog=abog2)
+        ABOG_SIM.objects.get_or_create(sim=sim6, abogado=abog2)
 
         dic6, _ = DICTAMEN.objects.get_or_create(
             sim=sim6, agenda=agenda2,
             defaults=dict(
                 numero='05/26',
                 conclusion='SE RECOMIENDA SOBRESEIMIENTO POR INSUFICIENCIA DE PRUEBAS',
-                abog=abog2, pm=pm_sof,
+                abogado=abog2, pm=pm_sof,
                 estado='CONFIRMADO',
                 secretario=vocal_sec,
                 conclusion_secretario='CONFIRMADO',
@@ -398,7 +397,7 @@ class Command(BaseCommand):
             numero='03/26',
             fecha=date(2026, 2, 10),
             texto='EL TRIBUNAL DE PERSONAL DEL EJERCITO RESUELVE: DECLARAR SOBRESEIDO EL PROCESO SUMARIO CONTRA SOF. 1RO. HUGO MAMANI CHOQUE POR INSUFICIENCIA PROBATORIA.',
-            abog=abog2, agenda=agenda2, pm=pm_sof,
+            abogado=abog2, agenda=agenda2, pm=pm_sof,
         ))
         Notificacion.objects.get_or_create(autotpe=auto6, defaults=dict(
             tipo='FIRMA', notificado_a='SOF. 1RO. HUGO MAMANI CHOQUE', fecha=date(2026, 2, 11)
@@ -416,14 +415,14 @@ class Command(BaseCommand):
             resumen='SOLICITUD ASCENSO',
         ))
         PM_SIM.objects.get_or_create(sim=sim7, pm=pm_my2)
-        ABOG_SIM.objects.get_or_create(sim=sim7, abog=abog1)
+        ABOG_SIM.objects.get_or_create(sim=sim7, abogado=abog1)
 
         dic7, _ = DICTAMEN.objects.get_or_create(
             sim=sim7, agenda=agenda3,
             defaults=dict(
                 numero='06/26',
                 conclusion='SE RECOMIENDA APROBAR LA SOLICITUD DE ASCENSO',
-                abog=abog1, pm=pm_my2,
+                abogado=abog1, pm=pm_my2,
                 estado='CONFIRMADO',
                 secretario=vocal_sec,
                 conclusion_secretario='CONFIRMADO',
@@ -436,7 +435,7 @@ class Command(BaseCommand):
                 fecha=date(2026, 3, 15),
                 tipo='SOLICITUD_ASCENSO',
                 texto='EL TRIBUNAL RESUELVE: APROBAR LA SOLICITUD DE ASCENSO AL GRADO INMEDIATO SUPERIOR DE MY. ANA MARIA GARCIA RIOS.',
-                abog=abog1, agenda=agenda3, dictamen=dic7, pm=pm_my2,
+                abogado=abog1, agenda=agenda3, dictamen=dic7, pm=pm_my2,
             ))
         Notificacion.objects.get_or_create(resolucion=res7, defaults=dict(
             tipo='FIRMA', notificado_a='MY. ANA MARIA GARCIA RIOS', fecha=date(2026, 3, 16)
@@ -455,7 +454,7 @@ class Command(BaseCommand):
 ║  ABOGADO 1      │ abogado1      │ abog123   (MY. RODRIGUEZ)         ║
 ║  ABOGADO 2      │ abogado2      │ abog123   (CAP. LLANOS)           ║
 ║  SECRETARIO     │ secretario    │ sec123    (VOCAL ACTAS)           ║
-║  ADMINISTRATIVO │ adminvista    │ admin123                          ║
+║  ADMIN1         │ adminvista    │ admin123                          ║
 ║  BUSCADOR       │ buscador1     │ buscar123                         ║
 ╠══════════════════════════════════════════════════════════════════════╣
 ║  ESCENARIOS DISPONIBLES                                              ║
@@ -473,9 +472,9 @@ class Command(BaseCommand):
 """))
 
     # ─────────────────────────────────────────────────────────────────────────
-    def _crear_usuario(self, username, password, rol, abogado, vocal):
+    def _crear_usuario(self, username, password, rol, pm, vocal):
         if User.objects.filter(username=username).exists():
-            self.stdout.write(f'   ⏭  {username} ya existe, omitido')
+            self.stdout.write(f'   - {username} ya existe, omitido')
             return
         if rol == 'ADMINISTRADOR':
             user = User.objects.create_superuser(username=username, password=password,
@@ -484,5 +483,5 @@ class Command(BaseCommand):
             user = User.objects.create_user(username=username, password=password,
                                             email=f'{username}@tpe.bo')
         PerfilUsuario.objects.create(
-            user=user, rol=rol, abogado=abogado, vocal=vocal, activo=True)
+            user=user, rol=rol, pm=pm, vocal=vocal, activo=True)
         self.stdout.write(f'   ✅ {rol:15} → {username} / {password}')
