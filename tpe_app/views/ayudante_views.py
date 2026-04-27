@@ -39,7 +39,7 @@ def ayudante_dashboard(request):
     res_sin_pdf = (
         Resolucion.objects.filter(instancia='PRIMERA')
         .exclude(id__in=res_con_pdf)
-        .select_related('sim', 'abog').order_by('-fecha')[:10]
+        .select_related('sim', 'abogado').order_by('-fecha')[:10]
     )
     total_res_sin_pdf = (
         Resolucion.objects.filter(instancia='PRIMERA')
