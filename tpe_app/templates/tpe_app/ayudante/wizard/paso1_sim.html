@@ -1,8 +1,52 @@
 {% extends 'tpe_app/base.html' %}
 {% load static %}
 
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🏠</span>
+        <span class="lk-text">Inicio</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Ingreso</span>
+
+    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link active">
+        <span class="lk-icon">⚡</span>
+        <span class="lk-text">Ingreso Rápido (Wizard)</span>
+    </a>
+
+    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="sb-link">
+        <span class="lk-icon">📤</span>
+        <span class="lk-text">Agregar PDF a RES</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Consultas</span>
+
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Buscar Antecedentes</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
 {% block content %}
 <div class="container py-4">
+    <div class="mb-3">
+        <a href="{% url 'ayudante_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Volver al Inicio
+        </a>
+    </div>
+
     {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=1 %}
 
     <!-- Búsqueda de SIM existente (AJAX) -->
