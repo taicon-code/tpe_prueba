@@ -34,7 +34,7 @@ const GRADOS_POR_ESCALAFON = {
 let todasLasOpciones = [];
 
 function guardarOpciones() {
-    const selectGrado = document.getElementById('id_PM_GRADO');
+    const selectGrado = document.getElementById('id_grado');
     if (!selectGrado) return;
     todasLasOpciones = [];
     for (let opt of selectGrado.options) {
@@ -43,8 +43,8 @@ function guardarOpciones() {
 }
 
 function filtrarGrados() {
-    const selectEscalafon = document.getElementById('id_PM_ESCALAFON');
-    const selectGrado     = document.getElementById('id_PM_GRADO');
+    const selectEscalafon = document.getElementById('id_escalafon');
+    const selectGrado     = document.getElementById('id_grado');
     if (!selectEscalafon || !selectGrado) return;
 
     const escalafon        = selectEscalafon.value;
@@ -72,15 +72,15 @@ function filtrarGrados() {
 }
 
 function iniciarFiltro() {
-    const selectEscalafon = document.getElementById('id_PM_ESCALAFON');
-    const selectGrado     = document.getElementById('id_PM_GRADO');
+    const selectEscalafon = document.getElementById('id_escalafon');
+    const selectGrado     = document.getElementById('id_grado');
     if (!selectEscalafon || !selectGrado) return;
 
     guardarOpciones();
     filtrarGrados();
 
     selectEscalafon.addEventListener('change', function() {
-        document.getElementById('id_PM_GRADO').value = '';
+        document.getElementById('id_grado').value = '';
         filtrarGrados();
     });
 }
