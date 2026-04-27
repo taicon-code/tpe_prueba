@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, ABOG, SIM, PM_SIM, AGENDA, AUTOTPE, AUTOTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum
+from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, AUTOTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -87,15 +87,6 @@ class PMAdmin(admin.ModelAdmin):
         js = ('tpe_app/js/grado_filter.js',)
 
 # ════════════════════════════════════════════════════════════════════════════
-#  ADMIN: Abogados
-# ════════════════════════════════════════════════════════════════════════════
-@admin.register(ABOG)
-class ABOGAdmin(admin.ModelAdmin):
-    list_display  = ('ci', 'grado', 'nombre', 'paterno', 'materno')
-    search_fields = ('ci', 'nombre', 'paterno')
-
-
-# ════════════════════════════════════════════════════════════════════════════
 #  ADMIN: Vocales del Tribunal
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(VOCAL_TPE)
@@ -158,13 +149,13 @@ class AGENDAAdmin(admin.ModelAdmin):
 @admin.register(DICTAMEN)
 class DICTAMENAdmin(admin.ModelAdmin):
 
-    list_display  = ('numero', 'sim', 'agenda', 'abog', 'conclusion')
+    list_display  = ('numero', 'sim', 'agenda', 'abogado', 'conclusion')
     search_fields = ('numero', 'sim__codigo', 'agenda__numero')
-    list_filter   = ('abog',)
+    list_filter   = ('abogado',)
 
     fieldsets = (
         ('Datos del Dictamen', {
-            'fields': ('agenda', 'sim', 'abog', 'numero', 'conclusion')
+            'fields': ('agenda', 'sim', 'abogado', 'numero', 'conclusion')
         }),
     )
 
@@ -192,8 +183,8 @@ class MemorandumInline(admin.StackedInline):
 
 @admin.register(Resolucion)
 class ResolucionAdmin(admin.ModelAdmin):
-    list_display  = ('numero', 'instancia', 'sim', 'abog', 'tipo', 'resumen', 'fecha', 'alerta_plazo')
-    search_fields = ('numero', 'sim__codigo', 'abog__paterno')
+    list_display  = ('numero', 'instancia', 'sim', 'abogado', 'tipo', 'resumen', 'fecha', 'alerta_plazo')
+    search_fields = ('numero', 'sim__codigo', 'abogado__paterno')
     list_filter   = ('instancia', 'tipo', 'resumen')
     inlines       = [NotificacionInline]
 
@@ -202,7 +193,7 @@ class ResolucionAdmin(admin.ModelAdmin):
             'fields': ('instancia',)
         }),
         ('RELACIONES', {
-            'fields': ('sim', 'pm', 'abog', 'agenda', 'dictamen', 'resolucion_origen',)
+            'fields': ('sim', 'pm', 'abogado', 'agenda', 'dictamen', 'resolucion_origen',)
         }),
         ('DISPOSICIÓN RESOLUTIVA', {
             'fields': ('numero', 'fecha', 'texto', 'tipo', 'resumen',)
@@ -247,14 +238,14 @@ class NotificacionAUTOTPEInline(admin.StackedInline):
 
 @admin.register(AUTOTPE)
 class AUTOTPEAdmin(admin.ModelAdmin):
-    list_display  = ('numero', 'sim', 'abog', 'tipo', 'fecha')
-    search_fields = ('numero', 'sim__codigo', 'abog__paterno')
+    list_display  = ('numero', 'sim', 'abogado', 'tipo', 'fecha')
+    search_fields = ('numero', 'sim__codigo', 'abogado__paterno')
     list_filter   = ('tipo',)
     inlines       = [NotificacionAUTOTPEInline, MemorandumInline]
 
     fieldsets = (
         ('AGENDA', {
-            'fields': ('sim', 'abog', 'agenda',)
+            'fields': ('sim', 'abogado', 'agenda',)
         }),
         ('DISPOSICIÓN DEL AUTO', {
             'fields': ('numero', 'fecha', 'texto', 'tipo',)
@@ -371,7 +362,7 @@ class PerfilUsuarioInline(admin.StackedInline):
     model = PerfilUsuario
     verbose_name = "Asignación de Rol"
     verbose_name_plural = "Asignación de Rol"
-    fields = ('rol', 'abogado', 'activo')
+    fields = ('rol', 'pm', 'activo')
     extra = 0
     can_delete = True
 
@@ -398,18 +389,17 @@ class UsuarioTPEAdmin(UserAdmin):
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display  = ('usuario_completo', 'rol_badge', 'abogado_asignado', 'activo', 'acciones')
+    list_display  = ('usuario_completo', 'rol_badge', 'pm_asignado', 'activo', 'acciones')
     list_filter   = ('rol', 'activo', 'user__date_joined')
-    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'abogado__paterno')
+    search_fields = ('user__username', 'user__email', 'user__first_name', 'user__last_name', 'pm__paterno')
     readonly_fields = ('user_info',)
 
     fieldsets = (
         ('Información de usuario', {
             'fields': ('user', 'user_info', 'rol', 'activo')
         }),
-        ('Vinculación (solo para rol ABOGADO)', {
-            'fields': ('abogado',),
-            'description': '⚠️ Complete este campo SOLO si asignó el rol "Abogado" arriba'
+        ('Personal Militar vinculado', {
+            'fields': ('pm', 'vocal'),
         }),
     )
 
@@ -431,12 +421,12 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
     rol_badge.allow_tags = True
     rol_badge.short_description = "Rol"
 
-    def abogado_asignado(self, obj):
-        """Muestra si hay abogado asignado"""
-        if obj.abogado:
-            return f"✓ {obj.abogado.paterno} {obj.abogado.materno}"
+    def pm_asignado(self, obj):
+        """Muestra si hay PM asignado"""
+        if obj.pm:
+            return f"{obj.pm.grado} {obj.pm.paterno} {obj.pm.nombre}"
         return "—"
-    abogado_asignado.short_description = "Abogado Vinculado"
+    pm_asignado.short_description = "Personal Militar"
 
     def acciones(self, obj):
         """Muestra estado visual"""
@@ -458,7 +448,4 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
     user_info.short_description = "Información del Usuario"
 
     def save_model(self, request, obj, form, change):
-        """Validar que abogados tengan un abogado asignado"""
-        if obj.rol == 'ABOGADO' and not obj.abogado:
-            raise ValueError('⚠️ Los usuarios con rol ABOGADO deben tener un abogado vinculado')
         super().save_model(request, obj, form, change)
