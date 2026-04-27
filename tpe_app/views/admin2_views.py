@@ -457,7 +457,7 @@ def subir_pdf_res(request, res_id):
                     request,
                     f'✅ PDF de la Resolución {res.numero} subido correctamente'
                 )
-                return redirect('administrativo_dashboard')
+                return redirect('subir_pdf_res', res_id=res.pk)
         except Exception as e:
             messages.error(request, f'❌ Error al subir PDF: {str(e)}')
 
@@ -471,7 +471,7 @@ def subir_pdf_res(request, res_id):
         'pdf_existente': pdf_existente,
     }
 
-    return render(request, 'tpe_app/administrativo/subir_pdf_res.html', context)
+    return render(request, 'tpe_app/admin2/subir_pdf_res.html', context)
 
 
 # ============================================================

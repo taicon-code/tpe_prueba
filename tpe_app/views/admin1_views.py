@@ -424,7 +424,7 @@ def gestionar_abogados_sim(request, sim_id):
         'responsable_actual': responsable_actual,
         'investigados': investigados,
     }
-    return render(request, 'tpe_app/administrativo/gestionar_abogados_sim.html', context)
+    return render(request, 'tpe_app/admin1/gestionar_abogados_sim.html', context)
 
 
 # ============================================================

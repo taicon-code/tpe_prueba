@@ -1,0 +1,76 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Subir PDF — Resolución {{ res.numero }}{% endblock %}
+{% block navbar_title %}Subir PDF de Resolución{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="javascript:history.back()" style="color: #1e3c72; text-decoration: none;">
+        ← Volver
+    </a>
+</div>
+
+<h1 style="margin-bottom: 0.5rem; color: #1e3c72;">Subir PDF de Resolución</h1>
+<p style="color: #6b7280; margin-bottom: 2rem;">
+    Resolución <strong>{{ res.numero }}</strong> — {{ res.get_instancia_display }}
+    {% if res.pm %} — {{ res.pm.grado }} {{ res.pm.paterno }}{% endif %}
+</p>
+
+<div style="max-width: 620px;">
+
+    {% if pdf_existente %}
+    <div class="card" style="background: #f0fdf4; border-left: 4px solid #16a34a; margin-bottom: 1.5rem;">
+        <h4 style="margin-top: 0; color: #15803d;">PDF actual registrado</h4>
+        <p style="margin: 0; color: #374151;">
+            {{ pdf_existente.nombre }}
+            {% if pdf_existente.archivo %}
+                — <a href="{{ pdf_existente.archivo.url }}" target="_blank" style="color: #1e3c72;">Ver PDF</a>
+            {% endif %}
+        </p>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.82rem; color: #6b7280;">
+            Subir un nuevo archivo reemplazará el existente.
+        </p>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="card">
+        {% csrf_token %}
+
+        <h3 style="margin-top: 0; color: #374151;">
+            {% if pdf_existente %}Reemplazar PDF{% else %}Subir PDF{% endif %}
+        </h3>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; color: #374151;">
+                Archivo PDF *
+            </label>
+            <input type="file" name="archivo_pdf" accept=".pdf"
+                   style="width: 100%; padding: 0.65rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; cursor: pointer;">
+            <small style="color: #9ca3af; font-size: 0.8rem; display: block; margin-top: 0.4rem;">
+                Solo archivos PDF. Tamaño máximo recomendado: 10 MB.
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="background: #1e3c72; color: #fff;">
+                Subir PDF
+            </button>
+            <a href="javascript:history.back()" class="btn" style="background: #6c757d; color: #fff;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+
+</div>
+
+<style>
+    .card { background: #fff; border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .btn {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .5rem 1.1rem; text-decoration: none; border-radius: 7px;
+        border: none; cursor: pointer; font-size: .875rem; font-family: inherit;
+        font-weight: 500; transition: opacity .15s;
+    }
+    .btn:hover { opacity: 0.88; }
+</style>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Gestionar Abogados — {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}Gestionar Abogados del Sumario{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin1_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 0.5rem; color: #1e3c72;">Gestionar Abogados</h1>
+<p style="color: #6b7280; margin-bottom: 2rem;">Sumario: <strong>{{ sim.codigo }}</strong> — {{ sim.get_tipo_display }}</p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1100px;">
+
+    <!-- Panel izquierdo: militares investigados + abogados actuales -->
+    <div>
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <h3 style="margin-top: 0; color: #374151;">Militares Investigados</h3>
+            {% if investigados %}
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for pm in investigados %}
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6; color: #374151;">
+                        {{ pm.grado }} {{ pm.nombre }} {{ pm.paterno }} {{ pm.materno }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="color: #9ca3af; font-size: 0.9rem;">Sin militares registrados.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top: 0; color: #374151;">Abogados Asignados Actualmente</h3>
+            {% if abogados_actuales %}
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {% for asig in abogados_actuales %}
+                    <li style="padding: 0.6rem 0; border-bottom: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #374151;">
+                            {{ asig.abogado.grado }} {{ asig.abogado.nombre }} {{ asig.abogado.paterno }}
+                        </span>
+                        {% if asig.es_responsable %}
+                            <span style="background: #dbeafe; color: #1d4ed8; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 12px;">
+                                RESPONSABLE
+                            </span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p style="color: #9ca3af; font-size: 0.9rem;">Sin abogados asignados.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Panel derecho: formulario para actualizar -->
+    <div>
+        <form method="post" class="card">
+            {% csrf_token %}
+
+            <h3 style="margin-top: 0; color: #374151;">Actualizar Asignación</h3>
+
+            {% if form.non_field_errors %}
+                <div style="background: #fee2e2; border-left: 4px solid #dc2626; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem; color: #991b1b;">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; color: #374151;">
+                    Abogados Asignados *
+                </label>
+                {{ form.abogados }}
+                {% if form.abogados.errors %}
+                    <p style="color: #dc2626; font-size: 0.8rem; margin-top: 0.3rem;">{{ form.abogados.errors.0 }}</p>
+                {% endif %}
+                <small style="color: #9ca3af; font-size: 0.8rem; display: block; margin-top: 0.4rem;">
+                    Ctrl+clic para seleccionar varios
+                </small>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; color: #374151;">
+                    Abogado Responsable
+                </label>
+                <select name="responsable" style="width: 100%; padding: 0.65rem 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                    <option value="">— Ninguno designado —</option>
+                    {% for asig in abogados_actuales %}
+                        <option value="{{ asig.abogado.pk }}"
+                            {% if responsable_actual and responsable_actual.abogado.pk == asig.abogado.pk %}selected{% endif %}>
+                            {{ asig.abogado.grado }} {{ asig.abogado.paterno }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small style="color: #9ca3af; font-size: 0.8rem; display: block; margin-top: 0.4rem;">
+                    Se actualiza tras guardar los abogados seleccionados arriba
+                </small>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn" style="background: #1e3c72; color: #fff;">
+                    Guardar Cambios
+                </button>
+                <a href="{% url 'admin1_dashboard' %}" class="btn" style="background: #6c757d; color: #fff;">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<style>
+    .card { background: #fff; border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .btn {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .5rem 1.1rem; text-decoration: none; border-radius: 7px;
+        border: none; cursor: pointer; font-size: .875rem; font-family: inherit;
+        font-weight: 500; transition: opacity .15s;
+    }
+    .btn:hover { opacity: 0.88; }
+    select[multiple] { width: 100%; min-height: 180px; border: 1px solid #ddd; border-radius: 4px; padding: 0.4rem; font-size: 0.9rem; }
+</style>
+{% endblock %}
