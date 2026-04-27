@@ -46,6 +46,54 @@ def _obtener_historial_completo(personal_id):
     return historial
 
 
+def _compilar_documentos_lotes(sim, historial):
+    """Compila documentos coordinados para reportes por lote
+    Retorna string formateado con tipo, numero, fecha y resolutiva"""
+    documentos = []
+
+    # Resoluciones
+    for res in historial['resoluciones'].filter(sim=sim):
+        fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
+        resolutiva = (res.texto or 'N/A').upper() if res.texto else 'N/A'
+        documentos.append(('RES', res.numero or 'S/N', fecha_str, resolutiva))
+
+    # Segundas Resoluciones
+    for rr in historial.get('segundas_resoluciones', Resolucion.objects.none()).filter(sim=sim):
+        fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
+        resolutiva = (rr.texto or 'N/A').upper() if rr.texto else 'N/A'
+        documentos.append(('RR', rr.numero or 'S/N', fecha_str, resolutiva))
+
+    # Autos TPE
+    for auto in historial['autos_tpe'].filter(sim=sim):
+        fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
+        resolutiva = (auto.get_tipo_display() if auto.tipo else 'N/A').upper()
+        memo_txt = ''
+        if auto.memo_numero:
+            memo_txt = f" [MEMO {auto.memo_numero}]"
+        documentos.append(('AUTO', auto.numero or 'S/N', fecha_str, resolutiva + memo_txt))
+
+    # Recursos Apelación
+    for rap in historial['recursos_apelacion'].filter(sim=sim):
+        fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
+        resolutiva = 'RECURSO DE APELACIÓN'
+        documentos.append(('RAP', rap.numero or 'S/N', fecha_str, resolutiva))
+
+    # RAEE
+    for raee in historial['raees'].filter(sim=sim):
+        fecha_str = raee.fecha.strftime('%d/%m/%y') if raee.fecha else 'S/F'
+        resolutiva = 'ACLARACIÓN Y ENMIENDA'
+        documentos.append(('RAEE', raee.numero or 'S/N', fecha_str, resolutiva))
+
+    # Autos TSP
+    for autotsp in historial['autos_tsp'].filter(sim=sim):
+        fecha_str = autotsp.fecha.strftime('%d/%m/%y') if autotsp.fecha else 'S/F'
+        resolutiva = (autotsp.get_tipo_display() if autotsp.tipo else 'N/A').upper()
+        documentos.append(('AUTOTSP', autotsp.numero or 'S/N', fecha_str, resolutiva))
+
+    # Ordenar por fecha
+    return documentos
+
+
 def _obtener_estado_actual(personal_id):
     """Obtiene el estado actual del personal con estadísticas simplificadas"""
     historial = _obtener_historial_completo(personal_id)
@@ -352,41 +400,15 @@ def export_batch_pdf(request):
         hist = mil['historial']
 
         for sim in hist['sumarios']:
-            # Obtener actuados para este SIM
+            # Obtener actuados coordinados para este SIM
+            documentos = _compilar_documentos_lotes(sim, hist)
             actuados_list = []
             contador = 1
             numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
-            # Resoluciones (RES)
-            for res in hist['resoluciones'].filter(sim=sim):
-                fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
-                resolutiva = res.texto if res.texto else 'N/A'
+            for tipo, numero, fecha, resolutiva in documentos:
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RES {res.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
-                contador += 1
-
-            # Segundas Resoluciones (RR)
-            for rr in hist['segundas_resoluciones'].filter(sim=sim):
-                fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
-                resolutiva = rr.texto if rr.texto else 'N/A'
-                num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RR {rr.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
-                contador += 1
-
-            # Autos TPE
-            for auto in hist['autos_tpe'].filter(sim=sim):
-                fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
-                resolutiva = auto.get_tipo_display() if auto.tipo else 'N/A'
-                num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} AUTO {auto.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
-                contador += 1
-
-            # Recursos de Apelación (RAP)
-            for rap in hist['recursos_apelacion'].filter(sim=sim):
-                fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
-                resolutiva = rap.get_instancia_display() if rap.instancia else 'Recurso de Apelación'
-                num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RAP {rap.numero or 'S/N'} ({fecha_str})<br/>   {resolutiva}<br/><br/>")
+                actuados_list.append(f"{num_circulo} {tipo} {numero} ({fecha})<br/>   {resolutiva}<br/><br/>")
                 contador += 1
 
             # Unir todo con HTML y remover último <br/><br/>
@@ -394,17 +416,17 @@ def export_batch_pdf(request):
             if actuados_str.endswith('<br/><br/>'):
                 actuados_str = actuados_str[:-10]  # Remover último <br/><br/>
 
-            objeto_completo = sim.objeto or 'N/A'
+            objeto_completo = (sim.objeto or 'N/A').upper()
 
             filas.append([
-                Paragraph(pm.get_grado_display() or 'N/A', s_td_c),
-                Paragraph(pm.nombre or 'N/A', s_td),
-                Paragraph(pm.paterno or 'N/A', s_td),
-                Paragraph(pm.materno or 'N/A', s_td),
+                Paragraph((pm.get_grado_display() or 'N/A').upper(), s_td_c),
+                Paragraph((pm.nombre or 'N/A').upper(), s_td),
+                Paragraph((pm.paterno or 'N/A').upper(), s_td),
+                Paragraph((pm.materno or 'N/A').upper(), s_td),
                 Paragraph(sim.codigo or 'N/A', s_td_c),
                 Paragraph(objeto_completo, s_td),
                 Paragraph(actuados_str, s_td),
-                Paragraph(sim.get_estado_display() or 'N/A', s_td_c),
+                Paragraph((sim.get_estado_display() or 'N/A').upper(), s_td_c),
             ])
 
     tabla = Table(filas, colWidths=col_widths, repeatRows=1)
@@ -499,55 +521,29 @@ def export_batch_excel(request):
         hist = mil['historial']
 
         for sim in hist['sumarios']:
+            # Obtener actuados coordinados para este SIM
+            documentos = _compilar_documentos_lotes(sim, hist)
             actuados_list = []
             contador = 1
             numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
-            # Resoluciones (RES)
-            for res in hist['resoluciones'].filter(sim=sim):
-                fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
-                resolutiva = res.texto if res.texto else 'N/A'
+            for tipo, numero, fecha, resolutiva in documentos:
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RES {res.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
+                actuados_list.append(f"{num_circulo} {tipo} {numero} ({fecha})\n   {resolutiva}\n")
                 contador += 1
 
-            # Segundas Resoluciones (RR)
-            for rr in hist['segundas_resoluciones'].filter(sim=sim):
-                fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
-                resolutiva = rr.texto if rr.texto else 'N/A'
-                num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RR {rr.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
-                contador += 1
-
-            # Autos TPE
-            for auto in hist['autos_tpe'].filter(sim=sim):
-                fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
-                resolutiva = auto.get_tipo_display() if auto.tipo else 'N/A'
-                num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} AUTO {auto.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
-                contador += 1
-
-            # Recursos de Apelación (RAP)
-            for rap in hist['recursos_apelacion'].filter(sim=sim):
-                fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
-                resolutiva = rap.get_instancia_display() if rap.instancia else 'Recurso de Apelación'
-                num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} RAP {rap.numero or 'S/N'} ({fecha_str})\n   {resolutiva}\n")
-                contador += 1
-
-            # Unir todo
+            # Unir todo y remover último salto de línea
             actuados_str = ''.join(actuados_list) if actuados_list else 'PENDIENTE'
-            # Remover último salto de línea si existe
             actuados_str = actuados_str.rstrip('\n')
 
-            ws.cell(row=row_idx, column=1, value=pm.get_grado_display() or 'N/A')
-            ws.cell(row=row_idx, column=2, value=pm.nombre or 'N/A')
-            ws.cell(row=row_idx, column=3, value=pm.paterno or 'N/A')
-            ws.cell(row=row_idx, column=4, value=pm.materno or 'N/A')
+            ws.cell(row=row_idx, column=1, value=(pm.get_grado_display() or 'N/A').upper())
+            ws.cell(row=row_idx, column=2, value=(pm.nombre or 'N/A').upper())
+            ws.cell(row=row_idx, column=3, value=(pm.paterno or 'N/A').upper())
+            ws.cell(row=row_idx, column=4, value=(pm.materno or 'N/A').upper())
             ws.cell(row=row_idx, column=5, value=sim.codigo or 'N/A')
-            ws.cell(row=row_idx, column=6, value=sim.objeto or 'N/A')
+            ws.cell(row=row_idx, column=6, value=(sim.objeto or 'N/A').upper())
             ws.cell(row=row_idx, column=7, value=actuados_str)
-            ws.cell(row=row_idx, column=8, value=sim.get_estado_display() or 'N/A')
+            ws.cell(row=row_idx, column=8, value=(sim.get_estado_display() or 'N/A').upper())
 
             row_idx += 1
 

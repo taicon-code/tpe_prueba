@@ -437,6 +437,55 @@ TPEsystem/
 
 ---
 
+---
+
+## Coordinación de Reportes (v4.0+)
+
+### Tres modelos de reportes coordinados
+
+Los reportes PDF y Excel están coordinados para mantener **formato y contenido consistente**:
+
+#### 1. **Reportes Individuales** (export_person_historial_pdf)
+- **Función**: `export_views.py:export_person_historial_pdf()`
+- **Tabla**: TIPO | N° | FECHA | RESOLUTIVA | NOTIF.
+- **Documentos incluidos**: RES, RR, AUTO TPE, RAP, RAEE, AUTO TSP
+- **Resolutiva**: En MAYÚSCULA (captura del texto o tipo_display())
+- **Memorándum**: Se muestra debajo del tipo si existe
+
+#### 2. **Reportes por Lotes** (búsqueda por lotes)
+- **Funciones**: `buscador_views.py:export_batch_pdf()` y `export_batch_excel()`
+- **Estructura**: GRADO | NOMBRES | PATERNO | MATERNO | SIM | OBJETO | ACTUADOS | ESTADO
+- **Actuados**: Compilados con tipo, número, fecha y resolutiva (coordinado)
+- **Memorándum**: Agregado al tipo con formato `[MEMO N° ...]`
+- **Formato**: TODO EN MAYÚSCULA
+
+#### 3. **Reportes por Sumario** (detalles SIM)
+- **Funciones**: `export_views.py:export_sim_pdf()` y `export_sim_excel()`
+- **Tabla PDF**: TIPO | N° | FECHA | RESOLUTIVA | NOTIF.
+- **Excel**: Columnas separadas para MEMO N°, MEMO FECHA, MEMO ENTREGA
+- **Documentos**: Compilados con función coordinada
+
+### Funciones helpers
+
+**`_compilar_documentos(sim, historial)`** — export_views.py
+- Compila lista coordinada de documentos para reportes individual/sumario
+- Retorna: `dict` con `tipo`, `numero`, `fecha_doc`, `resolutiva`, `notificacion`, `memo`
+- Incluye: RES, RR, AUTO TPE, RAP, RAEE, AUTO TSP
+
+**`_compilar_documentos_lotes(sim, historial)`** — buscador_views.py
+- Compila documentos para reportes por lotes
+- Retorna: tuplas `(tipo, numero, fecha, resolutiva)`
+- Más compacto para PDF/Excel lote
+
+### Requisitos de formato
+
+✅ **Todo en mayúscula**: nombres, apellidos, grado, especialidad, objeto, estado, resolutiva
+✅ **Parte resolutiva en todos los documentos**: campo `texto` de RES/RR o `get_tipo_display()` de Autos
+✅ **Columnas estándar**: Documento | Número | Fecha | Resolutiva | Notificación
+✅ **Memorándum en autos**: número, fecha y fecha de entrega
+
+---
+
 ## Notas de desarrollo
 
 - Base de datos: MySQL (credenciales en .env — DB: `db_sumarios_militares`, usuario: `root`)
