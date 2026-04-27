@@ -132,6 +132,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+
 # ✅ CONFIGURACIÓN CORRECTA PARA ARCHIVOS ESTÁTICOS
 # Django busca automáticamente en: tpe_app/static/
 
