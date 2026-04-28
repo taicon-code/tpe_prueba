@@ -822,9 +822,8 @@
         </div>
       </div>
 
-      <!-- AGRUPAR POR PERSONAL/MILITAR DENTRO DEL SUMARIO -->
-      {% for militar in sim.militares.all %}
-        {% with pm_docs=True %}
+      <!-- Mostrar solo el personal buscado (no todos los involucrados del SIM) -->
+      {% with militar=personal_seleccionado %}
         <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f0f7ff; border-radius: 8px; border-left: 4px solid #185FA5;">
           <h5 style="margin: 0 0 1rem 0; color: #185FA5; font-weight: 700; font-size: 0.95rem;">
             👤 {{ militar.grado }} {{ militar.nombre }} {{ militar.paterno }}{% if militar.materno %} {{ militar.materno }}{% endif %}
@@ -1087,8 +1086,7 @@
           <div class="sin-actuados" style="margin: 1rem 0;">Sin actuados registrados para {{ militar.nombre }} {{ militar.paterno }}.</div>
           {% endif %}
         </div>
-        {% endwith %}
-      {% endfor %}
+      {% endwith %}
     </div>
     {% endfor %}
   </div>

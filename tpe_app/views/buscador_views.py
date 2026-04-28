@@ -35,11 +35,11 @@ def _obtener_historial_completo(personal_id):
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA'),
-        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION'),
-        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION'),
-        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA'),
-        'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
+        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA', pm=personal),
+        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION', pm=personal),
+        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION', pm=personal),
+        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA', pm=personal),
+        'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids, pm=personal),
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }
 

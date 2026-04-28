@@ -54,10 +54,11 @@ def _compilar_documentos(sim, historial, pm=None):
     # Resoluciones (PRIMERA instancia)
     for res in _filt(historial['resoluciones']):
         notif_info = None
-        if res.notificacion:
+        _notif = getattr(res, 'notificacion', None)
+        if _notif:
             notif_info = {
-                'tipo': res.notificacion.get_tipo_display(),
-                'fecha': res.notificacion.fecha,
+                'tipo': _notif.get_tipo_display(),
+                'fecha': _notif.fecha,
             }
         documentos.append({
             'tipo': 'RESOLUCIÓN',
@@ -71,10 +72,11 @@ def _compilar_documentos(sim, historial, pm=None):
     # Recurso de Reconsideración (RR)
     for rr in _filt(historial.get('segundas_resoluciones', Resolucion.objects.none())):
         notif_info = None
-        if rr.notificacion:
+        _notif = getattr(rr, 'notificacion', None)
+        if _notif:
             notif_info = {
-                'tipo': rr.notificacion.get_tipo_display(),
-                'fecha': rr.notificacion.fecha,
+                'tipo': _notif.get_tipo_display(),
+                'fecha': _notif.fecha,
             }
         documentos.append({
             'tipo': 'REC. RECONSIDERACIÓN',
@@ -96,10 +98,11 @@ def _compilar_documentos(sim, historial, pm=None):
                 'fecha_recepcion': memo.fecha_entrega,
             }
         notif_info = None
-        if auto.notificacion:
+        _notif = getattr(auto, 'notificacion', None)
+        if _notif:
             notif_info = {
-                'tipo': auto.notificacion.get_tipo_display(),
-                'fecha': auto.notificacion.fecha,
+                'tipo': _notif.get_tipo_display(),
+                'fecha': _notif.fecha,
             }
         documentos.append({
             'tipo': 'AUTO TPE',
@@ -122,10 +125,11 @@ def _compilar_documentos(sim, historial, pm=None):
     # RAEE
     for raee in _filt(historial['raees']):
         notif_info = None
-        if raee.notificacion:
+        _notif = getattr(raee, 'notificacion', None)
+        if _notif:
             notif_info = {
-                'tipo': raee.notificacion.get_tipo_display(),
-                'fecha': raee.notificacion.fecha,
+                'tipo': _notif.get_tipo_display(),
+                'fecha': _notif.fecha,
             }
         documentos.append({
             'tipo': 'REC. ACLARACIÓN Y ENMIENDA (RAEE)',
@@ -140,10 +144,11 @@ def _compilar_documentos(sim, historial, pm=None):
     if pm is None:
         for autotsp in historial['autos_tsp'].filter(sim=sim):
             notif_info = None
-            if autotsp.notificacion:
+            _notif = getattr(autotsp, 'notificacion', None)
+            if _notif:
                 notif_info = {
-                    'tipo': autotsp.notificacion.get_tipo_display(),
-                    'fecha': autotsp.notificacion.fecha,
+                    'tipo': _notif.get_tipo_display(),
+                    'fecha': _notif.fecha,
                 }
             documentos.append({
                 'tipo': 'AUTO TSP',
@@ -171,11 +176,11 @@ def _obtener_historial(personal_id):
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA'),
-        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION'),
-        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION'),
-        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA'),
-        'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids),
+        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA', pm=personal),
+        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION', pm=personal),
+        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION', pm=personal),
+        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA', pm=personal),
+        'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids, pm=personal),
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }
 
@@ -373,8 +378,8 @@ def export_person_historial_pdf(request, personal_id):
                 ))
             story.append(Spacer(1, 5))
 
-            # Recopilar actuados con función coordinada
-            documentos, info_tsp = _compilar_documentos(sim, historial)
+            # Recopilar actuados con función coordinada — filtrar solo documentos de este militar
+            documentos, info_tsp = _compilar_documentos(sim, historial, pm=personal)
 
             if documentos:
                 headers = ['TIPO DE DOCUMENTO', 'N°', 'FECHA', 'RESOLUTIVA', 'NOTIF.']
@@ -871,10 +876,11 @@ def export_sim_pdf(request, sim_id):
         docs_tsp = []
         for autotsp in autos_tsp_qs.order_by('fecha'):
             notif_info = None
-            if autotsp.notificacion:
+            _notif = getattr(autotsp, 'notificacion', None)
+            if _notif:
                 notif_info = {
-                    'tipo': autotsp.notificacion.get_tipo_display(),
-                    'fecha': autotsp.notificacion.fecha,
+                    'tipo': _notif.get_tipo_display(),
+                    'fecha': _notif.fecha,
                 }
             docs_tsp.append({
                 'tipo': 'AUTO TSP',
