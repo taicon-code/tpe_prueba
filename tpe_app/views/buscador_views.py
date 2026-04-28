@@ -98,14 +98,17 @@ def _compilar_documentos_lotes(sim, historial):
 
 
 def _obtener_estado_actual(personal_id):
-    """Obtiene el estado actual del personal con estadísticas simplificadas"""
+    """Obtiene el estado actual del personal con estadísticas simplificadas.
+    Solo cuenta documentos emitidos por el TPE: RES, RR, AUTOTPE"""
     historial = _obtener_historial_completo(personal_id)
     if not historial:
         return None
 
     return {
         'total_sumarios': historial['sumarios'].count(),
-        'total_resoluciones': historial['resoluciones'].count(),
+        'total_resoluciones': (historial['resoluciones'].count() +
+                               historial['segundas_resoluciones'].count() +
+                               historial['autos_tpe'].count()),
         'total_autos_tpe': historial['autos_tpe'].count(),
         'estado_actual': 'Historial disponible'
     }
@@ -113,7 +116,7 @@ def _obtener_estado_actual(personal_id):
 
 @login_required
 def buscador_dashboard(request):
-    """Dashboard para búsqueda unificada - búsqueda por código SIM, nombre, apellido paterno, materno"""
+    """Dashboard para búsqueda unificada - búsqueda por CI, código SIM, nombre, apellidos"""
 
     query     = request.GET.get('q', '').strip()
     promocion = request.GET.get('promocion', '').strip()
@@ -134,19 +137,44 @@ def buscador_dashboard(request):
         # Normalizamos el query: quitamos tildes y ñ → 'alarcón'→'ALARCON', 'siñani'→'SINANI'
         q_norm = _normalizar(query)
 
-        # Buscamos con anotaciones que normalizan el campo en la BD (Ñ→N),
-        # y usamos collation accent-insensitive para que á=a, é=e, etc.
+        # 1. Intentar búsqueda por CI exacto (es muy específico)
         resultados_pm = list(
-            PM.objects.annotate(
-                pat_norm=Collate(_campo_sin_n('paterno'), 'utf8mb4_general_ci'),
-                nom_norm=Collate(_campo_sin_n('nombre'),  'utf8mb4_general_ci'),
-                mat_norm=Collate(_campo_sin_n('materno'), 'utf8mb4_general_ci'),
-            ).filter(
-                Q(pat_norm__icontains=q_norm) |
-                Q(nom_norm__icontains=q_norm) |
-                Q(mat_norm__icontains=q_norm)
-            ).distinct()[:20]
+            PM.objects.filter(ci__iexact=query).distinct()[:20]
         )
+
+        # 2. Si no hay resultados por CI, verificar si es búsqueda por "apellido_paterno, apellido_materno"
+        if not resultados_pm and ',' in query:
+            partes = [p.strip() for p in query.split(',', 1)]
+            if len(partes) == 2:
+                ap, am = partes
+                ap_norm = _normalizar(ap) if ap else ''
+                am_norm = _normalizar(am) if am else ''
+
+                filtro = PM.objects
+                if ap_norm:
+                    filtro = filtro.annotate(
+                        pat_norm=Collate(_campo_sin_n('paterno'), 'utf8mb4_general_ci')
+                    ).filter(pat_norm__icontains=ap_norm)
+                if am_norm:
+                    filtro = filtro.annotate(
+                        mat_norm=Collate(_campo_sin_n('materno'), 'utf8mb4_general_ci')
+                    ).filter(mat_norm__icontains=am_norm)
+
+                resultados_pm = list(filtro.distinct()[:20])
+
+        # 3. Si aún no hay resultados, buscar por nombre/apellido normalizando (búsqueda general)
+        if not resultados_pm:
+            resultados_pm = list(
+                PM.objects.annotate(
+                    pat_norm=Collate(_campo_sin_n('paterno'), 'utf8mb4_general_ci'),
+                    nom_norm=Collate(_campo_sin_n('nombre'),  'utf8mb4_general_ci'),
+                    mat_norm=Collate(_campo_sin_n('materno'), 'utf8mb4_general_ci'),
+                ).filter(
+                    Q(pat_norm__icontains=q_norm) |
+                    Q(nom_norm__icontains=q_norm) |
+                    Q(mat_norm__icontains=q_norm)
+                ).distinct()[:20]
+            )
 
         resultados_sim = list(
             SIM.objects.filter(
@@ -283,8 +311,12 @@ def export_batch_pdf(request):
     try:
         pdfmetrics.getFont('Arial-Bold')
     except KeyError:
-        pdfmetrics.registerFont(TTFont('Arial',      'C:/Windows/Fonts/arial.ttf'))
-        pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:/Windows/Fonts/arialbd.ttf'))
+        try:
+            pdfmetrics.registerFont(TTFont('Arial',      'C:/Windows/Fonts/arial.ttf'))
+            pdfmetrics.registerFont(TTFont('Arial-Bold', 'C:/Windows/Fonts/arialbd.ttf'))
+        except Exception:
+            # Si las fuentes no existen, usar Helvetica por defecto
+            pass
 
     lista_apellidos = request.POST.get('lista_apellidos', '').strip()
 
