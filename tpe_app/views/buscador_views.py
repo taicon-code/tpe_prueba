@@ -655,7 +655,7 @@ def export_custodia_pdf(request, sim_id):
     """Descargar PDF del historial de custodia de un SIM (Solo Admin2)"""
     from django.http import HttpResponse
     from django.utils import timezone as tz
-    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.pagesizes import letter
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import inch, cm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -691,7 +691,7 @@ def export_custodia_pdf(request, sim_id):
     now_local = tz.localtime(tz.now())
     response['Content-Disposition'] = f'attachment; filename="custodia_{sim.codigo}_{now_local.strftime("%d%m%Y")}.pdf"'
 
-    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch,
+    doc = SimpleDocTemplate(response, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch,
                             leftMargin=0.5*inch, rightMargin=0.5*inch)
     story = []
     styles = getSampleStyleSheet()
@@ -708,14 +708,14 @@ def export_custodia_pdf(request, sim_id):
     story.append(Paragraph(f'Historial de Custodia de Carpeta - {sim.codigo}', title_style))
     story.append(Spacer(1, 0.15*inch))
 
-    # Información del SIM — ancho ajustado a portrait (A4 usable ≈ 7.17 in)
+    # Información del SIM — ancho ajustado a portrait (carta usable ≈ 7.5 in)
     info_data = [
         ['Codigo', sim.codigo],
         ['Tipo', sim.get_tipo_display()],
         ['Estado', sim.get_estado_display()],
         ['Ingreso', sim.fecha_ingreso.strftime('%d/%m/%Y') if sim.fecha_ingreso else '-'],
     ]
-    info_table = Table(info_data, colWidths=[1.4*inch, 5.77*inch])
+    info_table = Table(info_data, colWidths=[1.4*inch, 6.1*inch])
     info_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#E8F4F8')),
         ('BACKGROUND', (1, 0), (1, -1), colors.white),
@@ -752,9 +752,9 @@ def export_custodia_pdf(request, sim_id):
         wordWrap='CJK',
     )
 
-    # Anchos para portrait A4 (usable ≈ 18.46 cm)
+    # Anchos para portrait carta (usable ≈ 19.05 cm)
     # Fecha Recep | Custodio | Abogado | Estado | Fecha Entrega | Observacion
-    col_widths = [2.2*cm, 3.7*cm, 2.5*cm, 3.2*cm, 2.2*cm, 4.66*cm]
+    col_widths = [2.2*cm, 3.7*cm, 2.5*cm, 3.2*cm, 2.2*cm, 5.25*cm]
 
     if custodia_historial:
         custodia_data = [
