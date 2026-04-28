@@ -580,6 +580,10 @@ def ayudante_wizard_paso2(request, sim_id):
                             # Si tenemos un PM (nuevo o existente), crear la relación PM_SIM
                             if pm:
                                 grado_fecha = cleaned.get('pmsim_grado_en_fecha') or None
+                                # Si el PM existente no tenía grado, sincronizar con el del documento
+                                if grado_fecha and not pm.grado:
+                                    pm.grado = grado_fecha
+                                    pm.save(update_fields=['grado'])
                                 pm_sim, _ = PM_SIM.objects.get_or_create(sim=sim, pm=pm)
                                 if grado_fecha:
                                     pm_sim.grado_en_fecha = grado_fecha

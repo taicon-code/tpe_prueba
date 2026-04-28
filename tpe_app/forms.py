@@ -87,11 +87,6 @@ class PMSIMForm(forms.ModelForm):
         choices=[('', '---------')] + list(PM.ESCALAFON_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
-    grado = forms.ChoiceField(
-        label='Grado', required=False,
-        choices=[('', '---------')] + list(PM.GRADO_CHOICES),
-        widget=forms.Select(attrs={'class': 'form-control'}),
-    )
     arma = forms.ChoiceField(
         label='Arma', required=False,
         choices=[('', '---------')] + list(PM.ARMA_CHOICES),
@@ -110,7 +105,7 @@ class PMSIMForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2000'})
     )
     grado_en_fecha = forms.ChoiceField(
-        label='Grado al momento del sumario', required=False,
+        label='Grado (del documento)', required=False,
         choices=[('', '---------')] + list(PM.GRADO_CHOICES),
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
@@ -132,7 +127,6 @@ class PMSIMForm(forms.ModelForm):
             self.fields['paterno'].initial     = pm.paterno
             self.fields['materno'].initial     = pm.materno
             self.fields['escalafon'].initial   = pm.escalafon
-            self.fields['grado'].initial       = pm.grado
             self.fields['arma'].initial        = pm.arma
             self.fields['especialidad'].initial = pm.especialidad
             self.fields['anio_promocion'].initial = pm.anio_promocion
@@ -150,7 +144,6 @@ class PMSIMForm(forms.ModelForm):
         paterno     = (cleaned_data.get('paterno') or '').strip().upper()
         materno     = (cleaned_data.get('materno') or '').strip().upper()
         escalafon   = cleaned_data.get('escalafon') or None
-        grado       = cleaned_data.get('grado') or None
         arma        = cleaned_data.get('arma') or None
         especialidad = (cleaned_data.get('especialidad') or '').strip() or None
         anio_promocion = cleaned_data.get('anio_promocion') or None
@@ -159,7 +152,7 @@ class PMSIMForm(forms.ModelForm):
 
         cleaned_data['pmsim_grado_en_fecha'] = grado_fecha
 
-        if not any([ci, nombre, paterno, materno, escalafon, grado, arma]):
+        if not any([ci, nombre, paterno, materno, escalafon, grado_fecha, arma]):
             return cleaned_data
 
         if not nombre:
@@ -190,7 +183,7 @@ class PMSIMForm(forms.ModelForm):
         cleaned_data['pm_data'] = {
             'ci':          ci or None,
             'escalafon':   escalafon,
-            'grado':       grado,
+            'grado':       grado_fecha,
             'arma':        arma,
             'especialidad': especialidad,
             'nombre':      nombre,
