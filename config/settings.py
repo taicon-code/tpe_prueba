@@ -146,9 +146,14 @@ STATICFILES_STORAGE = (
     else 'django.contrib.staticfiles.storage.StaticFilesStorage'
 )
 
-# Media files (fotos PM, PDFs adjuntos) — ruta configurable en .env
+# Media files (fotos PM, PDFs adjuntos)
+# La ruta OneDrive es igual en ambas PCs, solo cambia el nombre de usuario.
+# Path.home() resuelve a C:/Users/Dell en laptop y C:/Users/user en trabajo.
 MEDIA_URL = '/media/'
-MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
+MEDIA_ROOT = env(
+    'MEDIA_ROOT',
+    default=str(Path.home() / 'OneDrive' / '1. TPE' / '2. TPE GRAL' / 'media_tpe')
+)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

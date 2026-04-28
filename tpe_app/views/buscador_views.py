@@ -55,40 +55,43 @@ def _compilar_documentos_lotes(sim, historial):
     for res in historial['resoluciones'].filter(sim=sim):
         fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
         resolutiva = (res.texto or 'N/A').upper() if res.texto else 'N/A'
-        documentos.append(('RES', res.numero or 'S/N', fecha_str, resolutiva))
+        documentos.append(('RES', res.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Segundas Resoluciones
     for rr in historial.get('segundas_resoluciones', Resolucion.objects.none()).filter(sim=sim):
         fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
         resolutiva = (rr.texto or 'N/A').upper() if rr.texto else 'N/A'
-        documentos.append(('RR', rr.numero or 'S/N', fecha_str, resolutiva))
+        documentos.append(('RR', rr.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Autos TPE
     for auto in historial['autos_tpe'].filter(sim=sim):
         fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
-        resolutiva = (auto.get_tipo_display() if auto.tipo else 'N/A').upper()
-        memo_txt = ''
-        if auto.memo_numero:
-            memo_txt = f" [MEMO {auto.memo_numero}]"
-        documentos.append(('AUTO', auto.numero or 'S/N', fecha_str, resolutiva + memo_txt))
+        resolutiva = (auto.texto or (auto.get_tipo_display() if auto.tipo else 'N/A')).upper()
+        memo = getattr(auto, 'memorandum', None)
+        if memo:
+            entrega = memo.fecha_entrega.strftime('%d/%m/%y') if memo.fecha_entrega else 'PENDIENTE'
+            memo_str = f"MEMO N° {memo.numero}  |  FECHA: {memo.fecha.strftime('%d/%m/%y') if memo.fecha else 'S/F'}  |  ENTREGA: {entrega}"
+        else:
+            memo_str = None
+        documentos.append(('AUTO TPE', auto.numero or 'S/N', fecha_str, resolutiva, memo_str))
 
     # Recursos Apelación
     for rap in historial['recursos_apelacion'].filter(sim=sim):
         fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
         resolutiva = 'RECURSO DE APELACIÓN'
-        documentos.append(('RAP', rap.numero or 'S/N', fecha_str, resolutiva))
+        documentos.append(('RAP', rap.numero or 'S/N', fecha_str, resolutiva, None))
 
     # RAEE
     for raee in historial['raees'].filter(sim=sim):
         fecha_str = raee.fecha.strftime('%d/%m/%y') if raee.fecha else 'S/F'
         resolutiva = 'ACLARACIÓN Y ENMIENDA'
-        documentos.append(('RAEE', raee.numero or 'S/N', fecha_str, resolutiva))
+        documentos.append(('RAEE', raee.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Autos TSP
     for autotsp in historial['autos_tsp'].filter(sim=sim):
         fecha_str = autotsp.fecha.strftime('%d/%m/%y') if autotsp.fecha else 'S/F'
-        resolutiva = (autotsp.get_tipo_display() if autotsp.tipo else 'N/A').upper()
-        documentos.append(('AUTOTSP', autotsp.numero or 'S/N', fecha_str, resolutiva))
+        resolutiva = (autotsp.texto or (autotsp.get_tipo_display() if autotsp.tipo else 'N/A')).upper()
+        documentos.append(('AUTO TSP', autotsp.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Ordenar por fecha
     return documentos
@@ -184,9 +187,20 @@ def detalles_sim(request, sim_id):
 
     # Obtener todos los actuados del SIM
     resoluciones = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')
-    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abogado')
+    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abogado', 'pm')
     autos_tsp = AUTOTSP.objects.filter(sim=sim)
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim).select_related('abogado')
+    recursos_tsp = RecursoTSP.objects.filter(sim=sim).select_related('abogado', 'pm')
+
+    # Agrupar actuados por militar en orden cronológico del flujo
+    militares_con_docs = []
+    for pm_obj in militares:
+        militares_con_docs.append({
+            'pm': pm_obj,
+            'resoluciones': resoluciones.filter(pm=pm_obj, instancia='PRIMERA').order_by('fecha'),
+            'rrs':          resoluciones.filter(pm=pm_obj, instancia='RECONSIDERACION').order_by('fecha'),
+            'autos_tpe':    autos_tpe.filter(pm=pm_obj).order_by('fecha'),
+            'recursos_tsp': recursos_tsp.filter(pm=pm_obj).order_by('fecha'),
+        })
 
     # Obtener historial de custodia (trazabilidad) - SOLO para Admin2
     custodia_historial = None
@@ -200,10 +214,8 @@ def detalles_sim(request, sim_id):
     context = {
         'sim': sim,
         'militares': militares,
-        'resoluciones': resoluciones,
-        'autos_tpe': autos_tpe,
+        'militares_con_docs': militares_con_docs,
         'autos_tsp': autos_tsp,
-        'recursos_tsp': recursos_tsp,
         'custodia_historial': custodia_historial,
         'custodia_actual': custodia_actual,
         'es_admin2': es_admin2,
@@ -347,22 +359,21 @@ def export_batch_pdf(request):
     story.append(Spacer(1, 6))
 
     # Pie de página
-    nombre_usuario = request.user.get_full_name() or request.user.username
     grado_usuario = ""
     espec_usuario = ""
+    nombre_completo = request.user.get_full_name() or request.user.username
     if request.user.is_authenticated:
         try:
             perfil = request.user.perfilusuario
-            if perfil.abogado:
-                grado_usuario = perfil.abogado.grado or ""
-                espec_usuario = perfil.abogado.arma or ""
-            elif perfil.vocal and perfil.vocal.pm:
-                grado_usuario = perfil.vocal.pm.get_grado_display() or ""
-                espec_usuario = perfil.vocal.pm.get_arma_display() or ""
+            pm_pie = perfil.pm if perfil.pm else (perfil.vocal.pm if perfil.vocal and perfil.vocal.pm else None)
+            if pm_pie:
+                grado_usuario  = pm_pie.get_grado_display() or ""
+                espec_usuario  = pm_pie.get_arma_display() or ""
+                nombre_completo = f"{pm_pie.nombre or ''} {pm_pie.paterno or ''} {pm_pie.materno or ''}".strip()
         except Exception:
             pass
 
-    partes_pie = [p for p in [grado_usuario, nombre_usuario.upper(), espec_usuario] if p]
+    partes_pie = [p for p in [grado_usuario, espec_usuario, nombre_completo.upper()] if p]
     texto_impreso = "  ".join(partes_pie)
 
     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
@@ -406,9 +417,12 @@ def export_batch_pdf(request):
             contador = 1
             numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
-            for tipo, numero, fecha, resolutiva in documentos:
+            for tipo, numero, fecha, resolutiva, memo in documentos:
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} {tipo} {numero} ({fecha})<br/>   {resolutiva}<br/><br/>")
+                linea = f"{num_circulo} {tipo} {numero} ({fecha})<br/>   {resolutiva}"
+                if memo:
+                    linea += f"<br/>   <i>└─ {memo}</i>"
+                actuados_list.append(linea + "<br/><br/>")
                 contador += 1
 
             # Unir todo con HTML y remover último <br/><br/>
@@ -527,9 +541,12 @@ def export_batch_excel(request):
             contador = 1
             numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
-            for tipo, numero, fecha, resolutiva in documentos:
+            for tipo, numero, fecha, resolutiva, memo in documentos:
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                actuados_list.append(f"{num_circulo} {tipo} {numero} ({fecha})\n   {resolutiva}\n")
+                linea = f"{num_circulo} {tipo} {numero} ({fecha})\n   {resolutiva}"
+                if memo:
+                    linea += f"\n   └─ {memo}"
+                actuados_list.append(linea + "\n")
                 contador += 1
 
             # Unir todo y remover último salto de línea

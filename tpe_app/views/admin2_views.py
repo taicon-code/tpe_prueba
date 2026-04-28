@@ -450,7 +450,7 @@ def subir_pdf_res(request, res_id):
                     resolucion=res,
                     tipo='resolucion',
                     archivo=archivo_pdf,
-                    nombre=f'RES {res.numero} - {res.pm.grado} {res.pm.paterno}'
+                    nombre=f'RES {res.numero} - {res.pm.grado} {res.pm.paterno}' if res.pm else f'RES {res.numero}'
                 )
 
                 messages.success(

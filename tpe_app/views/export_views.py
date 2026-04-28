@@ -37,90 +37,93 @@ def _sanitize_filename(text):
     return "".join(c if c.isalnum() or c in "-_" else "" for c in text.upper())
 
 
-def _compilar_documentos(sim, historial):
-    """Compila lista coordinada de documentos (RES, RR, AUTOTPE, RAP, RAEE, AUTOTSP) con columnas estándar
+def _compilar_documentos(sim, historial, pm=None):
+    """Compila lista coordinada de documentos (RES, RR, AUTOTPE, RAP, RAEE, AUTOTSP) con columnas estándar.
+    Si pm se indica, filtra solo los documentos de ese militar (AUTOTSP se excluye pues no tiene FK a pm).
     Retorna lista de dicts con: tipo, numero, fecha_doc, resolutiva, notificacion, memo (si aplica)
     """
     documentos = []
 
+    def _filt(qs):
+        qs = qs.filter(sim=sim)
+        if pm is not None:
+            qs = qs.filter(pm=pm)
+        return qs
+
     # Resoluciones (PRIMERA instancia)
-    for res in historial['resoluciones'].filter(sim=sim):
-        doc = {
+    for res in _filt(historial['resoluciones']):
+        documentos.append({
             'tipo': 'RESOLUCIÓN',
             'numero': res.numero or 'S/N',
             'fecha_doc': res.fecha,
             'resolutiva': (res.texto or 'N/A').upper(),
             'notificacion': 'SÍ' if getattr(res, 'fecha_notif', None) else 'NO',
             'memo': None,
-        }
-        documentos.append(doc)
+        })
 
-    # Recurso de Reconsideración (RR) — Resolucion RECONSIDERACION instancia
-    for rr in historial.get('segundas_resoluciones', []).filter(sim=sim):
-        doc = {
+    # Recurso de Reconsideración (RR)
+    for rr in _filt(historial.get('segundas_resoluciones', Resolucion.objects.none())):
+        documentos.append({
             'tipo': 'REC. RECONSIDERACIÓN',
             'numero': rr.numero or 'S/N',
             'fecha_doc': rr.fecha,
             'resolutiva': (rr.texto or 'N/A').upper(),
             'notificacion': 'SÍ' if getattr(rr, 'fecha_notif', None) else 'NO',
             'memo': None,
-        }
-        documentos.append(doc)
+        })
 
     # Auto TPE
-    for auto in historial['autos_tpe'].filter(sim=sim):
+    for auto in _filt(historial['autos_tpe']):
         memo_info = None
-        if auto.memo_numero:
+        memo = getattr(auto, 'memorandum', None)
+        if memo:
             memo_info = {
-                'numero': auto.memo_numero or 'S/N',
-                'fecha': auto.memo_fecha,
-                'fecha_recepcion': auto.memo_fecha_entrega,
+                'numero': memo.numero or 'S/N',
+                'fecha': memo.fecha,
+                'fecha_recepcion': memo.fecha_entrega,
             }
-        doc = {
+        documentos.append({
             'tipo': 'AUTO TPE',
             'numero': auto.numero or 'S/N',
             'fecha_doc': auto.fecha,
-            'resolutiva': (auto.get_tipo_display() if auto.tipo else 'N/A').upper(),
+            'resolutiva': (auto.texto or (auto.get_tipo_display() if auto.tipo else 'N/A')).upper(),
             'notificacion': 'SÍ' if getattr(auto, 'fecha_notif', None) else 'NO',
             'memo': memo_info,
-        }
-        documentos.append(doc)
+        })
 
-    # Recurso de Apelación (RAP) — RecursoTSP APELACION instancia
-    for rap in historial['recursos_apelacion'].filter(sim=sim):
-        doc = {
+    # Recurso de Apelación (RAP)
+    for rap in _filt(historial['recursos_apelacion']):
+        documentos.append({
             'tipo': 'REC. APELACIÓN (RAP)',
             'numero': rap.numero or 'S/N',
             'fecha_doc': rap.fecha,
             'resolutiva': (rap.get_instancia_display() if rap.instancia else 'RECURSO DE APELACIÓN').upper(),
             'notificacion': 'SÍ' if getattr(rap, 'fecha_notif', None) else 'NO',
             'memo': None,
-        }
-        documentos.append(doc)
+        })
 
-    # RAEE — RecursoTSP ACLARACION_ENMIENDA instancia
-    for raee in historial['raees'].filter(sim=sim):
-        doc = {
+    # RAEE
+    for raee in _filt(historial['raees']):
+        documentos.append({
             'tipo': 'REC. ACLARACIÓN Y ENMIENDA (RAEE)',
             'numero': raee.numero or 'S/N',
             'fecha_doc': raee.fecha,
             'resolutiva': (raee.get_instancia_display() if raee.instancia else 'ACLARACIÓN Y ENMIENDA').upper(),
             'notificacion': 'SÍ' if getattr(raee, 'fecha_notif', None) else 'NO',
             'memo': None,
-        }
-        documentos.append(doc)
+        })
 
-    # Auto TSP
-    for autotsp in historial['autos_tsp'].filter(sim=sim):
-        doc = {
-            'tipo': 'AUTO TSP',
-            'numero': autotsp.numero or 'S/N',
-            'fecha_doc': autotsp.fecha,
-            'resolutiva': (autotsp.get_tipo_display() if autotsp.tipo else 'N/A').upper(),
-            'notificacion': 'SÍ' if getattr(autotsp, 'fecha_notif', None) else 'NO',
-            'memo': None,
-        }
-        documentos.append(doc)
+    # Auto TSP — sin FK a pm, solo se incluye cuando no hay filtro por militar
+    if pm is None:
+        for autotsp in historial['autos_tsp'].filter(sim=sim):
+            documentos.append({
+                'tipo': 'AUTO TSP',
+                'numero': autotsp.numero or 'S/N',
+                'fecha_doc': autotsp.fecha,
+                'resolutiva': (autotsp.texto or (autotsp.get_tipo_display() if autotsp.tipo else 'N/A')).upper(),
+                'notificacion': 'SÍ' if getattr(autotsp, 'fecha_notif', None) else 'NO',
+                'memo': None,
+            })
 
     documentos.sort(key=lambda x: x['fecha_doc'] or date.min)
     return documentos
@@ -192,25 +195,25 @@ def export_person_historial_pdf(request, personal_id):
     s_td_c    = _estilo('tdc',    tamaño=7,  alineacion=TA_CENTER, interlinea=9)
     s_stat_h  = _estilo('sth',    tamaño=8,  alineacion=TA_CENTER, negrita=True, color=colors.black)
     s_stat_v  = _estilo('stv',    tamaño=18, alineacion=TA_CENTER, negrita=True, color=colors.black, interlinea=22)
+    s_memo    = _estilo('memo',   tamaño=6.5, interlinea=8, color=colors.Color(0.35, 0.35, 0.35), sangria=8)
 
 
     # Obtener datos del usuario que imprime
-    nombre_usuario = request.user.get_full_name() or request.user.username
     grado_usuario = ""
     espec_usuario = ""
+    nombre_completo = request.user.get_full_name() or request.user.username
     if request.user.is_authenticated:
         try:
             perfil = request.user.perfilusuario
-            if perfil.abogado:
-                grado_usuario = perfil.abogado.grado or ""
-                espec_usuario = perfil.abogado.arma or ""
-            elif perfil.vocal and perfil.vocal.pm:
-                grado_usuario = perfil.vocal.pm.get_grado_display() or ""
-                espec_usuario = perfil.vocal.pm.get_arma_display() or ""
+            pm_pie = perfil.pm if perfil.pm else (perfil.vocal.pm if perfil.vocal and perfil.vocal.pm else None)
+            if pm_pie:
+                grado_usuario  = pm_pie.get_grado_display() or ""
+                espec_usuario  = pm_pie.get_arma_display() or ""
+                nombre_completo = f"{pm_pie.nombre or ''} {pm_pie.paterno or ''} {pm_pie.materno or ''}".strip()
         except Exception:
             pass
 
-    partes_pie = [p for p in [grado_usuario, nombre_usuario.upper(), espec_usuario] if p]
+    partes_pie = [p for p in [grado_usuario, espec_usuario, nombre_completo.upper()] if p]
     texto_impreso = "  ".join(partes_pie)
 
     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
@@ -337,22 +340,8 @@ def export_person_historial_pdf(request, personal_id):
             documentos = _compilar_documentos(sim, historial)
 
             if documentos:
-                headers = ['TIPO', 'N°', 'FECHA', 'RESOLUTIVA', 'NOTIF.']
+                headers = ['TIPO DE DOCUMENTO', 'N°', 'FECHA', 'RESOLUTIVA', 'NOTIF.']
                 filas = [[Paragraph(h, s_th) for h in headers]]
-                for actuado in documentos:
-                    tipo_texto = actuado['tipo']
-                    if actuado['memo']:
-                        memo = actuado['memo']
-                        tipo_texto += f"\n[MEMO: {memo['numero']} ({_format_date(memo['fecha'])}) — Entrega: {_format_date(memo['fecha_recepcion'])}]"
-
-                    filas.append([
-                        Paragraph(tipo_texto,                         s_td),
-                        Paragraph(str(actuado['numero']),             s_td_c),
-                        Paragraph(_format_date(actuado['fecha_doc']), s_td_c),
-                        Paragraph(actuado['resolutiva'],              s_td),
-                        Paragraph(actuado['notificacion'],            s_td_c),
-                    ])
-
                 ts = [
                     ('BOX',           (0, 0), (-1, -1), 0.5, colors.black),
                     ('INNERGRID',     (0, 0), (-1, -1), 0.3, colors.black),
@@ -363,6 +352,26 @@ def export_person_historial_pdf(request, personal_id):
                     ('LEFTPADDING',   (0, 0), (-1, -1), 4),
                     ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
                 ]
+                for actuado in documentos:
+                    filas.append([
+                        Paragraph(actuado['tipo'],                    s_td),
+                        Paragraph(str(actuado['numero']),             s_td_c),
+                        Paragraph(_format_date(actuado['fecha_doc']), s_td_c),
+                        Paragraph(actuado['resolutiva'],              s_td),
+                        Paragraph(actuado['notificacion'],            s_td_c),
+                    ])
+                    if actuado['memo']:
+                        memo = actuado['memo']
+                        entrega = _format_date(memo['fecha_recepcion']) if memo['fecha_recepcion'] else 'PENDIENTE'
+                        memo_txt = f"<i>Memorándum N° {memo['numero']}  —  Fecha: {_format_date(memo['fecha'])}  —  Entrega: {entrega}</i>"
+                        ri = len(filas)
+                        filas.append([Paragraph(memo_txt, s_memo), '', '', '', ''])
+                        ts += [
+                            ('SPAN',          (0, ri), (-1, ri)),
+                            ('TOPPADDING',    (0, ri), (-1, ri), 2),
+                            ('BOTTOMPADDING', (0, ri), (-1, ri), 3),
+                            ('LEFTPADDING',   (0, ri), (-1, ri), 12),
+                        ]
 
                 t = Table(filas, colWidths=cw, repeatRows=1)
                 t.setStyle(TableStyle(ts))
@@ -591,24 +600,25 @@ def export_sim_pdf(request, sim_id):
     s_th      = _estilo('th',     tamaño=7.5, alineacion=TA_CENTER, negrita=True, color=colors.black)
     s_td      = _estilo('td',     tamaño=7,  interlinea=9)
     s_td_c    = _estilo('tdc',    tamaño=7,  alineacion=TA_CENTER, interlinea=9)
+    s_memo    = _estilo('memo2',  tamaño=6.5, interlinea=8, color=colors.Color(0.35, 0.35, 0.35), sangria=8)
+    s_pm_sub  = _estilo('pmsub',  tamaño=8.5, negrita=True, espacio_antes=6, espacio_despues=3, color=colors.black)
 
     # Obtener datos del usuario que imprime
-    nombre_usuario = request.user.get_full_name() or request.user.username
     grado_usuario = ""
     espec_usuario = ""
+    nombre_completo = request.user.get_full_name() or request.user.username
     if request.user.is_authenticated:
         try:
             perfil = request.user.perfilusuario
-            if perfil.abogado:
-                grado_usuario = perfil.abogado.grado or ""
-                espec_usuario = perfil.abogado.arma or ""
-            elif perfil.vocal and perfil.vocal.pm:
-                grado_usuario = perfil.vocal.pm.get_grado_display() or ""
-                espec_usuario = perfil.vocal.pm.get_arma_display() or ""
+            pm_pie = perfil.pm if perfil.pm else (perfil.vocal.pm if perfil.vocal and perfil.vocal.pm else None)
+            if pm_pie:
+                grado_usuario  = pm_pie.get_grado_display() or ""
+                espec_usuario  = pm_pie.get_arma_display() or ""
+                nombre_completo = f"{pm_pie.nombre or ''} {pm_pie.paterno or ''} {pm_pie.materno or ''}".strip()
         except Exception:
             pass
 
-    partes_pie = [p for p in [grado_usuario, nombre_usuario.upper(), espec_usuario] if p]
+    partes_pie = [p for p in [grado_usuario, espec_usuario, nombre_completo.upper()] if p]
     texto_impreso = "  ".join(partes_pie)
 
     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
@@ -702,60 +712,97 @@ def export_sim_pdf(request, sim_id):
         story.append(tabla_mil)
         story.append(Spacer(1, 10))
 
-    # ── ACTUADOS (RESOLUCIONES, AUTOS, RECURSOS) ────────────────────────────
+    # ── ACTUADOS POR MILITAR ─────────────────────────────────────────────────
     story.append(Paragraph("<u>ACTUADOS</u>", s_seccion))
     story.append(Spacer(1, 6))
 
     cw_actuados = [usable_w * p for p in (0.20, 0.09, 0.12, 0.44, 0.15)]
 
-    filas_act = [[
-        Paragraph('TIPO', s_th),
-        Paragraph('N°', s_th),
-        Paragraph('FECHA', s_th),
-        Paragraph('RESOLUTIVA', s_th),
-        Paragraph('NOTIF.', s_th),
-    ]]
-
-    # Compilar historial simple para este SIM
     hist_simple = {
-        'resoluciones': resoluciones.filter(instancia='PRIMERA'),
+        'resoluciones':         resoluciones.filter(instancia='PRIMERA'),
         'segundas_resoluciones': resoluciones.filter(instancia='RECONSIDERACION'),
-        'autos_tpe': autos_tpe,
-        'recursos_apelacion': recursos_tsp.filter(instancia='APELACION'),
-        'raees': recursos_tsp.filter(instancia='ACLARACION_ENMIENDA'),
-        'autos_tsp': AUTOTSP.objects.filter(sim=sim),
+        'autos_tpe':            autos_tpe,
+        'recursos_apelacion':   recursos_tsp.filter(instancia='APELACION'),
+        'raees':                recursos_tsp.filter(instancia='ACLARACION_ENMIENDA'),
+        'autos_tsp':            AUTOTSP.objects.filter(sim=sim),
     }
 
-    documentos = _compilar_documentos(sim, hist_simple)
-
-    if documentos:
-        for doc_item in documentos:
-            tipo_texto = doc_item['tipo']
-            if doc_item['memo']:
-                memo = doc_item['memo']
-                tipo_texto += f"\n[MEMO: {memo['numero']} ({_format_date(memo['fecha'])}) — Entrega: {_format_date(memo['fecha_recepcion'])}]"
-
-            filas_act.append([
-                Paragraph(tipo_texto, s_td),
-                Paragraph(str(doc_item['numero']), s_td_c),
-                Paragraph(_format_date(doc_item['fecha_doc']), s_td_c),
-                Paragraph(doc_item['resolutiva'], s_td),
-                Paragraph(doc_item['notificacion'], s_td_c),
-            ])
-
-        tabla_act = Table(filas_act, colWidths=cw_actuados, repeatRows=1)
-        tabla_act.setStyle(TableStyle([
+    def _tabla_docs(documentos):
+        """Construye la tabla de actuados y su TableStyle dinámico."""
+        filas = [[
+            Paragraph('TIPO DE DOCUMENTO', s_th),
+            Paragraph('N°', s_th),
+            Paragraph('FECHA', s_th),
+            Paragraph('RESOLUTIVA', s_th),
+            Paragraph('NOTIF.', s_th),
+        ]]
+        ts = [
             ('BOX',           (0, 0), (-1, -1), 0.5, colors.black),
             ('INNERGRID',     (0, 0), (-1, -1), 0.3, colors.black),
-            ('LINEBELOW',     (0, 0), (-1, 0), 0.8, colors.black),
+            ('LINEBELOW',     (0, 0), (-1, 0),  0.8, colors.black),
             ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
             ('TOPPADDING',    (0, 0), (-1, -1), 4),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
             ('LEFTPADDING',   (0, 0), (-1, -1), 4),
             ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
-        ]))
-        story.append(tabla_act)
-    else:
+        ]
+        for d in documentos:
+            filas.append([
+                Paragraph(d['tipo'],                    s_td),
+                Paragraph(str(d['numero']),             s_td_c),
+                Paragraph(_format_date(d['fecha_doc']), s_td_c),
+                Paragraph(d['resolutiva'],              s_td),
+                Paragraph(d['notificacion'],            s_td_c),
+            ])
+            if d['memo']:
+                memo = d['memo']
+                entrega = _format_date(memo['fecha_recepcion']) if memo['fecha_recepcion'] else 'PENDIENTE'
+                memo_txt = f"<i>Memorándum N° {memo['numero']}  —  Fecha: {_format_date(memo['fecha'])}  —  Entrega: {entrega}</i>"
+                ri = len(filas)
+                filas.append([Paragraph(memo_txt, s_memo), '', '', '', ''])
+                ts += [
+                    ('SPAN',          (0, ri), (-1, ri)),
+                    ('TOPPADDING',    (0, ri), (-1, ri), 2),
+                    ('BOTTOMPADDING', (0, ri), (-1, ri), 3),
+                    ('LEFTPADDING',   (0, ri), (-1, ri), 12),
+                ]
+        t = Table(filas, colWidths=cw_actuados, repeatRows=1)
+        t.setStyle(TableStyle(ts))
+        return t
+
+    hay_actuados = False
+
+    for pm_obj in militares:
+        docs_pm = _compilar_documentos(sim, hist_simple, pm=pm_obj)
+        if not docs_pm:
+            continue
+        hay_actuados = True
+        nombre_pm = f"{pm_obj.get_grado_display() or ''} {pm_obj.nombre or ''} {pm_obj.paterno or ''} {pm_obj.materno or ''}".strip().upper()
+        story.append(Paragraph(nombre_pm, s_pm_sub))
+        story.append(Spacer(1, 3))
+        story.append(_tabla_docs(docs_pm))
+        story.append(Spacer(1, 10))
+
+    # Autos TSP — sin FK a militar, se muestran al final como sección propia
+    autos_tsp_qs = AUTOTSP.objects.filter(sim=sim)
+    if autos_tsp_qs.exists():
+        hay_actuados = True
+        story.append(Paragraph("AUTOS TSP", s_pm_sub))
+        story.append(Spacer(1, 3))
+        docs_tsp = []
+        for autotsp in autos_tsp_qs.order_by('fecha'):
+            docs_tsp.append({
+                'tipo': 'AUTO TSP',
+                'numero': autotsp.numero or 'S/N',
+                'fecha_doc': autotsp.fecha,
+                'resolutiva': (autotsp.texto or (autotsp.get_tipo_display() if autotsp.tipo else 'N/A')).upper(),
+                'notificacion': 'SÍ' if getattr(autotsp, 'fecha_notif', None) else 'NO',
+                'memo': None,
+            })
+        story.append(_tabla_docs(docs_tsp))
+        story.append(Spacer(1, 10))
+
+    if not hay_actuados:
         story.append(Paragraph("Sin actuados registrados.", s_dato))
 
     doc.build(story, onFirstPage=_pie_pagina, onLaterPages=_pie_pagina)
