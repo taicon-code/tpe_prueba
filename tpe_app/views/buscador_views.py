@@ -424,14 +424,11 @@ def export_batch_pdf(request):
         canv.restoreState()
 
     # Construir tabla con todos los militares
-    # Ancho distribuido: GRADO=8% | NOMBRES=15% | AP=15% | AM=15% | SIM=10% | OBJETO=18% | ACTUADOS=12% | ESTADO=7%
-    col_widths = [usable_w * p for p in (0.08, 0.15, 0.15, 0.15, 0.10, 0.18, 0.12, 0.07)]
+    # Ancho distribuido: GRADO Y NOMBRE=35% | SIM=8% | OBJETO=22% | ACTUADOS=25% | ESTADO=10%
+    col_widths = [usable_w * p for p in (0.35, 0.08, 0.22, 0.25, 0.10)]
 
     filas = [[
-        Paragraph('GRADO', s_th),
-        Paragraph('NOMBRES', s_th),
-        Paragraph('APELLIDO PATERNO', s_th),
-        Paragraph('APELLIDO MATERNO', s_th),
+        Paragraph('GRADO Y NOMBRE COMPLETO', s_th),
         Paragraph('SIM', s_th),
         Paragraph('OBJETO', s_th),
         Paragraph('ACTUADOS', s_th),
@@ -464,11 +461,17 @@ def export_batch_pdf(request):
 
             objeto_completo = (sim.objeto or 'N/A').upper()
 
+            partes_nombre = [
+                pm.get_grado_display() or '',
+                pm.get_arma_display() or '',
+                pm.nombre or '',
+                pm.paterno or '',
+                pm.materno or '',
+            ]
+            grado_nombre = ' '.join(p.upper() for p in partes_nombre if p).strip() or 'N/A'
+
             filas.append([
-                Paragraph((pm.get_grado_display() or 'N/A').upper(), s_td_c),
-                Paragraph((pm.nombre or 'N/A').upper(), s_td),
-                Paragraph((pm.paterno or 'N/A').upper(), s_td),
-                Paragraph((pm.materno or 'N/A').upper(), s_td),
+                Paragraph(grado_nombre, s_td),
                 Paragraph(sim.codigo or 'N/A', s_td_c),
                 Paragraph(objeto_completo, s_td),
                 Paragraph(actuados_str, s_td),
