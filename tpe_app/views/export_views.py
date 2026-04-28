@@ -551,7 +551,9 @@ def export_person_excel(request, personal_id):
             ws_docs.cell(row=row_idx, column=3, value=doc['numero'])
             ws_docs.cell(row=row_idx, column=4, value=_format_date(doc['fecha_doc']))
             ws_docs.cell(row=row_idx, column=5, value=doc['resolutiva'])
-            ws_docs.cell(row=row_idx, column=6, value=doc['notificacion'])
+            notif = doc['notificacion']
+            notif_str = f"{notif['tipo']} ({_format_date(notif['fecha'])})" if notif else ""
+            ws_docs.cell(row=row_idx, column=6, value=notif_str)
             if doc['memo']:
                 ws_docs.cell(row=row_idx, column=7, value=doc['memo']['numero'])
                 ws_docs.cell(row=row_idx, column=8, value=_format_date(doc['memo']['fecha']))
@@ -752,8 +754,7 @@ def export_sim_pdf(request, sim_id):
         story.append(Paragraph("<u>MILITARES INVESTIGADOS</u>", s_seccion))
         story.append(Spacer(1, 4))
 
-        col3 = usable_w / 3
-        col_militares = [usable_w * 0.12, usable_w * 0.15, usable_w * 0.22, usable_w * 0.22, usable_w * 0.12, usable_w * 0.17]
+        col_militares = [usable_w * 0.14, usable_w * 0.18, usable_w * 0.26, usable_w * 0.26, usable_w * 0.16]
 
         filas_mil = [[
             Paragraph('GRADO', s_th),
@@ -761,7 +762,6 @@ def export_sim_pdf(request, sim_id):
             Paragraph('APELLIDO PATERNO', s_th),
             Paragraph('APELLIDO MATERNO', s_th),
             Paragraph('C.I.', s_th),
-            Paragraph('ARMA', s_th),
         ]]
 
         for militar in militares:
@@ -771,7 +771,6 @@ def export_sim_pdf(request, sim_id):
                 Paragraph(militar.paterno or 'N/A', s_td),
                 Paragraph(militar.materno or 'N/A', s_td),
                 Paragraph(str(militar.ci) if militar.ci else 'N/A', s_td_c),
-                Paragraph(militar.get_arma_display() or 'N/A', s_td),
             ])
 
         tabla_mil = Table(filas_mil, colWidths=col_militares, repeatRows=1)
@@ -992,7 +991,9 @@ def export_sim_excel(request, sim_id):
         ws_actuados.cell(row=row_idx, column=2, value=doc['numero'])
         ws_actuados.cell(row=row_idx, column=3, value=_format_date(doc['fecha_doc']))
         ws_actuados.cell(row=row_idx, column=4, value=doc['resolutiva'])
-        ws_actuados.cell(row=row_idx, column=5, value=doc['notificacion'])
+        notif = doc['notificacion']
+        notif_str = f"{notif['tipo']} ({_format_date(notif['fecha'])})" if notif else ""
+        ws_actuados.cell(row=row_idx, column=5, value=notif_str)
         if doc['memo']:
             ws_actuados.cell(row=row_idx, column=6, value=doc['memo']['numero'])
             ws_actuados.cell(row=row_idx, column=7, value=_format_date(doc['memo']['fecha']))
