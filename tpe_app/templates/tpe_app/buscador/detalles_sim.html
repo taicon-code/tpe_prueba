@@ -382,11 +382,27 @@
   {% for m in militares_con_docs %}
   {% if m.resoluciones or m.rrs or m.autos_tpe or m.recursos_tsp %}
 
-  <!-- Subencabezado del militar -->
-  <div style="background: #f0f6ff; border-left: 4px solid #185FA5; padding: 0.6rem 1rem; margin: 1.5rem 0 0.75rem; border-radius: 0 4px 4px 0;">
-    <span style="font-weight: 700; color: #185FA5; font-size: 0.95rem;">
-      {{ m.pm.get_grado_display|default:"" }} {{ m.pm.nombre }} {{ m.pm.paterno }}{% if m.pm.materno %} {{ m.pm.materno }}{% endif %}
-    </span>
+  <!-- Subencabezado del militar con foto/avatar -->
+  <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f6ff 100%); border-left: 3px solid #185FA5; padding: 1rem; margin: 2rem 0 1rem; border-radius: 0 6px 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
+    <!-- Foto o Avatar -->
+    <div style="flex-shrink: 0;">
+      {% if m.pm.foto %}
+        <img src="{{ m.pm.foto.url }}" alt="Foto" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid #185FA5; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+      {% else %}
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1e3c72, #2a5298); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: #fff; border: 2px solid #185FA5; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+          {{ m.pm.nombre|first }}{{ m.pm.paterno|first }}
+        </div>
+      {% endif %}
+    </div>
+    <!-- Datos del militar -->
+    <div style="flex: 1;">
+      <div style="font-weight: 700; color: #185FA5; font-size: 1rem;">
+        {{ m.pm.get_grado_display|default:"" }} {{ m.pm.nombre }} {{ m.pm.paterno }}{% if m.pm.materno %} {{ m.pm.materno }}{% endif %}
+      </div>
+      <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
+        {% if m.pm.arma %}{{ m.pm.get_arma_display }}{% endif %}{% if m.pm.especialidad %} • {{ m.pm.especialidad }}{% endif %}
+      </div>
+    </div>
   </div>
 
   <!-- 1. Resoluciones (PRIMERA instancia) -->
@@ -394,12 +410,12 @@
   <div class="actuado-card">
     <div class="actuado-header">
       <div class="actuado-titulo">Resolución Nº {{ res.numero|default:"S/N" }}</div>
-      {% with docs=res.documentoadjunto_set.all %}{% if docs %}<div>{% for doc in docs %}<a href="{{ doc.archivo.url }}" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:0.85rem;">📥 Descargar</a>{% endfor %}</div>{% endif %}{% endwith %}
+      {% with docs=res.documentos.all %}{% if docs %}<div>{% for doc in docs %}<a href="{{ doc.archivo.url }}" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:0.85rem;">📥 Descargar</a>{% endfor %}</div>{% endif %}{% endwith %}
     </div>
     <div class="actuado-info">
       <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
       <div class="info-item"><span class="info-label">Tipo:</span><span class="info-value">{{ res.get_tipo_display|default:"—" }}</span></div>
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if res.fecha_notif %}{{ res.fecha_notif|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if res.notificacion %}{{ res.notificacion.get_tipo_display }} ({{ res.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
     </div>
     {% if res.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ res.texto }}</div>{% endif %}
   </div>
@@ -415,7 +431,7 @@
     <div class="actuado-info">
       <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ rr.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
       <div class="info-item"><span class="info-label">Tipo:</span><span class="info-value">{{ rr.get_tipo_display|default:"—" }}</span></div>
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if rr.fecha_notif %}{{ rr.fecha_notif|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if rr.notificacion %}{{ rr.notificacion.get_tipo_display }} ({{ rr.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
     </div>
     {% if rr.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#eef2ff;border-top:1px solid #c7d2fe;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ rr.texto }}</div>{% endif %}
   </div>
@@ -430,7 +446,7 @@
     <div class="actuado-info">
       <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
       <div class="info-item"><span class="info-label">Tipo:</span><span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span></div>
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if auto.fecha_notif %}{{ auto.fecha_notif|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if auto.notificacion %}{{ auto.notificacion.get_tipo_display }} ({{ auto.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
     </div>
     {% if auto.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#fffbf0;border-top:1px solid #fde68a;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ auto.texto }}</div>{% endif %}
     {% if auto.memorandum %}<div style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Memorándum:</span> Nº {{ auto.memorandum.numero }} — {{ auto.memorandum.fecha|date:"d/m/Y"|default:"S/F" }}{% if auto.memorandum.fecha_entrega %} — Entrega: {{ auto.memorandum.fecha_entrega|date:"d/m/Y" }}{% endif %}</div>{% endif %}
@@ -446,7 +462,7 @@
     <div class="actuado-info">
       <div class="info-item"><span class="info-label">Fecha Oficio:</span><span class="info-value">{{ recurso.fecha_oficio|date:"d/m/Y"|default:"N/A" }}</span></div>
       {% if recurso.fecha_limite %}<div class="info-item"><span class="info-label">Plazo Límite:</span><span class="info-value">{{ recurso.fecha_limite|date:"d/m/Y" }}</span></div>{% endif %}
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if recurso.fecha_notif %}{{ recurso.fecha_notif|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if recurso.notificacion %}{{ recurso.notificacion.get_tipo_display }} ({{ recurso.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
     </div>
     {% if recurso.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f0fdf4;border-top:1px solid #bbf7d0;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ recurso.texto }}</div>{% endif %}
   </div>
@@ -473,6 +489,10 @@
       <div class="info-item">
         <span class="info-label">Tipo:</span>
         <span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Notificación:</span>
+        <span class="info-value">{% if auto.notificacion %}{{ auto.notificacion.get_tipo_display }} ({{ auto.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span>
       </div>
     </div>
     {% if auto.texto %}

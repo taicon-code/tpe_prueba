@@ -431,6 +431,210 @@
     color: #666;
     font-weight: 600;
   }
+
+  /* Documentos por Sumario - Estilos mejorados */
+  .actuados-container {
+    margin-bottom: 2rem;
+  }
+
+  .actuados-section-title {
+    color: #185FA5;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #185FA5;
+    padding-bottom: 0.5rem;
+    font-weight: 700;
+  }
+
+  .sumario-box {
+    background: #f9fafb;
+    border-left: 5px solid #185FA5;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .sumario-box-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .sumario-box-header h4 {
+    margin: 0 0 0.5rem 0;
+    color: #185FA5;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .sumario-box-header-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .sumario-box-header-meta strong {
+    color: #185FA5;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  /* Documentos */
+  .documento-item {
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+  }
+
+  .documento-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .documento-header {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .documento-tipo-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .documento-header-info {
+    flex: 1;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .documento-numero {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .documento-links {
+    display: flex;
+    gap: 6px;
+  }
+
+  .documento-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    background: #f0f0f0;
+    color: inherit;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+
+  .documento-links a:hover {
+    background: rgba(0,0,0,0.1);
+    transform: scale(1.1);
+  }
+
+  .documento-body {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .documento-field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .documento-field-label {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    opacity: 0.8;
+  }
+
+  .documento-field-value {
+    color: #333;
+    word-break: break-word;
+    line-height: 1.4;
+  }
+
+  .documento-resolutiva {
+    grid-column: 1 / -1;
+    background: #f9fafb;
+    padding: 0.75rem;
+    border-left: 3px solid currentColor;
+    border-radius: 4px;
+  }
+
+  .documento-resolutiva-label {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    opacity: 0.8;
+    display: block;
+  }
+
+  .documento-memo {
+    grid-column: 1 / -1;
+    background: #fef3c7;
+    padding: 0.75rem;
+    border-left: 3px solid #f59e0b;
+    border-radius: 4px;
+  }
+
+  /* Colores específicos por tipo de documento */
+  .res-badge { color: #001B48; }
+  .rr-badge { color: #2d82b5; }
+  .auto-tpe-badge { color: #018ABE; }
+  .rap-badge { color: #97CADB; }
+  .raee-badge { color: #06b6d4; }
+  .auto-tsp-badge { color: #10b981; }
+
+  .documento-item.res { --doc-color: #001B48; }
+  .documento-item.rr { --doc-color: #2d82b5; }
+  .documento-item.auto-tpe { --doc-color: #018ABE; }
+  .documento-item.rap { --doc-color: #97CADB; }
+  .documento-item.raee { --doc-color: #06b6d4; }
+  .documento-item.auto-tsp { --doc-color: #10b981; }
+
+  .documento-item .documento-tipo-badge {
+    color: var(--doc-color, #185FA5);
+  }
+
+  .documento-item .documento-resolutiva {
+    border-left-color: var(--doc-color, #185FA5);
+  }
+
+  /* Sin actuados */
+  .sin-actuados {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    padding: 2rem;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
 </style>
 
 <!-- TABS DE BÚSQUEDA -->
@@ -449,8 +653,13 @@
     <p>Busca por CI, nombre, apellido o código DJE</p>
 
     <form method="GET" action="" class="search-box">
-      <input type="text" name="q" value="{{ query }}" placeholder="Ej: 7309870 | DANIELA | DJE-001/24">
+      <input type="text" name="q" value="{{ query }}" placeholder="Ej: 7309870 | DANIELA | DJE-001/24" autofocus>
       <button type="submit">Buscar</button>
+      {% if query %}
+      <a href="{% url 'buscador_dashboard' %}" style="background: #6366f1; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.95rem; transition: background 0.15s;">
+        🔄 Nueva Búsqueda
+      </a>
+      {% endif %}
     </form>
 
     <form method="GET" action="" class="search-box mt-2" style="max-width: 360px;">
@@ -589,95 +798,297 @@
 
   <!-- ACTUADOS POR SUMARIO -->
   {% if historial.sumarios %}
-  <div style="margin-bottom: 2rem;">
-    <h3 style="color: #185FA5; font-size: 1.1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #185FA5; padding-bottom: 0.5rem;">📋 Actuados por Sumario</h3>
+  <div class="actuados-container">
+    <h3 class="actuados-section-title">📋 Actuados por Sumario</h3>
 
     {% for sim in historial.sumarios %}
-    <div style="background: #f9fafb; border-left: 4px solid #185FA5; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 6px;">
+    <div class="sumario-box">
       <!-- Encabezado del Sumario -->
-      <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb;">
-        <h4 style="margin: 0 0 0.5rem 0; color: #185FA5;">{{ sim.codigo }} - {{ sim.get_tipo_display }}</h4>
-        <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem;">
-          <strong>Objeto:</strong> {{ sim.objeto }}
-        </div>
-        <div style="font-size: 0.9rem; color: #666;">
-          <span style="display: inline-block; margin-right: 1.5rem;"><strong>Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</span>
-          <span><strong>Estado:</strong> {{ sim.get_estado_display }}</span>
+      <div class="sumario-box-header">
+        <h4>{{ sim.codigo }} — {{ sim.get_tipo_display }}</h4>
+        <div class="sumario-box-header-meta">
+          <div>
+            <strong>Objeto</strong>
+            {{ sim.objeto }}
+          </div>
+          <div>
+            <strong>Fecha Ingreso</strong>
+            {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}
+          </div>
+          <div>
+            <strong>Estado</strong>
+            {{ sim.get_estado_display }}
+          </div>
         </div>
       </div>
 
-      <!-- Resoluciones del Sumario -->
-      {% for res in historial.resoluciones %}
-        {% if res.sim.id == sim.id %}
-        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #3b82f6;">
-          <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; font-size: 0.85rem;">
-            <div style="grid-column: 1 / -1;">
-              <span style="font-weight: 700; color: #185FA5; display: inline-block; margin-right: 0.5rem;">Nº Resolución:</span>
-              <span style="font-weight: 600;">{{ res.numero|default:"N/A" }}</span>
-              {% with docs=res.documentoadjunto_set.all %}
-                {% for doc in docs %}
-                  <a href="{{ doc.archivo.url }}" target="_blank" style="margin-left: 0.5rem; color: #3b82f6; text-decoration: none;">📥 Descargar</a>
-                {% endfor %}
-              {% endwith %}
-            </div>
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Fecha:</span>
-              <span>{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-            </div>
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Tipo:</span>
-              <span>{{ res.get_tipo_display|default:"N/A" }}</span>
-            </div>
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Notificación:</span>
-              <span>{{ res.notificacion.tipo|default:"N/A" }}</span>
-            </div>
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Fecha Notificación:</span>
-              <span>{{ res.notificacion.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-            </div>
-          </div>
-        </div>
-        {% endif %}
-      {% endfor %}
+      <!-- AGRUPAR POR PERSONAL/MILITAR DENTRO DEL SUMARIO -->
+      {% for militar in sim.militares.all %}
+        {% with pm_docs=True %}
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f0f7ff; border-radius: 8px; border-left: 4px solid #185FA5;">
+          <h5 style="margin: 0 0 1rem 0; color: #185FA5; font-weight: 700; font-size: 0.95rem;">
+            👤 {{ militar.grado }} {{ militar.nombre }} {{ militar.paterno }}{% if militar.materno %} {{ militar.materno }}{% endif %}
+          </h5>
 
-      <!-- Autos TPE del Sumario -->
-      {% for auto in historial.autos_tpe %}
-        {% if auto.sim.id == sim.id %}
-        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #fff; border-radius: 4px; border-left: 3px solid #f59e0b;">
-          <div style="display: grid; grid-template-columns: auto 1fr; gap: 1rem; font-size: 0.85rem;">
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Auto TPE Nº:</span>
-              <span>{{ auto.numero|default:"S/N" }}</span>
-            </div>
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Fecha:</span>
-              <span>{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-            </div>
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Disposición:</span>
-              <span>{{ auto.get_tipo_display|default:"N/A" }}</span>
-            </div>
-            {% if auto.notificacion %}
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Notificación:</span>
-              <span>{{ auto.notificacion.tipo|default:"N/A" }} - {{ auto.notificacion.fecha|date:"d/m/Y" }}</span>
+          <!-- Resoluciones (PRIMERA INSTANCIA) para este militar -->
+          {% for res in historial.resoluciones %}
+            {% if res.sim.id == sim.id and res.pm.id == militar.id %}
+            <div class="documento-item res">
+              <div class="documento-header">
+                <div class="documento-tipo-badge res-badge">📄 Resolución</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ res.numero|default:"N/A" }}</div>
+                  <div class="documento-links">
+                    {% with docs=res.documentos.all %}
+                      {% for doc in docs %}
+                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha</span>
+                  <span class="documento-field-value">{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Tipo</span>
+                  <span class="documento-field-value">{{ res.get_tipo_display|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Notificación</span>
+                  <span class="documento-field-value">{% if res.notificacion %}{{ res.notificacion.get_tipo_display }} ({{ res.notificacion.fecha|date:"d/m/Y" }}){% else %}<span style="color: #999;">NO</span>{% endif %}</span>
+                </div>
+                {% if res.texto %}
+                <div class="documento-resolutiva">
+                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
+                  <span class="documento-field-value">{{ res.texto|truncatewords:40 }}</span>
+                </div>
+                {% endif %}
+              </div>
             </div>
             {% endif %}
-            {% if auto.memorandum %}
-            <div>
-              <span style="font-weight: 700; color: #185FA5; display: block;">Memorandum:</span>
-              <span>Nº {{ auto.memorandum.numero }} ({{ auto.memorandum.fecha|date:"d/m/Y"|default:"N/A" }})</span>
+          {% endfor %}
+
+          <!-- Recurso Reconsideración (RR) para este militar -->
+          {% for rr in historial.segundas_resoluciones %}
+            {% if rr.sim.id == sim.id and rr.pm.id == militar.id %}
+            <div class="documento-item rr">
+              <div class="documento-header">
+                <div class="documento-tipo-badge rr-badge">🔄 Recurso Reconsideración (RR)</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ rr.numero|default:"N/A" }}</div>
+                  <div class="documento-links">
+                    {% with docs=rr.documentos.all %}
+                      {% for doc in docs %}
+                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha</span>
+                  <span class="documento-field-value">{{ rr.fecha|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Tipo</span>
+                  <span class="documento-field-value">{{ rr.get_tipo_display|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Notificación</span>
+                  <span class="documento-field-value">{% if rr.notificacion %}{{ rr.notificacion.get_tipo_display }} ({{ rr.notificacion.fecha|date:"d/m/Y" }}){% else %}<span style="color: #999;">NO</span>{% endif %}</span>
+                </div>
+                {% if rr.texto %}
+                <div class="documento-resolutiva">
+                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
+                  <span class="documento-field-value">{{ rr.texto|truncatewords:40 }}</span>
+                </div>
+                {% endif %}
+              </div>
             </div>
             {% endif %}
-          </div>
-        </div>
-        {% endif %}
-      {% endfor %}
+          {% endfor %}
 
-      {% if not historial.resoluciones and not historial.autos_tpe %}
-      <div style="color: #999; font-style: italic;">No hay actuados registrados para este sumario.</div>
-      {% endif %}
+          <!-- Autos TPE para este militar -->
+          {% for auto in historial.autos_tpe %}
+            {% if auto.sim.id == sim.id and auto.pm.id == militar.id %}
+            <div class="documento-item auto-tpe">
+              <div class="documento-header">
+                <div class="documento-tipo-badge auto-tpe-badge">⚖️ Auto TPE</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ auto.numero|default:"S/N" }}</div>
+                  <div class="documento-links">
+                    {% with docs=auto.documentos.all %}
+                      {% for doc in docs %}
+                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha</span>
+                  <span class="documento-field-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Disposición</span>
+                  <span class="documento-field-value">{{ auto.get_tipo_display|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Notificación</span>
+                  <span class="documento-field-value">{% if auto.notificacion %}{{ auto.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
+                </div>
+                {% if auto.texto %}
+                <div class="documento-resolutiva">
+                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
+                  <span class="documento-field-value">{{ auto.texto|truncatewords:40 }}</span>
+                </div>
+                {% endif %}
+                {% if auto.memo_numero %}
+                <div class="documento-memo">
+                  <span class="documento-resolutiva-label">Memorándum</span>
+                  <span class="documento-field-value">Nº {{ auto.memo_numero }} — {{ auto.memo_fecha|date:"d/m/Y"|default:"N/A" }} — Entrega: {{ auto.memo_fecha_entrega|date:"d/m/Y"|default:"Pendiente" }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          <!-- Recurso Apelación (RAP) para este militar -->
+          {% for rap in historial.recursos_apelacion %}
+            {% if rap.sim.id == sim.id and rap.pm.id == militar.id %}
+            <div class="documento-item rap">
+              <div class="documento-header">
+                <div class="documento-tipo-badge rap-badge">📢 Recurso Apelación (RAP)</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ rap.numero|default:"N/A" }}</div>
+                  <div class="documento-links">
+                    {% with docs=rap.documentos.all %}
+                      {% for doc in docs %}
+                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Presentación</span>
+                  <span class="documento-field-value">{{ rap.fecha_presentacion|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Oficio</span>
+                  <span class="documento-field-value">{{ rap.numero_oficio|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha Oficio</span>
+                  <span class="documento-field-value">{{ rap.fecha_oficio|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Notificación</span>
+                  <span class="documento-field-value">{% if rap.notificacion %}{{ rap.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
+                </div>
+                {% if rap.texto %}
+                <div class="documento-resolutiva">
+                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
+                  <span class="documento-field-value">{{ rap.texto|truncatewords:40 }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          <!-- RAEE para este militar -->
+          {% for raee in historial.raees %}
+            {% if raee.sim.id == sim.id and raee.pm.id == militar.id %}
+            <div class="documento-item raee">
+              <div class="documento-header">
+                <div class="documento-tipo-badge raee-badge">🔍 RAEE</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ raee.numero|default:"N/A" }}</div>
+                  <div class="documento-links">
+                    {% with docs=raee.documentos.all %}
+                      {% for doc in docs %}
+                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Presentación</span>
+                  <span class="documento-field-value">{{ raee.fecha_presentacion|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Notificación</span>
+                  <span class="documento-field-value">{% if raee.notificacion %}{{ raee.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
+                </div>
+                {% if raee.texto %}
+                <div class="documento-resolutiva">
+                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
+                  <span class="documento-field-value">{{ raee.texto|truncatewords:40 }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          <!-- Auto TSP para este militar -->
+          {% for autotsp in historial.autos_tsp %}
+            {% if autotsp.sim.id == sim.id and autotsp.pm.id == militar.id %}
+            <div class="documento-item auto-tsp">
+              <div class="documento-header">
+                <div class="documento-tipo-badge auto-tsp-badge">⚖️ Auto TSP</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ autotsp.numero|default:"N/A" }}</div>
+                  <div class="documento-links">
+                    {% with docs=autotsp.documentos.all %}
+                      {% for doc in docs %}
+                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha</span>
+                  <span class="documento-field-value">{{ autotsp.fecha|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Disposición</span>
+                  <span class="documento-field-value">{{ autotsp.get_tipo_display|default:"N/A" }}</span>
+                </div>
+                <div class="documento-field">
+                  <span class="documento-field-label">Notificación</span>
+                  <span class="documento-field-value">{% if autotsp.notificacion %}{{ autotsp.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
+                </div>
+                {% if autotsp.texto %}
+                <div class="documento-resolutiva">
+                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
+                  <span class="documento-field-value">{{ autotsp.texto|truncatewords:40 }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          <!-- Sin actuados para este militar -->
+          {% if not historial.resoluciones|dictsort:"sim_id"|slice:":1" and not historial.segundas_resoluciones|dictsort:"sim_id"|slice:":1" and not historial.autos_tpe|dictsort:"sim_id"|slice:":1" and not historial.recursos_apelacion|dictsort:"sim_id"|slice:":1" and not historial.raees|dictsort:"sim_id"|slice:":1" and not historial.autos_tsp|dictsort:"sim_id"|slice:":1" %}
+          <div class="sin-actuados" style="margin: 1rem 0;">Sin actuados registrados para {{ militar.nombre }} {{ militar.paterno }}.</div>
+          {% endif %}
+        </div>
+        {% endwith %}
+      {% endfor %}
     </div>
     {% endfor %}
   </div>
@@ -709,7 +1120,7 @@
             </div>
           {% endif %}
         </div>
-        <h3>{{ pm.nombre }} {{ pm.paterno }}</h3>
+        <h3>{{ pm.nombre }} {{ pm.paterno }}{% if pm.materno %} {{ pm.materno }}{% endif %}</h3>
         <p><strong>{{ pm.get_grado_display|default:"N/A" }}</strong></p>
         {% if pm.especialidad %}<p style="font-size: 0.78rem; color: #185FA5; margin: 2px 0;">{{ pm.especialidad }}</p>{% endif %}
       </div>
