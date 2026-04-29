@@ -49,6 +49,14 @@
 
     {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=1 %}
 
+    <!-- Información sobre versiones -->
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <strong>ℹ️ Sobre las Versiones de Sumarios:</strong>
+        <p class="mb-0 mt-2">Cuando un sumario es anulado y reabierto, la versión aumenta automáticamente (v1, v2, v3...).
+        Los datos anteriores se conservan. Si ingresa un código que ya existe, el sistema le permitirá continuar con esa versión o crear una nueva versión.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <!-- Búsqueda de SIM existente (AJAX) -->
     <div class="card border-warning mb-3">
         <div class="card-header bg-warning bg-opacity-10 text-dark">
