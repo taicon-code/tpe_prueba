@@ -175,21 +175,30 @@ document.getElementById('add-form').addEventListener('click', function() {
 
     const newForm = firstForm.cloneNode(true);
 
-    // Reemplazar índices en TODOS los campos (inputs, selects, etc.)
-    newForm.querySelectorAll('input[type="text"], input[type="number"], select, input[type="date"], input[type="file"], input[type="checkbox"]').forEach(field => {
+    // Reemplazar índices en TODOS los campos (inputs, selects, textareas, checkboxes, etc.)
+    newForm.querySelectorAll('[name]').forEach(field => {
         const name = field.getAttribute('name');
         if (name) {
             // Usar regex para encontrar -NÚMERO- y reemplazarlo con -newFormIndex-
             const newName = name.replace(/-\d+-/, `-${newFormIndex}-`);
             field.setAttribute('name', newName);
-            field.setAttribute('id', `id_${newName}`);
 
-            // Limpiar valores en inputs normales, no en checkboxes
-            if (field.type !== 'checkbox') {
-                field.value = '';
-            } else {
-                field.checked = false;
+            // Actualizar id si existe
+            const oldId = field.getAttribute('id');
+            if (oldId) {
+                const newId = oldId.replace(/-\d+-/, `-${newFormIndex}-`);
+                field.setAttribute('id', newId);
             }
+
+            // Limpiar valores según el tipo de campo
+            if (field.tagName === 'TEXTAREA') {
+                field.value = '';
+            } else if (field.type === 'checkbox' || field.type === 'radio') {
+                field.checked = false;
+            } else if (field.type !== 'hidden') {
+                field.value = '';
+            }
+            // Los campos hidden se dejan como están
         }
     });
 

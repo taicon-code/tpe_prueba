@@ -613,7 +613,11 @@ def ayudante_wizard_paso2(request, sim_id):
                     messages.error(request, f'Error: {str(e)}')
             else:
                 messages.error(request, 'Por favor corrija los errores.')
-        formset = PMSIMFormSet(request.POST, request.FILES, instance=sim)
+                # Reinicializar formset con datos POST para que se muestren los errores
+                formset = PMSIMFormSet(request.POST, request.FILES, instance=sim)
+        else:
+            # GET request
+            formset = PMSIMFormSet(instance=sim)
     else:
         formset = PMSIMFormSet(instance=sim)
 
