@@ -28,6 +28,10 @@
     <hr class="sb-divider">
     <span class="sb-group-label">Consultas</span>
 
+    <a href="{% url 'ayudante_tabla_documentos' %}" class="sb-link">
+        <span class="lk-icon">📋</span>
+        <span class="lk-text">Tabla de Documentos</span>
+    </a>
     <a href="{% url 'buscador_dashboard' %}" class="sb-link">
         <span class="lk-icon">🔍</span>
         <span class="lk-text">Buscar Antecedentes</span>
@@ -148,7 +152,13 @@
         <div class="col">
             <h5 class="mb-3">Búsqueda y Consultas</h5>
             <div class="row g-2">
-                <div class="col-md-12">
+                <div class="col-md-6">
+                    <a href="{% url 'ayudante_tabla_documentos' %}" class="btn btn-primary w-100">
+                        <i class="bi bi-table me-2"></i>Tabla de Documentos
+                        <small class="d-block mt-1 opacity-75">Filtrar por tipo y gestión · Notificar · PDF · Foto</small>
+                    </a>
+                </div>
+                <div class="col-md-6">
                     <a href="{% url 'buscador_dashboard' %}" class="btn btn-info w-100">
                         <i class="bi bi-search me-2"></i>Buscar Antecedentes de Personal
                     </a>

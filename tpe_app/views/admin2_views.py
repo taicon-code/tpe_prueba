@@ -438,6 +438,7 @@ def subir_pdf_res(request, res_id):
             messages.error(request, '❌ Solo se permiten archivos PDF')
             return redirect('subir_pdf_res', res_id=res.pk)
 
+        next_url = request.POST.get('next', '').strip()
         try:
             with transaction.atomic():
                 # Eliminar PDF anterior si existe
@@ -457,6 +458,8 @@ def subir_pdf_res(request, res_id):
                     request,
                     f'✅ PDF de la Resolución {res.numero} subido correctamente'
                 )
+                if next_url:
+                    return redirect(next_url)
                 return redirect('subir_pdf_res', res_id=res.pk)
         except Exception as e:
             messages.error(request, f'❌ Error al subir PDF: {str(e)}')

@@ -1,0 +1,388 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+  /* Tabla documentos: bordes visibles y filas con espacio suficiente */
+  #tablaDocumentos td,
+  #tablaDocumentos th {
+    border: 1px solid #ced4da;
+    vertical-align: middle;
+    padding: 6px 8px;
+  }
+  #tablaDocumentos thead th {
+    border-color: #495057;
+  }
+  #tablaDocumentos tbody tr:hover {
+    background-color: #f0f4ff;
+  }
+</style>
+{% endblock %}
+
+{% block title %}Tabla de Documentos - TPE Sistema{% endblock %}
+{% block navbar_title %}Tabla de Documentos{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🏠</span>
+        <span class="lk-text">Inicio</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Consultas</span>
+
+    <a href="{% url 'ayudante_tabla_documentos' %}" class="sb-link active">
+        <span class="lk-icon">📋</span>
+        <span class="lk-text">Tabla de Documentos</span>
+    </a>
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Buscar Antecedentes</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Ingreso</span>
+    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link">
+        <span class="lk-icon">⚡</span>
+        <span class="lk-text">Ingreso Rápido (Wizard)</span>
+    </a>
+
+    <hr class="sb-divider">
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<div class="container-fluid mt-3 px-3">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show py-2 mb-2" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Barra de filtros + título + botones de descarga -->
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+      <form method="get" action="" id="filtrosForm">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+
+          <span class="text-muted small fw-semibold me-1">FILTROS:</span>
+
+          <!-- Tipo de documento -->
+          <div class="d-flex align-items-center gap-1">
+            <label class="form-label mb-0 small text-muted">Tipo:</label>
+            <select name="tipo_doc" class="form-select form-select-sm" style="min-width:190px;"
+                    onchange="this.form.submit()">
+              <option value="resolucion" {% if tipo_doc == 'resolucion' %}selected{% endif %}>Resolución (1ª Instancia)</option>
+              <option value="reconsideracion" {% if tipo_doc == 'reconsideracion' %}selected{% endif %}>Reconsideración (RR)</option>
+              <option value="autotpe" {% if tipo_doc == 'autotpe' %}selected{% endif %}>Auto TPE</option>
+            </select>
+          </div>
+
+          <!-- Gestión (año) -->
+          <div class="d-flex align-items-center gap-1">
+            <label class="form-label mb-0 small text-muted">Gestión:</label>
+            <select name="gestion" class="form-select form-select-sm" style="min-width:110px;"
+                    onchange="this.form.submit()">
+              <option value="">Todas</option>
+              {% for year in gestiones_disponibles %}
+                <option value="{{ year }}" {% if gestion == year|stringformat:'s' %}selected{% endif %}>{{ year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Contador -->
+          <span class="badge bg-secondary ms-1">{{ total_count }} registros</span>
+
+          <div class="ms-auto d-flex gap-2">
+            <!-- Descarga PDF -->
+            <a href="{% url 'ayudante_tabla_export_pdf' %}?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}"
+               class="btn btn-sm btn-outline-danger" title="Descargar tabla en PDF">
+              <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </a>
+            <!-- Descarga Excel -->
+            <a href="{% url 'ayudante_tabla_export_excel' %}?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}"
+               class="btn btn-sm btn-outline-success" title="Descargar tabla en Excel">
+              <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </a>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabla principal -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light py-2 px-3 d-flex align-items-center gap-2">
+      <span class="fw-semibold small">{{ tipo_label }}</span>
+      {% if gestion %}<span class="badge bg-primary">Gestión {{ gestion }}</span>{% endif %}
+    </div>
+    <div class="table-responsive">
+      <table id="tablaDocumentos" class="table table-hover mb-0" style="font-size:0.8rem;">
+        <thead class="table-dark">
+          <tr>
+            <th style="width:65px;" class="text-center py-2">N°</th>
+            <th style="width:160px;" class="py-2">MILITAR</th>
+            <th style="width:88px;" class="text-center py-2">FECHA</th>
+            <th style="width:118px;" class="text-center py-2">NOTIFICACIÓN</th>
+            <th style="width:90px;" class="text-center py-2">PDF</th>
+            <th style="width:90px;" class="text-center py-2">FOTO</th>
+            <th style="width:72px;" class="text-center py-2">AÑO PROM.</th>
+            <th style="width:68px;" class="text-center py-2">ARMA</th>
+            <th style="width:90px;" class="text-center py-2">CI</th>
+            <th style="width:132px;" class="text-center py-2">ESTADO SIM</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for obj in items %}
+          {% with pm=obj.pm_efectivo sim=obj.sim %}
+          <tr>
+            <!-- N° documento -->
+            <td class="text-center">
+              <code class="small">{{ obj.numero|default:"S/N" }}</code>
+            </td>
+
+            <!-- Militar -->
+            <td>
+              {% if pm %}
+                <span class="fw-semibold">{{ pm.grado }}</span>
+                {{ pm.paterno }} {{ pm.nombre }}
+                {% if pm.materno %}<span class="text-muted">{{ pm.materno }}</span>{% endif %}
+              {% else %}
+                <span class="text-muted fst-italic">Sin asignar</span>
+              {% endif %}
+            </td>
+
+            <!-- Fecha documento -->
+            <td class="text-center text-muted small">{{ obj.fecha|date:"d/m/Y"|default:"—" }}</td>
+
+            <!-- Notificación -->
+            <td class="text-center">
+              {% if obj.notif_obj %}
+                <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.7rem;">
+                  {{ obj.notif_obj.fecha|date:"d/m/Y" }}
+                </span>
+              {% else %}
+                {% if tipo_doc == 'autotpe' %}
+                  <a href="{% url 'ayudante_registrar_notificacion_auto' obj.pk %}?next={{ back_url|urlencode }}"
+                     class="btn btn-xs btn-outline-warning" style="font-size:0.68rem;padding:1px 6px;">
+                    <i class="bi bi-bell"></i> Notificar
+                  </a>
+                {% elif tipo_doc == 'reconsideracion' %}
+                  <a href="{% url 'ayudante_registrar_notificacion_rr' obj.pk %}?next={{ back_url|urlencode }}"
+                     class="btn btn-xs btn-outline-warning" style="font-size:0.68rem;padding:1px 6px;">
+                    <i class="bi bi-bell"></i> Notificar
+                  </a>
+                {% else %}
+                  <a href="{% url 'ayudante_registrar_notificacion' obj.pk %}?next={{ back_url|urlencode }}"
+                     class="btn btn-xs btn-outline-warning" style="font-size:0.68rem;padding:1px 6px;">
+                    <i class="bi bi-bell"></i> Notificar
+                  </a>
+                {% endif %}
+              {% endif %}
+            </td>
+
+            <!-- PDF -->
+            <td class="text-center">
+              {% if obj.has_pdf %}
+                <span class="text-success fs-5" title="PDF disponible"><i class="bi bi-file-earmark-check-fill"></i></span>
+              {% else %}
+                {% if tipo_doc == 'autotpe' %}
+                  <form method="post" action="{% url 'subir_pdf_autotpe' obj.pk %}"
+                        enctype="multipart/form-data" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ back_url }}">
+                    <label class="btn btn-sm btn-outline-primary" style="cursor:pointer;" title="Subir PDF">
+                      <i class="bi bi-upload me-1"></i>Subir
+                      <input type="file" name="archivo_pdf" accept=".pdf" style="display:none"
+                             onchange="this.closest('form').submit()">
+                    </label>
+                  </form>
+                {% else %}
+                  <form method="post" action="{% url 'subir_pdf_res' obj.pk %}"
+                        enctype="multipart/form-data" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ back_url }}">
+                    <label class="btn btn-sm btn-outline-primary" style="cursor:pointer;" title="Subir PDF">
+                      <i class="bi bi-upload me-1"></i>Subir
+                      <input type="file" name="archivo_pdf" accept=".pdf" style="display:none"
+                             onchange="this.closest('form').submit()">
+                    </label>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </td>
+
+            <!-- Foto -->
+            <td class="text-center">
+              {% if pm %}
+                {% if pm.foto %}
+                  <span class="text-success fs-5" title="Foto cargada"><i class="bi bi-person-check-fill"></i></span>
+                {% else %}
+                  <form method="post" action="{% url 'upload_foto_pm' pm.pk %}"
+                        enctype="multipart/form-data" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ back_url }}">
+                    <label class="btn btn-sm btn-outline-secondary" style="cursor:pointer;" title="Subir foto">
+                      <i class="bi bi-camera me-1"></i>Foto
+                      <input type="file" name="foto" accept="image/*" style="display:none"
+                             onchange="this.closest('form').submit()">
+                    </label>
+                  </form>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+
+            <!-- Año Promoción -->
+            <td class="text-center">
+              {% if pm %}
+                {% if pm.anio_promocion %}
+                  <span class="small fw-semibold d-block">{{ pm.anio_promocion }}</span>
+                {% endif %}
+                <a href="{% url 'ayudante_editar_pm' pm.pk %}?next={{ back_url|urlencode }}"
+                   class="btn btn-xs {% if pm.anio_promocion %}btn-outline-secondary{% else %}btn-warning{% endif %}"
+                   style="font-size:0.78rem;padding:4px 9px;">
+                  {% if pm.anio_promocion %}<i class="bi bi-pencil"></i>{% else %}+ Agregar{% endif %}
+                </a>
+              {% else %}
+                <a href="{% url 'ayudante_wizard_paso2' obj.sim.pk %}"
+                   class="btn btn-xs btn-outline-danger" style="font-size:0.78rem;padding:4px 9px;"
+                   title="Vincular militar al SIM">Sin PM</a>
+              {% endif %}
+            </td>
+
+            <!-- Arma -->
+            <td class="text-center">
+              {% if pm %}
+                {% if pm.arma %}
+                  <span class="small fw-semibold d-block">{{ pm.arma }}</span>
+                {% endif %}
+                <a href="{% url 'ayudante_editar_pm' pm.pk %}?next={{ back_url|urlencode }}"
+                   class="btn btn-xs {% if pm.arma %}btn-outline-secondary{% else %}btn-warning{% endif %}"
+                   style="font-size:0.78rem;padding:4px 9px;">
+                  {% if pm.arma %}<i class="bi bi-pencil"></i>{% else %}+ Agregar{% endif %}
+                </a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+
+            <!-- CI -->
+            <td class="text-center">
+              {% if pm %}
+                {% if pm.ci %}
+                  <span class="small fw-semibold d-block">{{ pm.ci|floatformat:"0" }}</span>
+                {% endif %}
+                <a href="{% url 'ayudante_editar_pm' pm.pk %}?next={{ back_url|urlencode }}"
+                   class="btn btn-xs {% if pm.ci %}btn-outline-secondary{% else %}btn-warning{% endif %}"
+                   style="font-size:0.78rem;padding:4px 9px;">
+                  {% if pm.ci %}<i class="bi bi-pencil"></i>{% else %}+ Agregar{% endif %}
+                </a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+
+            <!-- Estado SIM -->
+            <td class="text-center">
+              {% if sim %}
+                {% if sim.estado == 'PARA_AGENDA' %}
+                  <span class="badge bg-primary" style="font-size:0.65rem;">{{ sim.get_estado_display }}</span>
+                {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
+                  <span class="badge bg-warning text-dark" style="font-size:0.65rem;">{{ sim.get_estado_display }}</span>
+                {% elif sim.estado == 'EN_APELACION_TSP' %}
+                  <span class="badge bg-danger" style="font-size:0.65rem;">{{ sim.get_estado_display }}</span>
+                {% elif sim.estado in 'PROCESO_CONCLUIDO_TPE,PROCESO_EJECUTADO' %}
+                  <span class="badge bg-secondary" style="font-size:0.65rem;">{{ sim.get_estado_display }}</span>
+                {% else %}
+                  <span class="badge bg-light text-dark border" style="font-size:0.65rem;">{{ sim.get_estado_display }}</span>
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr>
+            <td colspan="10" class="text-center text-muted py-4">
+              <i class="bi bi-inbox fs-3 d-block mb-2 text-muted"></i>
+              No hay registros para los filtros seleccionados
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer bg-light py-2">
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+          &nbsp;·&nbsp; {{ total_count }} registros en total
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}&page=1">«</a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}&page={{ page_obj.previous_page_number }}">‹</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">«</span></li>
+              <li class="page-item disabled"><span class="page-link">‹</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+              {% if num == page_obj.number %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+              {% elif num >= page_obj.number|add:'-3' and num <= page_obj.number|add:'3' %}
+                <li class="page-item">
+                  <a class="page-link" href="?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}&page={{ num }}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}&page={{ page_obj.next_page_number }}">›</a>
+              </li>
+              <li class="page-item">
+                <a class="page-link" href="?tipo_doc={{ tipo_doc }}&gestion={{ gestion }}&page={{ page_obj.paginator.num_pages }}">»</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">›</span></li>
+              <li class="page-item disabled"><span class="page-link">»</span></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /card -->
+
+  <!-- Leyenda compacta -->
+  <div class="mt-2 d-flex flex-wrap gap-3 text-muted" style="font-size:0.72rem;">
+    <span><i class="bi bi-file-earmark-check-fill text-success"></i> PDF subido</span>
+    <span><i class="bi bi-person-check-fill text-success"></i> Foto disponible</span>
+    <span><i class="bi bi-pencil-square text-warning"></i> Dato faltante — clic para editar</span>
+    <span><i class="bi bi-upload text-primary"></i> Subir archivo (se carga al seleccionar)</span>
+    <span><i class="bi bi-bell text-warning"></i> Pendiente notificación</span>
+  </div>
+
+</div>
+{% endblock %}

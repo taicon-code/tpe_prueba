@@ -50,8 +50,14 @@ urlpatterns = [
     path('ayudante/raee/nuevo/', views.ayudante_registrar_raee, name='ayudante_registrar_raee'),
     path('ayudante/autotpe/nuevo/', views.ayudante_registrar_autotpe, name='ayudante_registrar_autotpe'),
 
-    # Edición de Personal Militar (grado actual, año egreso, no ascendió)
+    # Edición de Personal Militar (grado actual, año egreso, no ascendió, arma, ci, foto)
     path('ayudante/pm/<int:pm_id>/editar/', views.ayudante_editar_pm, name='ayudante_editar_pm'),
+
+    # Tabla de documentos con filtros (tipo + gestión) y exportación
+    path('ayudante/tabla/', views.ayudante_tabla_documentos, name='ayudante_tabla_documentos'),
+    path('ayudante/tabla/export/pdf/', views.ayudante_tabla_export_pdf, name='ayudante_tabla_export_pdf'),
+    path('ayudante/tabla/export/excel/', views.ayudante_tabla_export_excel, name='ayudante_tabla_export_excel'),
+    path('ayudante/auto/<int:auto_id>/subir-pdf/', views.subir_pdf_autotpe, name='subir_pdf_autotpe'),
 
     # ✅ NUEVO v3.3: Wizard de ingreso rápido histórico (4 pasos)
     path('ayudante/wizard/paso1/', views.ayudante_wizard_paso1, name='ayudante_wizard_paso1'),

@@ -77,6 +77,10 @@ from .ayudante_views import (
     ayudante_wizard_resumen,
     ayudante_wizard_buscar_sim,
     ayudante_editar_pm,
+    ayudante_tabla_documentos,
+    ayudante_tabla_export_pdf,
+    ayudante_tabla_export_excel,
+    subir_pdf_autotpe,
 )
 from .ejecutoria_views import (
     pendientes_ejecutoria,

@@ -643,8 +643,10 @@ def upload_foto_pm(request, pm_id):
         else:
             messages.error(request, '❌ No se seleccionó ningún archivo')
 
-    # Volver al buscador con la misma búsqueda si venía de ahí
-    referer = request.POST.get('next') or request.META.get('HTTP_REFERER', '')
+    next_url = request.POST.get('next', '').strip()
+    if next_url:
+        return redirect(next_url)
+    referer = request.META.get('HTTP_REFERER', '')
     if 'buscador' in referer or 'q=' in referer:
         return redirect(referer)
     return redirect('buscador_dashboard')

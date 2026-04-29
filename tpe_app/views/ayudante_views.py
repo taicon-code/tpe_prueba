@@ -13,7 +13,8 @@ from django.urls import reverse
 from datetime import date
 from ..decorators import rol_requerido
 from ..models import (
-    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum
+    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum,
+    DocumentoAdjunto,
 )
 from ..forms import (
     RESForm, NotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, MemorandumForm,
@@ -190,6 +191,8 @@ def ayudante_registrar_notificacion(request, res_id):
     res = get_object_or_404(Resolucion, id=res_id)
     notif_existente = getattr(res, 'notificacion', None)
 
+    next_url = request.GET.get('next', '').strip()
+
     if request.method == 'POST':
         form = NotificacionForm(request.POST, instance=notif_existente)
         if form.is_valid():
@@ -199,6 +202,8 @@ def ayudante_registrar_notificacion(request, res_id):
                     notif.resolucion = res
                     notif.save()
                     messages.success(request, f'Notificación de RES {res.numero} registrada exitosamente')
+                    if next_url:
+                        return redirect(next_url)
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
                     if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
@@ -212,6 +217,7 @@ def ayudante_registrar_notificacion(request, res_id):
     context = {
         'form': form,
         'res': res,
+        'next_url': next_url,
         'titulo': f'Registrar Notificación - RES {res.numero}',
     }
 
@@ -375,6 +381,7 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
 
     from ..models import Notificacion
     notif_existente = getattr(rr, 'notificacion', None)
+    next_url = request.GET.get('next', '').strip()
 
     if request.method == 'POST':
         form = NotificacionForm(request.POST, instance=notif_existente)
@@ -385,6 +392,8 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
                     notif.resolucion = rr
                     notif.save()
                     messages.success(request, f'Notificación de RR {rr.numero} registrada exitosamente')
+                    if next_url:
+                        return redirect(next_url)
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
                     if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
@@ -400,6 +409,7 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
     context = {
         'form': form,
         'rr': rr,
+        'next_url': next_url,
         'titulo': f'Registrar Notificación - RR {rr.numero}',
     }
 
@@ -413,6 +423,7 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
 
     auto = get_object_or_404(AUTOTPE, id=auto_id)
     notif_existente = getattr(auto, 'notificacion', None)
+    next_url = request.GET.get('next', '').strip()
 
     if request.method == 'POST':
         form = NotificacionForm(request.POST, instance=notif_existente)
@@ -428,6 +439,8 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
                             sim.fase = 'EJECUTORIA_NOTIFICADA'
                             sim.save()
                     messages.success(request, f'Notificación de Auto {auto.numero} registrada exitosamente')
+                    if next_url:
+                        return redirect(next_url)
                     rol = getattr(request.user.perfilusuario, 'rol', 'AYUDANTE')
                     if rol in ['ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR']:
                         return redirect('admin3_dashboard')
@@ -441,6 +454,7 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
     context = {
         'form': form,
         'auto': auto,
+        'next_url': next_url,
         'titulo': f'Registrar Notificación - Auto {auto.numero}',
     }
 
@@ -991,7 +1005,7 @@ def ayudante_wizard_resumen(request, sim_id):
 @rol_requerido('AYUDANTE', 'ADMIN1_AGENDADOR')
 def ayudante_editar_pm(request, pm_id):
     """Permite al Ayudante actualizar grado actual, año de egreso y estado de ascenso."""
-    pm = get_object_or_404(PM, pm_id=pm_id)
+    pm = get_object_or_404(PM, pk=pm_id)
 
     if request.method == 'POST':
         grado      = request.POST.get('grado') or None
@@ -999,6 +1013,9 @@ def ayudante_editar_pm(request, pm_id):
         estado     = request.POST.get('estado') or pm.estado
         promocion  = request.POST.get('anio_promocion') or None
         no_asc     = request.POST.get('no_ascendio') == 'on'
+        arma       = request.POST.get('arma') or None
+        ci_raw     = request.POST.get('ci') or None
+        foto       = request.FILES.get('foto')
 
         if promocion:
             try:
@@ -1012,12 +1029,34 @@ def ayudante_editar_pm(request, pm_id):
         else:
             promocion = None
 
-        pm.grado       = grado
-        pm.escalafon   = escalafon
-        pm.estado      = estado
-        pm.anio_promocion   = promocion
-        pm.no_ascendio = no_asc
-        pm.save(update_fields=['grado', 'escalafon', 'estado', 'anio_promocion', 'no_ascendio'])
+        ci_val = None
+        if ci_raw:
+            try:
+                ci_val = int(ci_raw)
+            except ValueError:
+                messages.error(request, 'Número de CI inválido.')
+                ci_val = pm.ci
+
+        pm.grado          = grado
+        pm.escalafon      = escalafon
+        pm.estado         = estado
+        pm.anio_promocion = promocion
+        pm.no_ascendio    = no_asc
+        pm.arma           = arma
+        pm.ci             = ci_val
+
+        update_fields = ['grado', 'escalafon', 'estado', 'anio_promocion', 'no_ascendio', 'arma', 'ci']
+        if foto:
+            content_type = getattr(foto, 'content_type', '') or ''
+            if content_type.startswith('image/'):
+                if pm.foto:
+                    pm.foto.delete(save=False)
+                pm.foto = foto
+                update_fields.append('foto')
+            else:
+                messages.error(request, 'La foto debe ser una imagen (JPG, PNG).')
+
+        pm.save(update_fields=update_fields)
 
         messages.success(request, f'Datos de {pm.nombre} {pm.paterno} actualizados.')
         next_url = request.POST.get('next') or request.GET.get('next') or 'ayudante_dashboard'
@@ -1028,7 +1067,427 @@ def ayudante_editar_pm(request, pm_id):
         'grado_choices': PM.GRADO_CHOICES,
         'escalafon_choices': PM.ESCALAFON_CHOICES,
         'estado_choices': PM.ESTADO_CHOICES,
+        'arma_choices': PM.ARMA_CHOICES,
         'grado_esperado': pm.grado_esperado,
         'estado_calculado': pm.estado_carrera_calculado,
         'años_servicio': pm.años_servicio,
     })
+
+
+# ============================================================================
+# TABLA DE DOCUMENTOS — Filtrado por tipo y gestión con exportación
+# ============================================================================
+
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR')
+def ayudante_tabla_documentos(request):
+    """Tabla filtrada de Resoluciones, RR y Autos TPE con datos del militar"""
+    from django.core.paginator import Paginator
+    from urllib.parse import urlencode
+
+    tipo_doc = request.GET.get('tipo_doc', 'resolucion')
+    gestion = request.GET.get('gestion', '')
+    page_num = request.GET.get('page', 1)
+
+    if tipo_doc == 'reconsideracion':
+        qs = (Resolucion.objects
+              .filter(instancia='RECONSIDERACION')
+              .select_related('pm', 'sim'))
+        tipo_label = 'Reconsideración (RR)'
+        gestiones_disponibles = list(
+            Resolucion.objects.filter(instancia='RECONSIDERACION')
+            .exclude(fecha__isnull=True)
+            .values_list('fecha__year', flat=True)
+            .distinct().order_by('-fecha__year')
+        )
+    elif tipo_doc == 'autotpe':
+        qs = (AUTOTPE.objects.all()
+              .select_related('pm', 'sim'))
+        tipo_label = 'Auto TPE'
+        gestiones_disponibles = list(
+            AUTOTPE.objects.exclude(fecha__isnull=True)
+            .values_list('fecha__year', flat=True)
+            .distinct().order_by('-fecha__year')
+        )
+    else:
+        tipo_doc = 'resolucion'
+        qs = (Resolucion.objects
+              .filter(instancia='PRIMERA')
+              .select_related('pm', 'sim'))
+        tipo_label = 'Resolución (1ª Instancia)'
+        gestiones_disponibles = list(
+            Resolucion.objects.filter(instancia='PRIMERA')
+            .exclude(fecha__isnull=True)
+            .values_list('fecha__year', flat=True)
+            .distinct().order_by('-fecha__year')
+        )
+
+    if gestion:
+        try:
+            qs = qs.filter(fecha__year=int(gestion))
+        except (ValueError, TypeError):
+            gestion = ''
+
+    qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(page_num)
+    items = list(page_obj)
+    ids_page = [obj.pk for obj in items]
+
+    # Pre-fetch PDFs para esta página
+    if tipo_doc in ('resolucion', 'reconsideracion'):
+        docs_con_pdf = set(
+            DocumentoAdjunto.objects.filter(resolucion_id__in=ids_page)
+            .values_list('resolucion_id', flat=True)
+        )
+        notifs_map = {
+            n.resolucion_id: n
+            for n in Notificacion.objects.filter(resolucion_id__in=ids_page)
+        }
+    else:
+        docs_con_pdf = set(
+            DocumentoAdjunto.objects.filter(autotpe_id__in=ids_page)
+            .values_list('autotpe_id', flat=True)
+        )
+        notifs_map = {
+            n.autotpe_id: n
+            for n in Notificacion.objects.filter(autotpe_id__in=ids_page)
+        }
+
+    # Para documentos sin PM directo, buscar el PM por cualquier vía (registros históricos)
+    sims_sin_pm = [obj.sim_id for obj in items if not obj.pm_id and obj.sim_id]
+    pm_por_sim = {}
+    if sims_sin_pm:
+        # 1) Tabla puente PM_SIM
+        for ps in PM_SIM.objects.filter(sim_id__in=sims_sin_pm).select_related('pm'):
+            if ps.sim_id not in pm_por_sim:
+                pm_por_sim[ps.sim_id] = ps.pm
+        # 2) Otros documentos del mismo SIM que sí tienen PM
+        still_missing = [s for s in sims_sin_pm if s not in pm_por_sim]
+        if still_missing:
+            for res in Resolucion.objects.filter(
+                    sim_id__in=still_missing, pm__isnull=False).select_related('pm'):
+                if res.sim_id not in pm_por_sim:
+                    pm_por_sim[res.sim_id] = res.pm
+            for auto in AUTOTPE.objects.filter(
+                    sim_id__in=still_missing, pm__isnull=False).select_related('pm'):
+                if auto.sim_id not in pm_por_sim:
+                    pm_por_sim[auto.sim_id] = auto.pm
+
+    for item in items:
+        item.notif_obj = notifs_map.get(item.pk)
+        item.has_pdf = item.pk in docs_con_pdf
+        item.pm_efectivo = item.pm if item.pm_id else pm_por_sim.get(item.sim_id)
+
+    params = {k: v for k, v in request.GET.items() if k != 'page'}
+    back_url = request.path + ('?' + urlencode(params) if params else '')
+
+    context = {
+        'items': items,
+        'page_obj': page_obj,
+        'tipo_doc': tipo_doc,
+        'tipo_label': tipo_label,
+        'gestion': gestion,
+        'gestiones_disponibles': gestiones_disponibles,
+        'back_url': back_url,
+        'total_count': paginator.count,
+    }
+    return render(request, 'tpe_app/ayudante/tabla_documentos.html', context)
+
+
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR')
+def subir_pdf_autotpe(request, auto_id):
+    """Sube o reemplaza el PDF de un Auto TPE (acepta next para redirigir)"""
+    auto = get_object_or_404(AUTOTPE, pk=auto_id)
+
+    if request.method == 'POST':
+        archivo_pdf = request.FILES.get('archivo_pdf')
+        next_url = request.POST.get('next', '').strip()
+
+        if not archivo_pdf:
+            messages.error(request, 'Selecciona un archivo PDF')
+        elif not archivo_pdf.name.lower().endswith('.pdf'):
+            messages.error(request, 'Solo se permiten archivos PDF')
+        else:
+            try:
+                with transaction.atomic():
+                    DocumentoAdjunto.objects.filter(autotpe_id=auto.pk).delete()
+                    pm_label = (f'{auto.pm.grado} {auto.pm.paterno}' if auto.pm else 'S/N')
+                    DocumentoAdjunto.objects.create(
+                        autotpe=auto,
+                        tipo='auto',
+                        archivo=archivo_pdf,
+                        nombre=f'AUTO {auto.numero} - {pm_label}',
+                    )
+                    messages.success(request, f'PDF del Auto {auto.numero} subido correctamente')
+                    return redirect(next_url or 'ayudante_dashboard')
+            except Exception as e:
+                messages.error(request, f'Error al subir PDF: {str(e)}')
+
+        return redirect(next_url or 'ayudante_dashboard')
+
+    return redirect('ayudante_dashboard')
+
+
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR')
+def ayudante_tabla_export_pdf(request):
+    """Exporta a PDF la tabla filtrada de documentos"""
+    from django.http import HttpResponse
+    from io import BytesIO
+    import os
+    from reportlab.lib.pagesizes import letter, landscape
+    from reportlab.lib.units import cm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
+    _fonts_dir = r'C:\Windows\Fonts'
+    _arial = os.path.join(_fonts_dir, 'arial.ttf')
+    _arial_bold = os.path.join(_fonts_dir, 'arialbd.ttf')
+    if os.path.exists(_arial):
+        try:
+            pdfmetrics.registerFont(TTFont('Arial', _arial))
+            pdfmetrics.registerFont(TTFont('Arial-Bold', _arial_bold))
+        except Exception:
+            pass
+        FONT_NORMAL = 'Arial'
+        FONT_BOLD = 'Arial-Bold'
+    else:
+        FONT_NORMAL = 'Helvetica'
+        FONT_BOLD = 'Helvetica-Bold'
+
+    tipo_doc = request.GET.get('tipo_doc', 'resolucion')
+    gestion = request.GET.get('gestion', '')
+
+    if tipo_doc == 'reconsideracion':
+        qs = Resolucion.objects.filter(instancia='RECONSIDERACION').select_related('pm', 'sim')
+        titulo_tipo = 'RECONSIDERACIONES (RR)'
+    elif tipo_doc == 'autotpe':
+        qs = AUTOTPE.objects.all().select_related('pm', 'sim')
+        titulo_tipo = 'AUTOS TPE'
+    else:
+        qs = Resolucion.objects.filter(instancia='PRIMERA').select_related('pm', 'sim')
+        titulo_tipo = 'RESOLUCIONES (1RA INSTANCIA)'
+
+    if gestion:
+        try:
+            qs = qs.filter(fecha__year=int(gestion))
+        except (ValueError, TypeError):
+            pass
+
+    qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+    items = list(qs)
+    ids_all = [obj.pk for obj in items]
+
+    if tipo_doc in ('resolucion', 'reconsideracion'):
+        docs_con_pdf = set(
+            DocumentoAdjunto.objects.filter(resolucion_id__in=ids_all)
+            .values_list('resolucion_id', flat=True)
+        )
+        notifs_map = {
+            n.resolucion_id: n
+            for n in Notificacion.objects.filter(resolucion_id__in=ids_all)
+        }
+    else:
+        docs_con_pdf = set(
+            DocumentoAdjunto.objects.filter(autotpe_id__in=ids_all)
+            .values_list('autotpe_id', flat=True)
+        )
+        notifs_map = {
+            n.autotpe_id: n
+            for n in Notificacion.objects.filter(autotpe_id__in=ids_all)
+        }
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=landscape(letter),
+        rightMargin=1.5 * cm, leftMargin=1.5 * cm,
+        topMargin=1.5 * cm, bottomMargin=1.5 * cm,
+    )
+
+    style_title = ParagraphStyle('title', fontName=FONT_BOLD, fontSize=11, spaceAfter=4)
+    style_sub = ParagraphStyle('sub', fontName=FONT_NORMAL, fontSize=8, spaceAfter=8, textColor=colors.grey)
+
+    titulo_gestion = f'GESTIÓN {gestion}' if gestion else 'TODAS LAS GESTIONES'
+    story = [
+        Paragraph(f'TRIBUNAL DE PERSONAL DEL EJÉRCITO — {titulo_tipo}', style_title),
+        Paragraph(f'{titulo_gestion}  |  Total: {len(items)} registros', style_sub),
+    ]
+
+    headers = ['N°', 'MILITAR', 'FECHA', 'NOTIFICACIÓN', 'PDF', 'FOTO', 'AÑO PROM.', 'ARMA', 'CI', 'ESTADO SIM']
+    data = [headers]
+
+    def _fd(d):
+        return d.strftime('%d/%m/%y') if d else '—'
+
+    for obj in items:
+        notif = notifs_map.get(obj.pk)
+        pm = obj.pm
+        if pm:
+            militar = f'{pm.grado or ""} {pm.paterno or ""} {pm.nombre or ""}'.strip()
+            foto_str = 'SI' if pm.foto else '—'
+            año_str = str(pm.anio_promocion) if pm.anio_promocion else '—'
+            arma_str = pm.arma or '—'
+            ci_str = str(int(pm.ci)) if pm.ci else '—'
+        else:
+            militar = '(SIN MILITAR)'
+            foto_str = '—'
+            año_str = '—'
+            arma_str = '—'
+            ci_str = '—'
+
+        notif_str = _fd(notif.fecha) if notif else 'PENDIENTE'
+        pdf_str = 'SI' if obj.pk in docs_con_pdf else '—'
+        estado_str = obj.sim.get_estado_display() if obj.sim else '—'
+        data.append([
+            obj.numero or '—', militar, _fd(obj.fecha),
+            notif_str, pdf_str, foto_str,
+            año_str, arma_str, ci_str, estado_str,
+        ])
+
+    col_widths = [1.6 * cm, 6.5 * cm, 1.8 * cm, 2.4 * cm, 1.2 * cm,
+                  1.2 * cm, 2 * cm, 1.6 * cm, 2 * cm, 3.5 * cm]
+    tbl = Table(data, colWidths=col_widths, repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ('FONTNAME',    (0, 0), (-1, 0),  FONT_BOLD),
+        ('FONTSIZE',    (0, 0), (-1, 0),  7),
+        ('FONTNAME',    (0, 1), (-1, -1), FONT_NORMAL),
+        ('FONTSIZE',    (0, 1), (-1, -1), 6.5),
+        ('BACKGROUND',  (0, 0), (-1, 0),  colors.HexColor('#2c3e50')),
+        ('TEXTCOLOR',   (0, 0), (-1, 0),  colors.white),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('GRID',        (0, 0), (-1, -1), 0.25, colors.HexColor('#dee2e6')),
+        ('VALIGN',      (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING',  (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    story.append(tbl)
+    doc.build(story)
+
+    buf.seek(0)
+    fname = f'TPE_{tipo_doc.upper()}{"_" + gestion if gestion else ""}.pdf'
+    response = HttpResponse(buf.read(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    return response
+
+
+@rol_requerido('AYUDANTE', 'ADMIN3_NOTIFICADOR', 'ADMIN1_AGENDADOR')
+def ayudante_tabla_export_excel(request):
+    """Exporta a Excel la tabla filtrada de documentos"""
+    from django.http import HttpResponse
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    tipo_doc = request.GET.get('tipo_doc', 'resolucion')
+    gestion = request.GET.get('gestion', '')
+
+    if tipo_doc == 'reconsideracion':
+        qs = Resolucion.objects.filter(instancia='RECONSIDERACION').select_related('pm', 'sim')
+        titulo_tipo = 'RECONSIDERACIONES (RR)'
+    elif tipo_doc == 'autotpe':
+        qs = AUTOTPE.objects.all().select_related('pm', 'sim')
+        titulo_tipo = 'AUTOS TPE'
+    else:
+        qs = Resolucion.objects.filter(instancia='PRIMERA').select_related('pm', 'sim')
+        titulo_tipo = 'RESOLUCIONES (1RA INSTANCIA)'
+
+    if gestion:
+        try:
+            qs = qs.filter(fecha__year=int(gestion))
+        except (ValueError, TypeError):
+            pass
+
+    qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+    items = list(qs)
+    ids_all = [obj.pk for obj in items]
+
+    if tipo_doc in ('resolucion', 'reconsideracion'):
+        docs_con_pdf = set(
+            DocumentoAdjunto.objects.filter(resolucion_id__in=ids_all)
+            .values_list('resolucion_id', flat=True)
+        )
+        notifs_map = {
+            n.resolucion_id: n
+            for n in Notificacion.objects.filter(resolucion_id__in=ids_all)
+        }
+    else:
+        docs_con_pdf = set(
+            DocumentoAdjunto.objects.filter(autotpe_id__in=ids_all)
+            .values_list('autotpe_id', flat=True)
+        )
+        notifs_map = {
+            n.autotpe_id: n
+            for n in Notificacion.objects.filter(autotpe_id__in=ids_all)
+        }
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = titulo_tipo[:31]
+
+    hdr_fill = PatternFill('solid', fgColor='2C3E50')
+    hdr_font = Font(bold=True, color='FFFFFF', size=10, name='Arial')
+    data_font = Font(size=9, name='Arial')
+    thin = Side(style='thin', color='DEE2E6')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal='center', vertical='center')
+
+    headers = ['N°', 'GRADO', 'PATERNO', 'NOMBRE', 'MATERNO', 'FECHA DOC.',
+               'NOTIFICACIÓN', 'PDF', 'FOTO', 'AÑO PROM.', 'ARMA', 'CI', 'ESTADO SIM']
+    col_widths = [10, 15, 20, 20, 20, 14, 14, 8, 8, 12, 10, 14, 22]
+
+    for col_idx, (hdr, w) in enumerate(zip(headers, col_widths), 1):
+        cell = ws.cell(row=1, column=col_idx, value=hdr)
+        cell.font = hdr_font
+        cell.fill = hdr_fill
+        cell.alignment = center
+        cell.border = border
+        ws.column_dimensions[cell.column_letter].width = w
+
+    def _fd(d):
+        return d.strftime('%d/%m/%Y') if d else ''
+
+    for row_idx, obj in enumerate(items, 2):
+        notif = notifs_map.get(obj.pk)
+        pm = obj.pm
+        grado_str = pm.grado or '' if pm else ''
+        paterno_str = pm.paterno or '' if pm else ''
+        nombre_str = pm.nombre or '' if pm else ''
+        materno_str = pm.materno or '' if pm else ''
+        foto_str = 'SÍ' if (pm and pm.foto) else ''
+        año_str = pm.anio_promocion if (pm and pm.anio_promocion) else ''
+        arma_str = pm.arma or '' if pm else ''
+        ci_str = int(pm.ci) if (pm and pm.ci) else ''
+        notif_str = _fd(notif.fecha) if notif else 'PENDIENTE'
+        pdf_str = 'SÍ' if obj.pk in docs_con_pdf else ''
+        estado_str = obj.sim.get_estado_display() if obj.sim else ''
+
+        row_data = [
+            obj.numero or '', grado_str, paterno_str, nombre_str, materno_str,
+            _fd(obj.fecha), notif_str, pdf_str, foto_str,
+            año_str, arma_str, ci_str, estado_str,
+        ]
+        alt_fill = PatternFill('solid', fgColor='F8F9FA') if row_idx % 2 == 0 else None
+        for col_idx, val in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            cell.font = data_font
+            cell.border = border
+            cell.alignment = Alignment(vertical='center')
+            if alt_fill:
+                cell.fill = alt_fill
+
+    ws.freeze_panes = 'A2'
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f'TPE_{tipo_doc.upper()}{"_" + gestion if gestion else ""}.xlsx'
+    response = HttpResponse(
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    return response

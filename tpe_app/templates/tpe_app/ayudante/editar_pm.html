@@ -42,7 +42,7 @@
   {% endif %}
   {% endif %}
 
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.GET.next }}">
 
@@ -103,6 +103,39 @@
             <option value="{{ val }}" {% if pm.estado == val %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
+      </div>
+
+      <div class="col-6">
+        <label class="form-label fw-semibold">Arma</label>
+        <select name="arma" class="form-select">
+          <option value="">---------</option>
+          {% for val, label in arma_choices %}
+            <option value="{{ val }}" {% if pm.arma == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6">
+        <label class="form-label fw-semibold">
+          Cédula de Identidad (CI)
+          {% if not pm.ci %}<span class="badge bg-warning text-dark">FALTA</span>{% endif %}
+        </label>
+        <input type="number" name="ci" class="form-control" value="{{ pm.ci|default:'' }}"
+               placeholder="Ej: 1234567">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label fw-semibold">
+          Foto
+          {% if pm.foto %}<span class="badge bg-success">Cargada</span>{% else %}<span class="badge bg-secondary">Sin foto</span>{% endif %}
+        </label>
+        {% if pm.foto %}
+        <div class="mb-2">
+          <img src="{{ pm.foto.url }}" alt="Foto" style="height:60px;border-radius:4px;">
+          <small class="text-muted ms-2">Selecciona una nueva para reemplazarla</small>
+        </div>
+        {% endif %}
+        <input type="file" name="foto" class="form-control" accept="image/*">
       </div>
 
       <!-- No ascendió — campo clave -->
