@@ -470,7 +470,7 @@
 
   .sumario-box-header-meta {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: 3fr 1fr;
     gap: 1rem;
     font-size: 0.9rem;
     color: #666;
@@ -502,6 +502,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
     border-bottom: 1px solid #f0f0f0;
   }
 
@@ -523,6 +524,7 @@
   .documento-numero {
     font-weight: 700;
     font-size: 1rem;
+    color: var(--doc-color, #185FA5);
   }
 
   .documento-links {
@@ -810,10 +812,6 @@
           <div>
             <strong>Objeto</strong>
             {{ sim.objeto }}
-          </div>
-          <div>
-            <strong>Fecha Ingreso</strong>
-            {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}
           </div>
           <div>
             <strong>Estado</strong>

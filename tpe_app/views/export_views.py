@@ -328,8 +328,7 @@ def export_person_historial_pdf(request, personal_id):
 
     n_sim  = historial['sumarios'].count()
     n_res  = (historial['resoluciones'].count() +
-              historial['segundas_resoluciones'].count() +
-              historial['autos_tpe'].count())
+              historial['segundas_resoluciones'].count())
     n_auto = historial['autos_tpe'].count()
     col3 = usable_w / 3
     tabla_stats = Table([

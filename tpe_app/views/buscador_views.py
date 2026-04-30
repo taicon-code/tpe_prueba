@@ -107,8 +107,7 @@ def _obtener_estado_actual(personal_id):
     return {
         'total_sumarios': historial['sumarios'].count(),
         'total_resoluciones': (historial['resoluciones'].count() +
-                               historial['segundas_resoluciones'].count() +
-                               historial['autos_tpe'].count()),
+                               historial['segundas_resoluciones'].count()),
         'total_autos_tpe': historial['autos_tpe'].count(),
         'estado_actual': 'Historial disponible'
     }
