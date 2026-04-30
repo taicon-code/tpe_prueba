@@ -48,191 +48,174 @@
 
     {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=2 %}
 
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Lista de militares ya agregados -->
     <div class="card mb-3">
-        <div class="card-header">Militares actuales en <strong>{{ sim.codigo }}</strong></div>
-        <div class="card-body">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>Militares en <span class="text-primary">{{ sim.codigo }}</span></strong>
+            <span class="badge bg-secondary">{{ militares_actuales|length }} registrado(s)</span>
+        </div>
+        <div class="card-body p-0">
             {% if militares_actuales %}
-                {% for pm in militares_actuales %}
-                    <span class="badge bg-info me-1 mb-1">{{ pm.grado }} {{ pm.paterno }}, {{ pm.nombre }}</span>
-                {% endfor %}
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Grado</th>
+                        <th>Paterno</th>
+                        <th>Nombre</th>
+                        <th>CI</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pm in militares_actuales %}
+                    <tr>
+                        <td><small class="text-muted">{{ pm.grado|default:"—" }}</small></td>
+                        <td><strong>{{ pm.paterno }}</strong></td>
+                        <td>{{ pm.nombre }}</td>
+                        <td><small>{{ pm.ci|default:"—" }}</small></td>
+                        <td class="text-center">
+                            <a href="{% url 'ayudante_editar_pm' pm.id %}?next={{ request.path }}"
+                               class="btn btn-xs btn-outline-secondary btn-sm">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                            <form method="POST" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="remove">
+                                <input type="hidden" name="pm_id" value="{{ pm.id }}">
+                                <button type="submit" class="btn btn-xs btn-outline-danger btn-sm"
+                                        onclick="return confirm('¿Quitar a {{ pm.paterno }} de este sumario?')">
+                                    <i class="bi bi-x"></i> Quitar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             {% else %}
-                <em class="text-muted">No hay militares aún.</em>
+            <div class="text-center text-muted py-3">
+                <i class="bi bi-person-x d-block fs-4 mb-1"></i>
+                Ningún militar agregado aún. Use el formulario abajo.
+            </div>
             {% endif %}
         </div>
     </div>
 
-    <form method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ formset.management_form }}
+    <!-- Formulario para agregar UN militar -->
+    <div class="card mb-3 border-success">
+        <div class="card-header bg-success text-white">
+            <i class="bi bi-person-plus me-1"></i><strong>Agregar Militar</strong>
+        </div>
+        <div class="card-body">
+            <form method="POST" id="form-agregar">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_one">
 
-        <div class="card mb-3">
-            <div class="card-header"><strong>Agregar o modificar militares</strong></div>
-            <div class="card-body">
-                <div id="formset-container">
-                    {% for form_militar in formset %}
-                        <div class="formset-row card mb-2 p-3">
-
-                            {{ form_militar.non_field_errors }}
-
-                            <div class="row g-2">
-                                <div class="col-md-2">
-                                    <label class="form-label">CI</label>
-                                    {{ form_militar.ci }}
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Nombre</label>
-                                    {{ form_militar.nombre }}
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Paterno</label>
-                                    {{ form_militar.paterno }}
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Materno</label>
-                                    {{ form_militar.materno }}
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Escalafón</label>
-                                    {{ form_militar.escalafon }}
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Arma</label>
-                                    {{ form_militar.arma }}
-                                </div>
-                            </div>
-
-                            <div class="row g-2 mt-1">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold text-success">
-                                        Grado (del documento)
-                                        <small class="text-muted fw-normal d-block">Se usa como grado inicial del militar</small>
-                                    </label>
-                                    {{ form_militar.grado_en_fecha }}
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Año de Egreso</label>
-                                    {{ form_militar.anio_promocion }}
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Especialidad</label>
-                                    {{ form_militar.especialidad }}
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="button" class="btn btn-danger btn-sm w-100 delete-form-btn">
-                                        <i class="bi bi-trash"></i> Borrar
-                                    </button>
-                                    <div style="display:none;">{{ form_militar.DELETE }}</div>
-                                </div>
-                            </div>
-
-                            <div class="row g-2 mt-1">
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        {{ form_militar.no_ascendio }}
-                                        <label class="form-check-label text-warning fw-semibold">
-                                            No ascendió al grado correspondiente a su año de egreso
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    {% endfor %}
+                <div class="row g-2 mb-2">
+                    <div class="col-md-2">
+                        <label class="form-label">CI <small class="text-muted">(opcional)</small></label>
+                        <input type="text" name="ci" class="form-control form-control-sm"
+                               placeholder="Ej: 3112157" value="{{ form_data.ci|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" name="nombre" class="form-control form-control-sm"
+                               placeholder="Nombre(s)" required value="{{ form_data.nombre|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Paterno <span class="text-danger">*</span></label>
+                        <input type="text" name="paterno" class="form-control form-control-sm"
+                               placeholder="Apellido paterno" required value="{{ form_data.paterno|default:'' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Materno</label>
+                        <input type="text" name="materno" class="form-control form-control-sm"
+                               placeholder="Apellido materno" value="{{ form_data.materno|default:'' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Grado (del doc.)</label>
+                        <select name="grado_en_fecha" class="form-select form-select-sm">
+                            <option value="">---------</option>
+                            {% for val, label in grado_choices %}
+                                <option value="{{ val }}" {% if form_data.grado_en_fecha == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <button type="button" id="add-form" class="btn btn-success btn-sm mt-3">
-                    + Agregar Militar
-                </button>
-            </div>
-        </div>
 
-        <div class="d-flex justify-content-between mt-4">
-            <div class="d-flex gap-2">
-                <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-house"></i> Inicio
-                </a>
-                <a href="{% url 'ayudante_wizard_paso1' %}" class="btn btn-outline-secondary">← Atrás</a>
-            </div>
-            <div>
-                <button type="submit" name="action" value="skip" class="btn btn-outline-primary me-2">
-                    Continuar sin cambios →
-                </button>
-                <button type="submit" name="action" value="save" class="btn btn-primary">
-                    Guardar y Continuar →
-                </button>
-            </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-2">
+                        <label class="form-label">Escalafón</label>
+                        <select name="escalafon" class="form-select form-select-sm">
+                            <option value="">---------</option>
+                            {% for val, label in escalafon_choices %}
+                                <option value="{{ val }}" {% if form_data.escalafon == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Arma</label>
+                        <select name="arma" class="form-select form-select-sm">
+                            <option value="">---------</option>
+                            {% for val, label in arma_choices %}
+                                <option value="{{ val }}" {% if form_data.arma == val %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Especialidad</label>
+                        <input type="text" name="especialidad" class="form-control form-control-sm"
+                               placeholder="Ej: INFANTERÍA" value="{{ form_data.especialidad|default:'' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Año de Egreso</label>
+                        <input type="number" name="anio_promocion" class="form-control form-control-sm"
+                               placeholder="Ej: 2000" min="1950" max="2100"
+                               value="{{ form_data.anio_promocion|default:'' }}">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-plus-circle me-1"></i>Agregar a la lista
+                        </button>
+                    </div>
+                </div>
+
+            </form>
         </div>
-    </form>
+    </div>
+
+    <!-- Botones de navegación -->
+    <div class="d-flex justify-content-between mt-3">
+        <div class="d-flex gap-2">
+            <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-house"></i> Inicio
+            </a>
+            <a href="{% url 'ayudante_wizard_paso1' %}" class="btn btn-outline-secondary">← Atrás</a>
+        </div>
+        <div>
+            {% if militares_actuales %}
+            <form method="POST" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="continue">
+                <button type="submit" class="btn btn-primary">
+                    Continuar → <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </form>
+            {% else %}
+            <button class="btn btn-primary" disabled title="Agregue al menos un militar">
+                Continuar → <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
 </div>
-
-<script>
-document.getElementById('add-form').addEventListener('click', function() {
-    const container = document.getElementById('formset-container');
-    const totalForms = document.querySelector('#id_pm_sim_set-TOTAL_FORMS');
-    const newFormIndex = parseInt(totalForms.value);
-
-    const firstForm = container.querySelector('.formset-row');
-    if (!firstForm) return;
-
-    const newForm = firstForm.cloneNode(true);
-
-    // Reemplazar índices en TODOS los campos (inputs, selects, textareas, checkboxes, etc.)
-    newForm.querySelectorAll('[name]').forEach(field => {
-        const name = field.getAttribute('name');
-        if (name) {
-            // Usar regex para encontrar -NÚMERO- y reemplazarlo con -newFormIndex-
-            const newName = name.replace(/-\d+-/, `-${newFormIndex}-`);
-            field.setAttribute('name', newName);
-
-            // Actualizar id si existe
-            const oldId = field.getAttribute('id');
-            if (oldId) {
-                const newId = oldId.replace(/-\d+-/, `-${newFormIndex}-`);
-                field.setAttribute('id', newId);
-            }
-
-            // Limpiar valores según el tipo de campo
-            if (field.tagName === 'TEXTAREA') {
-                field.value = '';
-            } else if (field.type === 'checkbox' || field.type === 'radio') {
-                field.checked = false;
-            } else if (field.type !== 'hidden') {
-                field.value = '';
-            }
-            // Los campos hidden se dejan como están
-        }
-    });
-
-    container.appendChild(newForm);
-    totalForms.value = newFormIndex + 1;
-
-    // Agregar listener al nuevo botón de borrar
-    attachDeleteButtonListener(newForm.querySelector('.delete-form-btn'));
-});
-
-// Función para manejar el click en botón "Borrar Militar"
-function attachDeleteButtonListener(btn) {
-    if (!btn) return;
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        const row = this.closest('.formset-row');
-        const deleteCheckbox = row.querySelector('input[type="checkbox"]');
-        if (deleteCheckbox) {
-            deleteCheckbox.checked = !deleteCheckbox.checked;
-            // Cambiar color del botón si está marcado para eliminar
-            if (deleteCheckbox.checked) {
-                this.classList.add('disabled');
-                row.style.opacity = '0.6';
-            } else {
-                this.classList.remove('disabled');
-                row.style.opacity = '1';
-            }
-        }
-    });
-}
-
-// Agregar listeners a todos los botones de borrar existentes
-document.querySelectorAll('.delete-form-btn').forEach(btn => {
-    attachDeleteButtonListener(btn);
-});
-</script>
 {% endblock %}

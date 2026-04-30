@@ -130,9 +130,9 @@
                                     <small class="text-muted">{{ res.pm.grado|default:"—" }}</small>
                                 </td>
                                 <td>
-                                    <strong>{{ res.pm.paterno }}</strong>
+                                    <strong>{{ res.pm.paterno|default:"—" }}</strong>
                                 </td>
-                                <td>{{ res.pm.nombre }}</td>
+                                <td>{{ res.pm.nombre|default:"—" }}</td>
                                 <td class="text-center">
                                     <code class="bg-light p-1">{{ res.sim.codigo }}</code>
                                 </td>
@@ -146,10 +146,19 @@
                                     <small>{{ res.fecha|date:"d/m/Y" }}</small>
                                 </td>
                                 <td class="text-center">
-                                    <a href="{% url 'subir_pdf_res' res.id %}"
-                                       class="btn btn-sm btn-warning">
-                                        <i class="bi bi-file-pdf me-1"></i>Subir
-                                    </a>
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <a href="{% url 'subir_pdf_res' res.id %}"
+                                           class="btn btn-sm btn-warning">
+                                            <i class="bi bi-file-pdf me-1"></i>Subir PDF
+                                        </a>
+                                        {% if res.pm %}
+                                        <a href="{% url 'ayudante_editar_pm' res.pm.id %}?next={{ request.path }}"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           title="Editar datos del militar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}

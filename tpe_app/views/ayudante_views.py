@@ -551,81 +551,110 @@ def ayudante_wizard_paso1(request):
 
 @rol_requerido('AYUDANTE')
 def ayudante_wizard_paso2(request, sim_id):
-    """PASO 2 — Verificación/Edición de Militares"""
+    """PASO 2 — Agregar/quitar militares al SIM (un formulario simple por militar)"""
     sim = get_object_or_404(SIM, pk=sim_id)
+    form_data = {}
 
     if request.method == 'POST':
-        action = request.POST.get('action', 'save')
+        action = request.POST.get('action', '')
 
-        if action == 'skip':
+        if action == 'continue':
             if sim.militares.exists():
                 return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
             else:
-                messages.warning(request, 'Debe haber al menos un militar antes de continuar.')
+                messages.warning(request, 'Debe agregar al menos un militar antes de continuar.')
 
-        elif action == 'save':
-            formset = PMSIMFormSet(request.POST, request.FILES, instance=sim)
-            if formset.is_valid():
-                try:
-                    with transaction.atomic():
-                        guardados = 0
-                        for inline_form in formset:
-                            # Verificar si hay algún dato en el formulario
-                            cleaned = inline_form.cleaned_data
-                            if not cleaned or (not cleaned.get('ci') and not cleaned.get('nombre') and not cleaned.get('pm')):
-                                continue
+        elif action == 'remove':
+            pm_id = request.POST.get('pm_id')
+            if pm_id:
+                PM_SIM.objects.filter(sim=sim, pm_id=pm_id).delete()
+                messages.info(request, 'Militar quitado del sumario.')
+            return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
 
-                            # Si está marcado para eliminar, eliminar
-                            if cleaned.get('DELETE'):
-                                pm_sim_pk = inline_form.instance.pk
-                                if pm_sim_pk:
-                                    PM_SIM.objects.filter(pk=pm_sim_pk).delete()
-                                continue
+        elif action == 'add_one':
+            ci_raw      = (request.POST.get('ci') or '').strip()
+            nombre      = (request.POST.get('nombre') or '').strip().upper()
+            paterno     = (request.POST.get('paterno') or '').strip().upper()
+            materno     = (request.POST.get('materno') or '').strip().upper() or None
+            grado_fecha = request.POST.get('grado_en_fecha') or None
+            escalafon   = request.POST.get('escalafon') or None
+            arma        = request.POST.get('arma') or None
+            especialidad = (request.POST.get('especialidad') or '').strip() or None
+            anio_raw    = request.POST.get('anio_promocion') or None
 
-                            # Caso 1: PM ya existía en BD (seleccionado del dropdown)
-                            pm = cleaned.get('pm')
+            # Guardar datos para repoblar el formulario en caso de error
+            form_data = request.POST.dict()
 
-                            # Caso 2: PM nuevo — crearlo con los datos del formulario
-                            if not pm:
-                                pm_data = cleaned.get('pm_data')
-                                if pm_data and isinstance(pm_data, dict) and pm_data.get('ci'):
-                                    pm = PM.objects.create(**pm_data)
-
-                            # Si tenemos un PM (nuevo o existente), crear la relación PM_SIM
-                            if pm:
-                                grado_fecha = cleaned.get('pmsim_grado_en_fecha') or None
-                                # Si el PM existente no tenía grado, sincronizar con el del documento
-                                if grado_fecha and not pm.grado:
-                                    pm.grado = grado_fecha
-                                    pm.save(update_fields=['grado'])
-                                pm_sim, _ = PM_SIM.objects.get_or_create(sim=sim, pm=pm)
-                                if grado_fecha:
-                                    pm_sim.grado_en_fecha = grado_fecha
-                                    pm_sim.save(update_fields=['grado_en_fecha'])
-                                guardados += 1
-
-                    if guardados > 0:
-                        messages.success(request, f'{guardados} militar(es) guardado(s) correctamente.')
-                        return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
-                    else:
-                        messages.warning(request, 'No se encontraron militares para guardar. Agregue al menos uno.')
-                except Exception as e:
-                    messages.error(request, f'Error: {str(e)}')
+            if not nombre or not paterno:
+                messages.error(request, 'Nombre y Apellido Paterno son obligatorios.')
             else:
-                messages.error(request, 'Por favor corrija los errores.')
-                # Reinicializar formset con datos POST para que se muestren los errores
-                formset = PMSIMFormSet(request.POST, request.FILES, instance=sim)
-        else:
-            # GET request
-            formset = PMSIMFormSet(instance=sim)
-    else:
-        formset = PMSIMFormSet(instance=sim)
+                ci_val = None
+                if ci_raw:
+                    if not ci_raw.isdigit():
+                        messages.error(request, 'El CI debe contener solo números.')
+                        ci_raw = None
+                    else:
+                        ci_val = int(ci_raw)
 
-    militares_actuales = sim.militares.all()
+                anio_val = None
+                if anio_raw:
+                    try:
+                        anio_val = int(anio_raw)
+                        if not (1950 <= anio_val <= 2100):
+                            messages.error(request, 'Año de egreso fuera de rango.')
+                            anio_val = None
+                    except ValueError:
+                        messages.error(request, 'Año de egreso inválido.')
+
+                if not messages.get_messages(request):
+                    try:
+                        with transaction.atomic():
+                            # Buscar PM existente por CI o por nombre+paterno
+                            pm = None
+                            if ci_val:
+                                pm = PM.objects.filter(ci=ci_val).first()
+                            if not pm:
+                                q = PM.objects.filter(nombre=nombre, paterno=paterno)
+                                if materno:
+                                    q = q.filter(materno=materno)
+                                pm = q.first()
+
+                            # Si no existe, crearlo
+                            if not pm:
+                                pm = PM.objects.create(
+                                    ci=ci_val,
+                                    nombre=nombre,
+                                    paterno=paterno,
+                                    materno=materno,
+                                    grado=grado_fecha,
+                                    escalafon=escalafon,
+                                    arma=arma,
+                                    especialidad=especialidad,
+                                    anio_promocion=anio_val,
+                                )
+
+                            # Crear o actualizar la relación PM_SIM
+                            pm_sim, created = PM_SIM.objects.get_or_create(sim=sim, pm=pm)
+                            if grado_fecha:
+                                pm_sim.grado_en_fecha = grado_fecha
+                                pm_sim.save(update_fields=['grado_en_fecha'])
+
+                            if created:
+                                messages.success(request, f'{pm.grado or ""} {pm.paterno} {pm.nombre} agregado al sumario.')
+                            else:
+                                messages.info(request, f'{pm.paterno} {pm.nombre} ya estaba en el sumario.')
+                            form_data = {}  # Limpiar formulario tras éxito
+                    except Exception as e:
+                        messages.error(request, f'Error al agregar militar: {str(e)}')
+
+    militares_actuales = sim.militares.all().order_by('paterno', 'nombre')
     return render(request, 'tpe_app/ayudante/wizard/paso2_pm.html', {
         'sim': sim,
-        'formset': formset,
         'militares_actuales': militares_actuales,
+        'form_data': form_data,
+        'grado_choices': PM.GRADO_CHOICES,
+        'escalafon_choices': PM.ESCALAFON_CHOICES,
+        'arma_choices': PM.ARMA_CHOICES,
         'paso_actual': 2,
         'total_pasos': 4,
     })
