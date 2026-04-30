@@ -501,18 +501,33 @@ def ayudante_lista_res_sin_pdf(request):
 
 @rol_requerido('AYUDANTE')
 def ayudante_wizard_buscar_sim(request):
-    """AJAX: busca SIM por código"""
+    """AJAX: busca SIM por código y devuelve TODAS las versiones"""
     codigo = (request.GET.get('q') or '').strip().upper()
     if not codigo:
         return JsonResponse({'found': False})
-    sim = SIM.objects.filter(codigo=codigo).order_by('version').first()
-    if sim:
+
+    sims = list(SIM.objects.filter(codigo=codigo).order_by('version').values('id', 'codigo', 'version', 'resumen', 'estado'))
+
+    if sims:
+        # Por defecto seleccionar la última versión
+        ultima_version = sims[-1]
+
+        # Preparar lista de versiones para mostrar
+        versiones = []
+        for sim in sims:
+            versiones.append({
+                'id': sim['id'],
+                'version': sim['version'],
+                'label': f"v{sim['version']} - {sim['resumen'][:50] if sim['resumen'] else 'Sin resumen'} ({sim['estado']})",
+                'resumen': sim['resumen'][:100] if sim['resumen'] else '',
+            })
+
         return JsonResponse({
             'found': True,
-            'sim_id': sim.pk,
-            'sim_cod': sim.codigo,
-            'sim_resum': sim.resumen[:100] if sim.resumen else '',
-            'wizard_url': reverse('ayudante_wizard_paso2', kwargs={'sim_id': sim.pk}),
+            'versions': versiones,
+            'ultima_version_id': ultima_version['id'],
+            'ultima_version': ultima_version['version'],
+            'sim_cod': codigo,
         })
     return JsonResponse({'found': False})
 
@@ -538,7 +553,16 @@ def ayudante_wizard_paso1(request):
             except Exception as e:
                 messages.error(request, f'Error al guardar SIM: {str(e)}')
         else:
-            messages.error(request, 'Por favor corrija los errores.')
+            # Debug: mostrar todos los errores en mensajes
+            error_list = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_list.append(f"{field}: {error}")
+            if error_list:
+                for err in error_list:
+                    messages.error(request, err)
+            else:
+                messages.error(request, 'Por favor corrija los errores.')
     else:
         form = WizardSIMForm()
 

@@ -79,21 +79,42 @@
         {% csrf_token %}
         <input type="hidden" name="sim_existente_id" id="sim-existente-id" value="">
 
-        {% if form.errors %}
-        <div class="alert alert-danger">
-            <strong>Por favor corrija los siguientes errores:</strong>
-            <ul class="mb-0 mt-1">
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+        {% if form.errors or messages %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>⚠️ Error al guardar:</strong>
+            <div class="mt-2">
+                <!-- Errores de validación del formulario -->
+                {% if form.errors %}
+                    <div class="mb-2">
+                        <strong>Errores del formulario:</strong>
+                        <ul class="mb-0 mt-1">
+                            {% if form.codigo.errors %}<li><strong>Código:</strong> {{ form.codigo.errors.0 }}</li>{% endif %}
+                            {% if form.version.errors %}<li><strong>Versión:</strong> {{ form.version.errors.0 }}</li>{% endif %}
+                            {% if form.origen.errors %}<li><strong>SIM Original:</strong> {{ form.origen.errors.0 }}</li>{% endif %}
+                            {% if form.motivo_reapertura.errors %}<li><strong>Motivo de Reapertura:</strong> {{ form.motivo_reapertura.errors.0 }}</li>{% endif %}
+                            {% if form.fecha_ingreso.errors %}<li><strong>Fecha de Ingreso:</strong> {{ form.fecha_ingreso.errors.0 }}</li>{% endif %}
+                            {% if form.tipo.errors %}<li><strong>Tipo:</strong> {{ form.tipo.errors.0 }}</li>{% endif %}
+                            {% if form.fase.errors %}<li><strong>Fase:</strong> {{ form.fase.errors.0 }}</li>{% endif %}
+                            {% if form.objeto.errors %}<li><strong>Objeto:</strong> {{ form.objeto.errors.0 }}</li>{% endif %}
+                            {% if form.resumen.errors %}<li><strong>Resumen:</strong> {{ form.resumen.errors.0 }}</li>{% endif %}
+                            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endif %}
+
+        <!-- Mostrar mensajes de error adicionales -->
+        {% for message in messages %}
+            {% if message.tags == 'error' %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endif %}
+        {% endfor %}
 
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -102,23 +123,56 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="{{ form.codigo.id_for_label }}" class="form-label">{{ form.codigo.label }}</label>
                         {{ form.codigo }}
                         <small class="text-muted d-block mt-1">
                             Formato: <strong>PREFIJO-NÚMERO/AÑO</strong> &nbsp;|&nbsp;
-                            Ej: DJE-123/25 &nbsp; SASJUR-25/25 &nbsp; SDISCAPE-86/25
+                            Ej: DJE-123/25
                         </small>
                         {% if form.codigo.errors %}
                             <div class="invalid-feedback d-block">{{ form.codigo.errors.0 }}</div>
                         {% endif %}
                         <div id="sim-cod-error" class="invalid-feedback d-none"></div>
                     </div>
+                    <div class="col-md-2">
+                        <label for="{{ form.version.id_for_label }}" class="form-label">{{ form.version.label }}</label>
+                        {{ form.version }}
+                        <small class="text-muted d-block mt-1">v1 = original, v2+ = reaperturas</small>
+                        {% if form.version.errors %}
+                            <div class="invalid-feedback d-block">{{ form.version.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                     <div class="col-md-6">
                         <label for="{{ form.fecha_ingreso.id_for_label }}" class="form-label">{{ form.fecha_ingreso.label }}</label>
                         {{ form.fecha_ingreso }}
                         {% if form.fecha_ingreso.errors %}
                             <div class="invalid-feedback d-block">{{ form.fecha_ingreso.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Sección de reapertura (solo si version > 1) -->
+                <div class="alert alert-warning alert-dismissible fade show d-none" id="alerta-reapertura" role="alert">
+                    <strong>⚠️ Reapertura de Sumario:</strong>
+                    <p class="mb-0 mt-2">Está creando una nueva versión de un sumario existente. Debe indicar cuál es el SIM original y el motivo de la reapertura.</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="row g-3 mt-2" id="seccion-reapertura" style="display: none;">
+                    <div class="col-md-6">
+                        <label for="{{ form.origen.id_for_label }}" class="form-label">{{ form.origen.label }}</label>
+                        {{ form.origen }}
+                        <small class="text-muted d-block mt-1">Seleccione la versión original (v1) del sumario</small>
+                        {% if form.origen.errors %}
+                            <div class="invalid-feedback d-block">{{ form.origen.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.motivo_reapertura.id_for_label }}" class="form-label">{{ form.motivo_reapertura.label }}</label>
+                        {{ form.motivo_reapertura }}
+                        <small class="text-muted d-block mt-1">Razón por la cual se reabre el sumario</small>
+                        {% if form.motivo_reapertura.errors %}
+                            <div class="invalid-feedback d-block">{{ form.motivo_reapertura.errors.0 }}</div>
                         {% endif %}
                     </div>
                 </div>
@@ -178,13 +232,49 @@ document.getElementById('btn-buscar-sim').addEventListener('click', function() {
             const div = document.getElementById('resultado-busqueda');
             div.classList.remove('d-none');
             if (data.found) {
-                div.innerHTML = `
-                  <div class="alert alert-success">
-                    <strong>SIM encontrado:</strong> ${data.sim_cod} — ${data.sim_resum}
-                    <a href="${data.wizard_url}" class="btn btn-sm btn-success ms-2">
-                      Continuar con este SIM →
-                    </a>
-                  </div>`;
+                // Si hay múltiples versiones, mostrar selector
+                if (data.versions.length > 1) {
+                    let opcionesHtml = data.versions.map(v =>
+                        `<option value="${v.id}" ${v.id === data.ultima_version_id ? 'selected' : ''}>
+                            Versión ${v.version} - ${v.resumen}
+                        </option>`
+                    ).join('');
+
+                    div.innerHTML = `
+                      <div class="alert alert-info">
+                        <strong>📋 ${data.versions.length} versiones encontradas:</strong>
+                        <div class="mt-3">
+                            <label for="selector-sim-version" class="form-label">Seleccione la versión a continuar:</label>
+                            <div class="input-group">
+                                <select id="selector-sim-version" class="form-select">
+                                    ${opcionesHtml}
+                                </select>
+                                <button class="btn btn-success" type="button" id="btn-continuar-sim">
+                                    Continuar →
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">Por defecto está seleccionada la versión más reciente (v${data.ultima_version})</small>
+                        </div>
+                      </div>`;
+
+                    // Agregar event listener al botón Continuar
+                    document.getElementById('btn-continuar-sim').addEventListener('click', function() {
+                        const selectedId = document.getElementById('selector-sim-version').value;
+                        if (selectedId) {
+                            document.getElementById('sim-existente-id').value = selectedId;
+                            document.querySelector('form').submit();
+                        }
+                    });
+                } else {
+                    // Solo una versión, continuar directamente
+                    div.innerHTML = `
+                      <div class="alert alert-success">
+                        <strong>SIM encontrado:</strong> ${data.sim_cod} v${data.ultima_version}
+                        <button class="btn btn-sm btn-success ms-2" type="button" onclick="document.getElementById('sim-existente-id').value='${data.ultima_version_id}'; document.querySelector('form').submit();">
+                          Continuar con este SIM →
+                        </button>
+                      </div>`;
+                }
             } else {
                 div.innerHTML = `<div class="alert alert-info">SIM no encontrado. Complete el formulario para crear uno nuevo.</div>`;
             }
@@ -232,6 +322,24 @@ function validateSimCod() {
         return false;
     }
     return true;
+}
+
+// Control de versión y reapertura
+const versionInput = document.querySelector('#id_version');
+const seccionReapertura = document.getElementById('seccion-reapertura');
+const alertaReapertura = document.getElementById('alerta-reapertura');
+
+if (versionInput) {
+    versionInput.addEventListener('change', function() {
+        const version = parseInt(this.value) || 1;
+        if (version > 1) {
+            seccionReapertura.style.display = 'block';
+            alertaReapertura.classList.remove('d-none');
+        } else {
+            seccionReapertura.style.display = 'none';
+            alertaReapertura.classList.add('d-none');
+        }
+    });
 }
 </script>
 {% endblock %}

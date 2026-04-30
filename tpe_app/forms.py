@@ -7,10 +7,19 @@ from .resumen_choices import RESUMEN_CHOICES
 
 
 class SIMForm(forms.ModelForm):
+    version = forms.ChoiceField(
+        label='Versión', required=True,
+        choices=[(1, 'Versión 1 (Original)'), (2, 'Versión 2 (1ª Reapertura)'),
+                 (3, 'Versión 3 (2ª Reapertura)'), (4, 'Versión 4 (3ª Reapertura)'),
+                 (5, 'Versión 5 (4ª Reapertura)')],
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        initial=1,
+        help_text='1=original, 2+=reaperturas'
+    )
 
     class Meta:
         model = SIM
-        fields = ['codigo', 'fecha_ingreso', 'numero_carpeta', 'tipo', 'objeto', 'resumen', 'auto_final']
+        fields = ['codigo', 'origen', 'motivo_reapertura', 'fecha_ingreso', 'numero_carpeta', 'tipo', 'objeto', 'resumen', 'auto_final']
         widgets = {
             'codigo': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -18,6 +27,8 @@ class SIMForm(forms.ModelForm):
                 'autocomplete': 'off',
                 'spellcheck': 'false'
             }),
+            'origen': forms.Select(attrs={'class': 'form-control'}),
+            'motivo_reapertura': forms.Select(attrs={'class': 'form-control'}),
             'fecha_ingreso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'numero_carpeta': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -39,6 +50,8 @@ class SIMForm(forms.ModelForm):
         }
         labels = {
             'codigo':          'Código del Sumario',
+            'origen':          'SIM Original (si es reapertura)',
+            'motivo_reapertura': 'Motivo de Reapertura',
             'fecha_ingreso':   'Fecha de Ingreso al TPE',
             'numero_carpeta':  'N° Carpeta Física',
             'tipo':            'Tipo de Sumario',
@@ -47,21 +60,65 @@ class SIMForm(forms.ModelForm):
             'auto_final':      'Auto Final / Dictamen',
         }
 
-    def clean_codigo(self):
-        cod = self.cleaned_data.get('codigo')
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Validar código + versión (no duplicados)
+        cod = cleaned_data.get('codigo')
+        version = cleaned_data.get('version', 1)
+
         if cod:
             cod = cod.upper()
-            version = self.cleaned_data.get('version', 1)
+            try:
+                version_int = int(version) if version else 1
+            except (ValueError, TypeError):
+                version_int = 1
+
+            # Verificar si ya existe (SIM con mismo código y versión)
             if self.instance and self.instance.pk:
-                existentes = SIM.objects.filter(codigo=cod, version=version).exclude(pk=self.instance.pk)
+                existentes = SIM.objects.filter(codigo=cod, version=version_int).exclude(pk=self.instance.pk)
             else:
-                existentes = SIM.objects.filter(codigo=cod, version=version)
+                existentes = SIM.objects.filter(codigo=cod, version=version_int)
+
             if existentes.exists():
-                raise forms.ValidationError(
-                    f'El código {cod} versión {version} ya existe. '
-                    'Para reaperturas, use una versión diferente.'
-                )
-        return cod
+                self.add_error('codigo',
+                    f'El código {cod} versión {version_int} ya existe. '
+                    'Para reaperturas, use una versión diferente.')
+
+        # Validar que versión > 1 requiere origen y motivo
+        try:
+            version_int = int(version) if version else 1
+        except (ValueError, TypeError):
+            version_int = 1
+
+        if version_int > 1:
+            origen = cleaned_data.get('origen')
+            motivo = cleaned_data.get('motivo_reapertura')
+
+            if not origen:
+                self.add_error('origen', 'Campo obligatorio para reaperturas (versión > 1). Seleccione el SIM original.')
+            if not motivo:
+                self.add_error('motivo_reapertura', 'Campo obligatorio para reaperturas (versión > 1). Indique el motivo.')
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        # Asignar version desde cleaned_data (porque no está en Meta.fields)
+        version = self.cleaned_data.get('version', 1)
+        try:
+            obj.version = int(version)
+        except (ValueError, TypeError):
+            obj.version = 1
+        if commit:
+            obj.save()
+        return obj
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtrar origen para mostrar solo SIM versión 1
+        self.fields['origen'].queryset = SIM.objects.filter(version=1).order_by('codigo')
+        self.fields['origen'].help_text = 'Solo se muestran sumarios versión 1 (originales)'
 
 
 class PMSIMForm(forms.ModelForm):
