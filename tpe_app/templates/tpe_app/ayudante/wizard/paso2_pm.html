@@ -52,9 +52,18 @@
         <div class="card-header">Militares actuales en <strong>{{ sim.codigo }}</strong></div>
         <div class="card-body">
             {% if militares_actuales %}
-                {% for pm in militares_actuales %}
-                    <span class="badge bg-info me-1 mb-1">{{ pm.grado }} {{ pm.paterno }}, {{ pm.nombre }}</span>
-                {% endfor %}
+                <div class="d-flex flex-wrap gap-2">
+                    {% for pm in militares_actuales %}
+                    <div class="d-inline-flex align-items-center gap-2">
+                        <span class="badge bg-info">{{ pm.grado }} {{ pm.paterno }}, {{ pm.nombre }}</span>
+                        <a href="{% url 'ayudante_editar_pm' pm.id %}?next={% url 'ayudante_wizard_paso2' sim.id %}"
+                           class="btn btn-sm btn-outline-secondary"
+                           title="Editar datos de este militar">
+                            <i class="bi bi-pencil"></i>Editar
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
             {% else %}
                 <em class="text-muted">No hay militares aún.</em>
             {% endif %}
@@ -195,10 +204,14 @@ document.getElementById('add-form').addEventListener('click', function() {
                 field.value = '';
             } else if (field.type === 'checkbox' || field.type === 'radio') {
                 field.checked = false;
-            } else if (field.type !== 'hidden') {
+            } else if (field.type === 'hidden') {
+                // Limpiar el campo 'id' de la fila clonada para que Django trate como nuevo
+                if (name && name.match(/-\d+-id$/)) {
+                    field.value = '';
+                }
+            } else {
                 field.value = '';
             }
-            // Los campos hidden se dejan como están
         }
     });
 
