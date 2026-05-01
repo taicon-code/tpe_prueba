@@ -636,7 +636,11 @@ def export_person_excel(request, personal_id):
 def export_sim_pdf(request, sim_id):
     """Exporta un SIM completo a PDF con militares y actuados — Formato Platypus moderno"""
     sim = get_object_or_404(SIM, id=sim_id)
-    militares = sim.militares.all()
+    _orden_grado = {g: i for i, (g, _) in enumerate(PM.GRADO_CHOICES)}
+    militares = sorted(
+        sim.militares.all(),
+        key=lambda m: _orden_grado.get(m.grado, 999)
+    )
     resoluciones = Resolucion.objects.filter(sim=sim)
     autos_tpe = AUTOTPE.objects.filter(sim=sim)
     recursos_tsp = RecursoTSP.objects.filter(sim=sim)
@@ -671,6 +675,7 @@ def export_sim_pdf(request, sim_id):
     s_pais    = _estilo('pais',   fuente='Arial', tamaño=10, alineacion=TA_LEFT, negrita=True, espacio_despues=6, interlinea=13, sangria=70)
     s_seccion = _estilo('secc',   fuente='Arial', tamaño=14, alineacion=TA_CENTER, negrita=True, espacio_antes=6, espacio_despues=4, interlinea=17)
     s_dato    = _estilo('dato',   tamaño=8.5)
+    s_dato_j  = _estilo('datoj',  tamaño=8.5, alineacion=TA_JUSTIFY)
     s_sim_tit = _estilo('simtit', tamaño=10, negrita=True, espacio_antes=4, espacio_despues=2)
     s_th      = _estilo('th',     tamaño=7.5, alineacion=TA_CENTER, negrita=True, color=colors.black)
     s_td      = _estilo('td',     tamaño=7,  interlinea=9)
@@ -733,7 +738,7 @@ def export_sim_pdf(request, sim_id):
     col2 = usable_w / 2
     tabla_sim = Table([
         [Paragraph(f"<b>Código:</b>  {sim.codigo}", s_dato), Paragraph(f"<b>Tipo:</b>  {sim.get_tipo_display()}", s_dato)],
-        [Paragraph(f"<b>Objeto:</b>  {sim.objeto or 'N/A'}", s_dato), ''],
+        [Paragraph(f"<b>Objeto:</b>  {sim.objeto or 'N/A'}", s_dato_j), ''],
         [Paragraph(f"<b>Resumen:</b>  {sim.resumen or 'N/A'}", s_dato), ''],
         [Paragraph(f"<b>Fecha Ingreso:</b>  {_format_date(sim.fecha_ingreso)}", s_dato), Paragraph(f"<b>Estado:</b>  {sim.get_estado_display()}", s_dato)],
     ], colWidths=[col2, col2])
@@ -749,23 +754,26 @@ def export_sim_pdf(request, sim_id):
     story.append(Spacer(1, 10))
 
     # ── MILITARES INVESTIGADOS ──────────────────────────────────────────────
-    if militares.exists():
+    if militares:
         story.append(Paragraph("<u>MILITARES INVESTIGADOS</u>", s_seccion))
         story.append(Spacer(1, 4))
 
-        col_militares = [usable_w * 0.14, usable_w * 0.18, usable_w * 0.26, usable_w * 0.26, usable_w * 0.16]
+        col_militares = [usable_w * 0.16, usable_w * 0.18, usable_w * 0.24, usable_w * 0.24, usable_w * 0.18]
 
         filas_mil = [[
             Paragraph('GRADO', s_th),
             Paragraph('NOMBRE', s_th),
-            Paragraph('APELLIDO PATERNO', s_th),
-            Paragraph('APELLIDO MATERNO', s_th),
+            Paragraph('AP. PATERNO', s_th),
+            Paragraph('AP. MATERNO', s_th),
             Paragraph('C.I.', s_th),
         ]]
 
         for militar in militares:
+            grado_txt = militar.get_grado_display() or 'N/A'
+            if militar.especialidad:
+                grado_txt += f'\n{militar.especialidad}'
             filas_mil.append([
-                Paragraph(militar.get_grado_display() or 'N/A', s_td_c),
+                Paragraph(grado_txt, s_td_c),
                 Paragraph(militar.nombre or 'N/A', s_td),
                 Paragraph(militar.paterno or 'N/A', s_td),
                 Paragraph(militar.materno or 'N/A', s_td),
@@ -821,6 +829,20 @@ def export_sim_pdf(request, sim_id):
             ('RIGHTPADDING',  (0, 0), (-1, -1), 4),
         ]
         for d in documentos:
+            # Sub-nota RAP (no es fila completa, se muestra como el memorándum)
+            if d.get('tipo') == '_RAP_NOTA':
+                rap_txt = (f"<i>Elevado al T.S.P. — Oficio N° {d['numero_oficio'] or 'S/N'}"
+                           f"  —  Fecha: {_format_date(d['fecha_oficio'])}</i>")
+                ri = len(filas)
+                filas.append([Paragraph(rap_txt, s_memo), '', '', '', ''])
+                ts += [
+                    ('SPAN',          (0, ri), (-1, ri)),
+                    ('TOPPADDING',    (0, ri), (-1, ri), 2),
+                    ('BOTTOMPADDING', (0, ri), (-1, ri), 3),
+                    ('LEFTPADDING',   (0, ri), (-1, ri), 12),
+                ]
+                continue
+
             # Formatear notificación: dict con 'tipo' y 'fecha', o None
             notif_str = 'NO'
             if d['notificacion'] and isinstance(d['notificacion'], dict):
@@ -856,6 +878,17 @@ def export_sim_pdf(request, sim_id):
 
     for pm_obj in militares:
         docs_pm, _ = _compilar_documentos(sim, hist_simple, pm=pm_obj)
+
+        # RAP: agregar como sub-nota (tipo '_RAP_NOTA'), se renderiza igual que memorándum
+        for rap in hist_simple['recursos_apelacion'].filter(pm=pm_obj).order_by('fecha_oficio'):
+            docs_pm.append({
+                'tipo': '_RAP_NOTA',
+                'numero_oficio': rap.numero_oficio,
+                'fecha_oficio': rap.fecha_oficio,
+                'fecha_doc': rap.fecha_oficio or rap.fecha_presentacion,
+            })
+        docs_pm.sort(key=lambda x: x['fecha_doc'] or date.min)
+
         if not docs_pm:
             continue
         hay_actuados = True
