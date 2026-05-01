@@ -209,8 +209,12 @@ def detalles_sim(request, sim_id):
 
     sim = get_object_or_404(SIM, id=sim_id)
 
-    # Obtener todos los militares del SIM
-    militares = sim.militares.all()
+    # Obtener militares del SIM ordenados por jerarquía militar
+    _orden_grado = {g: i for i, (g, _) in enumerate(PM.GRADO_CHOICES)}
+    militares = sorted(
+        sim.militares.all(),
+        key=lambda m: _orden_grado.get(m.grado, 999)
+    )
 
     # Obtener todos los actuados del SIM
     resoluciones = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')

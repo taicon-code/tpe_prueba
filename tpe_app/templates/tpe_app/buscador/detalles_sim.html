@@ -336,7 +336,7 @@
 
 <!-- MILITARES DEL SIM -->
 <div class="section-container">
-  <h2 class="section-title">👥 Militares Investigados ({{ militares.count }})</h2>
+  <h2 class="section-title">👥 Militares Investigados ({{ militares|length }})</h2>
 
   {% if militares %}
   <table class="militares-table">
@@ -460,7 +460,9 @@
       <div class="actuado-titulo" style="color:#065f46;">{{ recurso.get_instancia_display|default:"Recurso" }} Nº {{ recurso.numero|default:"S/N" }}</div>
     </div>
     <div class="actuado-info">
+      {% if recurso.numero_oficio %}<div class="info-item"><span class="info-label">N° Oficio:</span><span class="info-value" style="font-weight:600;">{{ recurso.numero_oficio }}</span></div>{% endif %}
       <div class="info-item"><span class="info-label">Fecha Oficio:</span><span class="info-value">{{ recurso.fecha_oficio|date:"d/m/Y"|default:"N/A" }}</span></div>
+      {% if recurso.fecha_presentacion %}<div class="info-item"><span class="info-label">Fecha Presentación:</span><span class="info-value">{{ recurso.fecha_presentacion|date:"d/m/Y" }}</span></div>{% endif %}
       {% if recurso.fecha_limite %}<div class="info-item"><span class="info-label">Plazo Límite:</span><span class="info-value">{{ recurso.fecha_limite|date:"d/m/Y" }}</span></div>{% endif %}
       <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if recurso.notificacion %}{{ recurso.notificacion.get_tipo_display }} ({{ recurso.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
     </div>
