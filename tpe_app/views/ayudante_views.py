@@ -635,6 +635,7 @@ def ayudante_wizard_paso2(request, sim_id):
                         with transaction.atomic():
                             # Buscar PM existente por CI o por nombre+paterno
                             pm = None
+                            pm_existia = False
                             if ci_val:
                                 pm = PM.objects.filter(ci=ci_val).first()
                             if not pm:
@@ -642,6 +643,9 @@ def ayudante_wizard_paso2(request, sim_id):
                                 if materno:
                                     q = q.filter(materno=materno)
                                 pm = q.first()
+
+                            if pm:
+                                pm_existia = True
 
                             # Si no existe, crearlo
                             if not pm:
@@ -667,6 +671,20 @@ def ayudante_wizard_paso2(request, sim_id):
                                 messages.success(request, f'{pm.grado or ""} {pm.paterno} {pm.nombre} agregado al sumario.')
                             else:
                                 messages.info(request, f'{pm.paterno} {pm.nombre} ya estaba en el sumario.')
+
+                            # Advertir si el PM ya tiene otros sumarios en el sistema
+                            if pm_existia:
+                                otros = PM_SIM.objects.filter(pm=pm).exclude(sim=sim).select_related('sim').order_by('-sim__fecha_ingreso')
+                                if otros.exists():
+                                    codigos = ', '.join(ps.sim.codigo for ps in otros[:5])
+                                    total = otros.count()
+                                    sufijo = f' (y {total - 5} más)' if total > 5 else ''
+                                    messages.warning(
+                                        request,
+                                        f'ANTECEDENTE: {pm.grado or ""} {pm.paterno} {pm.nombre} '
+                                        f'ya figura en {total} sumario(s) previo(s): {codigos}{sufijo}.'
+                                    )
+
                             form_data = {}  # Limpiar formulario tras éxito
                     except Exception as e:
                         messages.error(request, f'Error al agregar militar: {str(e)}')
