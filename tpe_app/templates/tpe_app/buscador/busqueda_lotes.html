@@ -341,7 +341,7 @@
       <div class="military-header">
         <div>
           <div class="military-name">{{ mil.personal.nombre }} {{ mil.personal.paterno }} {{ mil.personal.materno }}</div>
-          <div class="military-grado">{{ mil.personal.get_grado_display }}</div>
+          <div class="military-grado">{{ mil.personal.get_grado_display }}{% if mil.personal.especialidad %} &mdash; {{ mil.personal.especialidad }}{% endif %}</div>
         </div>
       </div>
 
