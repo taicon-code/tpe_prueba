@@ -78,7 +78,9 @@ def _compilar_documentos_lotes(sim, historial):
     # Recursos Apelación
     for rap in historial['recursos_apelacion'].filter(sim=sim):
         fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
-        resolutiva = 'RECURSO DE APELACIÓN'
+        oficio_str = rap.numero_oficio or 'S/N'
+        fecha_oficio_str = rap.fecha_oficio.strftime('%d/%m/%y') if rap.fecha_oficio else 'S/F'
+        resolutiva = f'SE ELEVÓ SU RECURSO DE APELACIÓN - N° OFICIO: {oficio_str} EN FECHA: {fecha_oficio_str}'
         documentos.append(('RAP', rap.numero or 'S/N', fecha_str, resolutiva, None))
 
     # RAEE
@@ -427,8 +429,8 @@ def export_batch_pdf(request):
         canv.restoreState()
 
     # Construir tabla con todos los militares
-    # Ancho distribuido: GRADO Y NOMBRE=35% | SIM=8% | OBJETO=22% | ACTUADOS=25% | ESTADO=10%
-    col_widths = [usable_w * p for p in (0.35, 0.08, 0.22, 0.25, 0.10)]
+    # Ancho distribuido: GRADO Y NOMBRE=28% | SIM=8% | OBJETO=29% | ACTUADOS=25% | ESTADO=10%
+    col_widths = [usable_w * p for p in (0.28, 0.08, 0.29, 0.25, 0.10)]
 
     filas = [[
         Paragraph('GRADO Y NOMBRE COMPLETO', s_th),
@@ -453,7 +455,7 @@ def export_batch_pdf(request):
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
                 linea = f"{num_circulo} {tipo} {numero} ({fecha})<br/>   {resolutiva}"
                 if memo:
-                    linea += f"<br/>   <i>└─ {memo}</i>"
+                    linea += f"<br/>   <i>- {memo}</i>"
                 actuados_list.append(linea + "<br/><br/>")
                 contador += 1
 
@@ -464,9 +466,13 @@ def export_batch_pdf(request):
 
             objeto_completo = (sim.objeto or 'N/A').upper()
 
+            codigo_sim = sim.codigo or 'N/A'
+            if sim.version and sim.version > 1:
+                codigo_sim = f"{codigo_sim}<br/><b>v{sim.version}</b>"
+
             partes_nombre = [
                 pm.get_grado_display() or '',
-                pm.get_arma_display() or '',
+                pm.especialidad or '',
                 pm.nombre or '',
                 pm.paterno or '',
                 pm.materno or '',
@@ -475,7 +481,7 @@ def export_batch_pdf(request):
 
             filas.append([
                 Paragraph(grado_nombre, s_td),
-                Paragraph(sim.codigo or 'N/A', s_td_c),
+                Paragraph(codigo_sim, s_td_c),
                 Paragraph(objeto_completo, s_td),
                 Paragraph(actuados_str, s_td),
                 Paragraph((sim.get_estado_display() or 'N/A').upper(), s_td_c),
@@ -595,7 +601,10 @@ def export_batch_excel(request):
             ws.cell(row=row_idx, column=2, value=(pm.nombre or 'N/A').upper())
             ws.cell(row=row_idx, column=3, value=(pm.paterno or 'N/A').upper())
             ws.cell(row=row_idx, column=4, value=(pm.materno or 'N/A').upper())
-            ws.cell(row=row_idx, column=5, value=sim.codigo or 'N/A')
+            codigo_excel = sim.codigo or 'N/A'
+            if sim.version and sim.version > 1:
+                codigo_excel = f"{codigo_excel} (v{sim.version})"
+            ws.cell(row=row_idx, column=5, value=codigo_excel)
             ws.cell(row=row_idx, column=6, value=(sim.objeto or 'N/A').upper())
             ws.cell(row=row_idx, column=7, value=actuados_str)
             ws.cell(row=row_idx, column=8, value=(sim.get_estado_display() or 'N/A').upper())
