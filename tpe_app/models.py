@@ -70,7 +70,7 @@ def get_pendientes_ejecutoria():
     res_notificadas = (
         Resolucion.objects
         .filter(instancia='PRIMERA', notificacion__isnull=False)
-        .select_related('sim', 'pm', 'abog', 'notificacion')
+        .select_related('sim', 'pm', 'abogado', 'notificacion')
     )
     for res in res_notificadas:
         if res.recursos_reconsideracion.exists():
@@ -89,7 +89,7 @@ def get_pendientes_ejecutoria():
     rr_notificados = (
         Resolucion.objects
         .filter(instancia='RECONSIDERACION', notificacion__isnull=False)
-        .select_related('sim', 'pm', 'abog', 'resolucion_origen', 'notificacion')
+        .select_related('sim', 'pm', 'abogado', 'resolucion_origen', 'notificacion')
     )
     for rr in rr_notificados:
         if RecursoTSP.objects.filter(resolucion=rr, instancia='APELACION').exists():

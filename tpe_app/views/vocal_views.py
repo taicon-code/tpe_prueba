@@ -55,17 +55,17 @@ def vocal_agenda_detalle(request, ag_id: int):
     # Dictámenes de esta agenda
     dictamenes = DICTAMEN.objects.filter(
         agenda=agenda
-    ).select_related("sim", "pm", "abog", "secretario").order_by("sim__codigo", "pm__paterno")
+    ).select_related("sim", "pm", "abogado", "secretario").order_by("sim__codigo", "pm__paterno")
 
     # Recursos de Reconsideración en esta agenda
     rr_en_agenda = Resolucion.objects.filter(
         agenda=agenda, instancia='RECONSIDERACION'
-    ).select_related("sim", "pm", "resolucion_origen", "abog").order_by("-fecha")
+    ).select_related("sim", "pm", "resolucion_origen", "abogado").order_by("-fecha")
 
     # Autos TPE en esta agenda
     autos_en_agenda = AUTOTPE.objects.filter(
         agenda=agenda
-    ).select_related("sim", "pm", "abog").order_by("-fecha")
+    ).select_related("sim", "pm", "abogado").order_by("-fecha")
 
     # Agrupar dictámenes por sumario
     dictamenes_por_sim = {}
@@ -94,7 +94,7 @@ def vocal_confirmar_dictamen(request, dic_id: int):
     """Confirmar o modificar un dictamen (solo para secretario de actas)"""
     vocal = _get_vocal_or_403(request)
     dictamen = get_object_or_404(
-        DICTAMEN.objects.select_related("sim", "pm", "abog", "agenda"),
+        DICTAMEN.objects.select_related("sim", "pm", "abogado", "agenda"),
         pk=dic_id
     )
 
@@ -207,7 +207,7 @@ def vocal_registrar_votos(request, dic_id: int):
     """Registrar votos de vocales en un dictamen"""
     vocal = _get_vocal_or_403(request)
     dictamen = get_object_or_404(
-        DICTAMEN.objects.select_related("sim", "pm", "abog", "agenda"),
+        DICTAMEN.objects.select_related("sim", "pm", "abogado", "agenda"),
         pk=dic_id
     )
 

@@ -489,7 +489,7 @@ def ver_historial_custodia_sim(request, sim_id):
     custodia_actual = sim.custodio_actual()
 
     # Obtener historial completo de custodia
-    historial = list(CustodiaSIM.objects.filter(sim=sim).select_related('abog', 'usuario').order_by('fecha_recepcion'))
+    historial = list(CustodiaSIM.objects.filter(sim=sim).select_related('abogado', 'usuario').order_by('fecha_recepcion'))
 
     # Enriquecer datos de historial con nombre legible del custodio
     TIPO_CUSTODIO_DISPLAY = {

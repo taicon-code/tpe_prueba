@@ -698,7 +698,7 @@ def export_custodia_pdf(request, sim_id):
         return redirect('admin2_dashboard')
 
     sim = get_object_or_404(SIM, id=sim_id)
-    custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abog').order_by('fecha_recepcion')
+    custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abogado').order_by('fecha_recepcion')
 
     # Crear PDF en orientación vertical (portrait)
     response = HttpResponse(content_type='application/pdf')

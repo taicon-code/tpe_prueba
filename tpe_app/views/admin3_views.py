@@ -32,7 +32,7 @@ def admin3_dashboard(request):
     # AUTOS TPE por notificar
     autos = AUTOTPE.objects.filter(
         notificacion__isnull=True
-    ).select_related('sim', 'pm', 'abog').order_by('-fecha')[:20]
+    ).select_related('sim', 'pm', 'abogado').order_by('-fecha')[:20]
 
     # RES sin PDF (solo PRIMERA)
     res_con_pdf = set(
