@@ -170,7 +170,7 @@ def _obtener_historial(personal_id):
     except PM.DoesNotExist:
         return None, None
 
-    sims = SIM.objects.filter(militares__id=personal_id).distinct()
+    sims = SIM.objects.filter(militares__id=personal_id).distinct().order_by('fecha_ingreso', 'version')
     sim_ids = list(sims.values_list('id', flat=True))
 
     historial = {
@@ -358,7 +358,8 @@ def export_person_historial_pdf(request, personal_id):
         cw = [usable_w * p for p in (0.20, 0.09, 0.12, 0.44, 0.15)]
 
         for idx, sim in enumerate(sumarios, 1):
-            story.append(Paragraph(f"SUMARIO N.° {sim.codigo}", s_sim_tit))
+            ver_label = f"  [REAPERTURA v{sim.version}]" if sim.version > 1 else ""
+            story.append(Paragraph(f"SUMARIO N.° {sim.codigo}{ver_label}", s_sim_tit))
 
             objeto = sim.objeto or 'N/A'
             story.append(Paragraph(f"<b>Objeto:</b> {objeto}", s_objeto))

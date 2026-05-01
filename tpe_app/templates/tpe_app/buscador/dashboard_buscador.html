@@ -786,7 +786,7 @@
     <h3>Sumarios ({{ historial.sumarios.count }})</h3>
     {% for sim in historial.sumarios %}
     <div class="sumario-item">
-      <div class="sumario-codigo">{{ sim.codigo }} - {{ sim.get_tipo_display }}</div>
+      <div class="sumario-codigo">{{ sim.codigo }} - {{ sim.get_tipo_display }}{% if sim.version > 1 %} <span style="background:#f59e0b;color:#1a1a1a;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;">v{{ sim.version }} REAPERTURA</span>{% endif %}</div>
       <div class="sumario-info">
         <strong>Objeto:</strong> {{ sim.objeto }}<br>
         <strong>Resumen:</strong> {{ sim.resumen|truncatewords:15 }}<br>
@@ -807,7 +807,7 @@
     <div class="sumario-box">
       <!-- Encabezado del Sumario -->
       <div class="sumario-box-header">
-        <h4>{{ sim.codigo }} — {{ sim.get_tipo_display }}</h4>
+        <h4>{{ sim.codigo }} — {{ sim.get_tipo_display }}{% if sim.version > 1 %} <span style="background:#f59e0b;color:#1a1a1a;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;">v{{ sim.version }} REAPERTURA</span>{% endif %}</h4>
         <div class="sumario-box-header-meta">
           <div>
             <strong>Objeto</strong>

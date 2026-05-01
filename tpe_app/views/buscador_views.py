@@ -28,8 +28,8 @@ def _obtener_historial_completo(personal_id):
     except PM.DoesNotExist:
         return None
 
-    # Obtener todos los SIM donde participa este personal
-    sims = SIM.objects.filter(militares__id=personal_id).distinct()
+    # Obtener todos los SIM donde participa este personal (orden cronológico)
+    sims = SIM.objects.filter(militares__id=personal_id).distinct().order_by('fecha_ingreso', 'version')
     sim_ids = list(sims.values_list('id', flat=True))
 
     historial = {
