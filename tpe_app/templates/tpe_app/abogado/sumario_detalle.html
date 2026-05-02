@@ -117,7 +117,11 @@
 </style>
 
 <!-- Volver -->
+{% if next_url %}
+<a href="{{ next_url }}" class="back-link">← Volver</a>
+{% else %}
 <a href="{% url 'abogado_dashboard' %}" class="back-link">← Volver al Dashboard</a>
+{% endif %}
 
 <!-- ── BANNER SUMARIO ──────────────────────────── -->
 <div class="sim-banner">

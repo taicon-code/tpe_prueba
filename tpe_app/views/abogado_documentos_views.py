@@ -100,6 +100,8 @@ def abogado_sumario_detalle(request, sim_id: int):
     if es_abog2 and not autos_asignados and not es_via_sim and not rrs_asignados and not tiene_custodia:
         raise PermissionDenied("No tiene custodia ni autos asignados en este sumario")
 
+    next_url = request.GET.get('next')
+
     context = {
         "sim": sim,
         "abogado": abogado,
@@ -118,6 +120,7 @@ def abogado_sumario_detalle(request, sim_id: int):
         "es_abog2": es_abog2,
         "autos_asignados": autos_asignados,
         "admin2_user": admin2_user,
+        "next_url": next_url,
     }
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
 

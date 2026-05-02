@@ -52,7 +52,7 @@
         🔄 Agendar RR
     </a>
     {% if total_sin_notificar %}
-    <a href="{% url 'admin3_dashboard' %}" class="btn" style="background: #dc2626; color: #fff; position: relative;">
+    <a href="{% url 'admin3_dashboard' %}?next={% url 'admin1_dashboard' %}" class="btn" style="background: #dc2626; color: #fff; position: relative;">
         📬 Notificaciones
         <span style="position: absolute; top: -8px; right: -8px; background: #fbbf24; color: #000; font-weight: bold; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem;">
             {{ total_sin_notificar }}

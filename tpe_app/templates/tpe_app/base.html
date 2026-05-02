@@ -448,6 +448,16 @@
             <span class="lk-text">Agendar RR</span>
         </a>
 
+        <hr class="sb-divider">
+        <span class="sb-group-label">Sistema</span>
+
+        <a href="{% url 'buscador_dashboard' %}"
+           class="sb-link {% if request.resolver_match.url_name == 'buscador_dashboard' %}active{% endif %}"
+           style="padding: 0.7rem 0.85rem; font-size: 1rem; background: rgba(255,255,255,.08); border-radius: 7px; margin: .2rem .55rem;">
+            <span class="lk-icon" style="font-size: 1.3rem;">🔍</span>
+            <span class="lk-text" style="font-size: .95rem; font-weight: 600;">Buscar Historial</span>
+        </a>
+
         <!-- ── ADMINISTRATIVO 2 (Archivo SIM) ───────────────────── -->
         {% elif rol == 'ADMIN2_ARCHIVO' %}
 

@@ -90,7 +90,7 @@
             {% for dictamen in dictamenes %}
             <tr>
                 <td style="font-weight: 600; color: #1e3c72;">
-                    <a href="{% url 'abogado_sumario_detalle' dictamen.sim.id %}"
+                    <a href="{% url 'abogado_sumario_detalle' dictamen.sim.id %}?next={% url 'lista_agendas' %}"
                        style="color: #1e3c72; text-decoration: none;">
                         {{ dictamen.sim.id }}
                     </a>
