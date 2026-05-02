@@ -75,7 +75,18 @@ def get_pendientes_ejecutoria():
     for res in res_notificadas:
         if res.recursos_reconsideracion.exists():
             continue
-        if AUTOTPE.objects.filter(sim=res.sim, tipo='AUTO_EJECUTORIA').exists():
+        # Verificar si la resolución tiene memorándum directo
+        if res.memorandums.exists():
+            continue
+        auto_ejecucion = AUTOTPE.objects.filter(sim=res.sim, tipo='AUTO_EJECUTORIA').first()
+        if not auto_ejecucion:
+            # No existe auto de ejecutoria aún
+            pass
+        elif auto_ejecucion.memorandums.exists():
+            # Auto ya tiene memorándum → ejecución completada
+            continue
+        else:
+            # Auto existe pero sin memorándum → ya fue creado
             continue
         if CustodiaSIM.objects.filter(sim=res.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
             continue
@@ -94,7 +105,18 @@ def get_pendientes_ejecutoria():
     for rr in rr_notificados:
         if RecursoTSP.objects.filter(resolucion=rr, instancia='APELACION').exists():
             continue
-        if AUTOTPE.objects.filter(sim=rr.sim, tipo='AUTO_EJECUTORIA').exists():
+        # Verificar si la resolución tiene memorándum directo
+        if rr.memorandums.exists():
+            continue
+        auto_ejecucion = AUTOTPE.objects.filter(sim=rr.sim, tipo='AUTO_EJECUTORIA').first()
+        if not auto_ejecucion:
+            # No existe auto de ejecutoria aún
+            pass
+        elif auto_ejecucion.memorandums.exists():
+            # Auto ya tiene memorándum → ejecución completada
+            continue
+        else:
+            # Auto existe pero sin memorándum → ya fue creado
             continue
         if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
             continue
