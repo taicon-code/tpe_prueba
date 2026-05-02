@@ -332,7 +332,8 @@ def ayudante_registrar_autotpe(request):
                         numero=form.cleaned_data['numero'],
                         fecha=form.cleaned_data['fecha'],
                         tipo=form.cleaned_data['tipo'],
-                        texto=form.cleaned_data['texto']
+                        texto=form.cleaned_data['texto'],
+                        resolucion=form.cleaned_data.get('resolucion')
                     )
                     autotpe.save()
 
@@ -359,6 +360,12 @@ def ayudante_registrar_autotpe(request):
                         messages.success(request, f'Auto TPE {autotpe.numero} registrado con memorándum')
                     else:
                         messages.success(request, f'Auto TPE {autotpe.numero} registrado exitosamente')
+
+                    # Advertencia si Auto de Ejecutoria sin resolución vinculada
+                    if autotpe.tipo == 'AUTO_EJECUTORIA' and not autotpe.resolucion:
+                        messages.warning(request,
+                            '⚠️ Auto de Ejecutoria registrado sin resolución vinculada. '
+                            'Esto puede afectar los reportes de ejecutoria pendientes.')
 
                     # Actualizar fase/estado del SIM según el tipo de auto registrado.
                     # Guardia multi-persona: si el SIM ya está en un estado de proceso

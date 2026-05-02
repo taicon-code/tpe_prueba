@@ -802,6 +802,11 @@ class AUTOTPEHistoricoConNotificacionForm(forms.Form):
     texto = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
                            label='Texto del Auto')
 
+    # Resolución origen (opcional)
+    resolucion = forms.ModelChoiceField(queryset=Resolucion.objects.all(),
+                                        widget=forms.Select(attrs={'class': 'form-control'}),
+                                        required=False, label='Resolución origen (opcional)')
+
     # Notificación opcional
     notif_tipo = forms.ChoiceField(choices=[('', 'Sin notificación')] + list(Notificacion.NOTIF_CHOICES),
                                    widget=forms.Select(attrs={'class': 'form-control'}),

@@ -112,6 +112,11 @@
                                 <label class="form-label">{{ form.tipo.label }} <span class="text-danger">*</span></label>
                                 {{ form.tipo }}
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.resolucion.label }}</label>
+                                {{ form.resolucion }}
+                                <small class="text-muted d-block mt-1">Selecciona si este auto se origina de una resolución</small>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -183,6 +188,14 @@
             <div class="alert alert-info mt-4">
                 <i class="bi bi-info-circle me-2"></i>
                 <strong>Nota:</strong> Los campos de notificación y memorándum son opcionales. Complételos solo si corresponde.
+            </div>
+
+            <div class="alert alert-warning mt-3">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Importante para Autos de Ejecutoria:</strong>
+                Si registra un Auto de Ejecutoria (AUTO_EJECUTORIA), se recomienda vincular la Resolución de origen.
+                Esto es importante para que el sistema calcule correctamente los casos pendientes de ejecutoria.
+                Sin esta vinculación, el auto podría no ser detectado en los reportes.
             </div>
         </div>
     </div>

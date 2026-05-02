@@ -75,9 +75,9 @@ def get_pendientes_ejecutoria():
     for res in res_notificadas:
         if res.recursos_reconsideracion.exists():
             continue
-        if AUTOTPE.objects.filter(resolucion=res, tipo='AUTO_EJECUTORIA').exists():
+        if AUTOTPE.objects.filter(sim=res.sim, tipo='AUTO_EJECUTORIA').exists():
             continue
-        if CustodiaSIM.objects.filter(sim=res.sim, motivo='EJECUTORIA', estado='ACTIVA').exists():
+        if CustodiaSIM.objects.filter(sim=res.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
             continue
         fecha_limite = add_business_days(res.notificacion.fecha, 15)
         if fecha_limite <= hoy:
@@ -94,9 +94,9 @@ def get_pendientes_ejecutoria():
     for rr in rr_notificados:
         if RecursoTSP.objects.filter(resolucion=rr, instancia='APELACION').exists():
             continue
-        if AUTOTPE.objects.filter(resolucion=rr, tipo='AUTO_EJECUTORIA').exists():
+        if AUTOTPE.objects.filter(sim=rr.sim, tipo='AUTO_EJECUTORIA').exists():
             continue
-        if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', estado='ACTIVA').exists():
+        if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
             continue
         fecha_limite = add_business_days(rr.notificacion.fecha, 3)
         if fecha_limite <= hoy:
