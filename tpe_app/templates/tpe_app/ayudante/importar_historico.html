@@ -1,0 +1,312 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Importar Históricos - TPE Sistema{% endblock %}
+{% block navbar_title %}Importación Histórica de Sumarios{% endblock %}
+
+{% block sidebar_nav %}
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Volver</span>
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🏠</span>
+        <span class="lk-text">Dashboard Ayudante</span>
+    </a>
+    <hr class="sb-divider">
+    <span class="sb-group-label">Herramientas</span>
+    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link">
+        <span class="lk-icon">⚡</span>
+        <span class="lk-text">Ingreso Rápido (Wizard)</span>
+    </a>
+    <hr class="sb-divider">
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
+{% endblock sidebar_nav %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-1">
+                <i class="bi bi-inbox me-2"></i>Importación Histórica
+            </h1>
+            <p class="text-muted">Buscar sumarios con documentos incompletos y recibir propuestas automáticas</p>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Formulario de búsqueda -->
+    {% if not sim %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-search me-2"></i>Buscar Sumario
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" class="row g-3">
+                {% csrf_token %}
+                <div class="col-md-6">
+                    {{ form.codigo }}
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i>Buscar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resultados -->
+    {% if sim %}
+        <!-- Información del Sumario -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-folder me-2"></i>Sumario: <code>{{ sim.codigo }}</code>
+                    </h5>
+                    <span class="badge bg-secondary">Versión {{ sim.version }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Tipo:</strong><br>
+                        <span class="text-muted">{{ sim.get_tipo_display }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Estado:</strong><br>
+                        <span class="badge bg-info">{{ sim.get_estado_display }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Fecha Ingreso:</strong><br>
+                        <span class="text-muted">{{ sim.fecha_ingreso|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+                <hr>
+                <strong>Resumen:</strong>
+                <p class="text-muted">{{ sim.resumen|truncatewords:20 }}</p>
+            </div>
+        </div>
+
+        <!-- Formulario de Edición -->
+        {% if sim and edicion_form %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>Editar Estado y Fase
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="row g-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="sim_id" value="{{ sim.id }}">
+
+                        <!-- Estado -->
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Estado Actual</strong></label>
+                            <p class="text-muted mb-2">{{ sim.get_estado_display }}</p>
+                            <label for="id_estado" class="form-label">Nuevo Estado</label>
+                            {{ edicion_form.estado }}
+                            {% if edicion_form.estado.errors %}
+                                <div class="invalid-feedback d-block">{{ edicion_form.estado.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Fase -->
+                        <div class="col-md-6">
+                            <label class="form-label"><strong>Fase Actual</strong></label>
+                            <p class="text-muted mb-2">{{ sim.get_fase_display|default:"Sin fase" }}</p>
+                            <label for="id_fase" class="form-label">Nueva Fase</label>
+                            {{ edicion_form.fase }}
+                            {% if edicion_form.fase.errors %}
+                                <div class="invalid-feedback d-block">{{ edicion_form.fase.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Memorándum (opcional) -->
+                        <div class="col-12">
+                            <hr>
+                            <h6 class="mb-3">
+                                <i class="bi bi-file-earmark me-2"></i>Datos de Memorándum (Opcional)
+                            </h6>
+                            <div class="alert alert-info small mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <strong>Nota:</strong> Si rellenas datos de memorándum, se creará un registro en la base de datos.
+                                Recuerda cambiar el estado a <code>PROCESO_EJECUTADO</code> si el memorándum ya fue retornado.
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="id_memo_numero" class="form-label">Nº Memorándum</label>
+                            {{ edicion_form.memo_numero }}
+                            <small class="form-text text-muted">Ej: 1245/2020</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="id_memo_fecha" class="form-label">Fecha Memorándum</label>
+                            {{ edicion_form.memo_fecha }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="id_memo_fecha_entrega" class="form-label">Fecha Entrega Memo</label>
+                            {{ edicion_form.memo_fecha_entrega }}
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="col-12">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-lg me-1"></i>Guardar Cambios
+                                </button>
+                                <a href="{% url 'ayudante_importar_historico' %}" class="btn btn-secondary">
+                                    <i class="bi bi-search me-1"></i>Buscar otro
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Documentos encontrados (informativo) -->
+            {% if propuestas %}
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark-check me-2"></i>Documentos Identificados
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Militar</th>
+                                        <th>Documentos</th>
+                                        <th>Patrón Detectado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prop in propuestas %}
+                                        <tr>
+                                            <td>
+                                                <small>
+                                                    <strong>{{ prop.pm.grado }}</strong><br>
+                                                    {{ prop.pm.paterno }}, {{ prop.pm.nombre }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <small>
+                                                    {% for doc in prop.documentos_encontrados %}
+                                                        <span class="badge bg-success">{{ doc }}</span>
+                                                    {% endfor %}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                {% if prop.patron == 'RES_SOLO' %}
+                                                    <span class="badge bg-info">Solo RES</span>
+                                                {% elif prop.patron == 'RES_RR_SOLO' %}
+                                                    <span class="badge bg-warning">RES + RR</span>
+                                                {% elif prop.patron == 'RES_AUTO_EJECUTORIA' %}
+                                                    <span class="badge bg-success">RES + Auto Ej.</span>
+                                                {% elif prop.patron == 'COMPLETO' %}
+                                                    <span class="badge bg-primary">Completo</span>
+                                                {% elif prop.patron == 'APELACION_TSP' %}
+                                                    <span class="badge bg-danger">Apelación TSP</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ prop.patron }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Memorándums registrados -->
+            {% if sim.memorandums.all %}
+                <div class="card border-0 shadow-sm mt-4 border-left border-success border-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-file-earmark me-2 text-success"></i>Memorándums Registrados
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nº Memorándum</th>
+                                        <th>Fecha</th>
+                                        <th>Fecha Entrega</th>
+                                        <th>Ligado a</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for memo in sim.memorandums.all %}
+                                        <tr class="table-success">
+                                            <td>
+                                                <strong>{{ memo.numero }}</strong>
+                                            </td>
+                                            <td>
+                                                {{ memo.fecha|date:"d/m/Y" }}
+                                            </td>
+                                            <td>
+                                                {% if memo.fecha_entrega %}
+                                                    {{ memo.fecha_entrega|date:"d/m/Y" }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if memo.resolucion %}
+                                                    <span class="badge bg-info">RES {{ memo.resolucion.numero }}</span>
+                                                {% elif memo.autotpe %}
+                                                    <span class="badge bg-warning">AUTO {{ memo.autotpe.numero }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Sin vincular</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-secondary">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Instrucciones:</strong> Busca un sumario arriba para editar su estado, fase y datos históricos.
+            </div>
+        {% endif %}
+    {% else %}
+        <!-- Sin búsqueda -->
+        <div class="alert alert-secondary">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Instrucciones:</strong> Ingresa el código del sumario (ej: SIM-0001) arriba para buscar
+            y ver propuestas automáticas de cómo completar sus datos históricos.
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}

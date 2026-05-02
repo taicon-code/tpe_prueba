@@ -18,7 +18,8 @@ from ..models import (
 )
 from ..forms import (
     RESForm, NotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, MemorandumForm,
-    PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm
+    PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm,
+    BuscarSIMHistoricoForm, EditarSIMHistoricoForm
 )
 
 
@@ -1592,3 +1593,219 @@ def ayudante_tabla_export_excel(request):
     )
     response['Content-Disposition'] = f'attachment; filename="{fname}"'
     return response
+
+
+# ============================================================
+# IMPORTACIÓN HISTÓRICA - Análisis automático de documentos
+# ============================================================
+
+def _analizar_documentos_historicos(sim):
+    """
+    Analiza documentos existentes de un SIM e identifica patrones de llenado.
+    Retorna lista de propuestas por militar.
+    """
+    propuestas = []
+
+    for pm_sim in sim.pm_sim_set.select_related('pm').all():
+        pm = pm_sim.pm
+
+        # Buscar documentos relacionados
+        res_primera = Resolucion.objects.filter(
+            sim=sim, pm=pm, instancia='PRIMERA'
+        ).select_related('abogado').first()
+
+        res_rr = Resolucion.objects.filter(
+            sim=sim, pm=pm, instancia='RECONSIDERACION'
+        ).first()
+
+        autos_tpe = AUTOTPE.objects.filter(
+            sim=sim, pm=pm
+        ).select_related('abogado')
+
+        recursos_tsp = RecursoTSP.objects.filter(
+            sim=sim, pm=pm
+        )
+
+        # Análisis de patrones
+
+        # Patrón 1: Solo RES PRIMERA (sin RR, sin autos)
+        if res_primera and not res_rr and not autos_tpe.exists():
+            propuesta = {
+                'pm': pm,
+                'patron': 'RES_SOLO',
+                'titulo': 'Solo Resolución PRIMERA (sin apelación)',
+                'documentos_encontrados': ['RES (PRIMERA)'],
+                'falta': ['RR', 'Autos'],
+                'estado_propuesto': 'PROCESO_CONCLUIDO_TPE',
+                'fase_propuesta': 'NOTIFICADO_1RA',
+                'acciones': 'Cambiar estado y fase (caso concluido sin apelación)'
+            }
+            propuestas.append(propuesta)
+
+        # Patrón 2: RES PRIMERA + RR (sin autos)
+        elif res_primera and res_rr and not autos_tpe.exists():
+            propuesta = {
+                'pm': pm,
+                'patron': 'RES_RR_SOLO',
+                'titulo': 'Resolución + Reconsideración (sin Ejecutoria)',
+                'documentos_encontrados': ['RES (PRIMERA)', 'RES (RECONSIDERACIÓN)'],
+                'falta': ['Autos'],
+                'estado_propuesto': 'PROCESO_CONCLUIDO_TPE',
+                'fase_propuesta': 'NOTIFICADO_RR',
+                'acciones': 'Cambiar estado y fase (caso concluido en 2da instancia)'
+            }
+            propuestas.append(propuesta)
+
+        # Patrón 3: RES PRIMERA + Autos TPE (sin RR explícito)
+        elif res_primera and autos_tpe.exists() and not res_rr:
+            auto_ejecutoria = autos_tpe.filter(tipo='AUTO_EJECUTORIA').first()
+            if auto_ejecutoria:
+                propuesta = {
+                    'pm': pm,
+                    'patron': 'RES_AUTO_EJECUTORIA',
+                    'titulo': 'Resolución + Auto de Ejecutoria (ejecución directa)',
+                    'documentos_encontrados': ['RES (PRIMERA)', 'AUTO EJECUTORIA'],
+                    'falta': ['RR'],
+                    'estado_propuesto': 'PROCESO_CONCLUIDO_TPE',
+                    'fase_propuesta': 'MEMORANDUM_RETORNADO' if auto_ejecutoria.memo_numero else 'EJECUTORIA_NOTIFICADA',
+                    'acciones': 'Cambiar estado y fase (caso ejecutoriado)'
+                }
+                propuestas.append(propuesta)
+
+        # Patrón 4: Todos los documentos (RES + RR + Autos)
+        elif res_primera and res_rr and autos_tpe.exists():
+            propuesta = {
+                'pm': pm,
+                'patron': 'COMPLETO',
+                'titulo': 'Ciclo completo registrado',
+                'documentos_encontrados': [
+                    'RES (PRIMERA)',
+                    'RES (RECONSIDERACIÓN)',
+                    f'AUTOS ({autos_tpe.count()})'
+                ],
+                'falta': [],
+                'estado_propuesto': 'PROCESO_CONCLUIDO_TPE',
+                'fase_propuesta': 'MEMORANDUM_RETORNADO',
+                'acciones': 'Estado y fase ya correctos (revisar si falta algo)'
+            }
+            propuestas.append(propuesta)
+
+        # Patrón 5: Apelación al TSP
+        if recursos_tsp.filter(instancia='APELACION').exists():
+            propuesta = {
+                'pm': pm,
+                'patron': 'APELACION_TSP',
+                'titulo': 'Caso en apelación al TSP',
+                'documentos_encontrados': ['RAP (APELACIÓN TSP)'],
+                'falta': ['Respuesta TSP'],
+                'estado_propuesto': 'PROCESO_EN_EL_TSP',
+                'fase_propuesta': 'ELEVADO_TSP',
+                'acciones': 'Cambiar a estado TSP (caso elevado al Tribunal Supremo)'
+            }
+            propuestas.append(propuesta)
+
+    return propuestas
+
+
+@rol_requerido('AYUDANTE')
+def ayudante_importar_historico(request):
+    """
+    Vista de importación histórica con edición de estado, fase y memo.
+    GET: Muestra formulario de búsqueda
+    POST (búsqueda): Busca SIM, analiza documentos, muestra formulario de edición
+    POST (guardar): Guarda cambios de estado, fase y memo
+    """
+    busqueda_form = BuscarSIMHistoricoForm()
+    edicion_form = None
+    sim = None
+    propuestas = None
+
+    if request.method == 'POST':
+        # Detectar si es búsqueda o guardado
+        if 'codigo' in request.POST:
+            # Búsqueda de SIM
+            busqueda_form = BuscarSIMHistoricoForm(request.POST)
+            if busqueda_form.is_valid():
+                codigo = busqueda_form.cleaned_data['codigo']
+
+                try:
+                    sim = SIM.objects.get(codigo=codigo)
+                    propuestas = _analizar_documentos_historicos(sim)
+                    edicion_form = EditarSIMHistoricoForm(instance=sim)
+
+                except SIM.DoesNotExist:
+                    messages.error(request, f'No se encontró SIM con código: {codigo}')
+
+        elif 'estado' in request.POST or 'fase' in request.POST:
+            # Guardado de cambios
+            # Necesitamos obtener el SIM del request (pasarlo como parámetro o buscarlo por código)
+            # Por ahora, buscaremos el código en los datos enviados
+
+            # Obtener el SIM que se está editando
+            sim_id = request.POST.get('sim_id')
+            if sim_id:
+                try:
+                    sim = SIM.objects.get(id=sim_id)
+                    edicion_form = EditarSIMHistoricoForm(request.POST, instance=sim)
+
+                    if edicion_form.is_valid():
+                        # Guardar cambios de estado y fase (sin cambios automáticos)
+                        sim = edicion_form.save(commit=False)
+
+                        # Manejar datos de memorándum
+                        memo_numero = request.POST.get('memo_numero', '').strip()
+                        memo_fecha = request.POST.get('memo_fecha', '').strip()
+                        memo_fecha_entrega = request.POST.get('memo_fecha_entrega', '').strip()
+
+                        if any([memo_numero, memo_fecha, memo_fecha_entrega]):
+                            # Crear Memorandum ligado a la primera Resolución del sumario (si existe)
+                            resolucion = Resolucion.objects.filter(sim=sim).first()
+
+                            if memo_numero and memo_fecha:  # Requerimos al menos número y fecha
+                                memorandum, created = Memorandum.objects.get_or_create(
+                                    numero=memo_numero,
+                                    defaults={
+                                        'resolucion': resolucion,
+                                        'autotpe': None,
+                                        'fecha': memo_fecha,
+                                        'fecha_entrega': memo_fecha_entrega or None,
+                                    }
+                                )
+
+                                if not created:
+                                    # Actualizar si ya existe
+                                    memorandum.resolucion = resolucion
+                                    memorandum.fecha = memo_fecha or memorandum.fecha
+                                    memorandum.fecha_entrega = memo_fecha_entrega or memorandum.fecha_entrega
+                                    memorandum.save()
+
+                        sim.save()
+
+                        # Mensaje con detalles del cambio
+                        msg = f'✅ SIM {sim.codigo} actualizado. Estado: {sim.get_estado_display()}, Fase: {sim.get_fase_display()}'
+                        if memo_numero:
+                            msg += f' | Memorándum creado: {memo_numero}'
+                        messages.success(request, msg)
+
+                        # Mostrar de nuevo el formulario con los cambios
+                        propuestas = _analizar_documentos_historicos(sim)
+                        edicion_form = EditarSIMHistoricoForm(instance=sim)
+                    else:
+                        messages.error(request, 'Error al guardar los cambios. Verifica los datos.')
+
+                except SIM.DoesNotExist:
+                    messages.error(request, 'No se encontró el sumario a editar.')
+
+    # Si es GET o no hay SIM seleccionado, mostrar solo formulario de búsqueda
+    if not sim:
+        edicion_form = None
+
+    context = {
+        'form': busqueda_form,
+        'edicion_form': edicion_form,
+        'sim': sim,
+        'propuestas': propuestas or [],
+        'total_propuestas': len(propuestas) if propuestas else 0,
+    }
+
+    return render(request, 'tpe_app/ayudante/importar_historico.html', context)

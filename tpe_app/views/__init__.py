@@ -76,6 +76,7 @@ from .ayudante_views import (
     ayudante_wizard_paso4,
     ayudante_wizard_resumen,
     ayudante_wizard_buscar_sim,
+    ayudante_importar_historico,
     ayudante_editar_pm,
     ayudante_tabla_documentos,
     ayudante_tabla_export_pdf,

@@ -38,10 +38,12 @@ def _sanitize_filename(text):
 
 
 def _compilar_documentos(sim, historial, pm=None):
-    """Compila lista coordinada de documentos (RES, RR, AUTOTPE, RAP, RAEE, AUTOTSP) con columnas estándar.
+    """Compila lista coordinada de documentos (RES, RR, AUTOTPE, RAP, RAEE, AUTOTSP, MEMORANDUM) con columnas estándar.
     Si pm se indica, filtra solo los documentos de ese militar (AUTOTSP se excluye pues no tiene FK a pm).
     Retorna: (documentos, info_tsp) donde info_tsp es dict con numero_oficio y fecha_oficio si hay RAP
     """
+    from ..models import Memorandum
+
     documentos = []
     info_tsp = None
 
@@ -60,13 +62,24 @@ def _compilar_documentos(sim, historial, pm=None):
                 'tipo': _notif.get_tipo_display(),
                 'fecha': _notif.fecha,
             }
+
+        # Buscar memorándum ligado a esta resolución
+        memo_info = None
+        memo = Memorandum.objects.filter(resolucion=res).first()
+        if memo:
+            memo_info = {
+                'numero': memo.numero or 'S/N',
+                'fecha': memo.fecha,
+                'fecha_recepcion': memo.fecha_entrega,
+            }
+
         documentos.append({
             'tipo': 'RESOLUCIÓN',
             'numero': res.numero or 'S/N',
             'fecha_doc': res.fecha,
             'resolutiva': (res.texto or 'N/A').upper(),
             'notificacion': notif_info,
-            'memo': None,
+            'memo': memo_info,
         })
 
     # Recurso de Reconsideración (RR)
@@ -78,13 +91,24 @@ def _compilar_documentos(sim, historial, pm=None):
                 'tipo': _notif.get_tipo_display(),
                 'fecha': _notif.fecha,
             }
+
+        # Buscar memorándum ligado a esta RR
+        memo_info = None
+        memo = Memorandum.objects.filter(resolucion=rr).first()
+        if memo:
+            memo_info = {
+                'numero': memo.numero or 'S/N',
+                'fecha': memo.fecha,
+                'fecha_recepcion': memo.fecha_entrega,
+            }
+
         documentos.append({
             'tipo': 'REC. RECONSIDERACIÓN',
             'numero': rr.numero or 'S/N',
             'fecha_doc': rr.fecha,
             'resolutiva': (rr.texto or 'N/A').upper(),
             'notificacion': notif_info,
-            'memo': None,
+            'memo': memo_info,
         })
 
     # Auto TPE

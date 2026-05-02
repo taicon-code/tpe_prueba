@@ -23,6 +23,8 @@ def _campo_sin_n(campo):
 
 def _obtener_historial_completo(personal_id):
     """Obtiene el historial completo de un personal"""
+    from ..models import Memorandum
+
     try:
         personal = PM.objects.get(id=personal_id)
     except PM.DoesNotExist:
@@ -32,15 +34,24 @@ def _obtener_historial_completo(personal_id):
     sims = SIM.objects.filter(militares__id=personal_id).distinct().order_by('fecha_ingreso', 'version')
     sim_ids = list(sims.values_list('id', flat=True))
 
+    resoluciones = Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA', pm=personal)
+    segundas_resoluciones = Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION', pm=personal)
+    autos_tpe = AUTOTPE.objects.filter(sim__in=sim_ids, pm=personal)
+
     historial = {
         'personal': personal,
         'sumarios': sims,
-        'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA', pm=personal),
-        'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION', pm=personal),
+        'resoluciones': resoluciones,
+        'segundas_resoluciones': segundas_resoluciones,
         'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION', pm=personal),
         'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA', pm=personal),
-        'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids, pm=personal),
+        'autos_tpe': autos_tpe,
         'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
+        'memorandums': Memorandum.objects.filter(
+            Q(resolucion__in=resoluciones) |
+            Q(resolucion__in=segundas_resoluciones) |
+            Q(autotpe__in=autos_tpe)
+        ),
     }
 
     return historial
@@ -219,6 +230,8 @@ def detalles_sim(request, sim_id):
     )
 
     # Obtener todos los actuados del SIM
+    from ..models import Memorandum
+
     resoluciones = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')
     autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abogado', 'pm')
     autos_tsp = AUTOTSP.objects.filter(sim=sim)
@@ -227,11 +240,19 @@ def detalles_sim(request, sim_id):
     # Agrupar actuados por militar en orden cronológico del flujo
     militares_con_docs = []
     for pm_obj in militares:
+        res_primera = resoluciones.filter(pm=pm_obj, instancia='PRIMERA')
+        rrs_del_pm = resoluciones.filter(pm=pm_obj, instancia='RECONSIDERACION')
+        autos_del_pm = autos_tpe.filter(pm=pm_obj)
+
+        # Obtener memorándums ligados a RES o AUTO de este militar
+        memos_del_pm = Memorandum.objects.filter(resolucion__in=res_primera) | Memorandum.objects.filter(resolucion__in=rrs_del_pm) | Memorandum.objects.filter(autotpe__in=autos_del_pm)
+
         militares_con_docs.append({
             'pm': pm_obj,
-            'resoluciones': resoluciones.filter(pm=pm_obj, instancia='PRIMERA').order_by('fecha'),
-            'rrs':          resoluciones.filter(pm=pm_obj, instancia='RECONSIDERACION').order_by('fecha'),
-            'autos_tpe':    autos_tpe.filter(pm=pm_obj).order_by('fecha'),
+            'resoluciones': res_primera.order_by('fecha'),
+            'rrs':          rrs_del_pm.order_by('fecha'),
+            'autos_tpe':    autos_del_pm.order_by('fecha'),
+            'memorandums':  memos_del_pm.order_by('fecha'),
             'recursos_tsp': recursos_tsp.filter(pm=pm_obj).order_by('fecha'),
         })
 

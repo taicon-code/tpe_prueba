@@ -807,12 +807,14 @@ class AUTOTPE(models.Model):
 
 
 # ============================================================
-# MODELO 5b: Memorandum — Memorándum de ejecutoria (solo AUTO_EJECUTORIA)
+# MODELO 5b: Memorandum — Memorándum de ejecutoria o resolución
 # ============================================================
 class Memorandum(models.Model):
 
-    autotpe       = models.OneToOneField(AUTOTPE, on_delete=models.CASCADE,
-                                         related_name='memorandum', verbose_name='Auto TPE')
+    resolucion    = models.ForeignKey('Resolucion', on_delete=models.CASCADE, null=True, blank=True,
+                                      related_name='memorandums', verbose_name='Resolución vinculada')
+    autotpe       = models.ForeignKey(AUTOTPE, on_delete=models.CASCADE, null=True, blank=True,
+                                      related_name='memorandums', verbose_name='Auto TPE vinculado')
     numero        = models.CharField(max_length=60, verbose_name='N° Memorándum')
     fecha         = models.DateField(verbose_name='Fecha Memorándum')
     fecha_entrega = models.DateField(null=True, blank=True, verbose_name='Fecha Entrega Memorándum')
@@ -823,7 +825,12 @@ class Memorandum(models.Model):
         verbose_name_plural = 'Memorándums'
 
     def __str__(self):
-        return f"Memo {self.numero} — Auto {self.autotpe.numero}"
+        if self.autotpe:
+            return f"Memo {self.numero} — Auto {self.autotpe.numero}"
+        elif self.resolucion:
+            return f"Memo {self.numero} — RES {self.resolucion.numero}"
+        else:
+            return f"Memo {self.numero}"
 
     def save(self, *args, **kwargs):
         self.numero = self.numero.upper() if self.numero else self.numero

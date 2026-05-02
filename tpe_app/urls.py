@@ -70,6 +70,9 @@ urlpatterns = [
     path('ayudante/wizard/<int:sim_id>/resumen/', views.ayudante_wizard_resumen, name='ayudante_wizard_resumen'),
     path('ayudante/wizard/buscar-sim/', views.ayudante_wizard_buscar_sim, name='ayudante_wizard_buscar_sim'),
 
+    # ✅ NUEVO v4.1: Importación histórica con análisis automático
+    path('ayudante/importar-historico/', views.ayudante_importar_historico, name='ayudante_importar_historico'),
+
     # Admin1 - Sumarios y Agendas
     path('admin1/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
     path('admin1/sumarios/autocomplete-pm/', views.autocomplete_pm, name='autocomplete_pm'),

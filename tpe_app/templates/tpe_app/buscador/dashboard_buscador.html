@@ -956,6 +956,61 @@
             {% endif %}
           {% endfor %}
 
+          <!-- Memorándums para este militar -->
+          {% for memo in historial.memorandums %}
+            {% if memo.resolucion and memo.resolucion.sim.id == sim.id and memo.resolucion.pm.id == militar.id %}
+            <div class="documento-item memo">
+              <div class="documento-header">
+                <div class="documento-tipo-badge" style="background: #e0f7f4; color: #0d7c66; border-radius: 4px; padding: 2px 8px; font-weight: 600; font-size: 0.85rem;">📋 Memorándum</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ memo.numero|default:"N/A" }}</div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha</span>
+                  <span class="documento-field-value">{{ memo.fecha|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                {% if memo.fecha_entrega %}
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha Entrega</span>
+                  <span class="documento-field-value">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+                <div class="documento-field">
+                  <span class="documento-field-label">Ligado a</span>
+                  <span class="documento-field-value">{% if memo.resolucion %}RES {{ memo.resolucion.numero }}{% elif memo.autotpe %}AUTO {{ memo.autotpe.numero }}{% else %}—{% endif %}</span>
+                </div>
+              </div>
+            </div>
+            {% elif memo.autotpe and memo.autotpe.sim.id == sim.id and memo.autotpe.pm.id == militar.id %}
+            <div class="documento-item memo">
+              <div class="documento-header">
+                <div class="documento-tipo-badge" style="background: #e0f7f4; color: #0d7c66; border-radius: 4px; padding: 2px 8px; font-weight: 600; font-size: 0.85rem;">📋 Memorándum</div>
+                <div class="documento-header-info">
+                  <div class="documento-numero">Nº {{ memo.numero|default:"N/A" }}</div>
+                </div>
+              </div>
+              <div class="documento-body">
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha</span>
+                  <span class="documento-field-value">{{ memo.fecha|date:"d/m/Y"|default:"N/A" }}</span>
+                </div>
+                {% if memo.fecha_entrega %}
+                <div class="documento-field">
+                  <span class="documento-field-label">Fecha Entrega</span>
+                  <span class="documento-field-value">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+                <div class="documento-field">
+                  <span class="documento-field-label">Ligado a</span>
+                  <span class="documento-field-value">{% if memo.resolucion %}RES {{ memo.resolucion.numero }}{% elif memo.autotpe %}AUTO {{ memo.autotpe.numero }}{% else %}—{% endif %}</span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          {% endfor %}
+
           <!-- Recurso Apelación (RAP) para este militar -->
           {% for rap in historial.recursos_apelacion %}
             {% if rap.sim.id == sim.id and rap.pm.id == militar.id %}

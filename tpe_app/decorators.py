@@ -14,10 +14,13 @@ def rol_requerido(*roles_permitidos):
         @wraps(view_func)
         @login_required
         def wrapper(request, *args, **kwargs):
+            from tpe_app.models import PerfilUsuario
+
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
             try:
-                perfil = request.user.perfilusuario
+                # Buscar explícitamente el perfil en lugar de usar la relación inversa
+                perfil = PerfilUsuario.objects.get(user=request.user)
                 # MASTER tiene acceso a todo
                 if perfil.rol == 'MASTER':
                     if not perfil.activo:
@@ -29,7 +32,7 @@ def rol_requerido(*roles_permitidos):
                 if not perfil.activo:
                     raise PermissionDenied("Tu cuenta está desactivada")
                 return view_func(request, *args, **kwargs)
-            except AttributeError:
+            except (PerfilUsuario.DoesNotExist, AttributeError):
                 raise PermissionDenied("No tienes un perfil asignado")
         return wrapper
     return decorator

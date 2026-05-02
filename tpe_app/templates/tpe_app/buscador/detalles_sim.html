@@ -380,7 +380,7 @@
   <h2 class="section-title">📄 Actuados</h2>
 
   {% for m in militares_con_docs %}
-  {% if m.resoluciones or m.rrs or m.autos_tpe or m.recursos_tsp %}
+  {% if m.resoluciones or m.rrs or m.autos_tpe or m.memorandums or m.recursos_tsp %}
 
   <!-- Subencabezado del militar con foto/avatar -->
   <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f6ff 100%); border-left: 3px solid #185FA5; padding: 1rem; margin: 2rem 0 1rem; border-radius: 0 6px 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
@@ -450,6 +450,20 @@
     </div>
     {% if auto.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#fffbf0;border-top:1px solid #fde68a;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ auto.texto }}</div>{% endif %}
     {% if auto.memorandum %}<div style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Memorándum:</span> Nº {{ auto.memorandum.numero }} — {{ auto.memorandum.fecha|date:"d/m/Y"|default:"S/F" }}{% if auto.memorandum.fecha_entrega %} — Entrega: {{ auto.memorandum.fecha_entrega|date:"d/m/Y" }}{% endif %}</div>{% endif %}
+  </div>
+  {% endfor %}
+
+  <!-- 3.5 Memorándums (ligados a RES o AUTO) -->
+  {% for memo in m.memorandums %}
+  <div class="actuado-card" style="border-left-color: #06b6d4;">
+    <div class="actuado-header">
+      <div class="actuado-titulo" style="color:#0891b2;">📄 Memorándum Nº {{ memo.numero }}</div>
+    </div>
+    <div class="actuado-info">
+      <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ memo.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
+      {% if memo.fecha_entrega %}<div class="info-item"><span class="info-label">Fecha Entrega:</span><span class="info-value">{{ memo.fecha_entrega|date:"d/m/Y" }}</span></div>{% endif %}
+      <div class="info-item"><span class="info-label">Ligado a:</span><span class="info-value">{% if memo.resolucion %}RES {{ memo.resolucion.numero }}{% elif memo.autotpe %}AUTO {{ memo.autotpe.numero }}{% else %}—{% endif %}</span></div>
+    </div>
   </div>
   {% endfor %}
 

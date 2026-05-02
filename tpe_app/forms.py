@@ -994,3 +994,60 @@ class WizardAUTOTSPForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for f in self.fields:
             self.fields[f].required = False
+
+
+class BuscarSIMHistoricoForm(forms.Form):
+    """Formulario para buscar SIM a importar datos históricos"""
+    codigo = forms.CharField(
+        label='Código del Sumario',
+        max_length=50,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: SIM-0001',
+            'autofocus': True
+        })
+    )
+
+
+class EditarSIMHistoricoForm(forms.ModelForm):
+    """Formulario para editar estado, fase y datos de memo de un SIM histórico"""
+
+    # Campos adicionales para memorándum
+    memo_numero = forms.CharField(
+        label='Nº Memorándum',
+        max_length=60,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Ej: 1245/2020'
+        })
+    )
+    memo_fecha = forms.DateField(
+        label='Fecha Memorándum',
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    memo_fecha_entrega = forms.DateField(
+        label='Fecha Entrega Memorándum',
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+
+    class Meta:
+        model = SIM
+        fields = ['estado', 'fase']
+        widgets = {
+            'estado': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'fase': forms.Select(attrs={
+                'class': 'form-select'
+            })
+        }
