@@ -1,28 +1,11 @@
 {% extends 'tpe_app/base.html' %}
 {% load static %}
 
-{% block title %}Importar Históricos - TPE Sistema{% endblock %}
-{% block navbar_title %}Importación Histórica de Sumarios{% endblock %}
+{% block title %}Actualizar Estado de Caso - TPE Sistema{% endblock %}
+{% block navbar_title %}Actualizar Estado de Caso{% endblock %}
 
 {% block sidebar_nav %}
-{% if user.is_authenticated %}
-    <span class="sb-group-label">Volver</span>
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
-        <span class="lk-icon">🏠</span>
-        <span class="lk-text">Dashboard Ayudante</span>
-    </a>
-    <hr class="sb-divider">
-    <span class="sb-group-label">Herramientas</span>
-    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link">
-        <span class="lk-icon">⚡</span>
-        <span class="lk-text">Ingreso Rápido (Wizard)</span>
-    </a>
-    <hr class="sb-divider">
-    <a href="{% url 'logout' %}" class="sb-link">
-        <span class="lk-icon">🚪</span>
-        <span class="lk-text">Cerrar Sesión</span>
-    </a>
-{% endif %}
+    {% include 'tpe_app/ayudante/_sidebar.html' with active_page='importar' %}
 {% endblock sidebar_nav %}
 
 {% block content %}
@@ -31,9 +14,9 @@
     <div class="row mb-4">
         <div class="col">
             <h1 class="h3 mb-1">
-                <i class="bi bi-inbox me-2"></i>Importación Histórica
+                <i class="bi bi-arrow-repeat me-2"></i>Actualizar Estado de Caso
             </h1>
-            <p class="text-muted">Buscar sumarios con documentos incompletos y recibir propuestas automáticas</p>
+            <p class="text-muted">Corregir el estado y fase de un sumario existente</p>
         </div>
     </div>
 

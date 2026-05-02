@@ -74,6 +74,22 @@ def ayudante_dashboard(request):
         .order_by('-fecha__year')
     )
 
+    # Estadísticas de Personal Militar
+    from django.db.models import Q
+
+    total_pm = PM.objects.count()
+
+    # Militares sin foto (ImageField: null o vacío)
+    total_pm_sin_foto = PM.objects.filter(foto__isnull=True).count()
+
+    # Militares sin año de promoción
+    total_pm_sin_anio_promocion = PM.objects.filter(
+        anio_promocion__isnull=True
+    ).count()
+
+    # Militares sin CI (DecimalField: solo null)
+    total_pm_sin_ci = PM.objects.filter(ci__isnull=True).count()
+
     context = {
         'ultimos_sim': ultimos_sim,
         'ultimas_res': ultimas_res,
@@ -85,6 +101,10 @@ def ayudante_dashboard(request):
         'total_autotpe_sin_pdf': total_autotpe_sin_pdf,
         'res_por_anio': res_por_anio,
         'autos_por_anio': autos_por_anio,
+        'total_pm': total_pm,
+        'total_pm_sin_foto': total_pm_sin_foto,
+        'total_pm_sin_anio_promocion': total_pm_sin_anio_promocion,
+        'total_pm_sin_ci': total_pm_sin_ci,
     }
 
     return render(request, 'tpe_app/ayudante/dashboard.html', context)

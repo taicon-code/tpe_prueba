@@ -5,57 +5,17 @@
 {% block navbar_title %}Asistente - Registro de Datos Históricos{% endblock %}
 
 {% block sidebar_nav %}
-{% if user.is_authenticated %}
-    <span class="sb-group-label">Panel Principal</span>
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link active">
-        <span class="lk-icon">🏠</span>
-        <span class="lk-text">Inicio</span>
-    </a>
-
-    <hr class="sb-divider">
-    <span class="sb-group-label">Ingreso</span>
-
-    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link">
-        <span class="lk-icon">⚡</span>
-        <span class="lk-text">Ingreso Rápido (Wizard)</span>
-    </a>
-
-    <a href="#" class="sb-link" data-bs-toggle="collapse" data-bs-target="#collapseResPdf">
-        <span class="lk-icon">📤</span>
-        <span class="lk-text">Agregar PDF a RES</span>
-    </a>
-
-    <hr class="sb-divider">
-    <span class="sb-group-label">Consultas</span>
-
-    <a href="{% url 'ayudante_tabla_documentos' %}" class="sb-link">
-        <span class="lk-icon">📋</span>
-        <span class="lk-text">Tabla de Documentos</span>
-    </a>
-    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
-        <span class="lk-icon">🔍</span>
-        <span class="lk-text">Buscar Antecedentes</span>
-    </a>
-
-    <hr class="sb-divider">
-
-    <a href="{% url 'logout' %}" class="sb-link">
-        <span class="lk-icon">🚪</span>
-        <span class="lk-text">Cerrar Sesión</span>
-    </a>
-{% endif %}
+    {% include 'tpe_app/ayudante/_sidebar.html' with active_page='dashboard' %}
 {% endblock sidebar_nav %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid">
     <!-- Encabezado -->
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="h3 mb-1">
-                <i class="bi bi-person-check me-2"></i>Dashboard Ayudante
-            </h1>
-            <p class="text-muted">Registro de datos históricos y búsqueda de antecedentes</p>
-        </div>
+    <div style="margin-bottom: 2rem; margin-top: 1.5rem; color: #1e3c72;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">
+            📊 Dashboard Ayudante
+        </h1>
+        <p style="color: #6b7280; margin: 0;">Registro de datos históricos y búsqueda de antecedentes</p>
     </div>
 
     <!-- Alertas -->
@@ -68,142 +28,89 @@
         {% endfor %}
     {% endif %}
 
-    <!-- Estadísticas compactas -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body py-2">
+    <!-- Stats Grid: Datos Pendientes -->
+    <div class="stats-grid" style="margin-bottom: 2rem;">
+        <div class="stat-card" style="border-left-color: #dc2626;">
+            <h3 style="color: #1e3c72;">{{ total_res_sin_pdf }}</h3>
+            <p>RES Pendientes de PDF</p>
+            <a href="{% url 'ayudante_lista_res_sin_pdf' %}" style="color: #0066cc; font-size: 0.8rem; text-decoration: none;">Ver →</a>
+        </div>
+        <div class="stat-card" style="border-left-color: #8b5cf6;">
+            <h3 style="color: #1e3c72;">{{ total_pm_sin_foto }}</h3>
+            <p>Militares sin Foto</p>
+            <a href="{% url 'ayudante_tabla_documentos' %}" style="color: #0066cc; font-size: 0.8rem; text-decoration: none;">Ver →</a>
+        </div>
+        <div class="stat-card" style="border-left-color: #f97316;">
+            <h3 style="color: #1e3c72;">{{ total_pm_sin_anio_promocion }}</h3>
+            <p>Militares sin Año Promoción</p>
+            <span style="color: #6b7280; font-size: 0.8rem;">Requerido para carrera</span>
+        </div>
+        <div class="stat-card" style="border-left-color: #06b6d4;">
+            <h3 style="color: #1e3c72;">{{ total_pm_sin_ci }}</h3>
+            <p>Militares sin Carnet (CI)</p>
+            <span style="color: #6b7280; font-size: 0.8rem;">Identificación</span>
+        </div>
+    </div>
 
-            <!-- Fila 1: totales y pendientes PDF -->
-            <div class="d-flex flex-wrap gap-3 align-items-center border-bottom pb-2 mb-2">
-                <span class="text-muted small fw-semibold">TOTALES:</span>
-                <span class="small">
-                    <i class="bi bi-folder text-primary me-1"></i>
-                    <strong>{{ total_sim }}</strong> <span class="text-muted">SIM</span>
-                </span>
-                <span class="small">
-                    <i class="bi bi-file-earmark-text text-success me-1"></i>
-                    <strong>{{ total_res }}</strong> <span class="text-muted">RES</span>
-                </span>
-                <span class="small">
-                    <i class="bi bi-file-earmark-ruled text-info me-1"></i>
-                    <strong>{{ total_autotpe }}</strong> <span class="text-muted">Autos TPE</span>
-                </span>
+    <!-- Acciones Principales Centradas -->
+    <div style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center;">
+        <h2 style="color: #1e3c72; font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem;">Acciones Principales</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; width: 100%; max-width: 1000px;">
+            <!-- Botón 1: Registrar Caso Histórico -->
+            <a href="{% url 'ayudante_wizard_paso1' %}" style="text-decoration: none;">
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 2rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; min-height: 200px;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 16px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)';">
+                    <span style="font-size: 2.5rem; margin-bottom: 0.75rem;">📝</span>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">Registrar Caso Histórico</h3>
+                    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin: 0;">SIM + Militares + Resoluciones + Autos</p>
+                </div>
+            </a>
 
-                <span class="ms-auto text-muted small fw-semibold">SIN PDF:</span>
-                <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="small text-decoration-none">
-                    <span class="badge {% if total_res_sin_pdf > 0 %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                        {{ total_res_sin_pdf }} RES
-                    </span>
+            <!-- Botón 2: Actualizar Estado de Caso -->
+            <a href="{% url 'ayudante_importar_historico' %}" style="text-decoration: none;">
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 2rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; min-height: 200px;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 16px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)';">
+                    <span style="font-size: 2.5rem; margin-bottom: 0.75rem;">🔧</span>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">Actualizar Estado de Caso</h3>
+                    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin: 0;">Corregir estado/fase de SIM existente</p>
+                </div>
+            </a>
+
+            <!-- Botón 3: PDFs, Fotos y Notificaciones -->
+            <a href="{% url 'ayudante_tabla_documentos' %}" style="text-decoration: none;">
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 2rem 1.5rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; height: 100%; min-height: 200px;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 16px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)';">
+                    <span style="font-size: 2.5rem; margin-bottom: 0.75rem;">📋</span>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">PDFs, Fotos y Notificaciones</h3>
+                    <p style="font-size: 0.85rem; color: rgba(255,255,255,0.9); margin: 0;">Completar documentos pendientes</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Búsqueda de Antecedentes -->
+    <div style="margin-bottom: 2rem;">
+        <div class="card" style="border: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="padding: 1.5rem; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;">
+                <h2 style="font-size: 1rem; color: #1e3c72; margin: 0; font-weight: 600;">
+                    <span style="margin-right: 0.5rem;">🔍</span>Buscar Antecedentes de Personal
+                </h2>
+            </div>
+            <div style="padding: 1.5rem;">
+                <a href="{% url 'buscador_dashboard' %}" class="btn" style="background: #0066cc; color: white; padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                    Ir al Buscador →
                 </a>
-                <span class="small">
-                    <span class="badge {% if total_autotpe_sin_pdf > 0 %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                        {{ total_autotpe_sin_pdf }} Autos
-                    </span>
-                </span>
-            </div>
-
-            <!-- Fila 2: por año -->
-            <div class="d-flex flex-wrap gap-4 align-items-start">
-
-                <!-- RES por año -->
-                <div class="small">
-                    <span class="text-muted fw-semibold me-2">RES por año:</span>
-                    {% for item in res_por_anio %}
-                        <span class="me-2">
-                            <span class="text-muted">{{ item.fecha__year }}:</span>
-                            <strong class="text-success">{{ item.total }}</strong>
-                        </span>
-                    {% empty %}
-                        <span class="text-muted fst-italic">Sin datos</span>
-                    {% endfor %}
-                </div>
-
-                <!-- Autos por año -->
-                <div class="small">
-                    <span class="text-muted fw-semibold me-2">Autos por año:</span>
-                    {% for item in autos_por_anio %}
-                        <span class="me-2">
-                            <span class="text-muted">{{ item.fecha__year }}:</span>
-                            <strong class="text-info">{{ item.total }}</strong>
-                        </span>
-                    {% empty %}
-                        <span class="text-muted fst-italic">Sin datos</span>
-                    {% endfor %}
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Acción principal -->
-    <div class="row mb-4">
-        <div class="col">
-            <h5 class="mb-3">Registro de Datos Históricos</h5>
-            <div class="row g-2">
-                <div class="col-md-6">
-                    <a href="{% url 'ayudante_wizard_paso1' %}"
-                       class="btn btn-success w-100 py-3 border-2">
-                        <i class="bi bi-lightning-charge-fill me-2" style="font-size: 1.2rem;"></i>
-                        <strong>⚡ Ingreso Rápido (Wizard)</strong>
-                        <small class="d-block mt-1 opacity-75">4 pasos: SIM + Militares + RES + Autos</small>
-                    </a>
-                </div>
-                <div class="col-md-6">
-                    <a href="{% url 'ayudante_importar_historico' %}"
-                       class="btn btn-info w-100 py-3 border-2">
-                        <i class="bi bi-inbox me-2" style="font-size: 1.2rem;"></i>
-                        <strong>📥 Importar Históricos</strong>
-                        <small class="d-block mt-1 opacity-75">Análisis automático · Propuestas inteligentes</small>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Búsqueda y Consultas -->
-    <div class="row mb-4">
-        <div class="col">
-            <h5 class="mb-3">Búsqueda y Consultas</h5>
-            <div class="row g-2">
-                <div class="col-md-6">
-                    <a href="{% url 'ayudante_tabla_documentos' %}" class="btn btn-primary w-100">
-                        <i class="bi bi-table me-2"></i>Tabla de Documentos
-                        <small class="d-block mt-1 opacity-75">Filtrar por tipo y gestión · Notificar · PDF · Foto</small>
-                    </a>
-                </div>
-                <div class="col-md-6">
-                    <a href="{% url 'buscador_dashboard' %}" class="btn btn-info w-100">
-                        <i class="bi bi-search me-2"></i>Buscar Antecedentes de Personal
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gestión de Documentos -->
-    <div class="row mb-4">
-        <div class="col">
-            <h5 class="mb-3">
-                <i class="bi bi-file-earmark-pdf me-2"></i>Gestión de Documentos
-            </h5>
-            <div class="row g-2">
-                <div class="col-md-12">
-                    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="btn btn-warning w-100">
-                        <i class="bi bi-file-pdf me-2"></i>
-                        <span>RES Pendientes de PDF</span>
-                        <span class="badge bg-light text-dark ms-2">{{ total_res_sin_pdf }}</span>
-                    </a>
-                    <small class="text-muted d-block mt-2">Resoluciones que requieren archivo PDF</small>
-                </div>
             </div>
         </div>
     </div>
 
     <!-- Últimos SIM registrados -->
-    <div class="row mb-4">
-        <div class="col">
-            <h5 class="mb-3">Últimos Sumarios Registrados</h5>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
+    <div style="margin-bottom: 2rem;">
+        <div class="card" style="border: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="padding: 1.5rem; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;">
+                <h2 style="font-size: 1rem; color: #1e3c72; margin: 0; font-weight: 600;">
+                    <span style="margin-right: 0.5rem;">📂</span>Últimos Sumarios Registrados
+                </h2>
+            </div>
+            <div class="table-responsive" style="padding: 1rem;">
+                <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>Código</th>
@@ -238,11 +145,15 @@
     </div>
 
     <!-- Últimas RES registradas -->
-    <div class="row">
-        <div class="col">
-            <h5 class="mb-3">Últimas Resoluciones Registradas</h5>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
+    <div style="margin-bottom: 2rem;">
+        <div class="card" style="border: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="padding: 1.5rem; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;">
+                <h2 style="font-size: 1rem; color: #1e3c72; margin: 0; font-weight: 600;">
+                    <span style="margin-right: 0.5rem;">📋</span>Últimas Resoluciones Registradas
+                </h2>
+            </div>
+            <div class="table-responsive" style="padding: 1rem;">
+                <table class="table table-sm table-hover mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>Número</th>
@@ -283,80 +194,79 @@
     </div>
 
     <!-- Panel Resoluciones sin PDF -->
-    <div class="row">
-        <div class="col">
-            <div class="card border-0 shadow-sm border-top border-warning border-4">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-file-pdf me-2 text-warning"></i>Resoluciones Pendientes de PDF
-                        <span class="badge bg-warning text-dark ms-2">{{ total_res_sin_pdf }}</span>
-                    </h5>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#collapseResPdf">
-                        <i class="bi bi-chevron-down"></i>
-                    </button>
+    <div style="margin-bottom: 2rem;">
+        <div class="card border-0 shadow-sm" style="border-left: 4px solid #dc2626;">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-file-pdf me-2" style="color: #dc2626;"></i>Resoluciones Pendientes de PDF
+                    <span class="badge bg-danger ms-2">{{ total_res_sin_pdf }}</span>
+                </h5>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#collapseResPdf">
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+            </div>
+            <div id="collapseResPdf" class="collapse show">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 100px;">Nº RES</th>
+                                <th>Sumario</th>
+                                <th>Tipo</th>
+                                <th>Fecha</th>
+                                <th>Abogado</th>
+                                <th class="text-center" style="width: 120px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for res in res_sin_pdf %}
+                            <tr>
+                                <td class="text-center">
+                                    <strong>{{ res.numero }}</strong>
+                                </td>
+                                <td>
+                                    <code class="bg-light p-1">{{ res.sim.codigo }}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning" style="font-size: 0.75rem;">
+                                        {{ res.get_tipo_display|truncatewords:2 }}
+                                    </span>
+                                </td>
+                                <td style="white-space: nowrap;">
+                                    <small>{{ res.fecha|date:"d/m/Y" }}</small>
+                                </td>
+                                <td>
+                                    <small>
+                                        {% if res.abogado %}
+                                            {{ res.abogado.grado }} {{ res.abogado.paterno }}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <a href="{% url 'subir_pdf_res' res.pk %}" class="btn btn-sm btn-success">
+                                        <i class="bi bi-file-pdf me-1"></i>Subir
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="bi bi-check-circle text-success fs-3 mb-2 d-block"></i>
+                                    <p class="text-muted mb-0">✅ Todas las resoluciones tienen PDF subido</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div id="collapseResPdf" class="collapse show">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center" style="width: 100px;">Nº RES</th>
-                                    <th>Sumario</th>
-                                    <th>Tipo</th>
-                                    <th>Fecha</th>
-                                    <th>Abogado</th>
-                                    <th class="text-center" style="width: 120px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for res in res_sin_pdf %}
-                                <tr>
-                                    <td class="text-center">
-                                        <strong>{{ res.numero }}</strong>
-                                    </td>
-                                    <td>
-                                        <code class="bg-light p-1">{{ res.sim.codigo }}</code>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-warning" style="font-size: 0.75rem;">
-                                            {{ res.get_tipo_display|truncatewords:2 }}
-                                        </span>
-                                    </td>
-                                    <td style="white-space: nowrap;">
-                                        <small>{{ res.fecha|date:"d/m/Y" }}</small>
-                                    </td>
-                                    <td>
-                                        <small>
-                                            {% if res.abogado %}
-                                                {{ res.abogado.grado }} {{ res.abogado.paterno }}
-                                            {% else %}
-                                                —
-                                            {% endif %}
-                                        </small>
-                                    </td>
-                                    <td class="text-center">
-                                        <a href="{% url 'subir_pdf_res' res.pk %}" class="btn btn-sm btn-success">
-                                            <i class="bi bi-file-pdf me-1"></i>Subir
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="6" class="text-center py-4">
-                                        <i class="bi bi-check-circle text-success fs-3 mb-2 d-block"></i>
-                                        <p class="text-muted mb-0">✅ Todas las resoluciones tienen PDF subido</p>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="card-footer text-muted small text-center">
-                        Total: <strong>{{ total_res_sin_pdf }}</strong> resoluciones pendientes
-                    </div>
+                <div class="card-footer text-muted small text-center">
+                    Total: <strong>{{ total_res_sin_pdf }}</strong> resoluciones pendientes
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}

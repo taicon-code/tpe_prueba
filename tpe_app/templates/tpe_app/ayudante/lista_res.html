@@ -4,55 +4,7 @@
 {% block title %}Lista de Resoluciones - TPE Sistema{% endblock %}
 
 {% block sidebar_nav %}
-{% if user.is_authenticated %}
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
-        <span class="lk-icon" style="font-size: 1.4rem;">🏠</span>
-        <span class="lk-text">Home</span>
-    </a>
-
-    <hr class="sb-divider">
-    <p style="font-size: 0.75rem; text-transform: uppercase; color: #999; margin: 0.5rem 0.5rem; font-weight: bold;">📋 Registro Histórico</p>
-
-    <a href="{% url 'ayudante_registrar_res' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
-        <span class="lk-text">Registrar RES</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_rap' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
-        <span class="lk-text">Registrar RAP</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_raee' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
-        <span class="lk-text">Registrar RAEE</span>
-    </a>
-    <a href="{% url 'ayudante_registrar_autotpe' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📄</span>
-        <span class="lk-text">Registrar Auto TPE</span>
-    </a>
-
-    <hr class="sb-divider">
-    <p style="font-size: 0.75rem; text-transform: uppercase; color: #999; margin: 0.5rem 0.5rem; font-weight: bold;">📊 Consultas</p>
-
-    <a href="{% url 'ayudante_lista_res' %}" class="sb-link" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; font-weight: bold;">
-        <span class="lk-icon" style="font-size: 1.4rem;">📋</span>
-        <span class="lk-text">Resoluciones por Año</span>
-    </a>
-    <a href="{% url 'ayudante_lista_res_sin_pdf' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">📌</span>
-        <span class="lk-text">RES sin PDF</span>
-    </a>
-    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">🔍</span>
-        <span class="lk-text">Buscar Personal</span>
-    </a>
-
-    <hr class="sb-divider">
-
-    <a href="{% url 'logout' %}" class="sb-link">
-        <span class="lk-icon" style="font-size: 1.4rem;">🚪</span>
-        <span class="lk-text">Cerrar Sesión</span>
-    </a>
-{% endif %}
+    {% include 'tpe_app/ayudante/_sidebar.html' with active_page='lista_res' %}
 {% endblock sidebar_nav %}
 
 {% block content %}

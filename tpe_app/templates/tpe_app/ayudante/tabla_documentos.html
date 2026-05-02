@@ -19,42 +19,11 @@
 </style>
 {% endblock %}
 
-{% block title %}Tabla de Documentos - TPE Sistema{% endblock %}
-{% block navbar_title %}Tabla de Documentos{% endblock %}
+{% block title %}PDFs, Fotos y Notificaciones - TPE Sistema{% endblock %}
+{% block navbar_title %}PDFs, Fotos y Notificaciones{% endblock %}
 
 {% block sidebar_nav %}
-{% if user.is_authenticated %}
-    <span class="sb-group-label">Panel Principal</span>
-    <a href="{% url 'ayudante_dashboard' %}" class="sb-link">
-        <span class="lk-icon">🏠</span>
-        <span class="lk-text">Inicio</span>
-    </a>
-
-    <hr class="sb-divider">
-    <span class="sb-group-label">Consultas</span>
-
-    <a href="{% url 'ayudante_tabla_documentos' %}" class="sb-link active">
-        <span class="lk-icon">📋</span>
-        <span class="lk-text">Tabla de Documentos</span>
-    </a>
-    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
-        <span class="lk-icon">🔍</span>
-        <span class="lk-text">Buscar Antecedentes</span>
-    </a>
-
-    <hr class="sb-divider">
-    <span class="sb-group-label">Ingreso</span>
-    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link">
-        <span class="lk-icon">⚡</span>
-        <span class="lk-text">Ingreso Rápido (Wizard)</span>
-    </a>
-
-    <hr class="sb-divider">
-    <a href="{% url 'logout' %}" class="sb-link">
-        <span class="lk-icon">🚪</span>
-        <span class="lk-text">Cerrar Sesión</span>
-    </a>
-{% endif %}
+    {% include 'tpe_app/ayudante/_sidebar.html' with active_page='tabla' %}
 {% endblock sidebar_nav %}
 
 {% block content %}

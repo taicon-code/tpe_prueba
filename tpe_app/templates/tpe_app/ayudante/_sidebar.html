@@ -1,0 +1,40 @@
+{% if user.is_authenticated %}
+    <span class="sb-group-label">Panel Principal</span>
+    <a href="{% url 'ayudante_dashboard' %}" class="sb-link {% if active_page == 'dashboard' %}active{% endif %}">
+        <span class="lk-icon">🏠</span>
+        <span class="lk-text">Inicio</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Ingreso Histórico</span>
+
+    <a href="{% url 'ayudante_wizard_paso1' %}" class="sb-link {% if active_page == 'wizard' %}active{% endif %}">
+        <span class="lk-icon">📝</span>
+        <span class="lk-text">Registrar Caso Histórico</span>
+    </a>
+
+    <a href="{% url 'ayudante_importar_historico' %}" class="sb-link {% if active_page == 'importar' %}active{% endif %}">
+        <span class="lk-icon">🔧</span>
+        <span class="lk-text">Actualizar Estado de Caso</span>
+    </a>
+
+    <hr class="sb-divider">
+    <span class="sb-group-label">Documentos</span>
+
+    <a href="{% url 'ayudante_tabla_documentos' %}" class="sb-link {% if active_page == 'tabla' %}active{% endif %}">
+        <span class="lk-icon">📋</span>
+        <span class="lk-text">PDFs, Fotos y Notificaciones</span>
+    </a>
+
+    <a href="{% url 'buscador_dashboard' %}" class="sb-link">
+        <span class="lk-icon">🔍</span>
+        <span class="lk-text">Buscar Antecedentes</span>
+    </a>
+
+    <hr class="sb-divider">
+
+    <a href="{% url 'logout' %}" class="sb-link">
+        <span class="lk-icon">🚪</span>
+        <span class="lk-text">Cerrar Sesión</span>
+    </a>
+{% endif %}
