@@ -319,15 +319,18 @@ class SIM(models.Model):
     ]
 
     ESTADO_CHOICES = [
-        ('PARA_AGENDA',           'Para Agenda'),
-        ('PROCESO_EN_EL_TPE',     'Proceso en el TPE'),
-        ('PROCESO_EN_EL_TSP',     'Proceso en el TSP'),
-        ('PROCESO_CONCLUIDO_TPE', 'Proceso Concluido (TPE)'),
-        ('PROCESO_EJECUTADO',     'Proceso Ejecutado'),
-        ('OBSERVADO',             'Observado'),
+        ('PARA_AGENDA',               'Para Agenda'),
+        ('PROCESO_EN_EL_TPE',         'Proceso en el TPE'),
+        ('PROCESO_EN_EL_TSP',         'Proceso en el TSP'),
+        ('CUMPLIMIENTO_EN_TPE',       'En Cumplimiento (Devuelto por TSP)'),
+        ('PROCESO_CONCLUIDO_TPE',     'Proceso Concluido (TPE)'),
+        ('PROCESO_CONCLUIDO_TSP_TPE', 'Proceso Concluido (TSP-TPE)'),
+        ('PROCESO_EJECUTADO',         'Proceso Ejecutado'),
+        ('OBSERVADO',                 'Observado'),
     ]
 
     FASE_CHOICES = [
+        # ── Ruta TPE (sin RAP) ───────────────────────────────────────────
         ('PARA_AGENDA',           'Para Agenda'),
         ('EN_DICTAMEN_1RA',       'En Dictamen (1ra. Resolución)'),
         ('1RA_RESOLUCION',        'Emitida 1ra. Resolución'),
@@ -340,25 +343,36 @@ class SIM(models.Model):
         ('NOTIFICACION_RR',       'En Proceso de Notificación (RR)'),
         ('NOTIFICADO_RR',         'Notificado (RR)'),
         ('EN_ESPERA_RAP',         'En Espera de RAP (plazo 3 días)'),
-        ('ELEVADO_TSP',           'Elevado al TSP'),
         ('EN_AGENDA_EJECUTORIA',  'En Agenda (Auto de Ejecutoria)'),
         ('EN_EJECUTORIA',         'Auto de Ejecutoria Emitido'),
         ('EJECUTORIA_NOTIFICADA', 'Ejecutoria Notificada (Pte. Archivo)'),
         ('PENDIENTE_ARCHIVO',     'Pendiente Archivo SPRODA'),
         ('CONCLUIDO',             'Archivado / Concluido (TPE)'),
-        ('MEMORANDUM_RETORNADO',  'Memorandum Retornado (Proceso Ejecutado)'),
+        ('MEMORANDUM_RETORNADO',  'Memorándum Retornado (Proceso Ejecutado)'),
+        # ── Ruta TSP (con RAP) ───────────────────────────────────────────
+        ('ELEVADO_TSP',               'Elevado al TSP'),
+        ('RECIBIDO_TSP',              'Pronunciamiento TSP Recibido en TPE'),
+        ('EN_CUMPLIMIENTO',           'Auto de Cumplimiento/Ejecutoria en Elaboración'),
+        ('EN_AGENDA_CUMPLIMIENTO',    'Agendado para Reunión (Cumplimiento TSP)'),
+        ('CUMPLIMIENTO_EMITIDO',      'Auto de Cumplimiento/Ejecutoria Emitido'),
+        ('CUMPLIMIENTO_NOTIFICADO',   'Cumplimiento TSP Notificado (Pte. Archivo)'),
+        ('CONCLUIDO_TSP_TPE',         'Archivado / Concluido (TSP-TPE)'),
+        ('NULIDAD_TSP',               'Nulidad de Obrados por el TSP'),
     ]
 
     ESTADO_JERARQUIA = {
-        'PARA_AGENDA':           0,
-        'OBSERVADO':             0,
-        'PROCESO_EN_EL_TPE':     1,
-        'PROCESO_EN_EL_TSP':     2,
-        'PROCESO_CONCLUIDO_TPE': 3,
-        'PROCESO_EJECUTADO':     4,
+        'PARA_AGENDA':               0,
+        'OBSERVADO':                 0,
+        'PROCESO_EN_EL_TPE':         1,
+        'PROCESO_EN_EL_TSP':         2,
+        'CUMPLIMIENTO_EN_TPE':       3,  # TSP devolvió doc, TPE ejecuta
+        'PROCESO_CONCLUIDO_TPE':     4,  # era 3
+        'PROCESO_CONCLUIDO_TSP_TPE': 4,  # mismo nivel que CONCLUIDO_TPE
+        'PROCESO_EJECUTADO':         5,  # era 4
     }
 
     FASE_A_ESTADO = {
+        # Ruta TPE
         'PARA_AGENDA':          'PARA_AGENDA',
         'EN_DICTAMEN_1RA':      'PROCESO_EN_EL_TPE',
         '1RA_RESOLUCION':       'PROCESO_EN_EL_TPE',
@@ -371,13 +385,21 @@ class SIM(models.Model):
         'NOTIFICACION_RR':      'PROCESO_EN_EL_TPE',
         'NOTIFICADO_RR':        'PROCESO_EN_EL_TPE',
         'EN_ESPERA_RAP':        'PROCESO_EN_EL_TPE',
-        'ELEVADO_TSP':          'PROCESO_EN_EL_TSP',
-        'EN_AGENDA_EJECUTORIA': 'PROCESO_EN_EL_TPE',        # aún reversible, no concluido
-        'EN_EJECUTORIA':        'PROCESO_EN_EL_TPE',        # auto firmado, pendiente notificar
-        'EJECUTORIA_NOTIFICADA':'PROCESO_CONCLUIDO_TPE',   # notificado con fecha+hora → concluye
+        'EN_AGENDA_EJECUTORIA': 'PROCESO_EN_EL_TPE',
+        'EN_EJECUTORIA':        'PROCESO_EN_EL_TPE',
+        'EJECUTORIA_NOTIFICADA':'PROCESO_CONCLUIDO_TPE',
         'PENDIENTE_ARCHIVO':    'PROCESO_CONCLUIDO_TPE',
         'CONCLUIDO':            'PROCESO_CONCLUIDO_TPE',
         'MEMORANDUM_RETORNADO': 'PROCESO_EJECUTADO',
+        # Ruta TSP
+        'ELEVADO_TSP':             'PROCESO_EN_EL_TSP',
+        'RECIBIDO_TSP':            'CUMPLIMIENTO_EN_TPE',       # TSP devolvió → nivel 3
+        'EN_CUMPLIMIENTO':         'CUMPLIMIENTO_EN_TPE',
+        'EN_AGENDA_CUMPLIMIENTO':  'CUMPLIMIENTO_EN_TPE',
+        'CUMPLIMIENTO_EMITIDO':    'CUMPLIMIENTO_EN_TPE',
+        'CUMPLIMIENTO_NOTIFICADO': 'PROCESO_CONCLUIDO_TSP_TPE', # notificado → concluye
+        'CONCLUIDO_TSP_TPE':       'PROCESO_CONCLUIDO_TSP_TPE',
+        'NULIDAD_TSP':             'PROCESO_CONCLUIDO_TSP_TPE',
     }
 
     militares = models.ManyToManyField(PM, through='PM_SIM', verbose_name='Militares investigados')

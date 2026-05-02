@@ -393,9 +393,12 @@ def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
                     texto=tpe_resol or None,
                 )
 
-                # Marcar SIM como concluido en el TPE (estado: PROCESO_CONCLUIDO_TPE)
-                sim.estado = 'PROCESO_CONCLUIDO_TPE'
-                sim.save()
+                # Marcar SIM como concluido en el TPE solo si no hay otro militar
+                # cuyo proceso está activo en instancia externa (TSP o cumplimiento).
+                ESTADOS_ACTIVOS_EXTERNOS = {'PROCESO_EN_EL_TSP', 'CUMPLIMIENTO_EN_TPE'}
+                if sim.estado not in ESTADOS_ACTIVOS_EXTERNOS:
+                    sim.estado = 'PROCESO_CONCLUIDO_TPE'
+                    sim.save()
 
                 messages.success(request, f"✅ Auto de Ejecutoria {tpe_num or 'S/N'} creado correctamente")
                 return redirect("abogado_sumario_detalle", sim_id=sim.pk)

@@ -348,7 +348,8 @@ def ayudante_registrar_autotpe(request):
                         notif.save()
 
                     # Si es ejecutoria y se proporciona memorándum
-                    if form.cleaned_data.get('memo_numero') and autotpe.tipo == 'AUTO_EJECUTORIA':
+                    has_memo = bool(form.cleaned_data.get('memo_numero')) and autotpe.tipo == 'AUTO_EJECUTORIA'
+                    if has_memo:
                         memo = Memorandum(
                             autotpe=autotpe,
                             numero=form.cleaned_data['memo_numero'],
@@ -358,6 +359,22 @@ def ayudante_registrar_autotpe(request):
                         messages.success(request, f'Auto TPE {autotpe.numero} registrado con memorándum')
                     else:
                         messages.success(request, f'Auto TPE {autotpe.numero} registrado exitosamente')
+
+                    # Actualizar fase/estado del SIM según el tipo de auto registrado.
+                    # Guardia multi-persona: si el SIM ya está en un estado de proceso
+                    # externo activo (TSP, cumplimiento), no avanzar por el auto de
+                    # otro militar — el SIM solo avanza cuando ese proceso externo concluya.
+                    ESTADOS_ACTIVOS_EXTERNOS = {'PROCESO_EN_EL_TSP', 'CUMPLIMIENTO_EN_TPE'}
+                    if autotpe.tipo == 'AUTO_EJECUTORIA':
+                        sim = form.cleaned_data['sim']
+                        if sim.estado not in ESTADOS_ACTIVOS_EXTERNOS:
+                            if has_memo:
+                                sim.fase = 'MEMORANDUM_RETORNADO'
+                            elif form.cleaned_data.get('notif_tipo'):
+                                sim.fase = 'EJECUTORIA_NOTIFICADA'
+                            else:
+                                sim.fase = 'EN_EJECUTORIA'
+                            sim.save()
 
                     return redirect('ayudante_dashboard')
             except Exception as e:
@@ -435,7 +452,9 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
                     notif.save()
                     if auto.tipo == 'AUTO_EJECUTORIA' and auto.sim:
                         sim = auto.sim
-                        if sim.fase not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']:
+                        ESTADOS_ACTIVOS_EXTERNOS = {'PROCESO_EN_EL_TSP', 'CUMPLIMIENTO_EN_TPE'}
+                        if (sim.estado not in ESTADOS_ACTIVOS_EXTERNOS and
+                                sim.fase not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']):
                             sim.fase = 'EJECUTORIA_NOTIFICADA'
                             sim.save()
                     messages.success(request, f'Notificación de Auto {auto.numero} registrada exitosamente')

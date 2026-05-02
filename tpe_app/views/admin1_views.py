@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.urls import reverse
 from django.utils import timezone
 from django.http import JsonResponse
@@ -10,7 +10,7 @@ from datetime import date, timedelta
 import calendar
 import json
 from ..decorators import rol_requerido
-from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE
+from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, RecursoTSP
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 
@@ -77,9 +77,18 @@ def admin1_dashboard(request):
         .order_by('-fecha_ingreso')
     )
 
-    # RR por agendar — calcular fecha límite 25 días y color de alerta
+    # RR por agendar — calcular fecha límite 25 días y color de alerta.
+    # Se excluyen RRs cuyo PM en ese SIM ya tiene documentos más avanzados
+    # (AUTO_EJECUTORIA o RAP al TSP), lo que indica que el RR ya fue procesado
+    # aunque no se registró el abogado (caso frecuente en datos históricos).
+    auto_mas_avanzado = AUTOTPE.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm'))
+    rap_presentado    = RecursoTSP.objects.filter(
+        sim=OuterRef('sim'), pm=OuterRef('pm'), instancia='APELACION'
+    )
     rr_sin_asignar = list(
         Resolucion.objects.filter(instancia='RECONSIDERACION', abogado__isnull=True)
+        .exclude(Exists(auto_mas_avanzado))
+        .exclude(Exists(rap_presentado))
         .select_related('sim', 'resolucion_origen')
         .order_by('-fecha_presentacion')
     )
@@ -377,6 +386,10 @@ def agendar_rr(request):
         'form': form,
         'rr_pendientes': Resolucion.objects.filter(
             instancia='RECONSIDERACION', abogado__isnull=True
+        ).exclude(
+            Exists(AUTOTPE.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm')))
+        ).exclude(
+            Exists(RecursoTSP.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm'), instancia='APELACION'))
         ).count(),
     }
     return render(request, 'tpe_app/admin1/agendar_rr.html', context)

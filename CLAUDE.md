@@ -114,8 +114,7 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 | Modelo | Campos principales |
 |--------|-------------------|
-| `PM` | `ci`, `escalafon`, `grado`, `arma`, `especialidad`, `nombre`, `paterno`, `materno`, `estado`, `anio_promocion`, `no_ascendio`, `foto` |
-| `ABOG` | `ci`, `grado`, `arma`, `especialidad`, `nombre`, `paterno`, `materno` |
+| `PM` | `ci`, `escalafon`, `grado`, `arma`, `especialidad`, `nombre`, `paterno`, `materno`, `estado`, `anio_promocion`, `no_ascendio`, `foto` (incluye abogados desde v4.0 — tabla unificada) |
 | `SIM` | `codigo`, `version`, `origen` (FK self), `motivo_reapertura`, `fecha_ingreso`, `estado`, `fase`, `objeto`, `resumen`, `auto_final`, `tipo` |
 | `PM_SIM` | `pm`, `sim`, `grado_en_fecha` |
 | `AGENDA` | `numero`, `tipo`, `estado`, `fecha_prog`, `fecha_real` |
@@ -250,20 +249,56 @@ INF. | CAB. | ART. | ING. | COM. | INT. | SAN. | TGRAFO. | AV. | MÚS.
 
 ## Estados del SIM
 
-| Estado | Significado | Disparado por |
-|--------|-------------|---------------|
-| `PARA_AGENDA` | **Estado inicial**. SIM ingresa al TPE, pendiente ser agendado | ADMIN1 registra SIM |
-| `PROCESO_EN_EL_TPE` | SIM agendado. Abogado trabajando | ADMIN1 al agendar + asignar ABOG |
-| `EN_APELACION_TSP` | Se registró RAP. El caso subió al TSP | ABOGADO o AYUDANTE al crear RecursoTSP |
-| `PROCESO_CONCLUIDO_TPE` | Ejecutoria notificada Y archivada en SPRODA | ADMIN2 al confirmar archivo SPRODA |
-| `PROCESO_EJECUTADO` | Memorándum retornó. Proceso totalmente terminado | ADMIN2 al registrar retorno de memo |
-| `OBSERVADO` | Raro. Sumario con observaciones pendientes | Correcciones manuales |
+### Jerarquía (nivel — impide retroceder al hacer `sim.save()`)
 
-### Colores en dashboards:
-- Azul: `PARA_AGENDA`
-- Amarillo: `PROCESO_EN_EL_TPE`
-- Rojo: `EN_APELACION_TSP`
-- Gris: `PROCESO_CONCLUIDO_TPE` / `PROCESO_EJECUTADO`
+| Nivel | Estado | Significado | Disparado por |
+|:-----:|--------|-------------|---------------|
+| 0 | `PARA_AGENDA` | **Estado inicial**. SIM ingresa, pendiente agendar | ADMIN1 registra SIM |
+| 0 | `OBSERVADO` | Sumario con observaciones pendientes | Correcciones manuales |
+| 1 | `PROCESO_EN_EL_TPE` | Abogado trabajando (1ra RES, RR, ejecutoria) | ADMIN1 al agendar + asignar ABOG |
+| 2 | `PROCESO_EN_EL_TSP` | RAP elevado. Caso **físicamente en el TSP** (puede durar años) | ABOGADO o AYUDANTE al crear RecursoTSP |
+| 3 | `CUMPLIMIENTO_EN_TPE` | TSP devolvió pronunciamiento. TPE elabora auto de cumplimiento | Admin2 recibe doc TSP → Admin1 ordena a ABOG2 |
+| 4 | `PROCESO_CONCLUIDO_TPE` | Ejecutoria notificada y archivada en SPRODA (ruta sin TSP) | ADMIN2 al confirmar archivo |
+| 4 | `PROCESO_CONCLUIDO_TSP_TPE` | Auto de cumplimiento/ejecutoria notificado y archivado (ruta TSP) | ADMIN2 al confirmar archivo |
+| 5 | `PROCESO_EJECUTADO` | Memorándum retornó. Solo aplica ruta sin TSP | ADMIN2 al registrar retorno de memo |
+
+### Fases por estado
+
+**PROCESO_EN_EL_TPE (nivel 1) — Ruta sin RAP:**
+```
+PARA_AGENDA → EN_DICTAMEN_1RA → 1RA_RESOLUCION → NOTIFICACION_1RA → NOTIFICADO_1RA
+→ EN_ESPERA_RR → PARA_AGENDA_RR → EN_DICTAMEN_RR → 2DA_RESOLUCION
+→ NOTIFICACION_RR → NOTIFICADO_RR → EN_ESPERA_RAP
+→ EN_AGENDA_EJECUTORIA → EN_EJECUTORIA → EJECUTORIA_NOTIFICADA
+→ PENDIENTE_ARCHIVO → CONCLUIDO → MEMORANDUM_RETORNADO
+```
+
+**PROCESO_EN_EL_TSP (nivel 2) — RAP presentado:**
+```
+ELEVADO_TSP   (único estado mientras el caso está en el TSP)
+              [se pueden registrar docs RAEE y AUTOTSP sin cambiar fase]
+```
+
+**CUMPLIMIENTO_EN_TPE (nivel 3) — TSP devolvió pronunciamiento:**
+```
+RECIBIDO_TSP → EN_CUMPLIMIENTO → EN_AGENDA_CUMPLIMIENTO
+→ CUMPLIMIENTO_EMITIDO → CUMPLIMIENTO_NOTIFICADO
+```
+- `NULIDAD_TSP`: fase especial si el TSP revocó y anuló obrados (proceso puede reiniciarse como nueva versión SIM)
+
+**PROCESO_CONCLUIDO_TSP_TPE (nivel 4):**
+```
+CONCLUIDO_TSP_TPE
+```
+
+### Colores de badge de fase (admin1_dashboard):
+- Azul `#3b82f6`: fases `PARA_*`
+- Naranja `#f97316`: fases `EN_*` (EN_DICTAMEN, EN_EJECUTORIA, EN_CUMPLIMIENTO...)
+- Verde `#16a34a`: resoluciones (`1RA_*`, `2DA_*`) y fases `CONCLUIDO*`
+- Cian `#0ea5e9`: notificaciones (`*NOTIFICACION*`, `*NOTIFICADO*`)
+- Rojo `#dc2626`: esperas y elevación (`*ESPERA*`, `*ELEVADO*`, `NULIDAD_TSP`)
+- Violeta `#7c3aed`: recepción TSP (`*RECIBIDO*`)
+- Teal `#0d9488`: cumplimiento TPE (`*CUMPLIMIENTO*`)
 
 ---
 

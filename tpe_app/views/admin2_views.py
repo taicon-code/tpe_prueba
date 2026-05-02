@@ -585,8 +585,12 @@ def admin2_registrar_retorno_memo(request, auto_id):
                     auto.memorandum.fecha_entrega = fecha
                     auto.memorandum.save(update_fields=['fecha_entrega'])
                     sim = auto.sim
-                    sim.fase = 'MEMORANDUM_RETORNADO'
-                    sim.save()
+                    # Guardia multi-persona: no avanzar si otro militar del SIM
+                    # tiene proceso activo en instancia externa (TSP o cumplimiento).
+                    ESTADOS_ACTIVOS_EXTERNOS = {'PROCESO_EN_EL_TSP', 'CUMPLIMIENTO_EN_TPE'}
+                    if sim.estado not in ESTADOS_ACTIVOS_EXTERNOS:
+                        sim.fase = 'MEMORANDUM_RETORNADO'
+                        sim.save()
                 messages.success(
                     request,
                     f"✅ Retorno de memorándum registrado. SIM {sim.codigo}: Proceso Ejecutado."

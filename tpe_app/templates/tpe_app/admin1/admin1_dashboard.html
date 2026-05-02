@@ -140,9 +140,12 @@
                             {% if sim.fase|slice:":5" == "PARA_" %}#3b82f6
                             {% elif sim.fase|slice:":3" == "EN_" %}#f97316
                             {% elif sim.fase|slice:":3" == "1RA" or sim.fase|slice:":3" == "2DA" %}#16a34a
-                            {% elif sim.fase == "NOTIFICACION_1RA" or sim.fase == "NOTIFICACION_RR" %}#0ea5e9
+                            {% elif "NOTIFICACION" in sim.fase or "NOTIFICADO" in sim.fase %}#0ea5e9
                             {% elif "ESPERA" in sim.fase or "ELEVADO" in sim.fase %}#dc2626
-                            {% elif sim.fase == "CONCLUIDO" %}#16a34a
+                            {% elif "RECIBIDO" in sim.fase %}#7c3aed
+                            {% elif "CUMPLIMIENTO" in sim.fase %}#0d9488
+                            {% elif "NULIDAD_TSP" in sim.fase %}#dc2626
+                            {% elif sim.fase|slice:":8" == "CONCLUIDO" %}#16a34a
                             {% else %}#6b7280{% endif %}
                         {% endspaceless %}; color:#fff; font-size:0.7rem;">{{ sim.get_fase_display|truncatewords:2 }}</span>
                     {% else %}
