@@ -78,15 +78,18 @@ def admin1_dashboard(request):
     )
 
     # RR por agendar — calcular fecha límite 25 días y color de alerta.
-    # Se excluyen RRs cuyo PM en ese SIM ya tiene documentos más avanzados
+    # Se excluyen RRs que ya fueron emitidas (tienen numero Y fecha distinto de vacío/null)
+    # y RRs cuyo PM en ese SIM ya tiene documentos más avanzados
     # (AUTO_EJECUTORIA o RAP al TSP), lo que indica que el RR ya fue procesado
     # aunque no se registró el abogado (caso frecuente en datos históricos).
     auto_mas_avanzado = AUTOTPE.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm'))
     rap_presentado    = RecursoTSP.objects.filter(
         sim=OuterRef('sim'), pm=OuterRef('pm'), instancia='APELACION'
     )
+    rr_emitidas = Q(numero__isnull=False, numero__gt='', fecha__isnull=False)
     rr_sin_asignar = list(
         Resolucion.objects.filter(instancia='RECONSIDERACION', abogado__isnull=True)
+        .exclude(rr_emitidas)  # Excluir RRs que ya fueron emitidas
         .exclude(Exists(auto_mas_avanzado))
         .exclude(Exists(rap_presentado))
         .select_related('sim', 'resolucion_origen')
@@ -382,11 +385,12 @@ def agendar_rr(request):
             initial['rr'] = rr_id
         form = AgendarRRForm(initial=initial)
 
+    rr_emitidas = Q(numero__isnull=False, numero__gt='', fecha__isnull=False)
     context = {
         'form': form,
         'rr_pendientes': Resolucion.objects.filter(
             instancia='RECONSIDERACION', abogado__isnull=True
-        ).exclude(
+        ).exclude(rr_emitidas).exclude(
             Exists(AUTOTPE.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm')))
         ).exclude(
             Exists(RecursoTSP.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm'), instancia='APELACION'))
