@@ -35,6 +35,9 @@ _FERIADOS_FALLBACK = [
     date(2026, 8, 7),  date(2026, 11, 2), date(2026, 12, 25),
 ]
 
+# Constante pública para uso en vistas
+FERIADOS_2026 = _FERIADOS_FALLBACK
+
 
 def add_business_days(fecha_inicio, dias):
     """Suma 'dias' días hábiles a fecha_inicio, excluyendo feriados de la BD."""
