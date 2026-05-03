@@ -201,7 +201,20 @@ def _build_sheet(ws, columns, example_row, title=None):
 
 # ─── MAIN ────────────────────────────────────────────────────────────────────
 
-def generar_plantilla():
+def generar_plantilla(ruta_salida=None):
+    r"""
+    Genera la plantilla Excel para carga masiva.
+    Si no se especifica ruta_salida, usa D:\plantilla_historico_sim.xlsx
+    """
+    if ruta_salida is None:
+        ruta_salida = r"D:\plantilla_historico_sim.xlsx"
+
+    # Crear directorio si no existe
+    import os
+    directorio = os.path.dirname(ruta_salida)
+    if directorio and not os.path.exists(directorio):
+        os.makedirs(directorio)
+
     wb = Workbook()
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -543,20 +556,28 @@ def generar_plantilla():
     # ──────────────────────────────────────────────────────────────────────────
     # Guardar
     # ──────────────────────────────────────────────────────────────────────────
-    nombre = "plantilla_historico_sim.xlsx"
-    wb.save(nombre)
-    print(f"\nPlantilla generada: {nombre}")
+    wb.save(ruta_salida)
+    print(f"\n[OK] Plantilla generada: {ruta_salida}")
     print("  Hojas visibles:")
     for ws in wb.worksheets:
         if ws.sheet_state != "hidden":
-            print(f"    • {ws.title}")
+            print(f"    - {ws.title}")
     print(f"\nHoja oculta '_LISTAS': listas de referencia para dropdowns")
     print("\nLeyenda de columnas:")
     print("  ROJO   = obligatorio")
     print("  AZUL   = opcional")
-    print("  MARRÓN = clave foránea (referenciar otra hoja)")
-    print("\nRecuerda: la fila 3 de cada hoja es un EJEMPLO — bórrala antes de importar.\n")
+    print("  MARRON = clave foranea (referenciar otra hoja)")
+    print("\nRecuerda: la fila 3 de cada hoja es un EJEMPLO - borrala antes de importar.\n")
 
 
 if __name__ == "__main__":
-    generar_plantilla()
+    import sys
+
+    # Ruta por defecto: disco D
+    ruta_salida = None
+
+    # Si se proporciona argumento de línea de comandos, usarlo
+    if len(sys.argv) > 1:
+        ruta_salida = sys.argv[1]
+
+    generar_plantilla(ruta_salida)
