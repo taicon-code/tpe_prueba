@@ -19,7 +19,7 @@ from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, 
 def admin1_dashboard(request):
     """Dashboard específico para ADMIN1_AGENDADOR - Gestión de agendas y sumarios"""
 
-    perfil = request.user.perfilusuario
+    perfil = request.perfil
 
     # Si es Admin2, redirigir a su dashboard específico
     if perfil.rol == 'ADMIN2_ARCHIVO':

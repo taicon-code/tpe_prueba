@@ -7,7 +7,7 @@ Uso:
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from tpe_app.models import PM, SIM, PM_SIM, Resolucion, RecursoTSP, AUTOTPE, AUTOTSP, DocumentoAdjunto
+from tpe_app.models import PM, SIM, PM_SIM, Resolucion, RecursoTSP, AUTOTPE, AUTOTSP, DocumentoAdjunto, Notificacion
 import pandas as pd
 from datetime import datetime
 
@@ -143,7 +143,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'   ✓ {len(df)} PM_SIM importados'))
 
     def _importar_resoluciones(self, xls):
-        """Importa Resoluciones (1RA y RR)."""
+        """Importa Resoluciones (1RA y RR) + Notificaciones por separado."""
         self.stdout.write('4️⃣  Importando Resoluciones...')
 
         df = pd.read_excel(xls, sheet_name='4_Resoluciones')
@@ -157,6 +157,7 @@ class Command(BaseCommand):
                 numero = str(row['numero']).strip() if pd.notna(row['numero']) else ''
                 instancia = str(row['instancia']).strip() if pd.notna(row['instancia']) else 'PRIMERA'
 
+                # Crear/actualizar Resolución SIN campos de notificación
                 defaults = {
                     'sim': sim,
                     'pm': pm,
@@ -167,24 +168,41 @@ class Command(BaseCommand):
                     'fecha_presentacion': pd.to_datetime(row['fecha_presentacion']).date() if pd.notna(row['fecha_presentacion']) else None,
                     'fecha_limite': pd.to_datetime(row['fecha_limite']).date() if pd.notna(row['fecha_limite']) else None,
                     'texto': str(row['texto']).strip().upper() if pd.notna(row['texto']) else '',
-                    'tipo_notif': str(row['tipo_notif']).strip().upper() if pd.notna(row['tipo_notif']) else 'EMAIL',
-                    'notif_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
-                    'fecha_notif': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
-                    'hora_notif': str(row['hora_notif']).strip() if pd.notna(row['hora_notif']) else '',
                 }
 
-                Resolucion.objects.update_or_create(
+                resolucion, _ = Resolucion.objects.update_or_create(
                     numero=numero,
                     instancia=instancia,
                     defaults=defaults
                 )
+
+                # Crear Notificacion SEPARADAMENTE si hay datos
+                if pd.notna(row.get('tipo_notif')) or pd.notna(row.get('fecha_notif')):
+                    notif_tipo = str(row['tipo_notif']).strip() if pd.notna(row['tipo_notif']) else 'FIRMA'
+                    valid_tipos = ['FIRMA', 'EDICTO', 'CEDULON']
+                    if notif_tipo not in valid_tipos:
+                        notif_tipo = 'FIRMA'
+
+                    notif_fecha = pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None
+                    notif_a = str(row['notif_a']).strip() if pd.notna(row['notif_a']) else ''
+
+                    Notificacion.objects.update_or_create(
+                        resolucion=resolucion,
+                        defaults={
+                            'tipo': notif_tipo,
+                            'notificado_a': notif_a,
+                            'fecha': notif_fecha,
+                            'hora': None,
+                        }
+                    )
+
             except (SIM.DoesNotExist, PM.DoesNotExist) as e:
                 self.stdout.write(self.style.WARNING(f'  ⚠️  Fila {idx + 2}: {e}'))
 
         self.stdout.write(self.style.SUCCESS(f'   ✓ {len(df)} Resoluciones importadas'))
 
     def _importar_autos_tpe(self, xls):
-        """Importa Autos TPE."""
+        """Importa Autos TPE + Notificaciones por separado."""
         self.stdout.write('5️⃣  Importando Autos TPE...')
 
         df = pd.read_excel(xls, sheet_name='5_Autos_TPE')
@@ -195,30 +213,47 @@ class Command(BaseCommand):
                 sim = SIM.objects.get(id=int(row['sim_id']))
                 pm = PM.objects.get(ci=str(row['pm_ci']).strip())
 
-                AUTOTPE.objects.update_or_create(
+                numero_auto = str(row['numero']).strip() if pd.notna(row['numero']) else ''
+
+                # Crear/actualizar Auto TPE SIN campos de notificación
+                autotpe, _ = AUTOTPE.objects.update_or_create(
                     sim=sim,
                     pm=pm,
-                    numero=str(row['numero']).strip() if pd.notna(row['numero']) else '',
+                    numero=numero_auto,
                     defaults={
                         'tipo': str(row['tipo']).strip().upper() if pd.notna(row['tipo']) else '',
                         'fecha': pd.to_datetime(row['fecha']).date() if pd.notna(row['fecha']) else None,
                         'texto': str(row['texto']).strip().upper() if pd.notna(row['texto']) else '',
-                        'tipo_notif': str(row['tipo_notif']).strip().upper() if pd.notna(row['tipo_notif']) else 'EMAIL',
-                        'notif_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
-                        'fecha_notif': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
-                        'hora_notif': str(row['hora_notif']).strip() if pd.notna(row['hora_notif']) else '',
                         'memo_numero': str(row['memo_numero']).strip() if pd.notna(row['memo_numero']) else '',
                         'memo_fecha': pd.to_datetime(row['memo_fecha']).date() if pd.notna(row['memo_fecha']) else None,
                         'memo_fecha_entrega': pd.to_datetime(row['memo_fecha_entrega']).date() if pd.notna(row['memo_fecha_entrega']) else None,
                     }
                 )
+
+                # Crear Notificacion por separado
+                if pd.notna(row.get('tipo_notif')) or pd.notna(row.get('fecha_notif')):
+                    notif_tipo = str(row['tipo_notif']).strip() if pd.notna(row['tipo_notif']) else 'FIRMA'
+                    valid_tipos = ['FIRMA', 'EDICTO', 'CEDULON']
+                    if notif_tipo not in valid_tipos:
+                        notif_tipo = 'FIRMA'
+
+                    Notificacion.objects.update_or_create(
+                        autotpe=autotpe,
+                        defaults={
+                            'tipo': notif_tipo,
+                            'notificado_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
+                            'fecha': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
+                            'hora': None,
+                        }
+                    )
+
             except (SIM.DoesNotExist, PM.DoesNotExist) as e:
                 self.stdout.write(self.style.WARNING(f'  ⚠️  Fila {idx + 2}: {e}'))
 
         self.stdout.write(self.style.SUCCESS(f'   ✓ {len(df)} Autos TPE importados'))
 
     def _importar_recursos_tsp(self, xls):
-        """Importa Recursos TSP (RAP y RAEE)."""
+        """Importa Recursos TSP (RAP y RAEE) + Notificaciones por separado."""
         self.stdout.write('6️⃣  Importando Recursos TSP...')
 
         df = pd.read_excel(xls, sheet_name='6_Recursos_TSP')
@@ -229,10 +264,13 @@ class Command(BaseCommand):
                 sim = SIM.objects.get(id=int(row['sim_id']))
                 pm = PM.objects.get(ci=str(row['pm_ci']).strip())
 
-                RecursoTSP.objects.update_or_create(
+                numero_oficio = str(row['numero_oficio']).strip() if pd.notna(row['numero_oficio']) else ''
+
+                # Crear/actualizar Recurso TSP SIN campos de notificación
+                recurso, _ = RecursoTSP.objects.update_or_create(
                     sim=sim,
                     pm=pm,
-                    numero_oficio=str(row['numero_oficio']).strip() if pd.notna(row['numero_oficio']) else '',
+                    numero_oficio=numero_oficio,
                     defaults={
                         'instancia': str(row['instancia']).strip() if pd.notna(row['instancia']) else 'APELACION',
                         'fecha_oficio': pd.to_datetime(row['fecha_oficio']).date() if pd.notna(row['fecha_oficio']) else None,
@@ -242,19 +280,33 @@ class Command(BaseCommand):
                         'numero': str(row['numero']).strip() if pd.notna(row['numero']) else '',
                         'fecha': pd.to_datetime(row['fecha']).date() if pd.notna(row['fecha']) else None,
                         'texto': str(row['texto']).strip().upper() if pd.notna(row['texto']) else '',
-                        'tipo_notif': str(row['tipo_notif']).strip().upper() if pd.notna(row['tipo_notif']) else 'EMAIL',
-                        'notif_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
-                        'fecha_notif': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
-                        'hora_notif': str(row['hora_notif']).strip() if pd.notna(row['hora_notif']) else '',
                     }
                 )
+
+                # Crear Notificacion por separado
+                if pd.notna(row.get('tipo_notif')) or pd.notna(row.get('fecha_notif')):
+                    notif_tipo = str(row['tipo_notif']).strip() if pd.notna(row['tipo_notif']) else 'FIRMA'
+                    valid_tipos = ['FIRMA', 'EDICTO', 'CEDULON']
+                    if notif_tipo not in valid_tipos:
+                        notif_tipo = 'FIRMA'
+
+                    Notificacion.objects.update_or_create(
+                        recurso_tsp=recurso,
+                        defaults={
+                            'tipo': notif_tipo,
+                            'notificado_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
+                            'fecha': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
+                            'hora': None,
+                        }
+                    )
+
             except (SIM.DoesNotExist, PM.DoesNotExist) as e:
                 self.stdout.write(self.style.WARNING(f'  ⚠️  Fila {idx + 2}: {e}'))
 
         self.stdout.write(self.style.SUCCESS(f'   ✓ {len(df)} Recursos TSP importados'))
 
     def _importar_autos_tsp(self, xls):
-        """Importa Autos TSP (respuesta a RAP/RAEE)."""
+        """Importa Autos TSP (respuesta a RAP/RAEE) + Notificaciones por separado."""
         self.stdout.write('7️⃣  Importando Autos TSP...')
 
         df = pd.read_excel(xls, sheet_name='7_Autos_TSP')
@@ -267,20 +319,37 @@ class Command(BaseCommand):
                     continue
 
                 recurso = RecursoTSP.objects.get(id=recurso_id)
+                numero_auto = str(row['numero']).strip() if pd.notna(row['numero']) else ''
 
-                AUTOTSP.objects.update_or_create(
+                # Crear/actualizar Auto TSP SIN campos de notificación
+                autotsp, _ = AUTOTSP.objects.update_or_create(
                     recurso_tsp=recurso,
-                    numero=str(row['numero']).strip() if pd.notna(row['numero']) else '',
+                    numero=numero_auto,
                     defaults={
+                        'sim': recurso.sim,
                         'tipo': str(row['tipo']).strip().upper() if pd.notna(row['tipo']) else '',
                         'fecha': pd.to_datetime(row['fecha']).date() if pd.notna(row['fecha']) else None,
                         'texto': str(row['texto']).strip().upper() if pd.notna(row['texto']) else '',
-                        'tipo_notif': str(row['tipo_notif']).strip().upper() if pd.notna(row['tipo_notif']) else 'EMAIL',
-                        'notif_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
-                        'fecha_notif': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
-                        'hora_notif': str(row['hora_notif']).strip() if pd.notna(row['hora_notif']) else '',
                     }
                 )
+
+                # Crear Notificacion por separado
+                if pd.notna(row.get('tipo_notif')) or pd.notna(row.get('fecha_notif')):
+                    notif_tipo = str(row['tipo_notif']).strip() if pd.notna(row['tipo_notif']) else 'FIRMA'
+                    valid_tipos = ['FIRMA', 'EDICTO', 'CEDULON']
+                    if notif_tipo not in valid_tipos:
+                        notif_tipo = 'FIRMA'
+
+                    Notificacion.objects.update_or_create(
+                        autotsp=autotsp,
+                        defaults={
+                            'tipo': notif_tipo,
+                            'notificado_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
+                            'fecha': pd.to_datetime(row['fecha_notif']).date() if pd.notna(row['fecha_notif']) else None,
+                            'hora': None,
+                        }
+                    )
+
             except (RecursoTSP.DoesNotExist, ValueError) as e:
                 self.stdout.write(self.style.WARNING(f'  ⚠️  Fila {idx + 2}: {e}'))
 

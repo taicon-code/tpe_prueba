@@ -9,6 +9,7 @@ def rol_requerido(*roles_permitidos):
     Uso: @rol_requerido('ADMINISTRADOR', 'ABOGADO')
 
     MASTER tiene acceso automático a todas las vistas.
+    Adjunta el perfil a request.perfil para acceso fácil en las vistas.
     """
     def decorator(view_func):
         @wraps(view_func)
@@ -17,22 +18,43 @@ def rol_requerido(*roles_permitidos):
             from tpe_app.models import PerfilUsuario
 
             if request.user.is_superuser:
+                # Para superusuarios, crear un perfil simulado
+                class PerfirFake:
+                    rol = 'MASTER'
+                    activo = True
+                request.perfil = PerfirFake()
                 return view_func(request, *args, **kwargs)
+
             try:
                 # Buscar explícitamente el perfil en lugar de usar la relación inversa
                 perfil = PerfilUsuario.objects.get(user=request.user)
+
+                # Verificar que el perfil esté activo
+                if not perfil.activo:
+                    raise PermissionDenied("Tu cuenta está desactivada. Contacta al administrador.")
+
                 # MASTER tiene acceso a todo
                 if perfil.rol == 'MASTER':
-                    if not perfil.activo:
-                        raise PermissionDenied("Tu cuenta está desactivada")
+                    request.perfil = perfil  # Adjuntar perfil a request
                     return view_func(request, *args, **kwargs)
+
                 # Otros roles requieren estar en la lista de permitidos
                 if perfil.rol not in roles_permitidos:
-                    raise PermissionDenied("No tienes permisos para acceder a esta página")
-                if not perfil.activo:
-                    raise PermissionDenied("Tu cuenta está desactivada")
+                    roles_requeridos = ', '.join(roles_permitidos) if roles_permitidos else 'ninguno'
+                    raise PermissionDenied(
+                        f"Tu rol ({perfil.get_rol_display()}) no tiene acceso a esta página. "
+                        f"Se requiere uno de: {roles_requeridos}"
+                    )
+
+                request.perfil = perfil  # Adjuntar perfil a request
                 return view_func(request, *args, **kwargs)
-            except (PerfilUsuario.DoesNotExist, AttributeError):
-                raise PermissionDenied("No tienes un perfil asignado")
+
+            except PerfilUsuario.DoesNotExist:
+                raise PermissionDenied(
+                    "Tu usuario no tiene un perfil asignado. "
+                    "Contacta al administrador del sistema para que te cree un perfil."
+                )
+            except AttributeError as e:
+                raise PermissionDenied(f"Error en la configuración del usuario: {str(e)}")
         return wrapper
     return decorator

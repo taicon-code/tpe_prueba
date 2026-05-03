@@ -839,9 +839,9 @@ class AUTOTPE(models.Model):
 # ============================================================
 class Memorandum(models.Model):
 
-    resolucion    = models.ForeignKey('Resolucion', on_delete=models.CASCADE, null=True, blank=True,
+    resolucion    = models.ForeignKey('Resolucion', on_delete=models.PROTECT, null=True, blank=True,
                                       related_name='memorandums', verbose_name='Resolución vinculada')
-    autotpe       = models.ForeignKey(AUTOTPE, on_delete=models.CASCADE, null=True, blank=True,
+    autotpe       = models.ForeignKey(AUTOTPE, on_delete=models.PROTECT, null=True, blank=True,
                                       related_name='memorandums', verbose_name='Auto TPE vinculado')
     numero        = models.CharField(max_length=60, verbose_name='N° Memorándum')
     fecha         = models.DateField(verbose_name='Fecha Memorándum')
@@ -916,11 +916,11 @@ class DocumentoAdjunto(models.Model):
         ('otro',         'Otro'),
     ]
 
-    sim         = models.ForeignKey('SIM',        null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Sumario SIM')
-    resolucion  = models.ForeignKey('Resolucion', null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Resolución')
-    autotpe     = models.ForeignKey('AUTOTPE',    null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Auto TPE')
-    autotsp     = models.ForeignKey('AUTOTSP',    null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Auto TSP')
-    recurso_tsp = models.ForeignKey('RecursoTSP', null=True, blank=True, on_delete=models.CASCADE, related_name='documentos', verbose_name='Recurso TSP')
+    sim         = models.ForeignKey('SIM',        null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Sumario SIM')
+    resolucion  = models.ForeignKey('Resolucion', null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Resolución')
+    autotpe     = models.ForeignKey('AUTOTPE',    null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Auto TPE')
+    autotsp     = models.ForeignKey('AUTOTSP',    null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Auto TSP')
+    recurso_tsp = models.ForeignKey('RecursoTSP', null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Recurso TSP')
 
     tipo           = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name='Tipo de documento')
     archivo        = models.FileField(upload_to='documentos/%Y/', verbose_name='Archivo PDF')
@@ -1062,7 +1062,7 @@ class RecursoTSP(models.Model):
     pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
                              related_name='recursos_tsp_como_militar')
     resolucion         = models.ForeignKey(Resolucion, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Resolución impugnada (solo APELACION)')
-    recurso_origen     = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True,
+    recurso_origen     = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True,
                                            related_name='aclaraciones',
                                            verbose_name='Recurso origen (solo ACLARACION_ENMIENDA)')
 
@@ -1140,13 +1140,13 @@ class Notificacion(models.Model):
     hora         = models.TimeField(null=True, blank=True, verbose_name='Hora de Notificación')
 
     # Exactamente uno de estos debe ser no-nulo
-    resolucion  = models.OneToOneField('Resolucion',  null=True, blank=True, on_delete=models.CASCADE,
+    resolucion  = models.OneToOneField('Resolucion',  null=True, blank=True, on_delete=models.PROTECT,
                                        related_name='notificacion', verbose_name='Resolución')
-    autotpe     = models.OneToOneField('AUTOTPE',     null=True, blank=True, on_delete=models.CASCADE,
+    autotpe     = models.OneToOneField('AUTOTPE',     null=True, blank=True, on_delete=models.PROTECT,
                                        related_name='notificacion', verbose_name='Auto TPE')
-    autotsp     = models.OneToOneField('AUTOTSP',     null=True, blank=True, on_delete=models.CASCADE,
+    autotsp     = models.OneToOneField('AUTOTSP',     null=True, blank=True, on_delete=models.PROTECT,
                                        related_name='notificacion', verbose_name='Auto TSP')
-    recurso_tsp = models.OneToOneField('RecursoTSP',  null=True, blank=True, on_delete=models.CASCADE,
+    recurso_tsp = models.OneToOneField('RecursoTSP',  null=True, blank=True, on_delete=models.PROTECT,
                                        related_name='notificacion', verbose_name='Recurso TSP')
 
     class Meta:

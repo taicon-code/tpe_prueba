@@ -422,7 +422,8 @@ def export_batch_pdf(request):
     nombre_completo = request.user.get_full_name() or request.user.username
     if request.user.is_authenticated:
         try:
-            perfil = request.user.perfilusuario
+            from tpe_app.models import PerfilUsuario
+            perfil = PerfilUsuario.objects.get(user=request.user)
             pm_pie = perfil.pm if perfil.pm else (perfil.vocal.pm if perfil.vocal and perfil.vocal.pm else None)
             if pm_pie:
                 grado_usuario  = pm_pie.get_grado_display() or ""

@@ -8,8 +8,8 @@ from datetime import date, timedelta
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
 def abogado_dashboard(request):
     """Dashboard para abogados - solo ven sus sumarios asignados"""
-    
-    perfil = request.user.perfilusuario
+
+    perfil = request.perfil
     
     # Si el abogado no está vinculado a PM, mostrar error
     if not perfil.pm:
@@ -121,7 +121,7 @@ def abogado_entregar_carpeta(request, sim_id):
     from ..forms import EntregarCarpetaAbogadoForm
 
     sim = get_object_or_404(SIM, pk=sim_id)
-    perfil = request.user.perfilusuario
+    perfil = request.perfil
 
     if request.method == 'POST':
         form = EntregarCarpetaAbogadoForm(request.POST)
