@@ -9,6 +9,10 @@ from django.utils import timezone
 from datetime import date, timedelta
 
 
+# Cache de feriados en memoria para evitar queries repetidas a la BD
+_FERIADOS_CACHE = {}
+
+
 # ============================================================
 # MODELO 0: FeriadoBolivia — feriados nacionales configurables
 # ============================================================
@@ -40,16 +44,27 @@ FERIADOS_2026 = _FERIADOS_FALLBACK
 
 
 def add_business_days(fecha_inicio, dias):
-    """Suma 'dias' días hábiles a fecha_inicio, excluyendo feriados de la BD."""
-    try:
-        años = {fecha_inicio.year, (fecha_inicio + timedelta(days=dias * 2 + 10)).year}
-        feriados = set(
-            FeriadoBolivia.objects.filter(anio__in=años).values_list('fecha', flat=True)
-        )
-        if not feriados:
-            feriados = set(_FERIADOS_FALLBACK)
-    except Exception:
-        feriados = set(_FERIADOS_FALLBACK)
+    """Suma 'dias' días hábiles a fecha_inicio, excluyendo feriados (cached)."""
+    global _FERIADOS_CACHE
+
+    años_requeridos = {fecha_inicio.year, (fecha_inicio + timedelta(days=dias * 2 + 10)).year}
+
+    # Cargar años faltantes en el caché
+    for año in años_requeridos:
+        if año not in _FERIADOS_CACHE:
+            try:
+                _FERIADOS_CACHE[año] = set(
+                    FeriadoBolivia.objects.filter(anio=año).values_list('fecha', flat=True)
+                )
+                if not _FERIADOS_CACHE[año]:
+                    _FERIADOS_CACHE[año] = set(_FERIADOS_FALLBACK)
+            except Exception:
+                _FERIADOS_CACHE[año] = set(_FERIADOS_FALLBACK)
+
+    # Combinar feriados de todos los años necesarios
+    feriados = set()
+    for año in años_requeridos:
+        feriados.update(_FERIADOS_CACHE.get(año, _FERIADOS_FALLBACK))
 
     fecha = fecha_inicio
     contados = 0
@@ -528,7 +543,7 @@ class SIM(models.Model):
 # ============================================================
 class PM_SIM(models.Model):
 
-    sim           = models.ForeignKey(SIM, on_delete=models.CASCADE,  verbose_name='Sumario')
+    sim           = models.ForeignKey(SIM, on_delete=models.PROTECT,  verbose_name='Sumario')
     pm            = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Militar')
     grado_en_fecha = models.CharField(
         max_length=20, choices=PM.GRADO_CHOICES,
@@ -551,7 +566,7 @@ class PM_SIM(models.Model):
 # ============================================================
 class ABOG_SIM(models.Model):
 
-    sim      = models.ForeignKey(SIM, on_delete=models.CASCADE,  verbose_name='Sumario')
+    sim      = models.ForeignKey(SIM, on_delete=models.PROTECT,  verbose_name='Sumario')
     abogado  = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Abogado',
                                  related_name='asignaciones_abogado')
     es_responsable = models.BooleanField(
@@ -608,9 +623,15 @@ class CustodiaSIM(models.Model):
     abogado          = models.ForeignKey(PM, on_delete=models.SET_NULL,
                                          null=True, blank=True, verbose_name='Abogado',
                                          related_name='custodias_como_abogado')
+    nombre_abogado   = models.CharField(max_length=100, null=True, blank=True,
+                                        verbose_name='Nombre Abogado (histórico)',
+                                        help_text='Se completa automáticamente. Preserva el nombre si el abogado se elimina.')
     abogado_destino  = models.ForeignKey(PM, on_delete=models.SET_NULL,
                                          null=True, blank=True, verbose_name='Abogado Destino',
                                          related_name='custodias_como_destino')
+    nombre_abogado_destino = models.CharField(max_length=100, null=True, blank=True,
+                                              verbose_name='Nombre Abogado Destino (histórico)',
+                                              help_text='Se completa automáticamente. Preserva el nombre si el abogado se elimina.')
     usuario          = models.ForeignKey('auth.User', on_delete=models.SET_NULL,
                                          null=True, blank=True, related_name='custodias_registradas',
                                          verbose_name='Usuario que registró')
@@ -645,6 +666,10 @@ class CustodiaSIM(models.Model):
 
     def save(self, *args, **kwargs):
         self.clean()
+        if self.abogado and not self.nombre_abogado:
+            self.nombre_abogado = f"{self.abogado.grado} {self.abogado.paterno} {self.abogado.materno}".strip()
+        if self.abogado_destino and not self.nombre_abogado_destino:
+            self.nombre_abogado_destino = f"{self.abogado_destino.grado} {self.abogado_destino.paterno} {self.abogado_destino.materno}".strip()
         super().save(*args, **kwargs)
 
     @property
@@ -1260,7 +1285,6 @@ class PerfilUsuario(models.Model):
         ('SECRETARIO_ACTAS',   'Secretario de Actas'),
         ('ASESOR_JEFE',        'Asesor Jefe (Supervisor de Procesos)'),
         ('ASESOR_JURIDICO',    'Asesor Jurídico del DPTO-I'),
-        ('ABOGADO',            'Abogado (General)'),
         ('BUSCADOR',           'Buscador (General)'),
     ]
 
@@ -1268,7 +1292,7 @@ class PerfilUsuario(models.Model):
     ROLES_CON_PM = {
         'MASTER', 'ADMINISTRADOR', 'AYUDANTE',
         'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR',
-        'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR', 'ABOGADO',
+        'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR',
         'ASESOR_JEFE', 'ASESOR_JURIDICO', 'BUSCADOR',
     }
 
