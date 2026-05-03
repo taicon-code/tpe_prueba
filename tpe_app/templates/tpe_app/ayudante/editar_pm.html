@@ -1,11 +1,39 @@
 {% extends "tpe_app/base.html" %}
 {% block title %}Editar Personal Militar{% endblock %}
 
-{% block content %}
-<div class="container mt-4" style="max-width: 680px;">
+{% block extra_head %}
+<style>
+  .card-section { border-left: 4px solid #0d6efd; }
+  .card-section.info { border-left-color: #0dcaf0; }
+  .card-section.career { border-left-color: #198754; }
+  .card-section.warning { border-left-color: #ffc107; }
+  .field-group { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.5rem; }
+  .field-label { flex: 0 0 200px; font-weight: 600; color: #495057; }
+  .field-value { flex: 1; font-size: 1rem; }
+</style>
+{% endblock %}
 
-  <h4 class="mb-1">Editar Personal Militar</h4>
-  <p class="text-muted mb-4">{{ pm.grado }} {{ pm.nombre }} {{ pm.paterno }} {{ pm.materno }}</p>
+{% block content %}
+<div class="container mt-4" style="max-width: 900px;">
+
+  <!-- Encabezado con información del personal -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h3 class="mb-1">
+        <i class="bi bi-person-vcard me-2"></i>Editar Datos Personales
+      </h3>
+      <p class="text-muted fs-5 mb-0">
+        <strong>{{ pm.grado }}</strong> {{ pm.paterno }} {{ pm.nombre }}
+        {% if pm.materno %}<span class="text-muted">{{ pm.materno }}</span>{% endif %}
+      </p>
+    </div>
+    {% if pm.ci %}
+    <div class="col-md-4 text-md-end">
+      <small class="text-muted d-block">CI:</small>
+      <strong class="fs-5">{{ pm.ci|floatformat:"0" }}</strong>
+    </div>
+    {% endif %}
+  </div>
 
   {% if messages %}
     {% for msg in messages %}
@@ -15,168 +43,220 @@
     {% endfor %}
   {% endif %}
 
-  <!-- ADVERTENCIA: Sin año de egreso -->
-  {% if pm.anio_promocion is None %}
-  <div class="alert alert-warning alert-dismissible fade show" role="alert">
-    <strong>⚠️ Advertencia:</strong> No hay datos de <strong>Año de Egreso</strong> para este personal.
-    <br/>
-    <small>
-      • Sin esta información, <strong>no se puede calcular el grado esperado</strong> ni los años de servicio.<br/>
-      • El <strong>grado mostrado en reportes será el del sumario</strong> (del documento histórico).<br/>
-      • Si cuenta con este dato, complételo en el campo "Año de Egreso" abajo.
-    </small>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
+  <!-- Carrera Militar: Información calculada -->
+  {% if pm.anio_promocion %}
+    {% if años_servicio is not None %}
+    <div class="alert alert-info mb-4" style="background-color: #d1ecf1; border-color: #0c5460;">
+      <div class="row g-3 align-items-center">
+        <div class="col-auto">
+          <i class="bi bi-calendar-check fs-4 text-info"></i>
+        </div>
+        <div class="col">
+          <strong>Carrera Militar Calculada</strong>
+          <div class="small mt-2">
+            <div><strong>Años de servicio:</strong> {{ años_servicio }} años</div>
+            {% if grado_esperado %}<div><strong>Grado esperado:</strong> {{ grado_esperado }}</div>{% endif %}
+            {% if estado_calculado %}<div><strong>Estado:</strong> {{ estado_calculado }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   {% else %}
-  <!-- Información calculada cuando SÍ hay año de egreso -->
-  {% if años_servicio is not None %}
-  <div class="alert alert-info py-2 mb-3">
-    <strong>✅ Años de servicio:</strong> {{ años_servicio }} años
-    {% if grado_esperado %}
-      &nbsp;|&nbsp; <strong>Grado esperado:</strong> {{ grado_esperado }}
-    {% endif %}
-    {% if estado_calculado %}
-      &nbsp;|&nbsp; <strong>Estado calculado:</strong> {{ estado_calculado }}
-    {% endif %}
+  <!-- Advertencia: Sin año de egreso -->
+  <div class="alert alert-danger mb-4" style="background-color: #f8d7da; border-color: #721c24;">
+    <div class="row g-2 align-items-start">
+      <div class="col-auto">
+        <i class="bi bi-exclamation-triangle fs-5"></i>
+      </div>
+      <div class="col">
+        <strong>Año de Egreso no registrado</strong>
+        <div class="small mt-2">
+          Sin esta información <strong>no se puede calcular automáticamente</strong> el grado esperado ni los años de servicio.
+          El grado mostrado será el del documento histórico del sumario. Complete el campo "Año de Egreso" para habilitar cálculos automáticos.
+        </div>
+      </div>
+    </div>
   </div>
-  {% endif %}
   {% endif %}
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ request.GET.next }}">
 
-    <div class="row g-3">
-
-      <div class="col-6">
-        <label class="form-label fw-semibold">Escalafón</label>
-        <select name="escalafon" class="form-select">
-          <option value="">---------</option>
-          {% for val, label in escalafon_choices %}
-            <option value="{{ val }}" {% if pm.escalafon == val %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
+    <!-- ========== SECCIÓN 1: DATOS PERSONALES ========== -->
+    <div class="card card-section mb-4">
+      <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-person-circle me-2 text-primary"></i>Datos Personales</h5>
       </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Cédula de Identidad
+              {% if not pm.ci %}<span class="badge bg-warning text-dark">INCOMPLETO</span>{% else %}<span class="badge bg-success-subtle text-success">✓ OK</span>{% endif %}
+            </label>
+            <input type="number" name="ci" class="form-control {% if not pm.ci %}border-warning{% endif %}"
+                   value="{{ pm.ci|default:'' }}" placeholder="Ej: 1234567" title="Número de cédula de identidad">
+            <small class="form-text text-muted">Número único de identificación</small>
+          </div>
 
-      <div class="col-6">
-        <label class="form-label fw-semibold">
-          Grado Actual
-          {% if pm.anio_promocion is None %}<span class="badge bg-danger">DEL DOCUMENTO</span>{% endif %}
-        </label>
-        <select name="grado" class="form-select {% if pm.anio_promocion is None %}border-danger{% endif %}">
-          <option value="">---------</option>
-          {% for val, label in grado_choices %}
-            <option value="{{ val }}" {% if pm.grado == val %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if pm.anio_promocion is None %}
-        <div class="form-text text-danger">
-          <strong>⚠️</strong> Sin año de egreso, este es el grado del sumario histórico.
-        </div>
-        {% else %}
-        <div class="form-text">
-          Grado registrado actualmente.
-        </div>
-        {% endif %}
-      </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Escalafón</label>
+            <select name="escalafon" class="form-select">
+              <option value="">— Seleccionar —</option>
+              {% for val, label in escalafon_choices %}
+                <option value="{{ val }}" {% if pm.escalafon == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted">Rama del ejército</small>
+          </div>
 
-      <div class="col-6">
-        <label class="form-label fw-semibold">
-          Año de Egreso
-          {% if pm.anio_promocion is None %}<span class="badge bg-warning text-dark">FALTA</span>{% else %}<span class="badge bg-success">✓ OK</span>{% endif %}
-        </label>
-        <input type="number" name="anio_promocion" class="form-control {% if pm.anio_promocion is None %}border-warning{% endif %}"
-               value="{{ pm.anio_promocion|default:'' }}"
-               placeholder="Ej: 2000" min="1950" max="2100">
-        <div class="form-text">
-          Año en que egresó de la institución militar.
-          {% if pm.anio_promocion is None %}
-            <strong class="text-warning">Este campo es crítico para calcular carrera.</strong>
-          {% endif %}
-        </div>
-      </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Arma</label>
+            <select name="arma" class="form-select">
+              <option value="">— Seleccionar —</option>
+              {% for val, label in arma_choices %}
+                <option value="{{ val }}" {% if pm.arma == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted">Especialidad en armas</small>
+          </div>
 
-      <div class="col-6">
-        <label class="form-label fw-semibold">Estado</label>
-        <select name="estado" class="form-select">
-          {% for val, label in estado_choices %}
-            <option value="{{ val }}" {% if pm.estado == val %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6">
-        <label class="form-label fw-semibold">Arma</label>
-        <select name="arma" class="form-select">
-          <option value="">---------</option>
-          {% for val, label in arma_choices %}
-            <option value="{{ val }}" {% if pm.arma == val %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="col-6">
-        <label class="form-label fw-semibold">
-          Cédula de Identidad (CI)
-          {% if not pm.ci %}<span class="badge bg-warning text-dark">FALTA</span>{% endif %}
-        </label>
-        <input type="number" name="ci" class="form-control" value="{{ pm.ci|default:'' }}"
-               placeholder="Ej: 1234567">
-      </div>
-
-      <div class="col-12">
-        <label class="form-label fw-semibold">
-          Foto
-          {% if pm.foto %}<span class="badge bg-success">Cargada</span>{% else %}<span class="badge bg-secondary">Sin foto</span>{% endif %}
-        </label>
-        {% if pm.foto %}
-        <div class="mb-2">
-          <img src="{{ pm.foto.url }}" alt="Foto" style="height:60px;border-radius:4px;">
-          <small class="text-muted ms-2">Selecciona una nueva para reemplazarla</small>
-        </div>
-        {% endif %}
-        <input type="file" name="foto" class="form-control" accept="image/*">
-      </div>
-
-      <!-- No ascendió — campo clave -->
-      <div class="col-12">
-        <div class="card {% if pm.anio_promocion %}border-warning{% else %}border-danger{% endif %}">
-          <div class="card-body py-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="no_ascendio"
-                     id="noAscendio" {% if pm.no_ascendio %}checked{% endif %} {% if pm.anio_promocion is None %}disabled{% endif %}>
-              <label class="form-check-label fw-semibold" for="noAscendio">
-                No ascendió al grado correspondiente
-              </label>
-            </div>
-            <div class="form-text mt-1">
-              {% if pm.anio_promocion %}
-                Marcar cuando el militar se quedó en un grado inferior al que le
-                correspondería por su año de egreso (por sanción, baja temporal u
-                otra razón). El sistema dejará de calcular el grado esperado.
-              {% else %}
-                <strong class="text-danger">⚠️ Este campo requiere un Año de Egreso registrado.</strong>
-                Completa primero el año de egreso para poder usar esta opción.
-              {% endif %}
-            </div>
-
-            {% if grado_esperado and pm.grado != grado_esperado and not pm.no_ascendio %}
-            <div class="alert alert-warning py-2 mt-2 mb-0">
-              <strong>Atención:</strong> el grado actual <strong>{{ pm.grado }}</strong>
-              no coincide con el esperado <strong>{{ grado_esperado }}</strong>.
-              Si no ascendió, marque la casilla de arriba.
-            </div>
-            {% endif %}
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <select name="estado" class="form-select">
+              {% for val, label in estado_choices %}
+                <option value="{{ val }}" {% if pm.estado == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted">Situación actual del personal</small>
           </div>
         </div>
       </div>
-
     </div>
 
-    <div class="mt-4 d-flex gap-2">
-      <button type="submit" class="btn btn-primary">Guardar cambios</button>
-      <a href="{{ request.GET.next|default:'ayudante_dashboard' }}" class="btn btn-outline-secondary">Cancelar</a>
+    <!-- ========== SECCIÓN 2: CARRERA MILITAR ========== -->
+    <div class="card card-section career mb-4">
+      <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-briefcase me-2 text-success"></i>Carrera Militar</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Año de Egreso
+              {% if pm.anio_promocion is None %}<span class="badge bg-danger">CRÍTICO</span>{% else %}<span class="badge bg-success-subtle text-success">✓ OK</span>{% endif %}
+            </label>
+            <input type="number" name="anio_promocion" class="form-control {% if pm.anio_promocion is None %}border-danger{% endif %}"
+                   value="{{ pm.anio_promocion|default:'' }}" placeholder="Ej: 2000" min="1950" max="2100"
+                   title="Año de egreso de la institución militar">
+            <small class="form-text {% if pm.anio_promocion is None %}text-danger{% else %}text-muted{% endif %}">
+              {% if pm.anio_promocion is None %}
+                <strong>⚠️ Este campo es crítico para calcular automáticamente los años de servicio y grado esperado</strong>
+              {% else %}
+                Base para calcular años de servicio y ascensos
+              {% endif %}
+            </small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Grado Actual
+              {% if pm.anio_promocion is None %}<span class="badge bg-info text-dark">DEL DOCUMENTO</span>{% endif %}
+            </label>
+            <select name="grado" class="form-select {% if pm.anio_promocion is None %}border-info{% endif %}">
+              <option value="">— Seleccionar —</option>
+              {% for val, label in grado_choices %}
+                <option value="{{ val }}" {% if pm.grado == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <small class="form-text text-muted">
+              {% if pm.anio_promocion is None %}
+                Grado extraído del sumario histórico (sin año de egreso)
+              {% else %}
+                Grado registrado actualmente
+              {% endif %}
+            </small>
+          </div>
+
+          {% if grado_esperado and pm.grado != grado_esperado and not pm.no_ascendio %}
+          <div class="col-12">
+            <div class="alert alert-warning py-2 mb-0">
+              <i class="bi bi-exclamation-circle me-2"></i>
+              <strong>Revisión recomendada:</strong> el grado actual <strong>{{ pm.grado }}</strong>
+              no coincide con el esperado <strong>{{ grado_esperado }}</strong>.
+              Si no ascendió, marque la opción abajo.
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="col-12">
+            <div class="alert alert-info py-2 mb-0">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="no_ascendio"
+                       id="noAscendio" {% if pm.no_ascendio %}checked{% endif %} {% if pm.anio_promocion is None %}disabled{% endif %}>
+                <label class="form-check-label" for="noAscendio">
+                  <strong>Este militar no ascendió al grado que le correspondía</strong>
+                </label>
+              </div>
+              <small class="form-text d-block mt-2">
+                {% if pm.anio_promocion %}
+                  Marque si el militar se quedó en un grado inferior por sanción, baja temporal u otra razón.
+                  El sistema dejará de calcular automáticamente el grado esperado.
+                {% else %}
+                  <i class="bi bi-lock me-1"></i>
+                  <strong>Requiere completar primero el "Año de Egreso" para usar esta opción</strong>
+                {% endif %}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- ========== SECCIÓN 3: DOCUMENTACIÓN ========== -->
+    <div class="card card-section info mb-4">
+      <div class="card-header bg-light py-3">
+        <h5 class="mb-0"><i class="bi bi-image me-2 text-info"></i>Documentación</h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">
+              Fotografía
+              {% if pm.foto %}<span class="badge bg-success-subtle text-success">✓ Cargada</span>{% else %}<span class="badge bg-secondary">No cargada</span>{% endif %}
+            </label>
+
+            {% if pm.foto %}
+            <div class="mb-3 p-3" style="background-color: #f8f9fa; border-radius: 6px;">
+              <div class="d-flex align-items-center gap-3">
+                <img src="{{ pm.foto.url }}" alt="Foto de {{ pm.nombre }}" style="height:100px; width:80px; object-fit:cover; border-radius:4px; border: 1px solid #dee2e6;">
+                <div>
+                  <p class="mb-1"><small class="text-muted">Foto actual registrada</small></p>
+                  <p class="mb-0"><small>Selecciona una nueva imagen para reemplazarla</small></p>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <input type="file" name="foto" class="form-control" accept="image/*" title="Cargar fotografía">
+            <small class="form-text text-muted">Formatos: JPG, PNG. Tamaño máximo: 5MB</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== BOTONES DE ACCIÓN ========== -->
+    <div class="d-flex gap-2 mb-4">
+      <button type="submit" class="btn btn-primary btn-lg">
+        <i class="bi bi-check-circle me-2"></i>Guardar cambios
+      </button>
+      <a href="{{ request.GET.next|default:'ayudante_dashboard' }}" class="btn btn-outline-secondary btn-lg">
+        <i class="bi bi-x-circle me-2"></i>Cancelar
+      </a>
+    </div>
+
   </form>
 
 </div>

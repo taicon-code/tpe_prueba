@@ -51,6 +51,7 @@
             <label class="form-label mb-0 small text-muted">Tipo:</label>
             <select name="tipo_doc" class="form-select form-select-sm" style="min-width:190px;"
                     onchange="this.form.submit()">
+              <option value="resoluciones" {% if tipo_doc == 'resoluciones' %}selected{% endif %}>Todas las Resoluciones</option>
               <option value="resolucion" {% if tipo_doc == 'resolucion' %}selected{% endif %}>Resolución (1ª Instancia)</option>
               <option value="reconsideracion" {% if tipo_doc == 'reconsideracion' %}selected{% endif %}>Reconsideración (RR)</option>
               <option value="autotpe" {% if tipo_doc == 'autotpe' %}selected{% endif %}>Auto TPE</option>
@@ -147,7 +148,7 @@
                      class="btn btn-xs btn-outline-warning" style="font-size:0.68rem;padding:1px 6px;">
                     <i class="bi bi-bell"></i> Notificar
                   </a>
-                {% elif tipo_doc == 'reconsideracion' %}
+                {% elif tipo_doc == 'reconsideracion' or obj.instancia == 'RECONSIDERACION' %}
                   <a href="{% url 'ayudante_registrar_notificacion_rr' obj.pk %}?next={{ back_url|urlencode }}"
                      class="btn btn-xs btn-outline-warning" style="font-size:0.68rem;padding:1px 6px;">
                     <i class="bi bi-bell"></i> Notificar

@@ -1210,7 +1210,19 @@ def ayudante_tabla_documentos(request):
     gestion = request.GET.get('gestion', '')
     page_num = request.GET.get('page', 1)
 
-    if tipo_doc == 'reconsideracion':
+    if tipo_doc == 'resoluciones':
+        # TODAS las resoluciones (PRIMERA + RECONSIDERACION)
+        qs = (Resolucion.objects
+              .filter(instancia__in=['PRIMERA', 'RECONSIDERACION'])
+              .select_related('pm', 'sim'))
+        tipo_label = 'Todas las Resoluciones'
+        gestiones_disponibles = list(
+            Resolucion.objects.filter(instancia__in=['PRIMERA', 'RECONSIDERACION'])
+            .exclude(fecha__isnull=True)
+            .values_list('fecha__year', flat=True)
+            .distinct().order_by('-fecha__year')
+        )
+    elif tipo_doc == 'reconsideracion':
         qs = (Resolucion.objects
               .filter(instancia='RECONSIDERACION')
               .select_related('pm', 'sim'))
@@ -1249,7 +1261,19 @@ def ayudante_tabla_documentos(request):
         except (ValueError, TypeError):
             gestion = ''
 
-    qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+    # Ordenamiento por número de forma natural para resoluciones
+    if tipo_doc == 'resoluciones':
+        from django.db.models import F, Value, CharField, IntegerField
+        from django.db.models.functions import Cast, Substr, Coalesce
+        # Extraer número y ordenar como entero
+        qs = qs.annotate(
+            numero_int=Cast(
+                Coalesce(Substr(F('numero'), 1, 2), Value('0')),
+                IntegerField()
+            )
+        ).order_by('numero_int', '-fecha', 'pm__paterno', 'pm__nombre')
+    else:
+        qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
 
     paginator = Paginator(qs, 25)
     page_obj = paginator.get_page(page_num)
@@ -1257,7 +1281,7 @@ def ayudante_tabla_documentos(request):
     ids_page = [obj.pk for obj in items]
 
     # Pre-fetch PDFs para esta página
-    if tipo_doc in ('resolucion', 'reconsideracion'):
+    if tipo_doc in ('resolucion', 'reconsideracion', 'resoluciones'):
         docs_con_pdf = set(
             DocumentoAdjunto.objects.filter(resolucion_id__in=ids_page)
             .values_list('resolucion_id', flat=True)
@@ -1383,7 +1407,10 @@ def ayudante_tabla_export_pdf(request):
     tipo_doc = request.GET.get('tipo_doc', 'resolucion')
     gestion = request.GET.get('gestion', '')
 
-    if tipo_doc == 'reconsideracion':
+    if tipo_doc == 'resoluciones':
+        qs = Resolucion.objects.filter(instancia__in=['PRIMERA', 'RECONSIDERACION']).select_related('pm', 'sim')
+        titulo_tipo = 'TODAS LAS RESOLUCIONES'
+    elif tipo_doc == 'reconsideracion':
         qs = Resolucion.objects.filter(instancia='RECONSIDERACION').select_related('pm', 'sim')
         titulo_tipo = 'RECONSIDERACIONES (RR)'
     elif tipo_doc == 'autotpe':
@@ -1399,11 +1426,22 @@ def ayudante_tabla_export_pdf(request):
         except (ValueError, TypeError):
             pass
 
-    qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+    if tipo_doc == 'resoluciones':
+        from django.db.models import F, Value, CharField, IntegerField
+        from django.db.models.functions import Cast, Substr, Coalesce
+        qs = qs.annotate(
+            numero_int=Cast(
+                Coalesce(Substr(F('numero'), 1, 2), Value('0')),
+                IntegerField()
+            )
+        ).order_by('numero_int', '-fecha', 'pm__paterno', 'pm__nombre')
+    else:
+        qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+
     items = list(qs)
     ids_all = [obj.pk for obj in items]
 
-    if tipo_doc in ('resolucion', 'reconsideracion'):
+    if tipo_doc in ('resolucion', 'reconsideracion', 'resoluciones'):
         docs_con_pdf = set(
             DocumentoAdjunto.objects.filter(resolucion_id__in=ids_all)
             .values_list('resolucion_id', flat=True)
@@ -1508,7 +1546,10 @@ def ayudante_tabla_export_excel(request):
     tipo_doc = request.GET.get('tipo_doc', 'resolucion')
     gestion = request.GET.get('gestion', '')
 
-    if tipo_doc == 'reconsideracion':
+    if tipo_doc == 'resoluciones':
+        qs = Resolucion.objects.filter(instancia__in=['PRIMERA', 'RECONSIDERACION']).select_related('pm', 'sim')
+        titulo_tipo = 'TODAS LAS RESOLUCIONES'
+    elif tipo_doc == 'reconsideracion':
         qs = Resolucion.objects.filter(instancia='RECONSIDERACION').select_related('pm', 'sim')
         titulo_tipo = 'RECONSIDERACIONES (RR)'
     elif tipo_doc == 'autotpe':
@@ -1524,11 +1565,22 @@ def ayudante_tabla_export_excel(request):
         except (ValueError, TypeError):
             pass
 
-    qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+    if tipo_doc == 'resoluciones':
+        from django.db.models import F, Value, CharField, IntegerField
+        from django.db.models.functions import Cast, Substr, Coalesce
+        qs = qs.annotate(
+            numero_int=Cast(
+                Coalesce(Substr(F('numero'), 1, 2), Value('0')),
+                IntegerField()
+            )
+        ).order_by('numero_int', '-fecha', 'pm__paterno', 'pm__nombre')
+    else:
+        qs = qs.order_by('-fecha', 'pm__paterno', 'pm__nombre')
+
     items = list(qs)
     ids_all = [obj.pk for obj in items]
 
-    if tipo_doc in ('resolucion', 'reconsideracion'):
+    if tipo_doc in ('resolucion', 'reconsideracion', 'resoluciones'):
         docs_con_pdf = set(
             DocumentoAdjunto.objects.filter(resolucion_id__in=ids_all)
             .values_list('resolucion_id', flat=True)
