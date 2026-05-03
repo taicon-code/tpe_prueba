@@ -37,6 +37,14 @@ def _sanitize_filename(text):
     return "".join(c if c.isalnum() or c in "-_" else "" for c in text.upper())
 
 
+def _es_solicitud(sim):
+    """Determina si un sumario es una solicitud (vs disciplinario).
+    Retorna True si el tipo comienza con 'SOLICITUD'."""
+    if not sim or not sim.tipo:
+        return False
+    return sim.tipo.upper().startswith('SOLICITUD')
+
+
 def _compilar_documentos(sim, historial, pm=None):
     """Compila lista coordinada de documentos (RES, RR, AUTOTPE, RAP, RAEE, AUTOTSP, MEMORANDUM) con columnas estándar.
     Si pm se indica, filtra solo los documentos de ese militar (AUTOTSP se excluye pues no tiene FK a pm).
@@ -350,15 +358,38 @@ def export_person_historial_pdf(request, personal_id):
     story.append(Paragraph("<u>RESUMEN ESTADÍSTICO</u>", s_seccion))
     story.append(Spacer(1, 4))
 
-    n_sim  = historial['sumarios'].count()
+    # Contar sumarios disciplinarios vs solicitudes
+    sumarios_todos = historial['sumarios']
+    n_disciplinarios = sum(1 for s in sumarios_todos if not _es_solicitud(s))
+    n_solicitudes = sum(1 for s in sumarios_todos if _es_solicitud(s))
+
     n_res  = (historial['resoluciones'].count() +
               historial['segundas_resoluciones'].count())
     n_auto = historial['autos_tpe'].count()
-    col3 = usable_w / 3
+
+    # Construir encabezados y datos dinámicamente
+    headers_stats = []
+    datos_stats = []
+
+    if n_disciplinarios > 0:
+        headers_stats.append('SUMARIOS')
+        datos_stats.append(str(n_disciplinarios))
+
+    if n_solicitudes > 0:
+        headers_stats.append('SOLICITUDES')
+        datos_stats.append(str(n_solicitudes))
+
+    headers_stats.extend(['RESOLUCIONES', 'AUTOS TPE'])
+    datos_stats.extend([str(n_res), str(n_auto)])
+
+    # Calcular ancho de columnas dinámicamente
+    num_cols = len(headers_stats)
+    col_width = usable_w / num_cols
+
     tabla_stats = Table([
-        [Paragraph('SUMARIOS', s_stat_h), Paragraph('RESOLUCIONES', s_stat_h), Paragraph('AUTOS TPE', s_stat_h)],
-        [Paragraph(str(n_sim),  s_stat_v), Paragraph(str(n_res),   s_stat_v), Paragraph(str(n_auto), s_stat_v)],
-    ], colWidths=[col3, col3, col3])
+        [Paragraph(h, s_stat_h) for h in headers_stats],
+        [Paragraph(d, s_stat_v) for d in datos_stats],
+    ], colWidths=[col_width] * num_cols)
     tabla_stats.setStyle(TableStyle([
         ('BOX',           (0, 0), (-1, -1), 0.8, colors.black),
         ('INNERGRID',     (0, 0), (-1, -1), 0.5, colors.black),
@@ -370,11 +401,12 @@ def export_person_historial_pdf(request, personal_id):
     story.append(tabla_stats)
     story.append(Spacer(1, 10))
 
-    # ── ACTUADOS POR SUMARIO ─────────────────────────────────────────────────
-    story.append(Paragraph("<u>ACTUADOS POR SUMARIO</u>", s_seccion))
+    # ── ACTUADOS POR SUMARIO / SOLICITUD ────────────────────────────────────
+    sumarios = historial['sumarios']
+    titulo_seccion = "ACTUADOS POR SOLICITUD" if (sumarios.exists() and _es_solicitud(sumarios.first())) else "ACTUADOS POR SUMARIO"
+    story.append(Paragraph(f"<u>{titulo_seccion}</u>", s_seccion))
     story.append(Spacer(1, 6))
 
-    sumarios = historial['sumarios']
     if not sumarios.exists():
         story.append(Paragraph("No se registran sumarios para este personal.", s_dato))
     else:
@@ -383,7 +415,8 @@ def export_person_historial_pdf(request, personal_id):
 
         for idx, sim in enumerate(sumarios, 1):
             ver_label = f"  [REAPERTURA v{sim.version}]" if sim.version > 1 else ""
-            story.append(Paragraph(f"SUMARIO N.° {sim.codigo}{ver_label}", s_sim_tit))
+            tipo_doc = "SOLICITUD" if _es_solicitud(sim) else "SUMARIO"
+            story.append(Paragraph(f"{tipo_doc} N.° {sim.codigo}{ver_label}", s_sim_tit))
 
             objeto = sim.objeto or 'N/A'
             story.append(Paragraph(f"<b>Objeto:</b> {objeto}", s_objeto))
@@ -819,8 +852,9 @@ def export_sim_pdf(request, sim_id):
         story.append(tabla_mil)
         story.append(Spacer(1, 10))
 
-    # ── ACTUADOS POR MILITAR ─────────────────────────────────────────────────
-    story.append(Paragraph("<u>ACTUADOS</u>", s_seccion))
+    # ── ACTUADOS POR SUMARIO / SOLICITUD ────────────────────────────────────
+    titulo_actuados = "ACTUADOS POR SOLICITUD" if _es_solicitud(sim) else "ACTUADOS POR SUMARIO"
+    story.append(Paragraph(f"<u>{titulo_actuados}</u>", s_seccion))
     story.append(Spacer(1, 6))
 
     cw_actuados = [usable_w * p for p in (0.20, 0.09, 0.12, 0.44, 0.15)]
