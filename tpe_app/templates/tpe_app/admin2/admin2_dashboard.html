@@ -14,6 +14,9 @@
     <a href="{% url 'registrar_rr' %}" class="btn" style="background: #f59e0b; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">
         ➕ Registrar RR
     </a>
+    <a href="{% url 'admin2_registrar_rap' %}" class="btn" style="background: #ef4444; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">
+        ➕ Registrar RAP
+    </a>
 </div>
 
 <!-- Stats Grid -->
@@ -664,6 +667,82 @@
                     <a href="{% url 'admin2_registrar_retorno_memo' sim.auto_ejecutoria.id %}"
                        class="btn" style="background: #d97706; color: #fff; font-size: 0.8rem; padding: 0.3rem 0.75rem;">
                         📬 Registrar Retorno
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ============================================================ -->
+<!-- SECCIÓN: RAPs para entregar (presentados, orden creada) -->
+<!-- ============================================================ -->
+{% if total_raps_entregar %}
+<div class="card">
+    <h2>📨 RAPs para Entregar al Abogado</h2>
+    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+        Recurso de Apelación presentado. Admin1 ya ordenó la entrega. Proceda a entregar la carpeta al abogado designado.
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>Militar</th>
+                <th>Resolución RR</th>
+                <th>Fecha Presentación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rap in raps_para_entregar %}
+            <tr style="background: #fef2f2;">
+                <td><strong>{{ rap.sim.codigo }}</strong></td>
+                <td>{{ rap.pm.grado }} {{ rap.pm.paterno }}</td>
+                <td>RR {{ rap.resolucion.numero|default:"S/N" }}</td>
+                <td style="white-space: nowrap;">{{ rap.fecha_presentacion|date:"d/m/Y" }}</td>
+                <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_entregar_carpeta' rap.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #f59e0b; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📤 Entregar
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- ============================================================ -->
+<!-- SECCIÓN: RAPs elaborados, pendientes de envío al TSP -->
+<!-- ============================================================ -->
+{% if total_raps_enviar %}
+<div class="card">
+    <h2>🚀 RAPs Elaborados - Pendientes de Envío al TSP</h2>
+    <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+        El abogado ya elaboró el RAP. Registre el número y fecha del oficio de elevación al TSP.
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Sumario</th>
+                <th>Militar</th>
+                <th>RAP N°</th>
+                <th>Fecha RAP</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rap in raps_para_enviar %}
+            <tr style="background: #fef3c7;">
+                <td><strong>{{ rap.sim.codigo }}</strong></td>
+                <td>{{ rap.pm.grado }} {{ rap.pm.paterno }}</td>
+                <td><strong>{{ rap.numero }}</strong></td>
+                <td style="white-space: nowrap;">{{ rap.fecha|date:"d/m/Y" }}</td>
+                <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin2_registrar_salida_tsp' rap.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #ef4444; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        🚀 Elevar al TSP
                     </a>
                 </td>
             </tr>

@@ -1,0 +1,75 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Ordenar Entrega de RAP{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h3 class="mb-0">Ordenar Entrega de RAP al Abogado</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>SIM:</strong> {{ sim.codigo }} |
+                        <strong>Militar:</strong> {{ pm.grado }} {{ pm.paterno }} |
+                        <strong>Fechapresentación:</strong> {{ rap.fecha_presentacion|date:"d/m/Y" }}
+                    </div>
+
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+
+                        <!-- Seleccionar Abogado -->
+                        <div class="mb-3">
+                            <label for="id_abogado" class="form-label">
+                                Seleccione al Abogado <span class="text-danger">*</span>
+                            </label>
+                            <select id="id_abogado" name="abogado" class="form-select" required>
+                                <option value="">-- Seleccione un abogado --</option>
+                                {% for abog in abogados %}
+                                    <option value="{{ abog.id }}">
+                                        {{ abog.grado }} {{ abog.nombre }} {{ abog.paterno }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="alert alert-secondary" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Acción:</strong> Se creará una orden para que Admin2 entregue la carpeta con el RAP al abogado seleccionado.
+                            El abogado tendrá 3 días hábiles para elaborar el documento y enviarlo al TSP.
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-send"></i> Enviar Orden
+                            </button>
+                            <a href="{% url 'admin1_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+    }
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+</style>
+{% endblock %}

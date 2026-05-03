@@ -1,0 +1,103 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Elaborar Recurso de Apelación{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Elaborar Recurso de Apelación (RAP)</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info" role="alert">
+                        <strong>SIM:</strong> {{ sim.codigo }} |
+                        <strong>Militar:</strong> {{ pm.grado }} {{ pm.paterno }} |
+                        <strong>Resolución RR:</strong> {{ rap.resolucion.numero if rap.resolucion else 'N/A' }} |
+                        <strong>Fecha presentación:</strong> {{ rap.fecha_presentacion|date:"d/m/Y" }}
+                    </div>
+
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+
+                        <!-- Número del RAP -->
+                        <div class="mb-3">
+                            <label for="id_numero" class="form-label">Número del RAP <span class="text-danger">*</span></label>
+                            <input type="text" id="id_numero" name="numero" class="form-control"
+                                   placeholder="Ej: 05/26" required>
+                        </div>
+
+                        <div class="row">
+                            <!-- Fecha del RAP -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_fecha" class="form-label">Fecha del RAP <span class="text-danger">*</span></label>
+                                    <input type="date" id="id_fecha" name="fecha" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <!-- Tipo del RAP -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_tipo" class="form-label">Tipo de RAP <span class="text-danger">*</span></label>
+                                    <select id="id_tipo" name="tipo" class="form-select" required>
+                                        <option value="">-- Seleccione tipo --</option>
+                                        <option value="REVOCAR">Revocar</option>
+                                        <option value="CONFIRMAR">Confirmar</option>
+                                        <option value="MODIFICAR">Modificar</option>
+                                        <option value="ANULAR_HASTA_EL_VICIO_MAS_ANTIGUO">Anular Hasta el Vicio Más Antiguo</option>
+                                        <option value="OTRO">Otro</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Texto del RAP -->
+                        <div class="mb-3">
+                            <label for="id_texto" class="form-label">Texto del RAP <span class="text-danger">*</span></label>
+                            <textarea id="id_texto" name="texto" class="form-control" rows="8"
+                                      placeholder="Ingrese el contenido del RAP" required></textarea>
+                            <small class="text-muted d-block mt-1">Se guardará automáticamente en MAYÚSCULAS</small>
+                        </div>
+
+                        <div class="alert alert-secondary" role="alert">
+                            <i class="fas fa-check-circle"></i>
+                            Al guardar, se completará el documento y se devolverá la carpeta a Admin2 para que registre la salida al TSP.
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Guardar RAP
+                            </button>
+                            <a href="{% url 'abogado_sumario_detalle' sim.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+    }
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+    textarea {
+        font-family: 'Courier New', monospace;
+        resize: vertical;
+    }
+</style>
+{% endblock %}

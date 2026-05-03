@@ -10,7 +10,7 @@ from django.utils import timezone
 from ..decorators import rol_requerido
 from ..models import (
     ABOG_SIM, AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, SIM, VOCAL_TPE,
-    CustodiaSIM, Resolucion, next_resolucion_num, PerfilUsuario,
+    CustodiaSIM, Resolucion, RecursoTSP, next_resolucion_num, PerfilUsuario,
 )
 from ..utils.numeracion import next_num_yy
 
@@ -579,3 +579,77 @@ def abogado_devolver_carpeta(request, sim_id: int):
         'custodia': custodia,
         'admin2_user': admin2_user,
     })
+
+
+# ============================================================
+# Abogado: Elaborar RAP (Recurso de Apelación)
+# ============================================================
+
+@rol_requerido("ABOG1_ASESOR", "ABOG2_AUTOS")
+def abogado_rap_elaborar(request, sim_id: int, rap_id: int):
+    """El abogado elabora el RAP completando número, fecha y texto"""
+    abogado = _get_abogado_or_403(request)
+    sim = get_object_or_404(SIM, pk=sim_id)
+    rap = get_object_or_404(RecursoTSP, pk=rap_id, sim=sim, instancia='APELACION')
+
+    # Verificar que el RAP esté en poder del abogado (custodia activa)
+    custodia = sim.custodias.filter(
+        tipo_custodio__in=['ABOG_ASESOR', 'ABOG_AUTOS'],
+        fecha_entrega__isnull=True
+    ).first()
+
+    if not custodia or custodia.abogado != abogado:
+        raise PermissionDenied("No tienes permiso para elaborar este RAP.")
+
+    if request.method == "POST":
+        numero = (request.POST.get("numero") or "").strip()
+        fecha_str = request.POST.get("fecha") or ""
+        texto = (request.POST.get("texto") or "").strip()
+        tipo = request.POST.get("tipo") or ""
+
+        if not numero or not fecha_str or not texto:
+            messages.error(request, "❌ Número, fecha y texto del RAP son obligatorios.")
+        else:
+            try:
+                from datetime import datetime as dt
+                fecha = dt.strptime(fecha_str, '%Y-%m-%d').date()
+
+                with transaction.atomic():
+                    # Actualizar el RAP con los datos elaborados
+                    rap.numero = numero
+                    rap.fecha = fecha
+                    rap.texto = texto
+                    rap.tipo = tipo
+                    rap.save()
+
+                    # Cerrar custodia del abogado
+                    custodia.fecha_entrega = timezone.now()
+                    custodia.save()
+
+                    # Crear custodia para Admin2 (RAP elaborado, pendiente envío al TSP)
+                    CustodiaSIM.objects.create(
+                        sim=sim,
+                        tipo_custodio='ADMIN2_ARCHIVO',
+                        usuario=request.user,
+                        motivo='APELACION_TSP',
+                        observacion=f'RAP {numero} elaborado, pendiente de envío al TSP',
+                        estado='RECIBIDA_CONFORME'
+                    )
+
+                    messages.success(
+                        request,
+                        f"✅ RAP {numero} elaborado correctamente."
+                    )
+                    return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+            except ValueError:
+                messages.error(request, "❌ Formato de fecha inválido.")
+            except Exception as exc:
+                messages.error(request, f"❌ Error al elaborar RAP: {exc}")
+
+    context = {
+        "sim": sim,
+        "rap": rap,
+        "abogado": abogado,
+        "custodia": custodia,
+    }
+    return render(request, "tpe_app/abogado/rap_elaborar.html", context)

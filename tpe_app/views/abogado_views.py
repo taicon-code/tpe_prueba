@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Exists, OuterRef
 from ..decorators import rol_requerido
-from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion
+from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, RecursoTSP
 from datetime import date, timedelta
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
@@ -73,6 +73,18 @@ def abogado_dashboard(request):
         por_res_ej, por_rr_ej = get_pendientes_ejecutoria()
         pendientes_ej = por_res_ej + por_rr_ej
 
+    # RAPs para elaborar (solo para ABOG1_ASESOR y ABOG2_AUTOS)
+    raps_para_elaborar = []
+    if perfil.rol in ('ABOG1_ASESOR', 'ABOG2_AUTOS', 'ADMINISTRADOR', 'MASTER'):
+        raps_para_elaborar = list(
+            RecursoTSP.objects.filter(
+                instancia='APELACION',
+                numero__isnull=True,
+                sim__custodias__tipo_custodio__in=['ABOG_ASESOR', 'ABOG_AUTOS'],
+                sim__custodias__fecha_entrega__isnull=True,
+            ).select_related('sim', 'pm', 'resolucion').distinct()
+        )
+
     context = {
         'abogado': perfil.pm,
         'mis_sumarios': mis_sumarios,
@@ -86,6 +98,8 @@ def abogado_dashboard(request):
             instancia='RECONSIDERACION', sim__pk__in=sim_ids_con_custodia
         ).count(),
         'total_autotpe': AUTOTPE.objects.filter(abogado=perfil.pm).count(),
+        'raps_para_elaborar': raps_para_elaborar,
+        'total_raps_elaborar': len(raps_para_elaborar),
         'pendientes_ejecutoria': pendientes_ej,
         'total_pendientes_ejecutoria': len(pendientes_ej),
     }

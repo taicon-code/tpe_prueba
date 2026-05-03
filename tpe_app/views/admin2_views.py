@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from datetime import datetime
 from ..decorators import rol_requerido
-from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE
+from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, RecursoTSP
 
 
 # ============================================================
@@ -156,12 +156,30 @@ def admin2_dashboard(request):
     for sim_m in sims_memo_pendiente:
         auto = AUTOTPE.objects.filter(
             sim=sim_m, tipo='AUTO_EJECUTORIA',
-            memorandum__isnull=False,
-            memorandum__fecha_entrega__isnull=True,
-        ).select_related('memorandum').first()
+            memorandums__isnull=False,
+            memorandums__fecha_entrega__isnull=True,
+        ).prefetch_related('memorandums').first()
         if auto:
             sim_m.auto_ejecutoria = auto
             sims_con_memo_pendiente.append(sim_m)
+
+    # ✅ 9. RAPs PENDIENTES DE ENTREGAR (presentados, orden creada, en poder de Admin2)
+    raps_para_entregar = RecursoTSP.objects.filter(
+        instancia='APELACION',
+        sim__fase='EN_ESPERA_RAP',
+        sim__custodias__motivo='APELACION_TSP',
+        sim__custodias__abogado_destino__isnull=False,
+        sim__custodias__fecha_entrega__isnull=True,
+        sim__custodias__tipo_custodio='ADMIN2_ARCHIVO'
+    ).select_related('sim', 'pm', 'resolucion').distinct().order_by('fecha_presentacion')
+
+    # ✅ 10. RAPs ELABORADOS, PENDIENTES DE ENVÍO AL TSP
+    raps_para_enviar = RecursoTSP.objects.filter(
+        instancia='APELACION',
+        numero__isnull=False,
+        numero_oficio__isnull=True,
+        sim__fase='EN_ESPERA_RAP',
+    ).select_related('sim', 'pm').order_by('fecha')
 
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
@@ -200,6 +218,10 @@ def admin2_dashboard(request):
         'total_pendiente_archivo': len(sims_pendiente_archivo),
         'sims_con_memo_pendiente': sims_con_memo_pendiente,
         'total_memo_pendiente': len(sims_con_memo_pendiente),
+        'raps_para_entregar': raps_para_entregar,
+        'total_raps_entregar': len(raps_para_entregar),
+        'raps_para_enviar': raps_para_enviar,
+        'total_raps_enviar': len(raps_para_enviar),
         'query': query,
         'historial_sim': historial_sim,
     }
@@ -582,8 +604,10 @@ def admin2_registrar_retorno_memo(request, auto_id):
 
             if fecha:
                 with transaction.atomic():
-                    auto.memorandum.fecha_entrega = fecha
-                    auto.memorandum.save(update_fields=['fecha_entrega'])
+                    memo = auto.memorandums.first()
+                    if memo:
+                        memo.fecha_entrega = fecha
+                        memo.save(update_fields=['fecha_entrega'])
                     sim = auto.sim
                     # Guardia multi-persona: no avanzar si otro militar del SIM
                     # tiene proceso activo en instancia externa (TSP o cumplimiento).
@@ -601,3 +625,121 @@ def admin2_registrar_retorno_memo(request, auto_id):
         'auto': auto,
         'sim': auto.sim,
     })
+
+
+# ============================================================
+# ADMIN2: Registrar presentación del RAP (v4.0+)
+# ============================================================
+
+@rol_requerido('ADMIN2_ARCHIVO')
+def admin2_registrar_rap(request):
+    """Admin2 registra que el militar presentó el RAP (Recurso de Apelación)"""
+    from ..forms import Admin2RegistrarRAPForm
+
+    if request.method == 'POST':
+        form = Admin2RegistrarRAPForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Guard: verificar que no exista ya un RAP para ese (sim, pm)
+                    existente = RecursoTSP.objects.filter(
+                        sim=form.cleaned_data['sim'],
+                        pm=form.cleaned_data['pm'],
+                        instancia='APELACION'
+                    ).exists()
+
+                    if existente:
+                        messages.warning(request, '⚠️ Ya existe un RAP registrado para este militar en este sumario.')
+                        return redirect('admin2_registrar_rap')
+
+                    # Crear el RAP con solo datos iniciales
+                    rap = form.save()
+
+                    # Actualizar fase del SIM si aún no está en EN_ESPERA_RAP
+                    sim = rap.sim
+                    if sim.fase not in ['EN_ESPERA_RAP', 'ELEVADO_TSP', 'PROCESO_EN_EL_TSP']:
+                        sim.fase = 'EN_ESPERA_RAP'
+                        sim.save()
+
+                    messages.success(
+                        request,
+                        f'✅ RAP registrado para {rap.pm.grado} {rap.pm.paterno} (SIM: {rap.sim.codigo})'
+                    )
+                    return redirect('admin2_dashboard')
+            except Exception as e:
+                messages.error(request, f'❌ Error al registrar RAP: {str(e)}')
+    else:
+        form = Admin2RegistrarRAPForm()
+
+    context = {
+        'form': form,
+        'titulo': 'Registrar Recurso de Apelación (RAP)',
+    }
+    return render(request, 'tpe_app/admin2/registrar_rap.html', context)
+
+
+@rol_requerido('ADMIN2_ARCHIVO')
+def admin2_registrar_salida_tsp(request, rap_id):
+    """Admin2 registra la salida del RAP al TSP con número y fecha de oficio"""
+
+    rap = get_object_or_404(RecursoTSP, pk=rap_id, instancia='APELACION')
+
+    if request.method == 'POST':
+        numero_oficio = request.POST.get('numero_oficio', '').strip()
+        fecha_oficio_str = request.POST.get('fecha_oficio', '').strip()
+
+        if not numero_oficio or not fecha_oficio_str:
+            messages.error(request, '❌ Número y fecha de oficio son obligatorios.')
+        else:
+            try:
+                fecha_oficio = datetime.strptime(fecha_oficio_str, '%Y-%m-%d').date()
+
+                with transaction.atomic():
+                    # Actualizar el RAP con número y fecha de oficio
+                    rap.numero_oficio = numero_oficio
+                    rap.fecha_oficio = fecha_oficio
+                    rap.save()
+
+                    # Cerrar custodia actual de Admin2
+                    custodia_admin2 = rap.sim.custodias.filter(
+                        tipo_custodio='ADMIN2_ARCHIVO',
+                        fecha_entrega__isnull=True
+                    ).first()
+
+                    if custodia_admin2:
+                        custodia_admin2.fecha_entrega = timezone.now()
+                        custodia_admin2.save()
+
+                    # Crear custodia TSP
+                    CustodiaSIM.objects.create(
+                        sim=rap.sim,
+                        tipo_custodio='TSP',
+                        motivo='APELACION_TSP',
+                        nro_oficio=numero_oficio,
+                        fecha_oficio=fecha_oficio,
+                        usuario=request.user,
+                        estado='RECIBIDA_CONFORME',
+                        observacion=f'RAP {rap.numero} elevado al TSP'
+                    )
+
+                    # Cambiar fase a ELEVADO_TSP → PROCESO_EN_EL_TSP
+                    sim = rap.sim
+                    sim.fase = 'ELEVADO_TSP'
+                    sim.save()
+
+                    messages.success(
+                        request,
+                        f'✅ RAP {rap.numero} elevado al TSP con Oficio {numero_oficio} ({fecha_oficio.strftime("%d/%m/%Y")})'
+                    )
+                    return redirect('admin2_dashboard')
+            except ValueError:
+                messages.error(request, '❌ Formato de fecha inválido.')
+            except Exception as e:
+                messages.error(request, f'❌ Error: {str(e)}')
+
+    context = {
+        'rap': rap,
+        'sim': rap.sim,
+        'pm': rap.pm,
+    }
+    return render(request, 'tpe_app/admin2/registrar_salida_tsp.html', context)

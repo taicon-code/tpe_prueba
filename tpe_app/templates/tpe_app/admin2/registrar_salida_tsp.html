@@ -1,0 +1,83 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}Registrar Salida del RAP al TSP{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">Registrar Salida del RAP al TSP</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning" role="alert">
+                        <strong>SIM:</strong> {{ sim.codigo }} |
+                        <strong>Militar:</strong> {{ pm.grado }} {{ pm.paterno }} |
+                        <strong>RAP N°:</strong> {{ rap.numero }} |
+                        <strong>Fecha RAP:</strong> {{ rap.fecha|date:"d/m/Y" }}
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        Registre el número y fecha del oficio de elevación del RAP al Tribunal Supremo Policial (TSP).
+                        Esto marca el final del procesamiento en el TPE y el inicio en el TSP.
+                    </p>
+
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+
+                        <!-- Número de Oficio -->
+                        <div class="mb-3">
+                            <label for="id_numero_oficio" class="form-label">
+                                Número de Oficio <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" id="id_numero_oficio" name="numero_oficio" class="form-control"
+                                   placeholder="Ej: OFICIO-2026-00123" required>
+                        </div>
+
+                        <!-- Fecha de Oficio -->
+                        <div class="mb-3">
+                            <label for="id_fecha_oficio" class="form-label">
+                                Fecha de Oficio <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" id="id_fecha_oficio" name="fecha_oficio" class="form-control" required>
+                        </div>
+
+                        <div class="alert alert-secondary" role="alert">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Nota:</strong> Al guardar, el SIM pasará a estado <strong>"PROCESO_EN_EL_TSP"</strong>
+                            y la carpeta será registrada como entregada al TSP.
+                            El plazo de 3 días hábiles para el pronunciamiento se calcula desde esta fecha de oficio.
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-paper-plane"></i> Elevar al TSP
+                            </button>
+                            <a href="{% url 'admin2_dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        font-size: 0.95rem;
+    }
+    .card {
+        border: none;
+        border-radius: 0.5rem;
+    }
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+</style>
+{% endblock %}

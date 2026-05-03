@@ -596,6 +596,37 @@ class RAPForm(forms.ModelForm):
         return instance
 
 
+class Admin2RegistrarRAPForm(forms.ModelForm):
+    """Formulario para que Admin2 registre la presentación del RAP (solo datos iniciales)"""
+
+    class Meta:
+        model = RecursoTSP
+        fields = ['sim', 'pm', 'resolucion', 'fecha_presentacion']
+        widgets = {
+            'sim':                forms.Select(attrs={'class': 'form-control'}),
+            'pm':                 forms.Select(attrs={'class': 'form-control'}),
+            'resolucion':         forms.Select(attrs={'class': 'form-control'}),
+            'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'sim':                'Sumario',
+            'pm':                 'Personal Militar',
+            'resolucion':         'Resolución RR (impugnada)',
+            'fecha_presentacion': 'Fecha de Presentación',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['resolucion'].queryset = Resolucion.objects.filter(instancia='RECONSIDERACION')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.instancia = 'APELACION'
+        if commit:
+            instance.save()
+        return instance
+
+
 class RAEEForm(forms.ModelForm):
 
     class Meta:

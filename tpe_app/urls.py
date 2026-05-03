@@ -21,6 +21,7 @@ urlpatterns = [
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/autotpe/nuevo/', views.abogado_autotpe_crear, name='abogado_autotpe_crear'),
     path('abogado/sumarios/<int:sim_id>/auto-excusa/crear/', views.abogado_auto_excusa_crear, name='abogado_auto_excusa_crear'),
     path('abogado/sumarios/<int:sim_id>/auto-ejecutoria/crear/', views.abogado_autotpe_ejecutoria_crear, name='abogado_autotpe_ejecutoria_crear'),
+    path('abogado/sumarios/<int:sim_id>/rap/<int:rap_id>/elaborar/', views.abogado_rap_elaborar, name='abogado_rap_elaborar'),
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
     path('admin1/dashboard/', views.admin1_dashboard, name='admin1_dashboard'),
     path('admin2/dashboard/', views.admin2_dashboard, name='admin2_dashboard'),
@@ -87,11 +88,18 @@ urlpatterns = [
     path('admin1/agendas/<int:ag_id>/', views.ver_agenda_detalle, name='ver_agenda_detalle'),
     path('admin1/agendas/<int:ag_id>/resultado/', views.editar_agenda_resultado, name='agenda_resultado'),
 
+    # ✅ NUEVO v4.0: RAP - Recurso de Apelación (Admin1)
+    path('admin1/rap/<int:rap_id>/ordenar-entrega/', views.admin1_ordenar_rap, name='admin1_ordenar_rap'),
+
     # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
     path('admin2/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
     path('admin2/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),
     path('admin2/custodia/<int:sim_id>/confirmar/', views.admin2_confirmar_recepcion, name='admin2_confirmar_recepcion'),
     path('admin2/custodia/<int:sim_id>/historial/', views.ver_historial_custodia_sim, name='ver_historial_custodia'),
+
+    # ✅ NUEVO v4.0: RAP - Recurso de Apelación (Admin2)
+    path('admin2/rap/registrar/', views.admin2_registrar_rap, name='admin2_registrar_rap'),
+    path('admin2/rap/<int:rap_id>/salida-tsp/', views.admin2_registrar_salida_tsp, name='admin2_registrar_salida_tsp'),
 
     # ✅ NUEVO: Subir PDF de Resoluciones (Administrador)
     path('admin1/res/<int:res_id>/subir-pdf/', views.subir_pdf_res, name='subir_pdf_res'),

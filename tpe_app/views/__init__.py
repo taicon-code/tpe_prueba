@@ -9,6 +9,7 @@ from .abogado_documentos_views import (
     abogado_dictamen_crear,
     abogado_res_crear,
     abogado_rr_crear,
+    abogado_rap_elaborar,
     abogado_sumario_detalle,
     abogado_confirmar_recepcion,
     abogado_devolver_carpeta,
@@ -35,6 +36,7 @@ from .admin1_views import (
     editar_agenda_resultado,
     gestionar_abogados_sim,
     admin1_ordenar_ejecutoria,
+    admin1_ordenar_rap,
     admin1_ordenar_archivo_sproda,
 )
 from .admin2_views import (
@@ -46,6 +48,8 @@ from .admin2_views import (
     ver_historial_custodia_sim,
     admin2_confirmar_archivo_sproda,
     admin2_registrar_retorno_memo,
+    admin2_registrar_rap,
+    admin2_registrar_salida_tsp,
 )
 from .admin3_views import (
     admin3_dashboard,

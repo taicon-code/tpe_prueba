@@ -127,6 +127,29 @@ def admin1_dashboard(request):
     ).count()
     total_sin_notificar = res_sin_notificar + rr_sin_notificar
 
+    # RAPs pendientes de ordenar entrega (presentados pero sin orden de custodia)
+    from ..models import add_business_days
+    from django.utils import timezone
+    hoy = timezone.now().date()
+
+    raps_pendientes = RecursoTSP.objects.filter(
+        instancia='APELACION',
+        sim__fase='EN_ESPERA_RAP'
+    ).exclude(
+        sim__custodias__motivo='APELACION_TSP',
+        sim__custodias__fecha_entrega__isnull=True
+    ).select_related('sim', 'pm', 'resolucion').distinct().order_by('fecha_presentacion')
+
+    # Agregar información de días transcurridos y alerta
+    for rap in raps_pendientes:
+        if rap.fecha_presentacion:
+            dias_transcurridos = (hoy - rap.fecha_presentacion).days
+            rap.dias_transcurridos = dias_transcurridos
+            rap.alerta_dias = 'danger' if dias_transcurridos > 1 else ('warning' if dias_transcurridos == 1 else 'success')
+        else:
+            rap.dias_transcurridos = None
+            rap.alerta_dias = 'secondary'
+
     # Ejecutorias notificadas pendientes de ordenar archivo a SPRODA
     ejecutorias_notificadas = (
         AUTOTPE.objects.filter(
@@ -160,6 +183,8 @@ def admin1_dashboard(request):
         'total_solicitudes_sin_asignar': solicitudes_sin_asignar.count(),
         'rr_sin_asignar': rr_sin_asignar,
         'total_rr_sin_asignar': len(rr_sin_asignar),
+        'raps_pendientes': raps_pendientes,
+        'total_raps_pendientes': raps_pendientes.count(),
         'total_pendientes_ejecutoria': len(por_res_ej) + len(por_rr_ej),
         'sumarios_en_proceso': sumarios_en_proceso,
         'total_sin_notificar': total_sin_notificar,
@@ -762,3 +787,75 @@ def admin1_ordenar_archivo_sproda(request, sim_id):
         'auto': auto_ej,
         'militares': sim.militares.all(),
     })
+
+
+# ============================================================
+# ADMIN1: Ordenar entrega de RAP al abogado (v4.0+)
+# ============================================================
+
+@rol_requerido('ADMIN1_AGENDADOR', 'MASTER', 'ADMINISTRADOR')
+def admin1_ordenar_rap(request, rap_id):
+    """Admin1 ordena a Admin2 que entregue el RAP a un abogado (ABOG1 o ABOG2)"""
+
+    rap = get_object_or_404(RecursoTSP, pk=rap_id, instancia='APELACION', sim__fase='EN_ESPERA_RAP')
+    sim = rap.sim
+
+    if request.method == 'POST':
+        abog_id = request.POST.get('abogado')
+
+        if not abog_id:
+            messages.error(request, '❌ Debe seleccionar un abogado.')
+        else:
+            try:
+                abog = PM.objects.filter(
+                    pk=abog_id,
+                    perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS']
+                ).first()
+
+                if not abog:
+                    messages.error(request, '❌ El abogado seleccionado no existe o no tiene rol válido.')
+                    return redirect('admin1_ordenar_rap', rap_id=rap_id)
+
+                # Guard: verificar idempotencia
+                orden_existente = CustodiaSIM.objects.filter(
+                    sim=sim,
+                    motivo='APELACION_TSP',
+                    fecha_entrega__isnull=True
+                ).exists()
+
+                if orden_existente:
+                    messages.warning(request, '⚠️ Ya existe una orden de entrega para este RAP.')
+                    return redirect('admin1_dashboard')
+
+                with transaction.atomic():
+                    # Crear la orden para Admin2
+                    CustodiaSIM.objects.create(
+                        sim=sim,
+                        tipo_custodio='ADMIN2_ARCHIVO',
+                        abogado_destino=abog,
+                        motivo='APELACION_TSP',
+                        usuario=request.user,
+                        estado='RECIBIDA_CONFORME',
+                        observacion=f'Orden: Entregar RAP a {abog.grado} {abog.paterno}'
+                    )
+
+                    messages.success(
+                        request,
+                        f'✅ Orden enviada a Admin2: entregar RAP a {abog.grado} {abog.paterno}'
+                    )
+                    return redirect('admin1_dashboard')
+            except Exception as e:
+                messages.error(request, f'❌ Error: {str(e)}')
+
+    # Obtener abogados disponibles
+    abogados = PM.objects.filter(
+        perfilusuario__rol__in=['ABOG1_ASESOR', 'ABOG2_AUTOS']
+    ).order_by('paterno', 'nombre')
+
+    context = {
+        'rap': rap,
+        'sim': sim,
+        'pm': rap.pm,
+        'abogados': abogados,
+    }
+    return render(request, 'tpe_app/admin1/ordenar_rap.html', context)
