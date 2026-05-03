@@ -128,15 +128,15 @@ class PMSIMForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese CI', 'list': 'pm_list'})
     )
     nombre = forms.CharField(
-        label='Nombre', max_length=25, required=True,
+        label='Nombre', max_length=50, required=True,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre(s)', 'autocomplete': 'off'})
     )
     paterno = forms.CharField(
-        label='Apellido Paterno', max_length=25, required=True,
+        label='Apellido Paterno', max_length=50, required=True,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido paterno', 'autocomplete': 'off'})
     )
     materno = forms.CharField(
-        label='Apellido Materno', max_length=25, required=False,
+        label='Apellido Materno', max_length=50, required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellido materno (opcional)'})
     )
     escalafon = forms.ChoiceField(
@@ -150,7 +150,7 @@ class PMSIMForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
     especialidad = forms.CharField(
-        label='Especialidad', max_length=15, required=False,
+        label='Especialidad', max_length=30, required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: INFANTERÍA, BLINDADOS...'})
     )
     foto = forms.ImageField(

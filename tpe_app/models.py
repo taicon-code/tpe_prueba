@@ -636,6 +636,17 @@ class CustodiaSIM(models.Model):
         estado = "en poder" if not self.fecha_entrega else "entregada"
         return f"[{self.sim.codigo}] → {self.get_tipo_custodio_display()} ({estado})"
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.estado == 'PENDIENTE_CONFIRMACION' and not self.abogado_destino:
+            raise ValidationError({
+                'abogado_destino': 'El abogado destino es obligatorio cuando la custodia está pendiente de confirmación.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
     @property
     def activa(self):
         return self.fecha_entrega is None
@@ -860,7 +871,20 @@ class Memorandum(models.Model):
         else:
             return f"Memo {self.numero}"
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        vinculados = sum([
+            bool(self.resolucion_id),
+            bool(self.autotpe_id),
+        ])
+        if vinculados != 1:
+            raise ValidationError(
+                f'Memorandum debe estar vinculado a exactamente un documento '
+                f'(resolucion o autotpe). Actualmente: {vinculados}.'
+            )
+
     def save(self, *args, **kwargs):
+        self.clean()
         self.numero = self.numero.upper() if self.numero else self.numero
         super().save(*args, **kwargs)
 
@@ -995,11 +1019,32 @@ class Resolucion(models.Model):
         verbose_name_plural = 'Resoluciones'
         ordering            = ['-fecha']
         unique_together     = [('numero', 'instancia')]
+        indexes = [
+            models.Index(fields=['instancia']),
+            models.Index(fields=['sim', 'instancia']),
+            models.Index(fields=['fecha']),
+            models.Index(fields=['abogado']),
+        ]
 
     def __str__(self):
         return f"{self.numero} — {self.get_instancia_display()}"
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.instancia == 'RECONSIDERACION' and self.resolucion_origen:
+            if self.resolucion_origen.instancia != 'PRIMERA':
+                raise ValidationError({
+                    'resolucion_origen': 'Un Recurso de Reconsideración solo puede apuntar a una Resolución PRIMERA.'
+                })
+
+        if self.instancia == 'PRIMERA' and self.resolucion_origen:
+            raise ValidationError({
+                'resolucion_origen': 'Una Resolución PRIMERA no puede tener resolución de origen.'
+            })
+
     def save(self, *args, **kwargs):
+        self.clean()
         if self.instancia == 'RECONSIDERACION' and self.fecha_presentacion and not self.fecha_limite:
             self.fecha_limite = add_business_days(self.fecha_presentacion, 15)
         self.numero = self.numero.upper() if self.numero else self.numero
@@ -1017,7 +1062,10 @@ class Resolucion(models.Model):
 
 
 def next_resolucion_num(year=None):
-    """Genera el siguiente número 'NN/AA' de Resolucion de forma thread-safe."""
+    """Genera el siguiente número 'NN/AA' de Resolucion de forma thread-safe.
+
+    Maneja números malformados silenciosamente (ej: números sin formato 'NN/AA').
+    """
     from django.db import transaction
     if year is None:
         year = timezone.now().year
@@ -1028,11 +1076,15 @@ def next_resolucion_num(year=None):
               .filter(numero__endswith=f'/{year_suffix}'))
         max_n = 0
         for r in qs:
+            if not r.numero:
+                continue
             try:
-                n = int(r.numero.split('/')[0])
-                if n > max_n:
-                    max_n = n
-            except (ValueError, IndexError):
+                partes = r.numero.split('/')
+                if len(partes) >= 2:
+                    n = int(partes[0].strip())
+                    if n > max_n:
+                        max_n = n
+            except (ValueError, IndexError, AttributeError):
                 pass
         return f'{max_n + 1:02d}/{year_suffix}'
 
@@ -1080,6 +1132,12 @@ class RecursoTSP(models.Model):
         verbose_name        = 'Recurso TSP'
         verbose_name_plural = 'Recursos TSP'
         ordering            = ['-fecha']
+        indexes = [
+            models.Index(fields=['instancia']),
+            models.Index(fields=['sim', 'instancia']),
+            models.Index(fields=['fecha']),
+            models.Index(fields=['abogado']),
+        ]
 
     def __str__(self):
         return f"{self.numero or 'Sin número'} — {self.get_instancia_display()}"
@@ -1104,6 +1162,10 @@ class RecursoTSP(models.Model):
 
 
 def next_recurso_tsp_num(year=None):
+    """Genera el siguiente número 'NN/AA' de RecursoTSP de forma thread-safe.
+
+    Maneja números malformados silenciosamente (ej: números sin formato 'NN/AA').
+    """
     from django.db import transaction
     if year is None:
         year = timezone.now().year
@@ -1114,11 +1176,15 @@ def next_recurso_tsp_num(year=None):
               .filter(numero__endswith=f'/{year_suffix}'))
         max_n = 0
         for r in qs:
+            if not r.numero:
+                continue
             try:
-                n = int(r.numero.split('/')[0])
-                if n > max_n:
-                    max_n = n
-            except (ValueError, IndexError):
+                partes = r.numero.split('/')
+                if len(partes) >= 2:
+                    n = int(partes[0].strip())
+                    if n > max_n:
+                        max_n = n
+            except (ValueError, IndexError, AttributeError):
                 pass
         return f'{max_n + 1:02d}/{year_suffix}'
 

@@ -12,7 +12,7 @@ from ..models import Resolucion, AUTOTPE, DocumentoAdjunto
 def admin3_dashboard(request):
     """Dashboard para Admin3 - Notificaciones de documentos (también accesible para Admin1)"""
 
-    # RES (Resoluciones PRIMERA) por notificar (fecha_notif es NULL = no notificada aún)
+    # RES (Resoluciones PRIMERA) por notificar (notificacion__isnull=True = sin objeto Notificacion)
     resoluciones = Resolucion.objects.filter(
         instancia='PRIMERA', notificacion__isnull=True
     ).select_related('sim', 'pm').order_by('-fecha')[:20]
