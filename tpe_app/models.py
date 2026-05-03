@@ -78,6 +78,9 @@ def get_pendientes_ejecutoria():
     for res in res_notificadas:
         if res.recursos_reconsideracion.exists():
             continue
+        # Excluir si ya hay Recurso de Apelación contra esta PRIMERA resolución
+        if RecursoTSP.objects.filter(resolucion=res, instancia='APELACION').exists():
+            continue
         # Verificar si la resolución tiene memorándum directo
         if res.memorandums.exists():
             continue
