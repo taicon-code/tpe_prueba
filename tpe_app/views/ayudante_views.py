@@ -995,6 +995,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         rap.save()
                         if sim.fase not in ['ELEVADO_TSP', 'CONCLUIDO']:
                             sim.fase = 'ELEVADO_TSP'
+                            sim.estado = 'PROCESO_EN_EL_TSP'
                             sim.save()
                         rap_existente = rap
 
