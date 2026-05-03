@@ -20,26 +20,29 @@ body {
 .page {
   width: 100vw;
   height: 100vh;
-  display: grid;
-  grid-template-columns: 1fr 300px 1fr;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  justify-content: center;
   padding: 20px;
   gap: 0;
+  position: relative;
 }
 
 /* ── LEFT: THEMIS ── */
 .themis-col {
+  position: fixed;
+  left: 20px;
+  bottom: 80px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 100%;
-  padding-bottom: 60px;
+  height: auto;
+  width: auto;
 }
 
 .themis-img {
-  height: min(75vh, 500px);
+  height: min(80vh, 550px);
   width: auto;
   object-fit: contain;
   transform-origin: bottom center;
@@ -64,15 +67,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  height: auto;
+  width: auto;
   z-index: 10;
+  flex: 1;
 }
 
 .card {
   background: #fff;
   border-radius: 16px;
-  padding: 44px 40px 36px;
-  width: 340px;
+  padding: 36px 36px 40px;
+  width: 420px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 4px 16px rgba(0,0,0,0.2);
   animation: cardIn 1s 0.3s cubic-bezier(0.22,1,0.36,1) both;
   display: flex;
@@ -84,6 +89,54 @@ body {
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(30px) scale(0.95); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── TITLE AREA (Dentro del card, arriba) ── */
+.title-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb;
+  animation: titleIn 0.8s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.main-title {
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2b4590 50%, #1e40af 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 12px rgba(43,69,144,0.2);
+}
+
+.sub-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg,
+    #b8860b 0%, #daa520 30%, #ffd700 50%,
+    #daa520 70%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-transform: uppercase;
+}
+
+.description {
+  font-size: 13px;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+@keyframes titleIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .card-header {
@@ -124,19 +177,19 @@ body {
 
 label {
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 input[type="text"],
 input[type="password"] {
   width: 100%;
-  padding: 11px 14px;
+  padding: 14px 16px;
   border: 1.5px solid #e5e7eb;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   color: #111827;
   background: #f0f4ff;
   outline: none;
@@ -187,13 +240,13 @@ input[type="password"]:focus {
 /* ── LOGIN BUTTON ── */
 .btn-login {
   width: 100%;
-  margin-top: 8px;
-  padding: 13px;
+  margin-top: 12px;
+  padding: 15px 16px;
   background: #2b4590;
   color: #fff;
   border: none;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.03em;
   cursor: pointer;
@@ -215,19 +268,23 @@ input[type="password"]:focus {
   cursor: not-allowed;
 }
 
-/* ── RIGHT: SHIELD ── */
+/* ── RIGHT: SHIELD (Esquina superior derecha) ── */
 .shield-col {
+  position: fixed;
+  top: 20px;
+  right: 30px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  height: 100%;
-  padding: 20px 20px 20px;
+  height: auto;
+  width: auto;
+  padding: 0;
   overflow: visible;
 }
 
 .shield-img {
-  height: 150px;
-  max-width: 150px;
+  height: 140px;
+  max-width: 140px;
   width: auto;
   object-fit: contain;
   animation: shieldIn 1.6s 0.6s cubic-bezier(0.22,1,0.36,1) both;
@@ -241,13 +298,19 @@ input[type="password"]:focus {
 
 /* ── BOTTOM: MOTTO ── */
 .motto-row {
-  grid-column: 1 / -1;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding-bottom: 24px;
+  gap: 8px;
+  padding: 0 20px;
   animation: mottoIn 1.8s 1.2s ease-out both;
+  width: 90%;
+  max-width: 100%;
+  z-index: 5;
 }
 
 @keyframes mottoIn {
@@ -256,16 +319,17 @@ input[type="password"]:focus {
 }
 
 .divider-line {
-  width: 460px;
-  height: 1.5px;
+  width: 100%;
+  max-width: 900px;
+  height: 2px;
   background: linear-gradient(90deg, transparent, #f5c518, #fff8e0, #f5c518, transparent);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 .motto-text {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.2em;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   background: linear-gradient(90deg,
     #7a5c10 0%, #c8960c 18%, #f5d76e 38%,
@@ -275,8 +339,9 @@ input[type="password"]:focus {
   background-clip: text;
   background-size: 200% auto;
   animation: goldShimmer 4s 3s linear infinite;
-  filter: drop-shadow(0 2px 6px rgba(200,150,12,0.4));
-  padding: 2px 0;
+  filter: drop-shadow(0 3px 8px rgba(200,150,12,0.6));
+  padding: 4px 20px;
+  line-height: 1.4;
 }
 
 @keyframes goldShimmer {
@@ -297,40 +362,46 @@ input[type="password"]:focus {
     height: min(60vh, 350px);
   }
 
+  .main-title {
+    font-size: 42px;
+  }
+
+  .sub-title {
+    font-size: 16px;
+  }
+
   .card {
-    width: 320px;
-    padding: 36px 32px 28px;
+    width: 420px;
+    padding: 32px 40px 36px;
   }
 }
 
 @media (max-width: 992px) {
-  .page {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto;
-    padding: 15px;
-  }
-
-  .themis-col,
-  .shield-col {
+  .themis-col {
     display: none;
   }
 
-  .login-col {
-    height: auto;
+  .shield-col {
+    top: 15px;
+    right: 15px;
+  }
+
+  .shield-img {
+    height: 120px;
+    max-width: 120px;
   }
 
   .card {
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
   }
 
   .divider-line {
-    width: 300px;
+    max-width: 600px;
   }
 
   .motto-text {
-    font-size: 12px;
-    letter-spacing: 0.15em;
+    font-size: 15px;
   }
 }
 
@@ -339,17 +410,27 @@ input[type="password"]:focus {
     background: #2b4590;
   }
 
+  .shield-img {
+    height: 100px;
+    max-width: 100px;
+  }
+
+  .main-title {
+    font-size: 36px;
+  }
+
+  .sub-title {
+    font-size: 14px;
+  }
+
+  .description {
+    font-size: 12px;
+  }
+
   .card {
     width: 100%;
-    padding: 28px 20px 20px;
-  }
-
-  .card-title {
-    font-size: 18px;
-  }
-
-  .card-sub {
-    font-size: 12px;
+    max-width: 95vw;
+    padding: 28px 24px 20px;
   }
 
   .field-group {
@@ -362,10 +443,15 @@ input[type="password"]:focus {
   }
 
   .divider-line {
-    width: 200px;
+    max-width: 350px;
   }
 
   .motto-text {
-    font-size: 11px;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+
+  .motto-row {
+    bottom: 15px;
   }
 }
