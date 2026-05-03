@@ -115,6 +115,14 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Session Configuration
+# https://docs.djangoproject.com/en/5.2/ref/settings/#session-cookie-age
+SESSION_COOKIE_AGE = 30 * 60  # 30 minutos sin actividad
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra sesión al cerrar navegador
+SESSION_COOKIE_SECURE = True  # Solo HTTPS (producción)
+SESSION_COOKIE_HTTPONLY = True  # Previene acceso desde JavaScript
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
