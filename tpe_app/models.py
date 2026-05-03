@@ -72,7 +72,7 @@ def get_pendientes_ejecutoria():
     por_res = []
     res_notificadas = (
         Resolucion.objects
-        .filter(instancia='PRIMERA', notificacion__isnull=False)
+        .filter(instancia='PRIMERA', notificacion__isnull=False, sim__estado='PROCESO_EN_EL_TPE')
         .select_related('sim', 'pm', 'abogado', 'notificacion')
     )
     for res in res_notificadas:
@@ -105,7 +105,7 @@ def get_pendientes_ejecutoria():
     por_rr = []
     rr_notificados = (
         Resolucion.objects
-        .filter(instancia='RECONSIDERACION', notificacion__isnull=False)
+        .filter(instancia='RECONSIDERACION', notificacion__isnull=False, sim__estado='PROCESO_EN_EL_TPE')
         .select_related('sim', 'pm', 'abogado', 'resolucion_origen', 'notificacion')
     )
     for rr in rr_notificados:
