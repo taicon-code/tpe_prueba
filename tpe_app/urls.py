@@ -95,6 +95,7 @@ urlpatterns = [
     path('admin2/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
     path('admin2/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),
     path('admin2/custodia/<int:sim_id>/confirmar/', views.admin2_confirmar_recepcion, name='admin2_confirmar_recepcion'),
+    path('admin2/custodia/<int:custodia_id>/anular/', views.anular_entrega_custodia, name='anular_entrega_custodia'),
     path('admin2/custodia/<int:sim_id>/historial/', views.ver_historial_custodia_sim, name='ver_historial_custodia'),
 
     # ✅ NUEVO v4.0: RAP - Recurso de Apelación (Admin2)

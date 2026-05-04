@@ -44,6 +44,7 @@ from .admin2_views import (
     admin2_entregar_carpeta,
     admin2_recibir_carpeta,
     admin2_confirmar_recepcion,
+    anular_entrega_custodia,
     subir_pdf_res,
     ver_historial_custodia_sim,
     admin2_confirmar_archivo_sproda,

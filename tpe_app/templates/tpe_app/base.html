@@ -284,6 +284,13 @@
         .toast.warning { border-color: #f59e0b; color: #b45309; }
         @keyframes toast-in { from { opacity: 0; transform: translateX(1rem); } to { opacity: 1; transform: none; } }
 
+        /* ── Accesibilidad: respetar prefers-reduced-motion ─── */
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+            .alert { animation: none; }
+            button:hover, a:hover { transition: none; }
+        }
+
         /* ── Reusable components ─────────────────────── */
         .card {
             background: #fff;
@@ -674,7 +681,7 @@
 
     <!-- Top Bar -->
     <header class="topbar">
-        <button class="topbar-toggle" onclick="toggleSidebar()" title="Menú">
+        <button class="topbar-toggle" onclick="toggleSidebar()" title="Menú" aria-label="Abrir/cerrar menú lateral">
             <span>&#9776;</span>
         </button>
 
@@ -686,7 +693,7 @@
             {% if user.is_authenticated %}
                 <span class="topbar-username">{{ user.get_full_name|default:user.username }}</span>
                 <span class="topbar-role">{{ user.perfilusuario.get_rol_display }}</span>
-                <a href="{% url 'logout' %}" class="topbar-logout">&#x23FB; Salir</a>
+                <a href="{% url 'logout' %}" class="topbar-logout" aria-label="Cerrar sesión">&#x23FB; Salir</a>
             {% endif %}
         </div>
     </header>

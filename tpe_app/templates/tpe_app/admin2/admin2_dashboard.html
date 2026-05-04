@@ -89,13 +89,13 @@
         <table>
             <thead>
                 <tr>
-                    <th>Sumario</th>
-                    <th>Fecha Recepción</th>
-                    <th>Custodio</th>
-                    <th>Motivo</th>
-                    <th>Fecha Entrega</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th scope="col">Sumario</th>
+                    <th scope="col">Fecha Recepción</th>
+                    <th scope="col">Custodio</th>
+                    <th scope="col">Motivo</th>
+                    <th scope="col">Fecha Entrega</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -157,6 +157,11 @@
                                 <a href="{% url 'export_custodia_pdf' custodia.sim.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                                     📄 PDF
                                 </a>
+                                {% if custodia.estado == 'PENDIENTE_CONFIRMACION' %}
+                                <a href="{% url 'anular_entrega_custodia' custodia.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #ef4444; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;" onclick="return confirm('¿Anular entrega de {{ custodia.sim.codigo }}?');">
+                                    ↩️ Anular
+                                </a>
+                                {% endif %}
                             </div>
                             {% endif %}
                         </td>
@@ -192,12 +197,12 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Fecha Ingreso</th>
-                <th>Militar(es)</th>
-                <th>Asignado a Abogado(s)</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Fecha Ingreso</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">Asignado a Abogado(s)</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -256,11 +261,11 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Fecha Recepción</th>
-                <th>Militar(es)</th>
-                <th>Asignado a Abogado(s)</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Fecha Recepción</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">Asignado a Abogado(s)</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -324,12 +329,12 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Militar(es)</th>
-                <th>Devuelta por</th>
-                <th>Desde</th>
-                <th>Observaciones</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">Devuelta por</th>
+                <th scope="col">Desde</th>
+                <th scope="col">Observaciones</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -386,12 +391,12 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Militar(es)</th>
-                <th>Entregada por</th>
-                <th>Desde</th>
-                <th>Observaciones</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">Entregada por</th>
+                <th scope="col">Desde</th>
+                <th scope="col">Observaciones</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -450,13 +455,13 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Militar(es)</th>
-                <th>En poder de</th>
-                <th>Desde</th>
-                <th>Motivo</th>
-                <th>N° Oficio</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">En poder de</th>
+                <th scope="col">Desde</th>
+                <th scope="col">Motivo</th>
+                <th scope="col">N° Oficio</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -524,11 +529,11 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Militar(es)</th>
-                <th>Entregar a</th>
-                <th>Recibida el</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">Entregar a</th>
+                <th scope="col">Recibida el</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -586,11 +591,11 @@
     <table>
         <thead>
             <tr>
-                <th>Código SIM</th>
-                <th>Militar(es)</th>
-                <th>Auto Ejecutoria</th>
-                <th>Memo</th>
-                <th>Acción</th>
+                <th scope="col">Código SIM</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">Auto Ejecutoria</th>
+                <th scope="col">Memo</th>
+                <th scope="col">Acción</th>
             </tr>
         </thead>
         <tbody>
@@ -645,11 +650,11 @@
     <table>
         <thead>
             <tr>
-                <th>Código SIM</th>
-                <th>Militar(es)</th>
-                <th>N° Memorándum</th>
-                <th>Fecha Memo</th>
-                <th>Acción</th>
+                <th scope="col">Código SIM</th>
+                <th scope="col">Militar(es)</th>
+                <th scope="col">N° Memorándum</th>
+                <th scope="col">Fecha Memo</th>
+                <th scope="col">Acción</th>
             </tr>
         </thead>
         <tbody>
@@ -688,11 +693,11 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Militar</th>
-                <th>Resolución RR</th>
-                <th>Fecha Presentación</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Militar</th>
+                <th scope="col">Resolución RR</th>
+                <th scope="col">Fecha Presentación</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -726,11 +731,11 @@
     <table>
         <thead>
             <tr>
-                <th>Sumario</th>
-                <th>Militar</th>
-                <th>RAP N°</th>
-                <th>Fecha RAP</th>
-                <th>Acciones</th>
+                <th scope="col">Sumario</th>
+                <th scope="col">Militar</th>
+                <th scope="col">RAP N°</th>
+                <th scope="col">Fecha RAP</th>
+                <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>

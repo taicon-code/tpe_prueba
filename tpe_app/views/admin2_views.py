@@ -743,3 +743,59 @@ def admin2_registrar_salida_tsp(request, rap_id):
         'pm': rap.pm,
     }
     return render(request, 'tpe_app/admin2/registrar_salida_tsp.html', context)
+
+
+# ============================================================
+# ADMIN2: ANULAR ENTREGA DE CUSTODIA (Huérfanas)
+# ============================================================
+@rol_requerido('ADMIN2_ARCHIVO')
+def anular_entrega_custodia(request, custodia_id):
+    """Anular una entrega de custodia si el receptor no confirmó (> 24h sin confirmar).
+
+    Caso: Admin2 entregó un SIM a un Abogado, éste nunca confirmó recepción.
+    Acción: Revertir a custodia anterior (vuelve a Admin2).
+    """
+    custodia = get_object_or_404(CustodiaSIM, pk=custodia_id)
+    sim = custodia.sim
+
+    # Solo puede anular custodias en estado PENDIENTE_CONFIRMACION
+    if custodia.estado != 'PENDIENTE_CONFIRMACION':
+        messages.error(request, '❌ Solo se pueden anular custodias pendientes de confirmación.')
+        return redirect('admin2_dashboard')
+
+    try:
+        with transaction.atomic():
+            # Buscar la custodia anterior (la más reciente antes de ésta)
+            custodia_anterior = CustodiaSIM.objects.filter(
+                sim=sim,
+                fecha_recepcion__lt=custodia.fecha_recepcion
+            ).order_by('-fecha_recepcion').first()
+
+            # Cancelar la custodia pendiente
+            custodia.estado = 'CANCELADA'
+            custodia.save()
+
+            # Si hay custodia anterior, reactivarla
+            if custodia_anterior:
+                custodia_anterior.estado = 'ACTIVA'
+                custodia_anterior.save()
+                destino_txt = f'{custodia_anterior.tipo_custodio}'
+            else:
+                # Si no hay anterior, vuelve a Admin2
+                custodia_nueva = CustodiaSIM.objects.create(
+                    sim=sim,
+                    tipo_custodio='ADMIN2_ARCHIVO',
+                    estado='ACTIVA',
+                    usuario=request.user,
+                    observacion='Recuperada por anulación de entrega pendiente'
+                )
+                destino_txt = 'Admin2 (Archivo)'
+
+            messages.success(
+                request,
+                f'✅ Entrega anulada: {sim.codigo} retorna a {destino_txt}'
+            )
+    except Exception as e:
+        messages.error(request, f'❌ Error al anular: {str(e)}')
+
+    return redirect('admin2_dashboard')
