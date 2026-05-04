@@ -122,7 +122,7 @@ def _compilar_documentos(sim, historial, pm=None):
     # Auto TPE
     for auto in _filt(historial['autos_tpe']):
         memo_info = None
-        memo = getattr(auto, 'memorandum', None)
+        memo = auto.memorandums.first()
         if memo:
             memo_info = {
                 'numero': memo.numero or 'S/N',

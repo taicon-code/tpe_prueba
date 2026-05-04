@@ -78,7 +78,7 @@ def _compilar_documentos_lotes(sim, historial):
     for auto in historial['autos_tpe'].filter(sim=sim):
         fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
         resolutiva = (auto.texto or (auto.get_tipo_display() if auto.tipo else 'N/A')).upper()
-        memo = getattr(auto, 'memorandum', None)
+        memo = auto.memorandums.first()
         if memo:
             entrega = memo.fecha_entrega.strftime('%d/%m/%y') if memo.fecha_entrega else 'PENDIENTE'
             memo_str = f"MEMO N° {memo.numero}  |  FECHA: {memo.fecha.strftime('%d/%m/%y') if memo.fecha else 'S/F'}  |  ENTREGA: {entrega}"
