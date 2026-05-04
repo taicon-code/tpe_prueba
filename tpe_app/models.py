@@ -6,6 +6,7 @@
 
 from django.db import models
 from django.utils import timezone
+from simple_history.models import HistoricalRecords
 from datetime import date, timedelta
 
 
@@ -253,6 +254,8 @@ class PM(models.Model):
     no_ascendio   = models.BooleanField(default=False, verbose_name='No ascendió al grado correspondiente')
     foto          = models.ImageField(upload_to='fotos_pm/', null=True, blank=True, verbose_name='Foto')
 
+    history = HistoricalRecords()  # Auditoría: registra cambios en Personal Militar
+
     class Meta:
         db_table            = 'pm'
         verbose_name        = 'Personal Militar'
@@ -451,6 +454,37 @@ class SIM(models.Model):
         'NULIDAD_TSP':             'PROCESO_CONCLUIDO_TSP_TPE',
     }
 
+    # Whitelist de transiciones válidas entre fases (máquina de estados)
+    # Si fase actual no está aquí, cualquier nueva fase se permite (backward compat)
+    FASE_TRANSICIONES_VALIDAS = {
+        None: ['PARA_AGENDA'],  # Creación inicial
+        'PARA_AGENDA': ['EN_DICTAMEN_1RA', 'EN_ESPERA_RAP'],  # Puede saltar a apelación temprano
+        'EN_DICTAMEN_1RA': ['1RA_RESOLUCION'],
+        '1RA_RESOLUCION': ['NOTIFICACION_1RA'],
+        'NOTIFICACION_1RA': ['NOTIFICADO_1RA'],
+        'NOTIFICADO_1RA': ['EN_ESPERA_RR', 'EN_ESPERA_RAP'],  # RR o directo a apelación
+        'EN_ESPERA_RR': ['PARA_AGENDA_RR'],
+        'PARA_AGENDA_RR': ['EN_DICTAMEN_RR'],
+        'EN_DICTAMEN_RR': ['2DA_RESOLUCION'],
+        '2DA_RESOLUCION': ['NOTIFICACION_RR'],
+        'NOTIFICACION_RR': ['NOTIFICADO_RR'],
+        'NOTIFICADO_RR': ['EN_ESPERA_RAP', 'EN_AGENDA_EJECUTORIA'],  # Apelación o ejecutoria
+        'EN_ESPERA_RAP': ['ELEVADO_TSP'],
+        'ELEVADO_TSP': ['RECIBIDO_TSP'],  # TSP responde
+        'RECIBIDO_TSP': ['EN_CUMPLIMIENTO'],  # TPE ejecuta cumplimiento
+        'EN_CUMPLIMIENTO': ['EN_AGENDA_CUMPLIMIENTO'],
+        'EN_AGENDA_CUMPLIMIENTO': ['CUMPLIMIENTO_EMITIDO'],
+        'CUMPLIMIENTO_EMITIDO': ['CUMPLIMIENTO_NOTIFICADO'],
+        'CUMPLIMIENTO_NOTIFICADO': ['CONCLUIDO_TSP_TPE'],
+        'EN_AGENDA_EJECUTORIA': ['EN_EJECUTORIA'],
+        'EN_EJECUTORIA': ['EJECUTORIA_NOTIFICADA'],
+        'EJECUTORIA_NOTIFICADA': ['PENDIENTE_ARCHIVO'],
+        'PENDIENTE_ARCHIVO': ['CONCLUIDO', 'MEMORANDUM_RETORNADO'],
+        'CONCLUIDO': ['MEMORANDUM_RETORNADO'],  # Memo llega después
+        # TSP devolvió nulo → nueva versión (reapertura)
+        'NULIDAD_TSP': ['PARA_AGENDA'],  # Reinicia como nuevo SIM
+    }
+
     militares = models.ManyToManyField(PM, through='PM_SIM', verbose_name='Militares investigados')
     abogados  = models.ManyToManyField(PM, through='ABOG_SIM', related_name='sumarios_como_abogado', verbose_name='Abogados asignados')
 
@@ -475,6 +509,8 @@ class SIM(models.Model):
     auto_final         = models.TextField(null=True, blank=True, verbose_name='Auto Final / Dictamen')
     tipo               = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo')
     fecha_registro     = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de Registro')
+
+    history = HistoricalRecords()  # Auditoría: registra todos los cambios en SIM
 
     class Meta:
         db_table            = 'sim'
@@ -533,6 +569,26 @@ class SIM(models.Model):
         self.resumen   = self.resumen.upper()   if self.resumen   else self.resumen
         self.tipo      = self.tipo.upper()      if self.tipo      else self.tipo
         self.auto_final = self.auto_final.upper() if self.auto_final else self.auto_final
+
+        # Validar transición de fase (máquina de estados)
+        if self.pk:  # Solo si está siendo actualizado, no en creación
+            try:
+                sim_anterior = SIM.objects.get(pk=self.pk)
+                fase_anterior = sim_anterior.fase
+                fase_nueva = self.fase
+
+                if fase_nueva != fase_anterior and fase_anterior is not None:
+                    transiciones_validas = self.FASE_TRANSICIONES_VALIDAS.get(fase_anterior, [])
+                    if transiciones_validas and fase_nueva not in transiciones_validas:
+                        # En desarrollo, log. En producción, podrías lanzar ValidationError
+                        import logging
+                        logger = logging.getLogger('tpe_app')
+                        logger.warning(
+                            f'SIM {self.codigo}: transición inválida {fase_anterior} → {fase_nueva}. '
+                            f'Transiciones válidas: {transiciones_validas}'
+                        )
+            except SIM.DoesNotExist:
+                pass
 
         if self.fase and self.fase in self.FASE_A_ESTADO:
             nuevo_estado = self.FASE_A_ESTADO[self.fase]
@@ -861,6 +917,8 @@ class AUTOTPE(models.Model):
     texto          = models.TextField(null=True, blank=True, verbose_name='Resolución')
     tipo           = models.CharField(null=True, blank=True, max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
 
+    history = HistoricalRecords()  # Auditoría: registra cambios en Autos TPE
+
     class Meta:
         db_table            = 'autotpe'
         verbose_name        = 'Auto TPE'
@@ -1044,6 +1102,8 @@ class Resolucion(models.Model):
     fecha_presentacion = models.DateField(null=True, blank=True, verbose_name='Fecha Presentación (RECONSIDERACION)')
     fecha_limite       = models.DateField(null=True, blank=True, verbose_name='Fecha Límite 15 días (RECONSIDERACION)')
 
+    history = HistoricalRecords()  # Auditoría: registra cambios en Resoluciones
+
     class Meta:
         db_table            = 'resolucion'
         verbose_name        = 'Resolución'
@@ -1157,6 +1217,8 @@ class RecursoTSP(models.Model):
     numero             = models.CharField(max_length=15, null=True, blank=True, db_index=True, verbose_name='Número Resolución TSP')
     fecha              = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
     texto              = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
+
+    history = HistoricalRecords()  # Auditoría: registra cambios en Recursos TSP
 
     class Meta:
         db_table            = 'recurso_tsp'

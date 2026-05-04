@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'axes',  # django-axes: rate limiting de login
+    'simple_history',  # django-simple-history: auditoría de cambios
     'tpe_app',
 ]
 
@@ -56,6 +58,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',  # django-axes: detectar intentos fallidos
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -193,3 +196,16 @@ MEDIA_ROOT = env(
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',  # django-axes (debe ir primero)
+    'django.contrib.auth.backends.ModelBackend',  # Django default
+]
+
+# django-axes: Protección contra fuerza bruta en login
+AXES_FAILURE_LIMIT = 5  # Bloquear después de 5 intentos fallidos
+AXES_COOLOFF_TIME = 1  # Cooloff de 1 hora (timedelta)
+AXES_LOCKOUT_URL = '/login/'  # Redirigir a login si está bloqueado
+AXES_LOCKOUT_TEMPLATE = 'tpe_app/lockout.html'  # Template personalizado (crear si no existe)
+AXES_VERBOSE = True  # Loguear intentos
+AXES_RESET_ON_SUCCESS = True  # Reset contador al login exitoso

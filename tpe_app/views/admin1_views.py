@@ -6,6 +6,7 @@ from django.db.models import Q, Exists, OuterRef
 from django.urls import reverse
 from django.utils import timezone
 from django.http import JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import date, timedelta
 import calendar
 import json
@@ -59,7 +60,7 @@ def admin1_dashboard(request):
     )
 
     # Sumarios para agenda (sin abogado asignado - ignorando solicitudes)
-    sumarios_sin_asignar = (
+    sumarios_sin_asignar_qs = (
         SIM.objects.filter(estado='PARA_AGENDA', abogados__isnull=True)
         .exclude(tipo__startswith='SOLICITUD')
         .prefetch_related('militares')
@@ -67,15 +68,27 @@ def admin1_dashboard(request):
         .distinct()
         .order_by('-fecha_ingreso')
     )
+    paginator_sumarios = Paginator(sumarios_sin_asignar_qs, 15)  # 15 por página
+    page_sumarios = request.GET.get('page_sumarios', 1)
+    try:
+        sumarios_sin_asignar = paginator_sumarios.page(page_sumarios)
+    except (PageNotAnInteger, EmptyPage):
+        sumarios_sin_asignar = paginator_sumarios.page(1)
 
     # Solicitudes para agendar
-    solicitudes_sin_asignar = (
+    solicitudes_sin_asignar_qs = (
         SIM.objects.filter(estado='PARA_AGENDA', abogados__isnull=True, tipo__startswith='SOLICITUD')
         .prefetch_related('militares')
         .filter(filtros_q)
         .distinct()
         .order_by('-fecha_ingreso')
     )
+    paginator_solicitudes = Paginator(solicitudes_sin_asignar_qs, 15)  # 15 por página
+    page_solicitudes = request.GET.get('page_solicitudes', 1)
+    try:
+        solicitudes_sin_asignar = paginator_solicitudes.page(page_solicitudes)
+    except (PageNotAnInteger, EmptyPage):
+        solicitudes_sin_asignar = paginator_solicitudes.page(1)
 
     # RR por agendar — calcular fecha límite 25 días y color de alerta.
     # Se excluyen RRs que ya fueron emitidas (tienen numero Y fecha distinto de vacío/null)

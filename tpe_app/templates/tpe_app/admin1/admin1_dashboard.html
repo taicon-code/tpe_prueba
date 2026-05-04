@@ -161,6 +161,20 @@
             {% endfor %}
         </tbody>
     </table>
+    <!-- Paginación sumarios_sin_asignar -->
+    {% if sumarios_sin_asignar.has_other_pages %}
+    <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; padding: 0.5rem;">
+        {% if sumarios_sin_asignar.has_previous %}
+            <a href="?page_sumarios=1{% if query %}&q={{ query }}{% endif %}" class="btn btn-sm" style="background:#3b82f6; color:#fff;">Primero</a>
+            <a href="?page_sumarios={{ sumarios_sin_asignar.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-sm" style="background:#3b82f6; color:#fff;">← Anterior</a>
+        {% endif %}
+        <span style="padding: 0.3rem 0.6rem;">Pág. {{ sumarios_sin_asignar.number }} de {{ sumarios_sin_asignar.paginator.num_pages }}</span>
+        {% if sumarios_sin_asignar.has_next %}
+            <a href="?page_sumarios={{ sumarios_sin_asignar.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-sm" style="background:#3b82f6; color:#fff;">Siguiente →</a>
+            <a href="?page_sumarios={{ sumarios_sin_asignar.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}" class="btn btn-sm" style="background:#3b82f6; color:#fff;">Último</a>
+        {% endif %}
+    </div>
+    {% endif %}
     {% else %}
     <p style="color: #6b7280; text-align: center; padding: 2rem;">
         ✅ Todos los sumarios tienen abogado asignado
