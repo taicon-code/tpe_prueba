@@ -3,6 +3,7 @@
 Vistas para el rol AYUDANTE - Registro de datos históricos y búsqueda de antecedentes
 """
 
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
@@ -12,6 +13,8 @@ from django.http import JsonResponse
 from django.urls import reverse
 from datetime import date
 from ..decorators import rol_requerido
+
+logger = logging.getLogger(__name__)
 from ..models import (
     SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum,
     DocumentoAdjunto,
@@ -821,8 +824,13 @@ def ayudante_wizard_paso3(request, sim_id, pm_id=None):
                     # Guardar notificación RES si se proporciona
                     res_notif_tipo = request.POST.get('res_notif_tipo')
                     if res_notif_tipo:
-                        # Eliminar notificación anterior si existe
-                        res.notificacion.delete() if hasattr(res, 'notificacion') else None
+                        try:
+                            # Eliminar notificación anterior si existe
+                            if hasattr(res, 'notificacion') and res.notificacion:
+                                res.notificacion.delete()
+                        except Exception as e:
+                            logger.warning(f"No se pudo eliminar notificación anterior de RES: {e}")
+
                         notif = Notificacion(
                             resolucion=res,
                             tipo=res_notif_tipo,
@@ -850,8 +858,13 @@ def ayudante_wizard_paso3(request, sim_id, pm_id=None):
                         # Guardar notificación RR si se proporciona
                         rr_notif_tipo = request.POST.get('rr_notif_tipo')
                         if rr_notif_tipo:
-                            # Eliminar notificación anterior si existe
-                            rr.notificacion.delete() if hasattr(rr, 'notificacion') else None
+                            try:
+                                # Eliminar notificación anterior si existe
+                                if hasattr(rr, 'notificacion') and rr.notificacion:
+                                    rr.notificacion.delete()
+                            except Exception as e:
+                                logger.warning(f"No se pudo eliminar notificación anterior de RR: {e}")
+
                             notif = Notificacion(
                                 resolucion=rr,
                                 tipo=rr_notif_tipo,
@@ -872,6 +885,7 @@ def ayudante_wizard_paso3(request, sim_id, pm_id=None):
                     return redirect('ayudante_wizard_paso4', sim_id=sim.pk, pm_id=pm.pk)
 
         except Exception as e:
+            logger.error(f"Error en wizard paso3 POST para SIM {sim_id}: {type(e).__name__}: {str(e)}", exc_info=True)
             messages.error(request, f'Error al guardar: {str(e)}')
 
         if errores:

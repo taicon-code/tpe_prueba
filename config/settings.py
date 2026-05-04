@@ -61,6 +61,7 @@ MIDDLEWARE = [
     'axes.middleware.AxesMiddleware',  # django-axes: detectar intentos fallidos
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'tpe_app.middleware.SessionDiagnosticsMiddleware',  # Diagnóstico de sesión
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -209,3 +210,37 @@ AXES_LOCKOUT_URL = '/login/'  # Redirigir a login si está bloqueado
 AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'  # Template personalizado en tpe_app/templates/axes/
 AXES_VERBOSE = True  # Loguear intentos
 AXES_RESET_ON_SUCCESS = True  # Reset contador al login exitoso
+
+# Logging para diagnóstico
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '[{levelname}] {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'loggers': {
+        'tpe_app': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

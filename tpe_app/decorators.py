@@ -1,7 +1,10 @@
 # tpe_app/decorators.py
+import logging
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from functools import wraps
+
+logger = logging.getLogger(__name__)
 
 def rol_requerido(*roles_permitidos):
     """
@@ -16,6 +19,8 @@ def rol_requerido(*roles_permitidos):
         @login_required
         def wrapper(request, *args, **kwargs):
             from tpe_app.models import PerfilUsuario
+
+            logger.debug(f"[{view_func.__name__}] Usuario: {request.user.username}, Autenticado: {request.user.is_authenticated}, Superuser: {request.user.is_superuser}")
 
             if request.user.is_superuser:
                 # Para superusuarios, crear un perfil simulado
