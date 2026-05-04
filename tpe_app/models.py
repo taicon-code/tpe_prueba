@@ -44,8 +44,14 @@ FERIADOS_2026 = _FERIADOS_FALLBACK
 
 
 def add_business_days(fecha_inicio, dias):
-    """Suma 'dias' días hábiles a fecha_inicio, excluyendo feriados (cached)."""
+    """Suma 'dias' días hábiles a fecha_inicio, excluyendo feriados (cached).
+
+    Si fecha_inicio es None devuelve None (caso comun en sumarios historicos).
+    """
     global _FERIADOS_CACHE
+
+    if fecha_inicio is None:
+        return None
 
     años_requeridos = {fecha_inicio.year, (fecha_inicio + timedelta(days=dias * 2 + 10)).year}
 
@@ -719,8 +725,8 @@ class DICTAMEN(models.Model):
 
     numero     = models.CharField(max_length=20, null=True, blank=True, verbose_name='Número de Dictamen')
     conclusion = models.CharField(max_length=255, null=True, blank=True, verbose_name='Conclusión / Recomendación')
-    agenda     = models.ForeignKey(AGENDA, on_delete=models.CASCADE, verbose_name='Agenda')
-    sim        = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    agenda     = models.ForeignKey(AGENDA, on_delete=models.PROTECT, verbose_name='Agenda')
+    sim        = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
     abogado    = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
                    related_name='dictamenes_como_abogado')
     pm         = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
@@ -841,7 +847,7 @@ class AUTOTPE(models.Model):
         ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
     ]
 
-    sim            = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    sim            = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
     abogado        = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
                         related_name='autos_como_abogado')
     agenda         = models.ForeignKey(AGENDA, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Agenda')
@@ -930,7 +936,7 @@ class AUTOTSP(models.Model):
         ('AUTO_EXCUSA',       'Auto de Excusa'),
     ]
 
-    sim    = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario', null=True, blank=True)
+    sim    = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario', null=True, blank=True)
     numero = models.CharField(max_length=15, verbose_name='Número de Auto')
     fecha  = models.DateField(verbose_name='Fecha del Auto')
     texto  = models.TextField(verbose_name='Resolución')
@@ -1019,7 +1025,7 @@ class Resolucion(models.Model):
     ]
 
     instancia          = models.CharField(max_length=20, choices=INSTANCIA_CHOICES, default='PRIMERA', verbose_name='Instancia')
-    sim                = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    sim                = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
     abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
                              related_name='resoluciones_como_abogado')
     agenda             = models.ForeignKey(AGENDA, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Agenda')
@@ -1133,7 +1139,7 @@ class RecursoTSP(models.Model):
     ]
 
     instancia          = models.CharField(max_length=25, choices=INSTANCIA_CHOICES, default='APELACION', verbose_name='Instancia')
-    sim                = models.ForeignKey(SIM, on_delete=models.CASCADE, verbose_name='Sumario')
+    sim                = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
     abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
                              related_name='recursos_tsp_como_abogado')
     pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
@@ -1157,6 +1163,14 @@ class RecursoTSP(models.Model):
         verbose_name        = 'Recurso TSP'
         verbose_name_plural = 'Recursos TSP'
         ordering            = ['-fecha']
+        constraints = [
+            # MySQL permite multiples NULL en UNIQUE, asi que casos historicos
+            # con numero=None no chocan. Solo se rechazan duplicados informados.
+            models.UniqueConstraint(
+                fields=['numero', 'instancia'],
+                name='uniq_recurso_tsp_numero_instancia',
+            ),
+        ]
         indexes = [
             models.Index(fields=['instancia']),
             models.Index(fields=['sim', 'instancia']),

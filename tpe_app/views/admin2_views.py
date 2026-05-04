@@ -324,7 +324,7 @@ def admin2_entregar_carpeta(request, sim_id):
         sim=sim,
         motivo='EJECUTORIA',
         fecha_entrega__isnull=True
-    ).select_related('abog_destino').first()
+    ).select_related('abogado_destino').first()
 
     # Pre-llenar si hay orden de ejecutoria
     pre_llenar_tipo = None

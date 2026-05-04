@@ -698,7 +698,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
                 sim=sim,
                 tipo_custodio='ADMIN2_ARCHIVO',
                 motivo='EJECUTORIA',
-                abog_destino=abog_destino,
+                abogado_destino=abog_destino,
                 estado='RECIBIDA_CONFORME',
                 usuario=request.user,
                 observacion='Orden: Entregar a Abog. de Autos (Ejecutoria)'

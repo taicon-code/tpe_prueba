@@ -115,18 +115,44 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Session Configuration
-# https://docs.djangoproject.com/en/5.2/ref/settings/#session-cookie-age
-SESSION_COOKIE_AGE = 30 * 60  # 30 minutos sin actividad
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Cierra sesión al cerrar navegador
-SESSION_COOKIE_SECURE = True  # Solo HTTPS (producción)
-SESSION_COOKIE_HTTPONLY = True  # Previene acceso desde JavaScript
+# Session & CSRF Cookies
+# Por defecto se exige HTTPS en producción (DEBUG=False) y se permite HTTP en
+# desarrollo (DEBUG=True). En LAN sin HTTPS poner USE_SECURE_COOKIES=False en .env.
+USE_SECURE_COOKIES = env.bool('USE_SECURE_COOKIES', default=not DEBUG)
+
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_SECURE = USE_SECURE_COOKIES
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+CSRF_COOKIE_SECURE = USE_SECURE_COOKIES
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Security Headers
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_REFERRER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# HSTS solo en HTTPS real
+if USE_SECURE_COOKIES and not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = False
+
+# Upload limits (5 MB para evitar DoS por upload masivo)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-bo'
 
 TIME_ZONE = 'America/La_Paz'  # Bolivia UTC-4
 
