@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
 from django.utils import timezone
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import datetime
 from ..decorators import rol_requerido
 from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, RecursoTSP
@@ -201,18 +202,55 @@ def admin2_dashboard(request):
         except Exception:
             historial_sim = []
 
+    # Aplicar paginación (15 items por página)
+    paginator = Paginator(carpetas_admin2_pendientes, 15)
+    page = request.GET.get('page_admin2_pendientes')
+    try:
+        carpetas_admin2_pendientes_page = paginator.page(page)
+    except PageNotAnInteger:
+        carpetas_admin2_pendientes_page = paginator.page(1)
+    except EmptyPage:
+        carpetas_admin2_pendientes_page = paginator.page(paginator.num_pages)
+
+    paginator_en_poder = Paginator(carpetas_en_poder, 15)
+    page_en_poder = request.GET.get('page_en_poder')
+    try:
+        carpetas_en_poder_page = paginator_en_poder.page(page_en_poder)
+    except PageNotAnInteger:
+        carpetas_en_poder_page = paginator_en_poder.page(1)
+    except EmptyPage:
+        carpetas_en_poder_page = paginator_en_poder.page(paginator_en_poder.num_pages)
+
+    paginator_ejecutoria = Paginator(para_ejecutoria, 15)
+    page_ejecutoria = request.GET.get('page_ejecutoria')
+    try:
+        para_ejecutoria_page = paginator_ejecutoria.page(page_ejecutoria)
+    except PageNotAnInteger:
+        para_ejecutoria_page = paginator_ejecutoria.page(1)
+    except EmptyPage:
+        para_ejecutoria_page = paginator_ejecutoria.page(paginator_ejecutoria.num_pages)
+
+    paginator_entregar = Paginator(sims_pendientes_entregar, 15)
+    page_entregar = request.GET.get('page_entregar')
+    try:
+        sims_pendientes_entregar_page = paginator_entregar.page(page_entregar)
+    except PageNotAnInteger:
+        sims_pendientes_entregar_page = paginator_entregar.page(1)
+    except EmptyPage:
+        sims_pendientes_entregar_page = paginator_entregar.page(paginator_entregar.num_pages)
+
     context = {
-        'carpetas_admin2_pendientes': carpetas_admin2_pendientes,
+        'carpetas_admin2_pendientes': carpetas_admin2_pendientes_page,
         'total_admin2_pendientes': len(carpetas_admin2_pendientes),
-        'carpetas_en_poder': carpetas_en_poder,
+        'carpetas_en_poder': carpetas_en_poder_page,
         'total_en_poder': len(carpetas_en_poder),
         'carpetas_pendientes': carpetas_pendientes,
         'total_pendientes': len(carpetas_pendientes),
         'carpetas_prestadas': carpetas_prestadas,
         'total_prestadas': len(carpetas_prestadas),
-        'para_ejecutoria': para_ejecutoria,
+        'para_ejecutoria': para_ejecutoria_page,
         'total_ejecutoria': len(para_ejecutoria),
-        'sims_pendientes_entregar': sims_pendientes_entregar,
+        'sims_pendientes_entregar': sims_pendientes_entregar_page,
         'total_sin_entregar': len(sims_pendientes_entregar),
         'sims_pendiente_archivo': sims_pendiente_archivo,
         'total_pendiente_archivo': len(sims_pendiente_archivo),

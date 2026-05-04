@@ -206,6 +206,6 @@ AUTHENTICATION_BACKENDS = [
 AXES_FAILURE_LIMIT = 5  # Bloquear después de 5 intentos fallidos
 AXES_COOLOFF_TIME = 1  # Cooloff de 1 hora (timedelta)
 AXES_LOCKOUT_URL = '/login/'  # Redirigir a login si está bloqueado
-AXES_LOCKOUT_TEMPLATE = 'tpe_app/lockout.html'  # Template personalizado (crear si no existe)
+AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'  # Template personalizado en tpe_app/templates/axes/
 AXES_VERBOSE = True  # Loguear intentos
 AXES_RESET_ON_SUCCESS = True  # Reset contador al login exitoso

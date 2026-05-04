@@ -244,6 +244,19 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if sims_pendientes_entregar.has_other_pages %}
+    <nav style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        {% if sims_pendientes_entregar.has_previous %}
+            <a href="?page_entregar=1" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">⏮️ Primero</a>
+            <a href="?page_entregar={{ sims_pendientes_entregar.previous_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">◀️ Anterior</a>
+        {% endif %}
+        <span style="padding: 0.4rem 0.8rem; color: #666; font-weight: 500;">Página {{ sims_pendientes_entregar.number }} de {{ sims_pendientes_entregar.paginator.num_pages }}</span>
+        {% if sims_pendientes_entregar.has_next %}
+            <a href="?page_entregar={{ sims_pendientes_entregar.next_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Siguiente ▶️</a>
+            <a href="?page_entregar={{ sims_pendientes_entregar.paginator.num_pages }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Último ⏭️</a>
+        {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <p style="text-align: center; color: #999; padding: 2rem;">
         ✅ No hay sumarios pendientes de entregar
@@ -312,6 +325,19 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if carpetas_en_poder.has_other_pages %}
+    <nav style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        {% if carpetas_en_poder.has_previous %}
+            <a href="?page_en_poder=1" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">⏮️ Primero</a>
+            <a href="?page_en_poder={{ carpetas_en_poder.previous_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">◀️ Anterior</a>
+        {% endif %}
+        <span style="padding: 0.4rem 0.8rem; color: #666; font-weight: 500;">Página {{ carpetas_en_poder.number }} de {{ carpetas_en_poder.paginator.num_pages }}</span>
+        {% if carpetas_en_poder.has_next %}
+            <a href="?page_en_poder={{ carpetas_en_poder.next_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Siguiente ▶️</a>
+            <a href="?page_en_poder={{ carpetas_en_poder.paginator.num_pages }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Último ⏭️</a>
+        {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <p style="text-align: center; color: #999; padding: 2rem;">
         ✅ No hay carpetas en su poder actualmente
@@ -374,6 +400,19 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if carpetas_admin2_pendientes.has_other_pages %}
+    <nav style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        {% if carpetas_admin2_pendientes.has_previous %}
+            <a href="?page_admin2_pendientes=1" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">⏮️ Primero</a>
+            <a href="?page_admin2_pendientes={{ carpetas_admin2_pendientes.previous_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">◀️ Anterior</a>
+        {% endif %}
+        <span style="padding: 0.4rem 0.8rem; color: #666; font-weight: 500;">Página {{ carpetas_admin2_pendientes.number }} de {{ carpetas_admin2_pendientes.paginator.num_pages }}</span>
+        {% if carpetas_admin2_pendientes.has_next %}
+            <a href="?page_admin2_pendientes={{ carpetas_admin2_pendientes.next_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Siguiente ▶️</a>
+            <a href="?page_admin2_pendientes={{ carpetas_admin2_pendientes.paginator.num_pages }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Último ⏭️</a>
+        {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <p style="text-align: center; color: #999; padding: 2rem;">
         ✅ No hay carpetas pendientes de confirmar recepción
@@ -572,6 +611,19 @@
             {% endfor %}
         </tbody>
     </table>
+    {% if para_ejecutoria.has_other_pages %}
+    <nav style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        {% if para_ejecutoria.has_previous %}
+            <a href="?page_ejecutoria=1" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">⏮️ Primero</a>
+            <a href="?page_ejecutoria={{ para_ejecutoria.previous_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">◀️ Anterior</a>
+        {% endif %}
+        <span style="padding: 0.4rem 0.8rem; color: #666; font-weight: 500;">Página {{ para_ejecutoria.number }} de {{ para_ejecutoria.paginator.num_pages }}</span>
+        {% if para_ejecutoria.has_next %}
+            <a href="?page_ejecutoria={{ para_ejecutoria.next_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Siguiente ▶️</a>
+            <a href="?page_ejecutoria={{ para_ejecutoria.paginator.num_pages }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Último ⏭️</a>
+        {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <p style="text-align: center; color: #999; padding: 2rem;">
         ✅ No hay instrucciones de ejecutoria pendientes
