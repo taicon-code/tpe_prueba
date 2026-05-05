@@ -11,7 +11,9 @@
     padding: 6px 8px;
   }
   #tablaDocumentos thead th {
-    border-color: #495057;
+    background-color: #2c4a7c !important;
+    border-color: #243f6b !important;
+    color: #fff !important;
   }
   #tablaDocumentos tbody tr:hover {
     background-color: #f0f4ff;
@@ -99,7 +101,7 @@
     </div>
     <div class="table-responsive">
       <table id="tablaDocumentos" class="table table-hover mb-0" style="font-size:0.8rem;">
-        <thead class="table-dark">
+        <thead>
           <tr>
             <th style="width:65px;" class="text-center py-2">N°</th>
             <th style="width:160px;" class="py-2">MILITAR</th>
@@ -119,15 +121,15 @@
           <tr>
             <!-- N° documento -->
             <td class="text-center">
-              <code class="small">{{ obj.numero|default:"S/N" }}</code>
+              <span class="fw-bold text-dark" style="font-size:0.82rem;">{{ obj.numero|default:"S/N" }}</span>
             </td>
 
             <!-- Militar -->
             <td>
               {% if pm %}
-                <span class="fw-semibold">{{ pm.grado }}</span>
-                {{ pm.paterno }} {{ pm.nombre }}
-                {% if pm.materno %}<span class="text-muted">{{ pm.materno }}</span>{% endif %}
+                <span class="fw-semibold d-block">{{ pm.grado }}</span>
+                <span>{{ pm.paterno }} {{ pm.materno }}</span>
+                <span class="text-muted d-block">{{ pm.nombre }}</span>
               {% else %}
                 <span class="text-muted fst-italic">Sin asignar</span>
               {% endif %}
