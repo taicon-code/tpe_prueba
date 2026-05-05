@@ -31,8 +31,28 @@ def _obtener_historial_completo(personal_id):
         return None
 
     # Obtener todos los SIM donde participa este personal (orden cronológico)
-    sims = SIM.objects.filter(militares__id=personal_id).distinct().order_by('fecha_ingreso', 'version')
-    sim_ids = list(sims.values_list('id', flat=True))
+    # Orden: 1) fecha_ingreso si existe, 2) año extraído del código (ej: DJE-259/19 → 19)
+    # Esto maneja sumarios históricos sin fecha de ingreso
+    from django.db.models import Case, When, Value, IntegerField
+    from django.db.models.functions import Substr, Length, Cast
+
+    sims = SIM.objects.filter(militares__id=personal_id).annotate(
+        # Prioridad: sumarios CON fecha primero (0), luego sin fecha (1)
+        fecha_null_order=Case(
+            When(fecha_ingreso__isnull=True, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        ),
+        # Extraer año del código (últimos 2 caracteres: ej: "DJE-259/19" → "19" → 19)
+        # Substr(campo, posición, longitud) - posición comienza en 1
+        year_from_code=Cast(
+            Substr('codigo', Length('codigo') - 1, 2),
+            output_field=IntegerField()
+        )
+    ).order_by('fecha_null_order', 'fecha_ingreso', 'year_from_code', 'codigo', 'version').distinct()
+
+    # Convertir a lista para preservar el orden
+    sim_ids = [sim.id for sim in sims]
 
     resoluciones = Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA', pm=personal)
     segundas_resoluciones = Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION', pm=personal)
@@ -40,7 +60,7 @@ def _obtener_historial_completo(personal_id):
 
     historial = {
         'personal': personal,
-        'sumarios': sims,
+        'sumarios': sims,  # Mantiene el order_by('fecha_ingreso', 'version')
         'resoluciones': resoluciones,
         'segundas_resoluciones': segundas_resoluciones,
         'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION', pm=personal),

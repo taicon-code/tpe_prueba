@@ -196,14 +196,31 @@ def _compilar_documentos(sim, historial, pm=None):
 
 
 def _obtener_historial(personal_id):
-    """Obtiene historial completo de una persona"""
+    """Obtiene historial completo de una persona en orden cronológico"""
     try:
         personal = PM.objects.get(id=personal_id)
     except PM.DoesNotExist:
         return None, None
 
-    sims = SIM.objects.filter(militares__id=personal_id).distinct().order_by('fecha_ingreso', 'version')
-    sim_ids = list(sims.values_list('id', flat=True))
+    # Ordenar cronológicamente: primero por fecha_ingreso, luego por año extraído del código
+    from django.db.models import Case, When, Value, IntegerField
+    from django.db.models.functions import Substr, Length, Cast
+
+    sims = SIM.objects.filter(militares__id=personal_id).annotate(
+        # Prioridad: sumarios CON fecha primero (0), luego sin fecha (1)
+        fecha_null_order=Case(
+            When(fecha_ingreso__isnull=True, then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField()
+        ),
+        # Extraer año del código (últimos 2 caracteres: ej: "DJE-259/19" → "19" → 19)
+        year_from_code=Cast(
+            Substr('codigo', Length('codigo') - 1, 2),
+            output_field=IntegerField()
+        )
+    ).order_by('fecha_null_order', 'fecha_ingreso', 'year_from_code', 'codigo', 'version').distinct()
+
+    sim_ids = [sim.id for sim in sims]
 
     historial = {
         'personal': personal,
