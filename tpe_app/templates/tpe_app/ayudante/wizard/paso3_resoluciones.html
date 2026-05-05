@@ -101,25 +101,28 @@
                                 <label class="form-label">Tipo de Notificación</label>
                                 <select name="res_notif_tipo" class="form-select">
                                     <option value="">— Sin notificación —</option>
-                                    <option value="FIRMA">Firma</option>
-                                    <option value="EDICTO">Edicto</option>
-                                    <option value="CEDULON">Cedulón</option>
+                                    <option value="FIRMA" {% if res_notif.tipo == 'FIRMA' %}selected{% endif %}>Firma</option>
+                                    <option value="EDICTO" {% if res_notif.tipo == 'EDICTO' %}selected{% endif %}>Edicto</option>
+                                    <option value="CEDULON" {% if res_notif.tipo == 'CEDULON' %}selected{% endif %}>Cedulón</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Notificado a</label>
                                 <input type="text" name="res_notif_notificado_a" class="form-control"
-                                       placeholder="Persona / dirección">
+                                       placeholder="Persona / dirección"
+                                       value="{{ res_notif.notificado_a|default:'' }}">
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
                                 <label class="form-label">Fecha de Notificación</label>
-                                <input type="date" name="res_notif_fecha" class="form-control">
+                                <input type="date" name="res_notif_fecha" class="form-control"
+                                       value="{{ res_notif.fecha|date:'Y-m-d'|default:'' }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Hora de Notificación</label>
-                                <input type="time" name="res_notif_hora" class="form-control">
+                                <input type="time" name="res_notif_hora" class="form-control"
+                                       value="{{ res_notif.hora|time:'H:i'|default:'' }}">
                             </div>
                         </div>
                     </div>
@@ -186,25 +189,28 @@
                                 <label class="form-label">Tipo de Notificación</label>
                                 <select name="rr_notif_tipo" class="form-select">
                                     <option value="">— Sin notificación —</option>
-                                    <option value="FIRMA">Firma</option>
-                                    <option value="EDICTO">Edicto</option>
-                                    <option value="CEDULON">Cedulón</option>
+                                    <option value="FIRMA" {% if rr_notif.tipo == 'FIRMA' %}selected{% endif %}>Firma</option>
+                                    <option value="EDICTO" {% if rr_notif.tipo == 'EDICTO' %}selected{% endif %}>Edicto</option>
+                                    <option value="CEDULON" {% if rr_notif.tipo == 'CEDULON' %}selected{% endif %}>Cedulón</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Notificado a</label>
                                 <input type="text" name="rr_notif_notificado_a" class="form-control"
-                                       placeholder="Persona / dirección">
+                                       placeholder="Persona / dirección"
+                                       value="{{ rr_notif.notificado_a|default:'' }}">
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
                                 <label class="form-label">Fecha de Notificación</label>
-                                <input type="date" name="rr_notif_fecha" class="form-control">
+                                <input type="date" name="rr_notif_fecha" class="form-control"
+                                       value="{{ rr_notif.fecha|date:'Y-m-d'|default:'' }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Hora de Notificación</label>
-                                <input type="time" name="rr_notif_hora" class="form-control">
+                                <input type="time" name="rr_notif_hora" class="form-control"
+                                       value="{{ rr_notif.hora|time:'H:i'|default:'' }}">
                             </div>
                         </div>
                     </div>

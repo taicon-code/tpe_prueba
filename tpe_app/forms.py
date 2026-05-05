@@ -504,7 +504,7 @@ class RESForm(forms.ModelForm):
             'sim':    forms.Select(attrs={'class': 'form-control'}),
             'pm':     forms.Select(attrs={'class': 'form-control'}),
             'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 05/26'}),
-            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'tipo':   forms.Select(attrs={'class': 'form-control'}),
             'texto':  forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
                                             'placeholder': 'Texto de la resolución'}),
@@ -939,10 +939,10 @@ class WizardRRForm(forms.ModelForm):
         fields = ['numero', 'fecha', 'texto', 'tipo', 'fecha_presentacion']
         widgets = {
             'numero':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 07/24 (opcional)'}),
-            'fecha':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'texto':              forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'tipo':               forms.Select(attrs={'class': 'form-control'}),
-            'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_presentacion': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
         }
         labels = {
             'numero':             'Número del RR',

@@ -902,6 +902,16 @@ def ayudante_wizard_paso3(request, sim_id, pm_id=None):
     # Obtener otros militares para el botón "Siguiente"
     otros_militares = sim.militares.exclude(id=pm.id).order_by('paterno', 'nombre')
 
+    # Notificaciones existentes para pre-poblar los campos del template
+    try:
+        res_notif = res_existente.notificacion if res_existente else None
+    except Exception:
+        res_notif = None
+    try:
+        rr_notif = rr_existente.notificacion if rr_existente else None
+    except Exception:
+        rr_notif = None
+
     return render(request, 'tpe_app/ayudante/wizard/paso3_resoluciones.html', {
         'sim': sim,
         'pm': pm,
@@ -909,6 +919,8 @@ def ayudante_wizard_paso3(request, sim_id, pm_id=None):
         'rr_form': rr_form,
         'res_existente': res_existente,
         'rr_existente': rr_existente,
+        'res_notif': res_notif,
+        'rr_notif': rr_notif,
         'otros_militares': otros_militares,
         'paso_actual': 3,
         'total_pasos': 4,
@@ -1754,7 +1766,7 @@ def _analizar_documentos_historicos(sim):
                     'documentos_encontrados': ['RES (PRIMERA)', 'AUTO EJECUTORIA'],
                     'falta': ['RR'],
                     'estado_propuesto': 'PROCESO_CONCLUIDO_TPE',
-                    'fase_propuesta': 'MEMORANDUM_RETORNADO' if auto_ejecutoria.memo_numero else 'EJECUTORIA_NOTIFICADA',
+                    'fase_propuesta': 'MEMORANDUM_RETORNADO' if auto_ejecutoria.memorandums.exists() else 'EJECUTORIA_NOTIFICADA',
                     'acciones': 'Cambiar estado y fase (caso ejecutoriado)'
                 }
                 propuestas.append(propuesta)
