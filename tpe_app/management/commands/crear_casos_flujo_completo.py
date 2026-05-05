@@ -29,7 +29,7 @@ from datetime import date, timedelta
 from tpe_app.models import (
     PM, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
     AGENDA, DICTAMEN, AUTOTPE, CustodiaSIM,
-    Resolucion, RecursoTSP, Notificacion,
+    Resolucion, ApelacionTSP, Notificacion,
     PerfilUsuario, add_business_days
 )
 
@@ -84,7 +84,7 @@ class Command(BaseCommand):
 
     def _limpiar_datos(self):
         """Borra todos los datos de prueba sin afectar el sistema base."""
-        RecursoTSP.objects.all().delete()
+        ApelacionTSP.objects.all().delete()
         AUTOTPE.objects.all().delete()
         Resolucion.objects.all().delete()
         DICTAMEN.objects.all().delete()
@@ -489,9 +489,8 @@ class Command(BaseCommand):
             texto='EL TRIBUNAL RECHAZA RECURSO - MANTIENE SANCION LETRA B'
         )
 
-        rap3 = RecursoTSP.objects.create(
+        rap3 = ApelacionTSP.objects.create(
             sim=sim, pm=pm3, abogado=abog2, resolucion=rr3,
-            instancia='APELACION',
             fecha_presentacion=date(2026, 4, 8),
             numero_oficio='OFI-FLUJO-001/26',
             fecha_oficio=date(2026, 4, 9)

@@ -50,8 +50,8 @@ class Command(BaseCommand):
         from tpe_app.models import (
             SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM,
             AGENDA, DICTAMEN, AUTOTPE,
-            AUTOTSP, DocumentoAdjunto, VOCAL_TPE,
-            Resolucion, RecursoTSP,
+            ActuadoTSP, DocumentoAdjunto, VOCAL_TPE,
+            Resolucion, ApelacionTSP,
         )
 
         self.stdout.write("\n🔄 Iniciando limpieza de datos...\n")
@@ -59,17 +59,17 @@ class Command(BaseCommand):
         with transaction.atomic():
             # Orden importante: primero las dependientes, luego las principales
 
-            n = RecursoTSP.objects.filter(instancia='ACLARACION_ENMIENDA').count()
-            RecursoTSP.objects.filter(instancia='ACLARACION_ENMIENDA').delete()
-            self.stdout.write(f"  ❌ RAEE (RecursoTSP.ACLARACION_ENMIENDA) eliminados: {n}")
+            n = ActuadoTSP.objects.filter(instancia='RAEE').count()
+            ActuadoTSP.objects.filter(instancia='RAEE').delete()
+            self.stdout.write(f"  ❌ RAEE (ActuadoTSP.RAEE) eliminados: {n}")
 
-            n = AUTOTSP.objects.count()
-            AUTOTSP.objects.all().delete()
-            self.stdout.write(f"  ❌ Autos TSP eliminados: {n}")
+            n = ActuadoTSP.objects.exclude(instancia='RAEE').count()
+            ActuadoTSP.objects.exclude(instancia='RAEE').delete()
+            self.stdout.write(f"  ❌ Actuados TSP (NULIDAD/AUTO_TSP) eliminados: {n}")
 
-            n = RecursoTSP.objects.filter(instancia='APELACION').count()
-            RecursoTSP.objects.filter(instancia='APELACION').delete()
-            self.stdout.write(f"  ❌ Apelaciones (RecursoTSP.APELACION) eliminadas: {n}")
+            n = ApelacionTSP.objects.count()
+            ApelacionTSP.objects.all().delete()
+            self.stdout.write(f"  ❌ Apelaciones TSP eliminadas: {n}")
 
             n = AUTOTPE.objects.count()
             AUTOTPE.objects.all().delete()

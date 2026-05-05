@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, AUTOTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum
+from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -258,94 +258,86 @@ class AUTOTPEAdmin(admin.ModelAdmin):
 
 # ============================================================
 #  SECCIÓN 3: TRIBUNAL SUPERIOR DE PERSONAL FF. AA. (TSP)
-#  Agrupa RAP, RAEE y AUTOTSP
+#  ApelacionTSP (RAP) y ActuadoTSP (RAEE / NULIDAD / AUTO)
 # ============================================================
 
-class NotificacionRecursoTSPInline(admin.StackedInline):
+class NotificacionApelacionTSPInline(admin.StackedInline):
     model = Notificacion
     extra = 0
     max_num = 1
     verbose_name = "Notificación"
     fields = ('tipo', 'notificado_a', 'fecha', 'hora')
-    fk_name = 'recurso_tsp'
+    fk_name = 'apelacion_tsp'
 
 
-@admin.register(RecursoTSP)
-class RecursoTSPAdmin(admin.ModelAdmin):
-    list_display  = ('numero', 'instancia', 'sim', 'fecha_presentacion', 'numero_oficio',
-                     'fecha_oficio', 'alerta_plazo', 'fecha')
+@admin.register(ApelacionTSP)
+class ApelacionTSPAdmin(admin.ModelAdmin):
+    list_display  = ('numero', 'sim', 'pm', 'fecha_presentacion', 'numero_oficio',
+                     'fecha_oficio', 'alerta_plazo')
     search_fields = ('numero', 'sim__codigo')
-    list_filter   = ('instancia', 'tipo')
-    inlines       = [NotificacionRecursoTSPInline]
+    list_filter   = ('tipo',)
+    inlines       = [NotificacionApelacionTSPInline]
 
     @mark_safe
     def alerta_plazo(self, obj):
-        if obj.instancia != 'APELACION':
-            return '<span style="color:#6c757d;">—</span>'
         color = obj.get_alerta_plazo()
-        etiquetas = {
-            'success':   'En plazo',
-            'warning':   'Por vencer',
-            'danger':    'Vencido',
-            'secondary': 'Sin fecha',
-        }
-        colores_css = {
-            'success':   '#28a745',
-            'warning':   '#e67e00',
-            'danger':    '#dc3545',
-            'secondary': '#6c757d',
-        }
+        etiquetas  = {'success': 'En plazo', 'warning': 'Por vencer',
+                      'danger': 'Vencido',   'secondary': 'Sin fecha'}
+        colores_css = {'success': '#28a745', 'warning': '#e67e00',
+                       'danger': '#dc3545',  'secondary': '#6c757d'}
         label = etiquetas.get(color, '-')
-        css = colores_css.get(color, '#6c757d')
+        css   = colores_css.get(color, '#6c757d')
         fecha = obj.fecha_limite.strftime('%d/%m/%Y') if obj.fecha_limite else '-'
-        return (
-            f'<span style="color:{css};font-weight:700;">'
-            f'{label}</span><br><small style="color:#555;">{fecha}</small>'
-        )
+        return (f'<span style="color:{css};font-weight:700;">'
+                f'{label}</span><br><small style="color:#555;">{fecha}</small>')
     alerta_plazo.short_description = 'Límite 3 días'
 
     fieldsets = (
-        ('INSTANCIA', {
-            'fields': ('instancia',),
+        ('DATOS DEL RECURSO (RAP)', {
+            'fields': ('sim', 'pm', 'abogado', 'resolucion',
+                       'numero', 'fecha_presentacion', 'texto', 'tipo',)
         }),
-        ('REGISTRO DEL RECURSO', {
-            'fields': ('sim', 'pm', 'resolucion', 'recurso_origen',
-                       'fecha_presentacion', 'fecha_limite',)
-        }),
-        ('REGISTRO DE ENVÍO AL TSP', {
-            'fields': ('numero_oficio', 'fecha_oficio',)
-        }),
-        ('PARTE RESOLUTIVA', {
-            'fields': ('numero', 'fecha', 'texto', 'tipo',)
+        ('ELEVACIÓN AL TSP', {
+            'fields': ('numero_oficio', 'fecha_oficio', 'fecha_limite',)
         }),
     )
 
 
-class NotificacionAUTOTSPInline(admin.StackedInline):
+class NotificacionActuadoTSPInline(admin.StackedInline):
     model = Notificacion
     extra = 0
     max_num = 1
     verbose_name = "Notificación"
     fields = ('tipo', 'notificado_a', 'fecha', 'hora')
-    fk_name = 'autotsp'
+    fk_name = 'actuado_tsp'
 
 
-@admin.register(AUTOTSP)
-class AUTOTSPAdmin(admin.ModelAdmin):
-    list_display  = ('numero', 'sim', 'tipo', 'fecha')
+@admin.register(ActuadoTSP)
+class ActuadoTSPAdmin(admin.ModelAdmin):
+    list_display  = ('numero', 'instancia', 'sim', 'tipo', 'fecha', 'es_pronunciamiento_final')
     search_fields = ('numero', 'sim__codigo')
-    list_filter   = ('tipo',)
-    inlines       = [NotificacionAUTOTSPInline]
+    list_filter   = ('instancia', 'tipo', 'es_pronunciamiento_final')
+    inlines       = [NotificacionActuadoTSPInline]
+
+    fieldsets = (
+        ('DATOS DEL ACTUADO TSP', {
+            'fields': ('apelacion_tsp', 'sim', 'instancia',
+                       'numero', 'fecha', 'texto', 'tipo',)
+        }),
+        ('ESTADO', {
+            'fields': ('es_pronunciamiento_final',)
+        }),
+    )
 
 # ════════════════════════════════════════════════════════════════════════════
 #  ADMIN: Documentos Adjuntos
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(DocumentoAdjunto)
 class DocumentoAdjuntoAdmin(admin.ModelAdmin):
-    list_display  = ('nombre', 'tipo', 'sim', 'resolucion', 'autotpe', 'autotsp', 'recurso_tsp', 'fecha_registro')
+    list_display  = ('nombre', 'tipo', 'sim', 'resolucion', 'autotpe', 'apelacion_tsp', 'actuado_tsp', 'fecha_registro')
     search_fields = ('nombre',)
     list_filter   = ('tipo',)
-    raw_id_fields = ('sim', 'resolucion', 'autotpe', 'autotsp', 'recurso_tsp')
+    raw_id_fields = ('sim', 'resolucion', 'autotpe', 'apelacion_tsp', 'actuado_tsp')
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════

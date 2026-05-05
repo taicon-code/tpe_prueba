@@ -1,7 +1,7 @@
 # ============================================================
 #  MODELOS DJANGO — SISTEMA DE SUMARIOS INFORMATIVOS MILITARES
-#  Versión 4.1 — Feriados en BD, Notificacion y Memorandum en tablas propias,
-#                DocumentoAdjunto con FKs reales
+#  Versión 4.2 — Reestructuración TSP: ApelacionTSP + ActuadoTSP
+#                (reemplaza RecursoTSP y AUTOTSP)
 # ============================================================
 
 from django.db import models
@@ -101,7 +101,7 @@ def get_pendientes_ejecutoria():
         if res.recursos_reconsideracion.exists():
             continue
         # Excluir si ya hay Recurso de Apelación contra esta PRIMERA resolución
-        if RecursoTSP.objects.filter(resolucion=res, instancia='APELACION').exists():
+        if ApelacionTSP.objects.filter(resolucion=res).exists():
             continue
         # Verificar si la resolución tiene memorándum directo
         if res.memorandums.exists():
@@ -131,7 +131,7 @@ def get_pendientes_ejecutoria():
         .select_related('sim', 'pm', 'abogado', 'resolucion_origen', 'notificacion')
     )
     for rr in rr_notificados:
-        if RecursoTSP.objects.filter(resolucion=rr, instancia='APELACION').exists():
+        if ApelacionTSP.objects.filter(resolucion=rr).exists():
             continue
         # Verificar si la resolución tiene memorándum directo
         if rr.memorandums.exists():
@@ -910,7 +910,7 @@ class AUTOTPE(models.Model):
     vocal_excusado = models.ForeignKey('VOCAL_TPE', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Vocal Excusado')
     pm             = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
     resolucion     = models.ForeignKey('Resolucion', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Resolución origen')
-    recurso_tsp    = models.ForeignKey('RecursoTSP', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Recurso TSP origen')
+    apelacion_tsp  = models.ForeignKey('ApelacionTSP', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Apelación TSP origen')
 
     numero         = models.CharField(null=True, blank=True, max_length=15, db_index=True, verbose_name='Número de Auto')
     fecha          = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
@@ -979,35 +979,59 @@ class Memorandum(models.Model):
 
 
 # ============================================================
-# MODELO 10: AUTOTSP — Autos del TSP
+# MODELO 10: ActuadoTSP — Documentos emitidos por el TSP
+# (reemplaza AUTOTSP — incluye RAEE, NULIDAD y AUTO TSP)
 # ============================================================
-class AUTOTSP(models.Model):
+class ActuadoTSP(models.Model):
 
-    TIPO_CHOICES = [
-        ('SOBRESEIDO',        'Sobreseído'),
-        ('NULIDAD_OBRADOS',   'Nulidad de Obrados'),
-        ('CONFIRMA_SANCION',  'Confirma Sanción'),
-        ('REDUCE_SANCION',    'Reduce Sanción'),
-        ('REVOCA_SANCION',    'Revoca Sanción'),
-        ('AUTO_CUMPLIMIENTO', 'Auto de Cumplimiento'),
-        ('AUTO_EJECUTORIA',   'Auto de Ejecutoria'),
-        ('AUTO_EXCUSA',       'Auto de Excusa'),
+    INSTANCIA_CHOICES = [
+        ('RAEE',     'Aclaración, Explicación y Enmienda'),
+        ('NULIDAD',  'Nulidad de Obrados'),
+        ('AUTO_TSP', 'Auto del TSP'),
     ]
 
-    sim    = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario', null=True, blank=True)
-    numero = models.CharField(max_length=15, verbose_name='Número de Auto')
-    fecha  = models.DateField(verbose_name='Fecha del Auto')
-    texto  = models.TextField(verbose_name='Resolución')
-    tipo   = models.CharField(max_length=100, choices=TIPO_CHOICES, verbose_name='Tipo de Auto')
+    TIPO_CHOICES = [
+        ('CONFIRMAR',         'CONFIRMAR'),
+        ('REVOCAR',           'REVOCAR'),
+        ('MODIFICAR',         'MODIFICAR'),
+        ('SOBRESEIDO',        'SOBRESEÍDO'),
+        ('NULIDAD_OBRADOS',   'NULIDAD DE OBRADOS'),
+        ('CONFIRMA_SANCION',  'CONFIRMA SANCIÓN'),
+        ('REDUCE_SANCION',    'REDUCE SANCIÓN'),
+        ('REVOCA_SANCION',    'REVOCA SANCIÓN'),
+        ('AUTO_CUMPLIMIENTO', 'AUTO DE CUMPLIMIENTO'),
+        ('AUTO_EJECUTORIA',   'AUTO DE EJECUTORIA'),
+        ('AUTO_EXCUSA',       'AUTO DE EXCUSA'),
+        ('OTRO',              'OTRO'),
+    ]
+
+    apelacion_tsp            = models.ForeignKey('ApelacionTSP', on_delete=models.PROTECT,
+                                   verbose_name='Apelación TSP origen',
+                                   related_name='actuados')
+    sim                      = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
+    instancia                = models.CharField(max_length=20, choices=INSTANCIA_CHOICES,
+                                   verbose_name='Tipo de Actuado TSP')
+    numero                   = models.CharField(max_length=15, null=True, blank=True,
+                                   db_index=True, verbose_name='Número del Actuado TSP')
+    fecha                    = models.DateField(null=True, blank=True, verbose_name='Fecha')
+    texto                    = models.TextField(null=True, blank=True, verbose_name='Parte Resolutiva')
+    tipo                     = models.CharField(max_length=50, choices=TIPO_CHOICES,
+                                   null=True, blank=True, verbose_name='Tipo de Resolución TSP')
+    es_pronunciamiento_final = models.BooleanField(default=False,
+                                   verbose_name='¿Es el pronunciamiento final del TSP?',
+                                   help_text='Al activar, el sistema registrará que el TSP devolvió '
+                                             'el caso al TPE para cumplimiento.')
+
+    history = HistoricalRecords()
 
     class Meta:
-        db_table            = 'autotsp'
-        verbose_name        = 'Auto TSP'
-        verbose_name_plural = 'Autos TSP'
+        db_table            = 'actuado_tsp'
+        verbose_name        = 'Actuado del TSP'
+        verbose_name_plural = 'Actuados del TSP'
         ordering            = ['-fecha']
 
     def __str__(self):
-        return f"{self.numero} — {self.get_tipo_display()}"
+        return f"{self.numero or 'S/N'} — {self.get_instancia_display()} ({self.sim.codigo})"
 
     def save(self, *args, **kwargs):
         self.numero = self.numero.upper() if self.numero else self.numero
@@ -1029,11 +1053,11 @@ class DocumentoAdjunto(models.Model):
         ('otro',         'Otro'),
     ]
 
-    sim         = models.ForeignKey('SIM',        null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Sumario SIM')
-    resolucion  = models.ForeignKey('Resolucion', null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Resolución')
-    autotpe     = models.ForeignKey('AUTOTPE',    null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Auto TPE')
-    autotsp     = models.ForeignKey('AUTOTSP',    null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Auto TSP')
-    recurso_tsp = models.ForeignKey('RecursoTSP', null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Recurso TSP')
+    sim           = models.ForeignKey('SIM',          null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Sumario SIM')
+    resolucion    = models.ForeignKey('Resolucion',   null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Resolución')
+    autotpe       = models.ForeignKey('AUTOTPE',      null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Auto TPE')
+    apelacion_tsp = models.ForeignKey('ApelacionTSP', null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Apelación TSP (RAP)')
+    actuado_tsp   = models.ForeignKey('ActuadoTSP',   null=True, blank=True, on_delete=models.PROTECT, related_name='documentos', verbose_name='Actuado TSP')
 
     tipo           = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name='Tipo de documento')
     archivo        = models.FileField(upload_to='documentos/%Y/', verbose_name='Archivo PDF')
@@ -1181,79 +1205,67 @@ def next_resolucion_num(year=None):
 
 
 # ============================================================
-# MODELO 11c: RecursoTSP — Tabla unificada RAP + RAEE
+# MODELO 11c: ApelacionTSP — Recurso de Apelación presentado al TSP
+# (reemplaza RecursoTSP — solo el documento RAP del TPE)
 # ============================================================
-class RecursoTSP(models.Model):
-
-    INSTANCIA_CHOICES = [
-        ('APELACION',           'Recurso de Apelación'),
-        ('ACLARACION_ENMIENDA', 'Aclaración, Explicación y Enmienda'),
-    ]
+class ApelacionTSP(models.Model):
 
     TIPO_CHOICES = [
         ('REVOCAR',                           'REVOCAR'),
-        ('CONFIRMAR',                         'CONFIRMAR'),
         ('MODIFICAR',                         'MODIFICAR'),
         ('ANULAR HASTA EL VICIO MAS ANTIGUO', 'ANULAR HASTA EL VICIO MAS ANTIGUO'),
         ('OTRO',                              'OTRO'),
     ]
 
-    instancia          = models.CharField(max_length=25, choices=INSTANCIA_CHOICES, default='APELACION', verbose_name='Instancia')
     sim                = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
-    abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
-                             related_name='recursos_tsp_como_abogado')
-    pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar',
-                             related_name='recursos_tsp_como_militar')
-    resolucion         = models.ForeignKey(Resolucion, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Resolución impugnada (solo APELACION)')
-    recurso_origen     = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True,
-                                           related_name='aclaraciones',
-                                           verbose_name='Recurso origen (solo ACLARACION_ENMIENDA)')
+    abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
+                             verbose_name='Abogado',
+                             related_name='apelaciones_tsp_como_abogado')
+    pm                 = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
+                             verbose_name='Recurrente',
+                             related_name='apelaciones_tsp_como_recurrente')
+    resolucion         = models.ForeignKey(Resolucion, on_delete=models.SET_NULL, null=True, blank=True,
+                             verbose_name='Resolución impugnada')
 
+    numero             = models.CharField(max_length=15, null=True, blank=True,
+                             db_index=True, verbose_name='Número del RAP')
     fecha_presentacion = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación')
+    texto              = models.TextField(null=True, blank=True, verbose_name='Texto del Recurso')
+    tipo               = models.CharField(max_length=50, choices=TIPO_CHOICES, null=True, blank=True,
+                             verbose_name='Petitorio (lo que solicita al TSP)')
+
+    # Datos de elevación física al TSP
     numero_oficio      = models.CharField(max_length=60, null=True, blank=True, verbose_name='N° Oficio Elevación')
     fecha_oficio       = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio')
-    fecha_limite       = models.DateField(null=True, blank=True, verbose_name='Fecha Límite 3 días (APELACION)')
-    tipo               = models.CharField(max_length=50, choices=TIPO_CHOICES, null=True, blank=True, verbose_name='Tipo Resolución TSP (APELACION)')
-    numero             = models.CharField(max_length=15, null=True, blank=True, db_index=True, verbose_name='Número Resolución TSP')
-    fecha              = models.DateField(null=True, blank=True, verbose_name='Fecha Resolución TSP')
-    texto              = models.TextField(null=True, blank=True, verbose_name='Resolución TSP')
+    fecha_limite       = models.DateField(null=True, blank=True, verbose_name='Fecha Límite 3 días hábiles')
 
-    history = HistoricalRecords()  # Auditoría: registra cambios en Recursos TSP
+    history = HistoricalRecords()
 
     class Meta:
-        db_table            = 'recurso_tsp'
-        verbose_name        = 'Recurso TSP'
-        verbose_name_plural = 'Recursos TSP'
-        ordering            = ['-fecha']
-        constraints = [
-            # MySQL permite multiples NULL en UNIQUE, asi que casos historicos
-            # con numero=None no chocan. Solo se rechazan duplicados informados.
-            models.UniqueConstraint(
-                fields=['numero', 'instancia'],
-                name='uniq_recurso_tsp_numero_instancia',
-            ),
-        ]
+        db_table            = 'apelacion_tsp'
+        verbose_name        = 'Apelación al TSP (RAP)'
+        verbose_name_plural = 'Apelaciones al TSP (RAP)'
+        ordering            = ['-fecha_presentacion']
         indexes = [
-            models.Index(fields=['instancia']),
-            models.Index(fields=['sim', 'instancia']),
-            models.Index(fields=['fecha']),
-            models.Index(fields=['abogado']),
+            models.Index(fields=['sim']),
+            models.Index(fields=['pm']),
+            models.Index(fields=['fecha_presentacion']),
         ]
 
     def __str__(self):
-        return f"{self.numero or 'Sin número'} — {self.get_instancia_display()}"
+        return f"{self.numero or 'Sin número'} — RAP ({self.sim.codigo})"
 
     def save(self, *args, **kwargs):
-        if self.instancia == 'APELACION' and self.fecha_oficio and not self.fecha_limite:
+        if self.fecha_oficio and not self.fecha_limite:
             self.fecha_limite = add_business_days(self.fecha_oficio, 3)
         self.numero_oficio = self.numero_oficio.upper() if self.numero_oficio else self.numero_oficio
-        self.numero = self.numero.upper() if self.numero else self.numero
-        self.texto  = self.texto.upper()  if self.texto  else self.texto
-        self.tipo   = self.tipo.upper()   if self.tipo   else self.tipo
+        self.numero        = self.numero.upper()        if self.numero        else self.numero
+        self.texto         = self.texto.upper()         if self.texto         else self.texto
+        self.tipo          = self.tipo.upper()          if self.tipo          else self.tipo
         super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):
-        if self.instancia != 'APELACION' or not self.fecha_limite:
+        if not self.fecha_limite:
             return 'secondary'
         hoy = timezone.now().date()
         diff = (self.fecha_limite - hoy).days
@@ -1262,17 +1274,14 @@ class RecursoTSP(models.Model):
         return 'success'
 
 
-def next_recurso_tsp_num(year=None):
-    """Genera el siguiente número 'NN/AA' de RecursoTSP de forma thread-safe.
-
-    Maneja números malformados silenciosamente (ej: números sin formato 'NN/AA').
-    """
+def next_apelacion_tsp_num(year=None):
+    """Genera el siguiente número 'NN/AA' de ApelacionTSP de forma thread-safe."""
     from django.db import transaction
     if year is None:
         year = timezone.now().year
     year_suffix = str(year)[-2:]
     with transaction.atomic():
-        qs = (RecursoTSP.objects
+        qs = (ApelacionTSP.objects
               .select_for_update()
               .filter(numero__endswith=f'/{year_suffix}'))
         max_n = 0
@@ -1307,14 +1316,14 @@ class Notificacion(models.Model):
     hora         = models.TimeField(null=True, blank=True, verbose_name='Hora de Notificación')
 
     # Exactamente uno de estos debe ser no-nulo
-    resolucion  = models.OneToOneField('Resolucion',  null=True, blank=True, on_delete=models.PROTECT,
-                                       related_name='notificacion', verbose_name='Resolución')
-    autotpe     = models.OneToOneField('AUTOTPE',     null=True, blank=True, on_delete=models.PROTECT,
-                                       related_name='notificacion', verbose_name='Auto TPE')
-    autotsp     = models.OneToOneField('AUTOTSP',     null=True, blank=True, on_delete=models.PROTECT,
-                                       related_name='notificacion', verbose_name='Auto TSP')
-    recurso_tsp = models.OneToOneField('RecursoTSP',  null=True, blank=True, on_delete=models.PROTECT,
-                                       related_name='notificacion', verbose_name='Recurso TSP')
+    resolucion    = models.OneToOneField('Resolucion',   null=True, blank=True, on_delete=models.PROTECT,
+                                         related_name='notificacion', verbose_name='Resolución')
+    autotpe       = models.OneToOneField('AUTOTPE',      null=True, blank=True, on_delete=models.PROTECT,
+                                         related_name='notificacion', verbose_name='Auto TPE')
+    apelacion_tsp = models.OneToOneField('ApelacionTSP', null=True, blank=True, on_delete=models.PROTECT,
+                                         related_name='notificacion', verbose_name='Apelación TSP (RAP)')
+    actuado_tsp   = models.OneToOneField('ActuadoTSP',   null=True, blank=True, on_delete=models.PROTECT,
+                                         related_name='notificacion', verbose_name='Actuado TSP')
 
     class Meta:
         db_table            = 'notificacion'
@@ -1323,7 +1332,7 @@ class Notificacion(models.Model):
         ordering            = ['-fecha']
 
     def __str__(self):
-        doc = (self.resolucion or self.autotpe or self.autotsp or self.recurso_tsp)
+        doc = (self.resolucion or self.autotpe or self.apelacion_tsp or self.actuado_tsp)
         return f"Notif {self.fecha} — {doc}"
 
     def save(self, *args, **kwargs):
@@ -1331,14 +1340,14 @@ class Notificacion(models.Model):
         vinculados = sum([
             bool(self.resolucion_id),
             bool(self.autotpe_id),
-            bool(self.autotsp_id),
-            bool(self.recurso_tsp_id),
+            bool(self.apelacion_tsp_id),
+            bool(self.actuado_tsp_id),
         ])
         if vinculados != 1:
             from django.core.exceptions import ValidationError
             raise ValidationError(
                 f'Notificacion debe estar vinculada a exactamente un documento '
-                f'(resolucion, autotpe, autotsp o recurso_tsp). Actualmente: {vinculados}.'
+                f'(resolucion, autotpe, apelacion_tsp o actuado_tsp). Actualmente: {vinculados}.'
             )
         super().save(*args, **kwargs)
 

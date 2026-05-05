@@ -10,7 +10,7 @@ from django.utils import timezone
 from ..decorators import rol_requerido
 from ..models import (
     ABOG_SIM, AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, SIM, VOCAL_TPE,
-    CustodiaSIM, Resolucion, RecursoTSP, next_resolucion_num, PerfilUsuario,
+    CustodiaSIM, Resolucion, ApelacionTSP, next_resolucion_num, PerfilUsuario,
 )
 from ..utils.numeracion import next_num_yy
 
@@ -590,7 +590,7 @@ def abogado_rap_elaborar(request, sim_id: int, rap_id: int):
     """El abogado elabora el RAP completando número, fecha y texto"""
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
-    rap = get_object_or_404(RecursoTSP, pk=rap_id, sim=sim, instancia='APELACION')
+    rap = get_object_or_404(ApelacionTSP, pk=rap_id, sim=sim)
 
     # Verificar que el RAP esté en poder del abogado (custodia activa)
     custodia = sim.custodias.filter(

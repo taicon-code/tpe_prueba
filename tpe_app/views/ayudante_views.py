@@ -16,11 +16,11 @@ from ..decorators import rol_requerido
 
 logger = logging.getLogger(__name__)
 from ..models import (
-    SIM, PM, PM_SIM, AUTOTPE, AUTOTSP, VOCAL_TPE, Resolucion, RecursoTSP, Notificacion, Memorandum,
+    SIM, PM, PM_SIM, AUTOTPE, ActuadoTSP, VOCAL_TPE, Resolucion, ApelacionTSP, Notificacion, Memorandum,
     DocumentoAdjunto,
 )
 from ..forms import (
-    RESForm, NotificacionForm, RAPForm, RAEEForm, AUTOTPEHistoricoForm, MemorandumForm,
+    RESForm, NotificacionForm, RAPForm, ActuadoTSPForm, AUTOTPEHistoricoForm, MemorandumForm,
     PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm,
     BuscarSIMHistoricoForm, EditarSIMHistoricoForm
 )
@@ -259,7 +259,7 @@ def ayudante_registrar_rap(request):
             try:
                 with transaction.atomic():
                     # Crear el RAP
-                    rap = RecursoTSP(
+                    rap = ApelacionTSP(
                         sim=form.cleaned_data['sim'],
                         pm=form.cleaned_data['pm'],
                         resolucion=form.cleaned_data.get('resolucion'),
@@ -267,17 +267,15 @@ def ayudante_registrar_rap(request):
                         numero_oficio=form.cleaned_data.get('numero_oficio'),
                         fecha_oficio=form.cleaned_data.get('fecha_oficio'),
                         numero=form.cleaned_data['numero'],
-                        fecha=form.cleaned_data['fecha'],
                         texto=form.cleaned_data['texto'],
                         tipo=form.cleaned_data['tipo'],
-                        instancia='APELACION'
                     )
                     rap.save()
 
                     # Si se proporcionan datos de notificación
                     if form.cleaned_data.get('notif_tipo'):
                         notif = Notificacion(
-                            recurso_tsp=rap,
+                            apelacion_tsp=rap,
                             tipo=form.cleaned_data['notif_tipo'],
                             notificado_a=form.cleaned_data.get('notif_notificado_a', ''),
                             fecha=form.cleaned_data.get('notif_fecha'),
@@ -314,26 +312,21 @@ def ayudante_registrar_raee(request):
     """Registrar un RAEE (Aclaración, Explicación y Enmienda) histórico"""
 
     if request.method == 'POST':
-        form = RAEEForm(request.POST)
+        form = ActuadoTSPForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    raee = form.save(commit=False)
-                    raee.save()
-
-                    messages.success(
-                        request,
-                        f'RAEE {raee.numero} registrado exitosamente'
-                    )
+                    actuado = form.save()
+                    messages.success(request, f'Actuado TSP {actuado.numero} registrado exitosamente')
                     return redirect('ayudante_dashboard')
             except Exception as e:
-                messages.error(request, f'Error al registrar RAEE: {str(e)}')
+                messages.error(request, f'Error al registrar actuado TSP: {str(e)}')
     else:
-        form = RAEEForm()
+        form = ActuadoTSPForm(initial={'instancia': 'RAEE'})
 
     context = {
         'form': form,
-        'titulo': 'Registrar RAEE (Aclaración, Explicación y Enmienda) Histórico',
+        'titulo': 'Registrar Actuado del TSP (RAEE / Nulidad / Auto TSP)',
     }
 
     return render(request, 'tpe_app/ayudante/registrar_raee.html', context)
@@ -942,10 +935,10 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
             messages.warning(request, 'No hay militares en este sumario.')
             return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
 
-    autotpe_existente = AUTOTPE.objects.filter(sim=sim, pm=pm).first()
-    rap_existente = RecursoTSP.objects.filter(sim=sim, pm=pm, instancia='APELACION').first()
-    raee_existente = RecursoTSP.objects.filter(sim=sim, pm=pm, instancia='ACLARACION_ENMIENDA').first()
-    autotsp_existente = AUTOTSP.objects.filter(sim=sim).first()
+    autotpe_existente  = AUTOTPE.objects.filter(sim=sim, pm=pm).first()
+    rap_existente      = ApelacionTSP.objects.filter(sim=sim, pm=pm).first()
+    raee_existente     = ActuadoTSP.objects.filter(sim=sim, instancia='RAEE').first()
+    autotsp_existente  = ActuadoTSP.objects.filter(sim=sim, instancia='AUTO_TSP').first()
 
     # Obtener otros militares para el botón "Siguiente"
     otros_militares = sim.militares.exclude(id=pm.id).order_by('paterno', 'nombre')
@@ -1017,7 +1010,6 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         rap = rap_form.save(commit=False)
                         rap.sim = sim
                         rap.pm = pm
-                        rap.instancia = 'APELACION'
                         rap.save()
                         if sim.fase not in ['ELEVADO_TSP', 'CONCLUIDO']:
                             sim.fase = 'ELEVADO_TSP'
@@ -1029,7 +1021,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         rap_notif_tipo = request.POST.get('rap_notif_tipo', '').strip()
                         if rap_notif_tipo:
                             Notificacion.objects.update_or_create(
-                                recurso_tsp=rap,
+                                apelacion_tsp=rap,
                                 defaults={
                                     'tipo': rap_notif_tipo,
                                     'notificado_a': request.POST.get('rap_notif_notificado_a', '').strip(),
@@ -1044,8 +1036,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                     if raee_form.is_valid():
                         raee = raee_form.save(commit=False)
                         raee.sim = sim
-                        raee.pm = pm
-                        raee.instancia = 'ACLARACION_ENMIENDA'
+                        raee.instancia = 'RAEE'
                         raee.save()
                         raee_existente = raee
 
@@ -1053,7 +1044,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         raee_notif_tipo = request.POST.get('raee_notif_tipo', '').strip()
                         if raee_notif_tipo:
                             Notificacion.objects.update_or_create(
-                                recurso_tsp=raee,
+                                actuado_tsp=raee,
                                 defaults={
                                     'tipo': raee_notif_tipo,
                                     'notificado_a': request.POST.get('raee_notif_notificado_a', '').strip(),
@@ -1075,7 +1066,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         autotsp_notif_tipo = request.POST.get('autotsp_notif_tipo', '').strip()
                         if autotsp_notif_tipo:
                             Notificacion.objects.update_or_create(
-                                autotsp=autotsp,
+                                actuado_tsp=autotsp,
                                 defaults={
                                     'tipo': autotsp_notif_tipo,
                                     'notificado_a': request.POST.get('autotsp_notif_notificado_a', '').strip(),
@@ -1133,15 +1124,15 @@ def ayudante_wizard_resumen(request, sim_id):
     sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
     resoluciones = Resolucion.objects.filter(sim=sim).order_by('fecha')
     autos_tpe = AUTOTPE.objects.filter(sim=sim).order_by('fecha')
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim).order_by('fecha')
-    autos_tsp = AUTOTSP.objects.filter(sim=sim).order_by('fecha')
+    apelaciones_tsp = ApelacionTSP.objects.filter(sim=sim).order_by('fecha_presentacion')
+    actuados_tsp = ActuadoTSP.objects.filter(sim=sim).order_by('fecha')
 
     return render(request, 'tpe_app/ayudante/wizard/resumen.html', {
         'sim': sim,
         'resoluciones': resoluciones,
         'autos_tpe': autos_tpe,
-        'recursos_tsp': recursos_tsp,
-        'autos_tsp': autos_tsp,
+        'apelaciones_tsp': apelaciones_tsp,
+        'actuados_tsp': actuados_tsp,
         'paso_actual': 5,
         'total_pasos': 4,
     })
@@ -1721,7 +1712,7 @@ def _analizar_documentos_historicos(sim):
             sim=sim, pm=pm
         ).select_related('abogado')
 
-        recursos_tsp = RecursoTSP.objects.filter(
+        apelaciones_tsp = ApelacionTSP.objects.filter(
             sim=sim, pm=pm
         )
 
@@ -1790,7 +1781,7 @@ def _analizar_documentos_historicos(sim):
             propuestas.append(propuesta)
 
         # Patrón 5: Apelación al TSP
-        if recursos_tsp.filter(instancia='APELACION').exists():
+        if apelaciones_tsp.exists():
             propuesta = {
                 'pm': pm,
                 'patron': 'APELACION_TSP',

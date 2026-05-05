@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Exists, OuterRef
 from ..decorators import rol_requerido
-from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, RecursoTSP
+from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, ApelacionTSP
 from datetime import date, timedelta
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
@@ -77,8 +77,7 @@ def abogado_dashboard(request):
     raps_para_elaborar = []
     if perfil.rol in ('ABOG1_ASESOR', 'ABOG2_AUTOS', 'ADMINISTRADOR', 'MASTER'):
         raps_para_elaborar = list(
-            RecursoTSP.objects.filter(
-                instancia='APELACION',
+            ApelacionTSP.objects.filter(
                 numero__isnull=True,
                 sim__custodias__tipo_custodio__in=['ABOG_ASESOR', 'ABOG_AUTOS'],
                 sim__custodias__fecha_entrega__isnull=True,

@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import datetime
 from ..decorators import rol_requerido
-from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, RecursoTSP
+from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, ApelacionTSP
 
 
 # ============================================================
@@ -165,8 +165,7 @@ def admin2_dashboard(request):
             sims_con_memo_pendiente.append(sim_m)
 
     # ✅ 9. RAPs PENDIENTES DE ENTREGAR (presentados, orden creada, en poder de Admin2)
-    raps_para_entregar = RecursoTSP.objects.filter(
-        instancia='APELACION',
+    raps_para_entregar = ApelacionTSP.objects.filter(
         sim__fase='EN_ESPERA_RAP',
         sim__custodias__motivo='APELACION_TSP',
         sim__custodias__abogado_destino__isnull=False,
@@ -175,12 +174,11 @@ def admin2_dashboard(request):
     ).select_related('sim', 'pm', 'resolucion').distinct().order_by('fecha_presentacion')
 
     # ✅ 10. RAPs ELABORADOS, PENDIENTES DE ENVÍO AL TSP
-    raps_para_enviar = RecursoTSP.objects.filter(
-        instancia='APELACION',
+    raps_para_enviar = ApelacionTSP.objects.filter(
         numero__isnull=False,
         numero_oficio__isnull=True,
         sim__fase='EN_ESPERA_RAP',
-    ).select_related('sim', 'pm').order_by('fecha')
+    ).select_related('sim', 'pm').order_by('fecha_presentacion')
 
     # Filtro de historial por código SIM o militar
     from django.db.models import Q
@@ -680,10 +678,9 @@ def admin2_registrar_rap(request):
             try:
                 with transaction.atomic():
                     # Guard: verificar que no exista ya un RAP para ese (sim, pm)
-                    existente = RecursoTSP.objects.filter(
+                    existente = ApelacionTSP.objects.filter(
                         sim=form.cleaned_data['sim'],
                         pm=form.cleaned_data['pm'],
-                        instancia='APELACION'
                     ).exists()
 
                     if existente:
@@ -720,7 +717,7 @@ def admin2_registrar_rap(request):
 def admin2_registrar_salida_tsp(request, rap_id):
     """Admin2 registra la salida del RAP al TSP con número y fecha de oficio"""
 
-    rap = get_object_or_404(RecursoTSP, pk=rap_id, instancia='APELACION')
+    rap = get_object_or_404(ApelacionTSP, pk=rap_id)
 
     if request.method == 'POST':
         numero_oficio = request.POST.get('numero_oficio', '').strip()

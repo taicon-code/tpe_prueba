@@ -20,7 +20,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from django.contrib.auth.decorators import login_required
-from tpe_app.models import PM, SIM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, PerfilUsuario
+from tpe_app.models import PM, SIM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, PerfilUsuario
 
 
 def _format_date(date_obj):
@@ -145,48 +145,36 @@ def _compilar_documentos(sim, historial, pm=None):
             'memo': memo_info,
         })
 
-    # Recurso de Apelación (RAP) - NO se incluye en tabla (no es documento físico del TPE)
-    # Solo se extrae la información para mostrar estado en TSP
-    for rap in _filt(historial['recursos_apelacion']):
+    # RAP — no se incluye en tabla TPE (es el acto de elevar al TSP)
+    # Solo se extrae info de elevación para mostrar estado en TSP
+    for rap in historial.get('apelaciones_tsp', ApelacionTSP.objects.none()).filter(sim=sim):
+        if pm is not None and rap.pm_id != pm.pk:
+            continue
         if not info_tsp and rap.numero_oficio:
             info_tsp = {
                 'numero_oficio': rap.numero_oficio,
                 'fecha_oficio': rap.fecha_oficio,
             }
 
-    # RAEE
-    for raee in _filt(historial['raees']):
-        notif_info = None
-        _notif = getattr(raee, 'notificacion', None)
-        if _notif:
-            notif_info = {
-                'tipo': _notif.get_tipo_display(),
-                'fecha': _notif.fecha,
-            }
-        documentos.append({
-            'tipo': 'REC. ACLARACIÓN Y ENMIENDA (RAEE)',
-            'numero': raee.numero or 'S/N',
-            'fecha_doc': raee.fecha,
-            'resolutiva': (raee.get_instancia_display() if raee.instancia else 'ACLARACIÓN Y ENMIENDA').upper(),
-            'notificacion': notif_info,
-            'memo': None,
-        })
-
-    # Auto TSP — sin FK a pm, solo se incluye cuando no hay filtro por militar
+    # Actuados del TSP (RAEE, NULIDAD, AUTO TSP) — solo cuando no hay filtro por militar
     if pm is None:
-        for autotsp in historial['autos_tsp'].filter(sim=sim):
+        for actuado in historial.get('actuados_tsp', ActuadoTSP.objects.none()).filter(sim=sim):
             notif_info = None
-            _notif = getattr(autotsp, 'notificacion', None)
+            _notif = getattr(actuado, 'notificacion', None)
             if _notif:
                 notif_info = {
                     'tipo': _notif.get_tipo_display(),
                     'fecha': _notif.fecha,
                 }
+            tipo_label = {
+                'RAEE':    'REC. ACLARACIÓN Y ENMIENDA (RAEE)',
+                'NULIDAD': 'NULIDAD DE OBRADOS TSP',
+            }.get(actuado.instancia, 'AUTO TSP')
             documentos.append({
-                'tipo': 'AUTO TSP',
-                'numero': autotsp.numero or 'S/N',
-                'fecha_doc': autotsp.fecha,
-                'resolutiva': (autotsp.texto or (autotsp.get_tipo_display() if autotsp.tipo else 'N/A')).upper(),
+                'tipo': tipo_label,
+                'numero': actuado.numero or 'S/N',
+                'fecha_doc': actuado.fecha,
+                'resolutiva': (actuado.texto or (actuado.get_tipo_display() if actuado.tipo else 'N/A')).upper(),
                 'notificacion': notif_info,
                 'memo': None,
             })
@@ -227,10 +215,9 @@ def _obtener_historial(personal_id):
         'sumarios': sims,
         'resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='PRIMERA', pm=personal),
         'segundas_resoluciones': Resolucion.objects.filter(sim__in=sim_ids, instancia='RECONSIDERACION', pm=personal),
-        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION', pm=personal),
-        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA', pm=personal),
+        'apelaciones_tsp': ApelacionTSP.objects.filter(sim__in=sim_ids, pm=personal),
+        'actuados_tsp': ActuadoTSP.objects.filter(sim__in=sim_ids),
         'autos_tpe': AUTOTPE.objects.filter(sim__in=sim_ids, pm=personal),
-        'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
     }
 
     return personal, historial
@@ -718,7 +705,7 @@ def export_sim_pdf(request, sim_id):
     )
     resoluciones = Resolucion.objects.filter(sim=sim)
     autos_tpe = AUTOTPE.objects.filter(sim=sim)
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim)
+    apelaciones_tsp = ApelacionTSP.objects.filter(sim=sim)
 
     # Registrar fuente Arial desde Windows
     try:
@@ -880,9 +867,8 @@ def export_sim_pdf(request, sim_id):
         'resoluciones':         resoluciones.filter(instancia='PRIMERA'),
         'segundas_resoluciones': resoluciones.filter(instancia='RECONSIDERACION'),
         'autos_tpe':            autos_tpe,
-        'recursos_apelacion':   recursos_tsp.filter(instancia='APELACION'),
-        'raees':                recursos_tsp.filter(instancia='ACLARACION_ENMIENDA'),
-        'autos_tsp':            AUTOTSP.objects.filter(sim=sim),
+        'apelaciones_tsp':      apelaciones_tsp,
+        'actuados_tsp':         ActuadoTSP.objects.filter(sim=sim),
     }
 
     def _tabla_docs(documentos):
@@ -974,26 +960,30 @@ def export_sim_pdf(request, sim_id):
         story.append(_tabla_docs(docs_pm))
         story.append(Spacer(1, 10))
 
-    # Autos TSP — sin FK a militar, se muestran al final como sección propia
-    autos_tsp_qs = AUTOTSP.objects.filter(sim=sim)
-    if autos_tsp_qs.exists():
+    # Actuados TSP — sin FK a militar, se muestran al final como sección propia
+    actuados_tsp_qs = ActuadoTSP.objects.filter(sim=sim)
+    if actuados_tsp_qs.exists():
         hay_actuados = True
-        story.append(Paragraph("AUTOS TSP", s_pm_sub))
+        story.append(Paragraph("ACTUADOS DEL TSP", s_pm_sub))
         story.append(Spacer(1, 3))
         docs_tsp = []
-        for autotsp in autos_tsp_qs.order_by('fecha'):
+        for actuado in actuados_tsp_qs.order_by('fecha'):
             notif_info = None
-            _notif = getattr(autotsp, 'notificacion', None)
+            _notif = getattr(actuado, 'notificacion', None)
             if _notif:
                 notif_info = {
                     'tipo': _notif.get_tipo_display(),
                     'fecha': _notif.fecha,
                 }
+            tipo_label = {
+                'RAEE':    'REC. ACLARACIÓN Y ENMIENDA (RAEE)',
+                'NULIDAD': 'NULIDAD DE OBRADOS TSP',
+            }.get(actuado.instancia, 'AUTO TSP')
             docs_tsp.append({
-                'tipo': 'AUTO TSP',
-                'numero': autotsp.numero or 'S/N',
-                'fecha_doc': autotsp.fecha,
-                'resolutiva': (autotsp.texto or (autotsp.get_tipo_display() if autotsp.tipo else 'N/A')).upper(),
+                'tipo': tipo_label,
+                'numero': actuado.numero or 'S/N',
+                'fecha_doc': actuado.fecha,
+                'resolutiva': (actuado.texto or (actuado.get_tipo_display() if actuado.tipo else 'N/A')).upper(),
                 'notificacion': notif_info,
                 'memo': None,
             })
@@ -1021,8 +1011,8 @@ def export_sim_excel(request, sim_id):
     militares = sim.militares.all()
     resoluciones = Resolucion.objects.filter(sim=sim)
     autos_tpe = AUTOTPE.objects.filter(sim=sim)
-    autos_tsp = AUTOTSP.objects.filter(sim=sim)
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim)
+    actuados_tsp  = ActuadoTSP.objects.filter(sim=sim)
+    apelaciones_tsp = ApelacionTSP.objects.filter(sim=sim)
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -1088,9 +1078,8 @@ def export_sim_excel(request, sim_id):
         'resoluciones': resoluciones.filter(instancia='PRIMERA'),
         'segundas_resoluciones': resoluciones.filter(instancia='RECONSIDERACION'),
         'autos_tpe': autos_tpe,
-        'recursos_apelacion': recursos_tsp.filter(instancia='APELACION'),
-        'raees': recursos_tsp.filter(instancia='ACLARACION_ENMIENDA'),
-        'autos_tsp': autos_tsp,
+        'apelaciones_tsp': apelaciones_tsp,
+        'actuados_tsp': actuados_tsp,
     }
     documentos, info_tsp = _compilar_documentos(sim, hist_sim)
 

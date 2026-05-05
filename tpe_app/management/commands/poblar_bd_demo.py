@@ -23,8 +23,8 @@ from django.utils import timezone
 from datetime import date
 from tpe_app.models import (
     PM, VOCAL_TPE, SIM, PM_SIM, ABOG_SIM,
-    AGENDA, DICTAMEN, AUTOTPE, AUTOTSP,
-    Resolucion, RecursoTSP, Notificacion,
+    AGENDA, DICTAMEN, AUTOTPE, ActuadoTSP,
+    Resolucion, ApelacionTSP, Notificacion,
     PerfilUsuario,
 )
 
@@ -43,8 +43,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['reset']:
             self.stdout.write(self.style.WARNING('\n⚠️  Borrando datos existentes...'))
-            RecursoTSP.objects.all().delete()
-            AUTOTSP.objects.all().delete()
+            ApelacionTSP.objects.all().delete()
+            ActuadoTSP.objects.all().delete()
             AUTOTPE.objects.all().delete()
             Resolucion.objects.all().delete()
             DICTAMEN.objects.all().delete()
@@ -358,8 +358,8 @@ class Command(BaseCommand):
                 resumen='IMPROCEDENCIA',
                 abogado=abog2, agenda=agenda2, pm=pm_cnl,
             ))
-        rap5, _ = RecursoTSP.objects.get_or_create(
-            sim=sim5, instancia='APELACION', resolucion=rr5,
+        rap5, _ = ApelacionTSP.objects.get_or_create(
+            sim=sim5, resolucion=rr5,
             defaults=dict(
                 fecha_presentacion=date(2026, 1, 15),
                 numero_oficio='OFI-012/26',

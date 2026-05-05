@@ -11,7 +11,7 @@ from datetime import date, timedelta
 import calendar
 import json
 from ..decorators import rol_requerido
-from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, RecursoTSP
+from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 
@@ -96,8 +96,8 @@ def admin1_dashboard(request):
     # (AUTO_EJECUTORIA o RAP al TSP), lo que indica que el RR ya fue procesado
     # aunque no se registró el abogado (caso frecuente en datos históricos).
     auto_mas_avanzado = AUTOTPE.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm'))
-    rap_presentado    = RecursoTSP.objects.filter(
-        sim=OuterRef('sim'), pm=OuterRef('pm'), instancia='APELACION'
+    rap_presentado    = ApelacionTSP.objects.filter(
+        sim=OuterRef('sim'), pm=OuterRef('pm')
     )
     rr_emitidas = Q(numero__isnull=False, numero__gt='', fecha__isnull=False)
     rr_sin_asignar = list(
@@ -145,8 +145,7 @@ def admin1_dashboard(request):
     from django.utils import timezone
     hoy = timezone.now().date()
 
-    raps_pendientes = RecursoTSP.objects.filter(
-        instancia='APELACION',
+    raps_pendientes = ApelacionTSP.objects.filter(
         sim__fase='EN_ESPERA_RAP'
     ).exclude(
         sim__custodias__motivo='APELACION_TSP',
@@ -431,7 +430,7 @@ def agendar_rr(request):
         ).exclude(rr_emitidas).exclude(
             Exists(AUTOTPE.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm')))
         ).exclude(
-            Exists(RecursoTSP.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm'), instancia='APELACION'))
+            Exists(ApelacionTSP.objects.filter(sim=OuterRef('sim'), pm=OuterRef('pm')))
         ).count(),
     }
     return render(request, 'tpe_app/admin1/agendar_rr.html', context)
@@ -810,7 +809,7 @@ def admin1_ordenar_archivo_sproda(request, sim_id):
 def admin1_ordenar_rap(request, rap_id):
     """Admin1 ordena a Admin2 que entregue el RAP a un abogado (ABOG1 o ABOG2)"""
 
-    rap = get_object_or_404(RecursoTSP, pk=rap_id, instancia='APELACION', sim__fase='EN_ESPERA_RAP')
+    rap = get_object_or_404(ApelacionTSP, pk=rap_id, sim__fase='EN_ESPERA_RAP')
     sim = rap.sim
 
     if request.method == 'POST':

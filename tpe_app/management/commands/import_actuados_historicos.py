@@ -7,7 +7,7 @@ Uso:
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from tpe_app.models import PM, SIM, PM_SIM, Resolucion, RecursoTSP, AUTOTPE, AUTOTSP, DocumentoAdjunto, Notificacion
+from tpe_app.models import PM, SIM, PM_SIM, Resolucion, ApelacionTSP, ActuadoTSP, AUTOTPE, DocumentoAdjunto, Notificacion
 import pandas as pd
 from datetime import datetime
 
@@ -266,19 +266,17 @@ class Command(BaseCommand):
 
                 numero_oficio = str(row['numero_oficio']).strip() if pd.notna(row['numero_oficio']) else ''
 
-                # Crear/actualizar Recurso TSP SIN campos de notificación
-                recurso, _ = RecursoTSP.objects.update_or_create(
+                # Crear/actualizar ApelacionTSP (RAP presentado ante el TPE para elevación al TSP)
+                recurso, _ = ApelacionTSP.objects.update_or_create(
                     sim=sim,
                     pm=pm,
                     numero_oficio=numero_oficio,
                     defaults={
-                        'instancia': str(row['instancia']).strip() if pd.notna(row['instancia']) else 'APELACION',
                         'fecha_oficio': pd.to_datetime(row['fecha_oficio']).date() if pd.notna(row['fecha_oficio']) else None,
                         'fecha_presentacion': pd.to_datetime(row['fecha_presentacion']).date() if pd.notna(row['fecha_presentacion']) else None,
                         'fecha_limite': pd.to_datetime(row['fecha_limite']).date() if pd.notna(row['fecha_limite']) else None,
                         'tipo': str(row['tipo']).strip().upper() if pd.notna(row['tipo']) else '',
                         'numero': str(row['numero']).strip() if pd.notna(row['numero']) else '',
-                        'fecha': pd.to_datetime(row['fecha']).date() if pd.notna(row['fecha']) else None,
                         'texto': str(row['texto']).strip().upper() if pd.notna(row['texto']) else '',
                     }
                 )
@@ -291,7 +289,7 @@ class Command(BaseCommand):
                         notif_tipo = 'FIRMA'
 
                     Notificacion.objects.update_or_create(
-                        recurso_tsp=recurso,
+                        apelacion_tsp=recurso,
                         defaults={
                             'tipo': notif_tipo,
                             'notificado_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
@@ -318,15 +316,17 @@ class Command(BaseCommand):
                 if not recurso_id:
                     continue
 
-                recurso = RecursoTSP.objects.get(id=recurso_id)
+                recurso = ApelacionTSP.objects.get(id=recurso_id)
                 numero_auto = str(row['numero']).strip() if pd.notna(row['numero']) else ''
+                instancia_auto = str(row.get('instancia', 'AUTO_TSP')).strip().upper() if pd.notna(row.get('instancia')) else 'AUTO_TSP'
 
-                # Crear/actualizar Auto TSP SIN campos de notificación
-                autotsp, _ = AUTOTSP.objects.update_or_create(
-                    recurso_tsp=recurso,
+                # Crear/actualizar ActuadoTSP (RAEE, NULIDAD o AUTO TSP)
+                autotsp, _ = ActuadoTSP.objects.update_or_create(
+                    apelacion_tsp=recurso,
                     numero=numero_auto,
                     defaults={
                         'sim': recurso.sim,
+                        'instancia': instancia_auto,
                         'tipo': str(row['tipo']).strip().upper() if pd.notna(row['tipo']) else '',
                         'fecha': pd.to_datetime(row['fecha']).date() if pd.notna(row['fecha']) else None,
                         'texto': str(row['texto']).strip().upper() if pd.notna(row['texto']) else '',
@@ -341,7 +341,7 @@ class Command(BaseCommand):
                         notif_tipo = 'FIRMA'
 
                     Notificacion.objects.update_or_create(
-                        autotsp=autotsp,
+                        actuado_tsp=autotsp,
                         defaults={
                             'tipo': notif_tipo,
                             'notificado_a': str(row['notif_a']).strip() if pd.notna(row['notif_a']) else '',
@@ -350,7 +350,7 @@ class Command(BaseCommand):
                         }
                     )
 
-            except (RecursoTSP.DoesNotExist, ValueError) as e:
+            except (ApelacionTSP.DoesNotExist, ValueError) as e:
                 self.stdout.write(self.style.WARNING(f'  ⚠️  Fila {idx + 2}: {e}'))
 
         self.stdout.write(self.style.SUCCESS(f'   ✓ {len(df)} Autos TSP importados'))

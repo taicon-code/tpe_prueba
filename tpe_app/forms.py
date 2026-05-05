@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, CustodiaSIM, AGENDA, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, Notificacion, Memorandum
+from .models import SIM, PM, PM_SIM, CustodiaSIM, AGENDA, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, Notificacion, Memorandum
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -553,10 +553,10 @@ RESNotificacionForm = NotificacionForm
 class RAPForm(forms.ModelForm):
 
     class Meta:
-        model = RecursoTSP
+        model = ApelacionTSP
         fields = [
             'sim', 'pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio',
-            'numero', 'fecha', 'texto', 'tipo'
+            'numero', 'texto', 'tipo'
         ]
         widgets = {
             'sim':                forms.Select(attrs={'class': 'form-control'}),
@@ -566,7 +566,6 @@ class RAPForm(forms.ModelForm):
             'numero_oficio':      forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de oficio'}),
             'fecha_oficio':       forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'numero':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/26'}),
-            'fecha':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'texto':              forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
                                                        'placeholder': 'Texto del recurso'}),
             'tipo':               forms.Select(attrs={'class': 'form-control'}),
@@ -579,28 +578,20 @@ class RAPForm(forms.ModelForm):
             'numero_oficio':      'Número de Oficio',
             'fecha_oficio':       'Fecha de Oficio',
             'numero':             'Número del RAP',
-            'fecha':              'Fecha del RAP',
             'texto':              'Texto del RAP',
-            'tipo':               'Tipo de RAP',
+            'tipo':               'Petitorio (lo que solicita al TSP)',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['resolucion'].queryset = Resolucion.objects.filter(instancia='RECONSIDERACION')
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.instancia = 'APELACION'
-        if commit:
-            instance.save()
-        return instance
-
 
 class Admin2RegistrarRAPForm(forms.ModelForm):
-    """Formulario para que Admin2 registre la presentación del RAP (solo datos iniciales)"""
+    """Admin2 registra la presentación del RAP (datos iniciales)"""
 
     class Meta:
-        model = RecursoTSP
+        model = ApelacionTSP
         fields = ['sim', 'pm', 'resolucion', 'fecha_presentacion']
         widgets = {
             'sim':                forms.Select(attrs={'class': 'form-control'}),
@@ -619,47 +610,37 @@ class Admin2RegistrarRAPForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['resolucion'].queryset = Resolucion.objects.filter(instancia='RECONSIDERACION')
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.instancia = 'APELACION'
-        if commit:
-            instance.save()
-        return instance
 
-
-class RAEEForm(forms.ModelForm):
+class ActuadoTSPForm(forms.ModelForm):
+    """Registra un actuado emitido por el TSP (RAEE, NULIDAD o AUTO TSP)"""
 
     class Meta:
-        model = RecursoTSP
-        fields = ['sim', 'pm', 'recurso_origen', 'numero', 'fecha', 'texto']
+        model = ActuadoTSP
+        fields = ['apelacion_tsp', 'sim', 'instancia', 'numero', 'fecha', 'texto', 'tipo',
+                  'es_pronunciamiento_final']
         widgets = {
-            'sim':           forms.Select(attrs={'class': 'form-control'}),
-            'pm':            forms.Select(attrs={'class': 'form-control'}),
-            'recurso_origen': forms.Select(attrs={'class': 'form-control'}),
-            'numero':        forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 02/26'}),
-            'fecha':         forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'texto':         forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
-                                                   'placeholder': 'Texto de la aclaración/enmienda'}),
+            'apelacion_tsp':           forms.Select(attrs={'class': 'form-control'}),
+            'sim':                     forms.Select(attrs={'class': 'form-control'}),
+            'instancia':               forms.Select(attrs={'class': 'form-control'}),
+            'numero':                  forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 02/26'}),
+            'fecha':                   forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'texto':                   forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'tipo':                    forms.Select(attrs={'class': 'form-control'}),
+            'es_pronunciamiento_final': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
-            'sim':           'Sumario',
-            'pm':            'Personal Militar',
-            'recurso_origen': 'Recurso de Apelación (RAP) origen',
-            'numero':        'Número del RAEE',
-            'fecha':         'Fecha del RAEE',
-            'texto':         'Texto del RAEE',
+            'apelacion_tsp':           'Apelación TSP (RAP) origen',
+            'sim':                     'Sumario',
+            'instancia':               'Tipo de Actuado TSP',
+            'numero':                  'Número',
+            'fecha':                   'Fecha',
+            'texto':                   'Parte Resolutiva',
+            'tipo':                    'Tipo de Resolución TSP',
+            'es_pronunciamiento_final': '¿Es el pronunciamiento final del TSP?',
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(instancia='APELACION')
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.instancia = 'ACLARACION_ENMIENDA'
-        if commit:
-            instance.save()
-        return instance
+# Alias retrocompatibilidad
+RAEEForm = ActuadoTSPForm
 
 
 class AUTOTPEHistoricoForm(forms.ModelForm):
@@ -794,9 +775,9 @@ class RAPConNotificacionForm(forms.Form):
                            label='Fecha del RAP')
     texto = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
                            label='Texto del RAP')
-    tipo = forms.ChoiceField(choices=RecursoTSP.TIPO_CHOICES,
+    tipo = forms.ChoiceField(choices=ApelacionTSP.TIPO_CHOICES,
                             widget=forms.Select(attrs={'class': 'form-control'}),
-                            label='Tipo de RAP')
+                            label='Petitorio (lo que solicita al TSP)')
 
     # Notificación opcional
     notif_tipo = forms.ChoiceField(choices=[('', 'Sin notificación')] + list(Notificacion.NOTIF_CHOICES),
@@ -969,7 +950,7 @@ class WizardAUTOTPEForm(AUTOTPEHistoricoForm):
 class WizardRAPForm(RAPForm):
 
     class Meta(RAPForm.Meta):
-        fields = ['pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio', 'numero', 'fecha', 'tipo', 'texto']
+        fields = ['pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio', 'numero', 'tipo', 'texto']
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -977,54 +958,34 @@ class WizardRAPForm(RAPForm):
             self.fields['pm'].queryset = sim.militares.all()
             self.fields['resolucion'].queryset = Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION')
 
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        obj.instancia = 'APELACION'
-        if commit:
-            obj.save()
-        return obj
 
+class WizardRAEEForm(ActuadoTSPForm):
 
-class WizardRAEEForm(RAEEForm):
-
-    class Meta(RAEEForm.Meta):
-        fields = ['pm', 'recurso_origen', 'numero', 'fecha', 'texto']
+    class Meta(ActuadoTSPForm.Meta):
+        fields = ['apelacion_tsp', 'instancia', 'numero', 'fecha', 'texto', 'tipo', 'es_pronunciamiento_final']
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
         if sim:
-            self.fields['pm'].queryset = sim.militares.all()
-            self.fields['recurso_origen'].queryset = RecursoTSP.objects.filter(sim=sim, instancia='APELACION')
-
-    def save(self, commit=True):
-        obj = super().save(commit=False)
-        obj.instancia = 'ACLARACION_ENMIENDA'
-        if commit:
-            obj.save()
-        return obj
+            self.fields['apelacion_tsp'].queryset = ApelacionTSP.objects.filter(sim=sim)
+        self.fields['instancia'].initial = 'RAEE'
 
 
-class WizardAUTOTSPForm(forms.ModelForm):
-    class Meta:
-        model = AUTOTSP
-        fields = ['numero', 'fecha', 'tipo', 'texto']
-        widgets = {
-            'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/24'}),
-            'fecha':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'tipo':   forms.Select(attrs={'class': 'form-control'}),
-            'texto':  forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-        }
-        labels = {
-            'numero': 'Número del Auto TSP',
-            'fecha':  'Fecha del Auto TSP',
-            'tipo':   'Tipo de Auto TSP',
-            'texto':  'Texto del Auto TSP',
-        }
+class WizardActuadoTSPForm(ActuadoTSPForm):
+    """Wizard: registrar cualquier actuado del TSP (RAEE, NULIDAD, AUTO)"""
+
+    class Meta(ActuadoTSPForm.Meta):
+        fields = ['apelacion_tsp', 'instancia', 'numero', 'fecha', 'texto', 'tipo', 'es_pronunciamiento_final']
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if sim:
+            self.fields['apelacion_tsp'].queryset = ApelacionTSP.objects.filter(sim=sim)
         for f in self.fields:
             self.fields[f].required = False
+
+# Alias retrocompatibilidad para imports existentes
+WizardAUTOTSPForm = WizardActuadoTSPForm
 
 
 class BuscarSIMHistoricoForm(forms.Form):

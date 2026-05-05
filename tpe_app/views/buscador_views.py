@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Value
 from django.db.models.functions import Replace, Collate
 from ..decorators import rol_requerido
-from ..models import SIM, PM, AUTOTPE, AUTOTSP, Resolucion, RecursoTSP, DocumentoAdjunto, CustodiaSIM
+from ..models import SIM, PM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, DocumentoAdjunto, CustodiaSIM
 
 
 def _normalizar(texto):
@@ -63,10 +63,9 @@ def _obtener_historial_completo(personal_id):
         'sumarios': sims,  # Mantiene el order_by('fecha_ingreso', 'version')
         'resoluciones': resoluciones,
         'segundas_resoluciones': segundas_resoluciones,
-        'recursos_apelacion': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='APELACION', pm=personal),
-        'raees': RecursoTSP.objects.filter(sim__in=sim_ids, instancia='ACLARACION_ENMIENDA', pm=personal),
+        'apelaciones_tsp': ApelacionTSP.objects.filter(sim__in=sim_ids, pm=personal),
+        'actuados_tsp': ActuadoTSP.objects.filter(sim__in=sim_ids),
         'autos_tpe': autos_tpe,
-        'autos_tsp': AUTOTSP.objects.filter(sim__in=sim_ids),
         'memorandums': Memorandum.objects.filter(
             Q(resolucion__in=resoluciones) |
             Q(resolucion__in=segundas_resoluciones) |
@@ -254,8 +253,8 @@ def detalles_sim(request, sim_id):
 
     resoluciones = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')
     autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abogado', 'pm')
-    autos_tsp = AUTOTSP.objects.filter(sim=sim)
-    recursos_tsp = RecursoTSP.objects.filter(sim=sim).select_related('abogado', 'pm')
+    apelaciones_tsp = ApelacionTSP.objects.filter(sim=sim).select_related('abogado', 'pm')
+    actuados_tsp    = ActuadoTSP.objects.filter(sim=sim)
 
     # Agrupar actuados por militar en orden cronológico del flujo
     militares_con_docs = []
@@ -273,7 +272,7 @@ def detalles_sim(request, sim_id):
             'rrs':          rrs_del_pm.order_by('fecha'),
             'autos_tpe':    autos_del_pm.order_by('fecha'),
             'memorandums':  memos_del_pm.order_by('fecha'),
-            'recursos_tsp': recursos_tsp.filter(pm=pm_obj).order_by('fecha'),
+            'apelaciones_tsp': apelaciones_tsp.filter(pm=pm_obj).order_by('fecha_presentacion'),
         })
 
     # Obtener historial de custodia (trazabilidad) - SOLO para Admin2
@@ -289,7 +288,7 @@ def detalles_sim(request, sim_id):
         'sim': sim,
         'militares': militares,
         'militares_con_docs': militares_con_docs,
-        'autos_tsp': autos_tsp,
+        'actuados_tsp': actuados_tsp,
         'custodia_historial': custodia_historial,
         'custodia_actual': custodia_actual,
         'es_admin2': es_admin2,
