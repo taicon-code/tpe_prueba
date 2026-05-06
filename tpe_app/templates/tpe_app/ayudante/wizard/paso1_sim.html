@@ -189,7 +189,7 @@
 
 <script>
 // AJAX búsqueda de SIM existente
-document.getElementById('btn-buscar-sim').addEventListener('click', function() {
+function ejecutarBusquedaSIM() {
     const cod = document.getElementById('buscar-sim-cod').value.trim().toUpperCase();
     if (!cod) return;
     fetch(`{% url 'ayudante_wizard_buscar_sim' %}?q=${encodeURIComponent(cod)}`)
@@ -245,6 +245,17 @@ document.getElementById('btn-buscar-sim').addEventListener('click', function() {
                 div.innerHTML = `<div class="alert alert-info">SIM no encontrado. Complete el formulario para crear uno nuevo.</div>`;
             }
         });
+}
+
+// Ejecutar búsqueda al hacer click en el botón
+document.getElementById('btn-buscar-sim').addEventListener('click', ejecutarBusquedaSIM);
+
+// Ejecutar búsqueda al presionar Enter en el campo de entrada
+document.getElementById('buscar-sim-cod').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        ejecutarBusquedaSIM();
+    }
 });
 
 // Validación y conversión a mayúsculas de codigo
