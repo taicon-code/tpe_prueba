@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Detalles del Sumario — TPE Sistema{% endblock %}
-{% block navbar_title %}📋 Detalles del Sumario{% endblock %}
+{% block navbar_title %}Detalles del Sumario{% endblock %}
 
 {% block sidebar_nav %}
 {% if user.is_authenticated %}
@@ -19,591 +19,742 @@
 {% endif %}
 {% endblock sidebar_nav %}
 
-{% block content %}
+{% block extra_head %}
 <style>
-  .sim-header {
-    background: linear-gradient(135deg, #185FA5 0%, #1a3a52 100%);
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    color: #fff;
-  }
+/* ────────────────────────────────────────────────────
+   PALETA CORPORATIVA APAGADA
+   ──────────────────────────────────────────────────── */
+:root {
+  --c-res:   #1a4480;   /* azul marino        */
+  --c-rr:    #2d3a8c;   /* índigo oscuro      */
+  --c-auto:  #7c4a16;   /* ámbar/café oscuro  */
+  --c-memo:  #155e75;   /* verde azulado      */
+  --c-rap:   #1a5c3a;   /* verde bosque       */
+  --c-raee:  #4a1d96;   /* violeta oscuro     */
+  --c-tsp:   #4a1d96;
+}
 
-  .sim-header h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-  }
+/* ────────────────────────────────────────────────────
+   LAYOUT DOS COLUMNAS
+   ──────────────────────────────────────────────────── */
+.sidebar-sticky { position: sticky; top: 16px; }
 
-  .sim-meta {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
-  }
+/* ────────────────────────────────────────────────────
+   SIM BANNER (sidebar)
+   ──────────────────────────────────────────────────── */
+.sim-banner {
+  background: linear-gradient(160deg, #0f2d55 0%, #1a3a6b 100%);
+  border-radius: 10px;
+  padding: 1.2rem 1.3rem;
+  color: #fff;
+  margin-bottom: .9rem;
+}
+.sim-banner .codigo { font-size: 1.35rem; font-weight: 800; letter-spacing: .4px; }
+.sim-banner .lbl    { font-size: .67rem; opacity: .65; text-transform: uppercase; letter-spacing: .8px; }
+.sim-banner .val    { font-size: .82rem; font-weight: 600; }
+.sim-banner hr      { border-color: rgba(255,255,255,.15); margin: .7rem 0; }
 
-  .meta-item {
-    font-size: 0.9rem;
-  }
+/* ────────────────────────────────────────────────────
+   ACORDEÓN POR MILITAR
+   ──────────────────────────────────────────────────── */
+.militar-accordion {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: .85rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+}
+.militar-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2d5282 100%);
+  padding: .7rem 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  user-select: none;
+}
+.militar-avatar {
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.35);
+  object-fit: cover; flex-shrink: 0;
+}
+.militar-avatar-ini {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: linear-gradient(135deg, #3a6faa, #1a3c72);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 800; color: #fff;
+  border: 2px solid rgba(255,255,255,.3); flex-shrink: 0;
+}
+.militar-header .nombre { font-weight: 700; font-size: 1rem; color: #fff; line-height: 1.3; }
+.militar-header .sub    { font-size: .78rem; color: rgba(255,255,255,.7); }
+.militar-header .caret  { margin-left: auto; color: rgba(255,255,255,.6); transition: transform .22s; font-size: 1rem; flex-shrink: 0; }
+.militar-header.open .caret { transform: rotate(180deg); }
 
-  .meta-label {
-    font-weight: 600;
-    opacity: 0.9;
-  }
+.actuados-body { background: #f8fafc; padding: .8rem .9rem; display: none; }
+.actuados-body.open { display: block; }
 
-  .meta-value {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-top: 0.25rem;
-  }
+/* ────────────────────────────────────────────────────
+   TARJETA DE ACTUADO
+   ──────────────────────────────────────────────────── */
+.actuado-item {
+  background: #fff;
+  border-radius: 7px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: .55rem;
+  overflow: hidden;
+}
+.actuado-stripe { display: flex; align-items: stretch; }
+.actuado-bar    { width: 5px; flex-shrink: 0; }
+.actuado-main   { flex: 1; padding: .65rem .85rem; }
 
-  .section-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #185FA5;
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid #185FA5;
-    padding-bottom: 0.5rem;
-  }
+/* tipo + número */
+.tipo-badge {
+  display: inline-block;
+  font-size: .75rem; font-weight: 800;
+  padding: 3px 10px; border-radius: 4px;
+  letter-spacing: .4px; color: #fff;
+  margin-right: .4rem; vertical-align: middle;
+  text-transform: uppercase;
+}
+.actuado-numero { font-weight: 700; font-size: .95rem; }
+.actuado-fecha  { font-size: .8rem; color: #6b7280; }
 
-  .section-container {
-    background: #fff;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
+/* campos descriptivos */
+.actuado-campos {
+  display: flex; flex-wrap: wrap; gap: .35rem 1.1rem;
+  margin-top: .5rem;
+}
+.campo-k { font-size: .7rem; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; }
+.campo-v { font-size: .86rem; font-weight: 600; color: #1f2937; }
 
-  /* Tabla de militares */
-  .militares-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
+/* ── RESOLUTIVA — bien visible ── */
+.actuado-resolutiva {
+  border-left: 5px solid currentColor;
+  background: #eef2f8;
+  padding: .75rem 1rem .75rem 1.1rem;
+  font-size: .9rem;
+  line-height: 1.6;
+  color: #111827;
+  font-weight: 500;
+}
+.actuado-resolutiva .res-label {
+  display: block;
+  font-size: .7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 5px;
+  opacity: .75;
+}
 
-  .militares-table thead {
-    background: #f0f0f0;
-  }
+/* ── MEMORÁNDUM como ítem propio ── */
+.actuado-item.memo-item {
+  margin-left: 1.2rem;
+  border-left: none;
+  background: #f0fdfa;
+  border-color: #a7f3d0;
+}
+.memo-item .actuado-bar { background: var(--c-memo) !important; }
+.memo-item .actuado-main { background: #f0fdfa; }
 
-  .militares-table thead th {
-    padding: 12px;
-    text-align: left;
-    font-weight: 700;
-    color: #185FA5;
-    border-bottom: 2px solid #185FA5;
-  }
+/* Chips de estado */
+.chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  border-radius: 4px; padding: 3px 8px;
+  font-size: .78rem; font-weight: 600;
+}
+.chip-notif-ok  { background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+.chip-notif-pen { background: #f3f4f6; border: 1px solid #d1d5db; color: #9ca3af; }
+.chip-memo      { background: #e0f2fe; border: 1px solid #7dd3fc; color: #075985; }
+.chip-entrega   { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
+.chip-sinentrega{ background: #fef9c3; border: 1px solid #fde047; color: #854d0e; }
+.chip-plazo     { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; }
 
-  .militares-table tbody tr {
-    border-bottom: 1px solid #f0f0f0;
-  }
+/* Sub-item TSP (RAEE, AUTO TSP) */
+.actuado-tsp-sub {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
+  background: #f5f3ff;
+  border-top: 1px dashed #c4b5fd;
+  padding: .5rem .85rem .5rem 1.6rem;
+  font-size: .78rem;
+}
 
-  .militares-table tbody tr:hover {
-    background: #f9fafb;
-  }
+/* ── Sidebar: militares listados ── */
+.pm-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .5rem .7rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: .8rem;
+}
+.pm-row:last-child { border-bottom: none; }
+.pm-mini-ini {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#3a6faa,#1a3c72);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; color: #fff;
+}
 
-  .militares-table tbody td {
-    padding: 12px;
-    font-size: 0.9rem;
-  }
-
-  /* Actuados */
-  .actuado-card {
-    background: #f9fafb;
-    border-left: 4px solid #185FA5;
-    padding: 1.2rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-  }
-
-  .actuado-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-  }
-
-  .actuado-titulo {
-    font-weight: 700;
-    color: #185FA5;
-    font-size: 0.95rem;
-  }
-
-  .actuado-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    font-size: 0.85rem;
-    margin-top: 0.75rem;
-  }
-
-  .info-item {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .info-label {
-    font-weight: 600;
-    color: #666;
-    margin-bottom: 2px;
-  }
-
-  .info-value {
-    color: #333;
-    font-weight: 500;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: #999;
-    font-style: italic;
-  }
-
-  .btn-volver {
-    display: inline-block;
-    padding: 10px 20px;
-    background: #185FA5;
-    color: #fff;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    margin-bottom: 2rem;
-    transition: background 0.2s;
-  }
-
-  .btn-volver:hover {
-    background: #1a3a52;
-  }
-
-  .estado-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-left: 1rem;
-  }
-
-  .estado-para-agenda {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .estado-proceso {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .estado-apelacion {
-    background: #fecaca;
-    color: #991b1b;
-  }
-
-  .estado-concluido {
-    background: #d1fae5;
-    color: #065f46;
-  }
-
-  /* Timeline de Custodia */
-  .timeline {
-    position: relative;
-    padding: 20px 0;
-  }
-
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 30px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #e5e7eb;
-  }
-
-  .timeline-item {
-    margin-bottom: 2rem;
-    padding-left: 100px;
-    position: relative;
-  }
-
-  .timeline-item::before {
-    content: '';
-    position: absolute;
-    left: 18px;
-    top: 5px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #3b82f6;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 2px #3b82f6;
-  }
-
-  .timeline-item.actual::before {
-    background: #10b981;
-    box-shadow: 0 0 0 2px #10b981;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 2px #10b981; }
-    50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.3); }
-  }
-
-  .timeline-date {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #7c3aed;
-    margin-bottom: 0.25rem;
-  }
-
-  .timeline-custodio {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #185FA5;
-    margin-bottom: 0.5rem;
-  }
-
-  .timeline-info {
-    font-size: 0.9rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-  }
-
-  .timeline-obs {
-    background: #f0fdf4;
-    border-left: 3px solid #10b981;
-    padding: 0.75rem;
-    margin-top: 0.75rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    color: #065f46;
-    font-style: italic;
-  }
+/* ── Custodia timeline ─────────────────────────── */
+.timeline { position: relative; padding: 10px 0; }
+.timeline::before {
+  content:''; position:absolute; left:14px; top:0; bottom:0;
+  width:2px; background:#e5e7eb;
+}
+.tl-item { margin-bottom: 1rem; padding-left: 40px; position: relative; }
+.tl-dot  {
+  position:absolute; left:5px; top:3px;
+  width:18px; height:18px; border-radius:50%;
+  background:#3b82f6; border:3px solid #fff;
+  box-shadow:0 0 0 2px #3b82f6;
+}
+.tl-dot.actual {
+  background:#10b981; box-shadow:0 0 0 2px #10b981;
+  animation:pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100%{ box-shadow:0 0 0 2px #10b981; }
+  50%    { box-shadow:0 0 0 5px rgba(16,185,129,.3); }
+}
 </style>
+{% endblock %}
 
-<div style="display: flex; gap: 12px; margin-bottom: 2rem; flex-wrap: wrap;">
-  <a href="{% url 'buscador_dashboard' %}" style="background: #185FA5; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block;">
-    ← Volver a Búsqueda
-  </a>
+{% block content %}
+<div class="container-fluid mt-3 px-3">
+<div class="row g-3">
 
-  <a href="{% url 'export_sim_pdf' sim.id %}" style="background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block;">
-    📄 Descargar PDF
-  </a>
+  <!-- ══════════════════════════════════════════
+       COLUMNA IZQUIERDA — Acordeones por militar
+       ══════════════════════════════════════════ -->
+  <div class="col-lg-8 col-xl-9">
 
-  <a href="{% url 'export_sim_excel' sim.id %}" style="background: #10b981; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: inline-block;">
-    📊 Descargar Excel
-  </a>
-</div>
-
-<!-- ENCABEZADO DEL SIM -->
-<div class="sim-header">
-  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-    <div>
-      <h1>{{ sim.codigo }}</h1>
-      <div style="font-size: 0.95rem; opacity: 0.9;">{{ sim.get_tipo_display }}</div>
-    </div>
-    <div>
-      {% if sim.estado == 'PARA_AGENDA' %}
-        <span class="estado-badge estado-para-agenda">{{ sim.get_estado_display }}</span>
-      {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
-        <span class="estado-badge estado-proceso">{{ sim.get_estado_display }}</span>
-      {% elif sim.estado == 'PROCESO_EN_EL_TSP' %}
-        <span class="estado-badge estado-apelacion">{{ sim.get_estado_display }}</span>
-      {% elif sim.estado == 'PROCESO_CONCLUIDO_TPE' %}
-        <span class="estado-badge estado-concluido">{{ sim.get_estado_display }}</span>
-      {% endif %}
-    </div>
-  </div>
-
-  <div style="margin-top: 1.5rem;">
-    <div style="margin-bottom: 1rem;">
-      <div style="font-weight: 600; opacity: 0.9; margin-bottom: 0.25rem;">Objeto:</div>
-      <div style="font-size: 1rem; font-weight: 700;">{{ sim.objeto }}</div>
-    </div>
-
-    <div class="sim-meta">
-      <div class="meta-item">
-        <div class="meta-label">Fecha Ingreso:</div>
-        <div class="meta-value">{{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</div>
-      </div>
-      <div class="meta-item">
-        <div class="meta-label">Resumen:</div>
-        <div class="meta-value">{{ sim.resumen }}</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MILITARES DEL SIM -->
-<div class="section-container">
-  <h2 class="section-title">👥 Militares Investigados ({{ militares|length }})</h2>
-
-  {% if militares %}
-  <table class="militares-table">
-    <thead>
-      <tr>
-        <th>Grado</th>
-        <th>Nombre</th>
-        <th>Apellido Paterno</th>
-        <th>Apellido Materno</th>
-        <th>CI</th>
-        <th>Arma</th>
-        <th>Escalafón</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for militar in militares %}
-      <tr>
-        <td>
-          <span title="{% if militar.anio_promocion %}Grado actual del militar{% else %}⚠️ Grado del documento (sin año de egreso){% endif %}">
-            {{ militar.get_grado_display|default:"—" }}
-            {% if not militar.anio_promocion %}<span class="badge bg-warning text-dark" style="font-size: 0.7rem;">DOC</span>{% endif %}
-          </span>
-        </td>
-        <td>{{ militar.nombre }}</td>
-        <td>{{ militar.paterno }}</td>
-        <td>{{ militar.materno|default:"—" }}</td>
-        <td>{{ militar.ci|default:"—" }}</td>
-        <td>{{ militar.get_arma_display|default:"—" }}</td>
-        <td>{{ militar.get_escalafon_display|default:"—" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <div class="empty-state">No hay militares registrados para este sumario.</div>
-  {% endif %}
-</div>
-
-<!-- ACTUADOS DEL SIM -->
-<div class="section-container">
-  <h2 class="section-title">📄 Actuados</h2>
-
-  {% for m in militares_con_docs %}
-  {% if m.resoluciones or m.rrs or m.autos_tpe or m.memorandums or m.recursos_tsp %}
-
-  <!-- Subencabezado del militar con foto/avatar -->
-  <div style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f6ff 100%); border-left: 3px solid #185FA5; padding: 1rem; margin: 2rem 0 1rem; border-radius: 0 6px 6px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
-    <!-- Foto o Avatar -->
-    <div style="flex-shrink: 0;">
-      {% if m.pm.foto %}
-        <img src="{{ m.pm.foto.url }}" alt="Foto" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid #185FA5; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-      {% else %}
-        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1e3c72, #2a5298); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: #fff; border: 2px solid #185FA5; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-          {{ m.pm.nombre|first }}{{ m.pm.paterno|first }}
-        </div>
-      {% endif %}
-    </div>
-    <!-- Datos del militar -->
-    <div style="flex: 1;">
-      <div style="font-weight: 700; color: #185FA5; font-size: 1rem;">
-        {{ m.pm.get_grado_display|default:"" }} {{ m.pm.nombre }} {{ m.pm.paterno }}{% if m.pm.materno %} {{ m.pm.materno }}{% endif %}
-      </div>
-      <div style="font-size: 0.85rem; color: #666; margin-top: 0.25rem;">
-        {% if m.pm.arma %}{{ m.pm.get_arma_display }}{% endif %}{% if m.pm.especialidad %} • {{ m.pm.especialidad }}{% endif %}
-      </div>
-    </div>
-  </div>
-
-  <!-- 1. Resoluciones (PRIMERA instancia) -->
-  {% for res in m.resoluciones %}
-  <div class="actuado-card">
-    <div class="actuado-header">
-      <div class="actuado-titulo">Resolución Nº {{ res.numero|default:"S/N" }}</div>
-      {% with docs=res.documentos.all %}{% if docs %}<div>{% for doc in docs %}<a href="{{ doc.archivo.url }}" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:0.85rem;">📥 Descargar</a>{% endfor %}</div>{% endif %}{% endwith %}
-    </div>
-    <div class="actuado-info">
-      <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
-      <div class="info-item"><span class="info-label">Tipo:</span><span class="info-value">{{ res.get_tipo_display|default:"—" }}</span></div>
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if res.notificacion %}{{ res.notificacion.get_tipo_display }} ({{ res.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
-    </div>
-    {% if res.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ res.texto }}</div>{% endif %}
-  </div>
-  {% endfor %}
-
-  <!-- 2. Recurso de Reconsideración (RR) -->
-  {% for rr in m.rrs %}
-  <div class="actuado-card" style="border-left-color: #6366f1;">
-    <div class="actuado-header">
-      <div class="actuado-titulo" style="color:#4338ca;">Rec. Reconsideración Nº {{ rr.numero|default:"S/N" }}</div>
-      {% with docs=rr.documentoadjunto_set.all %}{% if docs %}<div>{% for doc in docs %}<a href="{{ doc.archivo.url }}" target="_blank" style="color:#3b82f6;text-decoration:none;font-size:0.85rem;">📥 Descargar</a>{% endfor %}</div>{% endif %}{% endwith %}
-    </div>
-    <div class="actuado-info">
-      <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ rr.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
-      <div class="info-item"><span class="info-label">Tipo:</span><span class="info-value">{{ rr.get_tipo_display|default:"—" }}</span></div>
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if rr.notificacion %}{{ rr.notificacion.get_tipo_display }} ({{ rr.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
-    </div>
-    {% if rr.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#eef2ff;border-top:1px solid #c7d2fe;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ rr.texto }}</div>{% endif %}
-  </div>
-  {% endfor %}
-
-  <!-- 3. Autos TPE -->
-  {% for auto in m.autos_tpe %}
-  <div class="actuado-card" style="border-left-color: #f59e0b;">
-    <div class="actuado-header">
-      <div class="actuado-titulo" style="color:#b45309;">Auto TPE Nº {{ auto.numero|default:"S/N" }}</div>
-    </div>
-    <div class="actuado-info">
-      <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
-      <div class="info-item"><span class="info-label">Tipo:</span><span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span></div>
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if auto.notificacion %}{{ auto.notificacion.get_tipo_display }} ({{ auto.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
-    </div>
-    {% if auto.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#fffbf0;border-top:1px solid #fde68a;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ auto.texto }}</div>{% endif %}
-    {% if auto.memorandum %}<div style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border-top:1px solid #e5e7eb;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Memorándum:</span> Nº {{ auto.memorandum.numero }} — {{ auto.memorandum.fecha|date:"d/m/Y"|default:"S/F" }}{% if auto.memorandum.fecha_entrega %} — Entrega: {{ auto.memorandum.fecha_entrega|date:"d/m/Y" }}{% endif %}</div>{% endif %}
-  </div>
-  {% endfor %}
-
-  <!-- 3.5 Memorándums (ligados a RES o AUTO) -->
-  {% for memo in m.memorandums %}
-  <div class="actuado-card" style="border-left-color: #06b6d4;">
-    <div class="actuado-header">
-      <div class="actuado-titulo" style="color:#0891b2;">📄 Memorándum Nº {{ memo.numero }}</div>
-    </div>
-    <div class="actuado-info">
-      <div class="info-item"><span class="info-label">Fecha:</span><span class="info-value">{{ memo.fecha|date:"d/m/Y"|default:"N/A" }}</span></div>
-      {% if memo.fecha_entrega %}<div class="info-item"><span class="info-label">Fecha Entrega:</span><span class="info-value">{{ memo.fecha_entrega|date:"d/m/Y" }}</span></div>{% endif %}
-      <div class="info-item"><span class="info-label">Ligado a:</span><span class="info-value">{% if memo.resolucion %}RES {{ memo.resolucion.numero }}{% elif memo.autotpe %}AUTO {{ memo.autotpe.numero }}{% else %}—{% endif %}</span></div>
-    </div>
-  </div>
-  {% endfor %}
-
-  <!-- 4. Recursos TSP (RAP, RAEE) -->
-  {% for recurso in m.recursos_tsp %}
-  <div class="actuado-card" style="border-left-color: #10b981;">
-    <div class="actuado-header">
-      <div class="actuado-titulo" style="color:#065f46;">{{ recurso.get_instancia_display|default:"Recurso" }} Nº {{ recurso.numero|default:"S/N" }}</div>
-    </div>
-    <div class="actuado-info">
-      {% if recurso.numero_oficio %}<div class="info-item"><span class="info-label">N° Oficio:</span><span class="info-value" style="font-weight:600;">{{ recurso.numero_oficio }}</span></div>{% endif %}
-      <div class="info-item"><span class="info-label">Fecha Oficio:</span><span class="info-value">{{ recurso.fecha_oficio|date:"d/m/Y"|default:"N/A" }}</span></div>
-      {% if recurso.fecha_presentacion %}<div class="info-item"><span class="info-label">Fecha Presentación:</span><span class="info-value">{{ recurso.fecha_presentacion|date:"d/m/Y" }}</span></div>{% endif %}
-      {% if recurso.fecha_limite %}<div class="info-item"><span class="info-label">Plazo Límite:</span><span class="info-value">{{ recurso.fecha_limite|date:"d/m/Y" }}</span></div>{% endif %}
-      <div class="info-item"><span class="info-label">Notificación:</span><span class="info-value">{% if recurso.notificacion %}{{ recurso.notificacion.get_tipo_display }} ({{ recurso.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span></div>
-    </div>
-    {% if recurso.texto %}<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f0fdf4;border-top:1px solid #bbf7d0;font-size:0.82rem;color:#374151;"><span style="font-weight:600;color:#666;">Resolutiva:</span> {{ recurso.texto }}</div>{% endif %}
-  </div>
-  {% endfor %}
-
-  {% endif %}
-  {% endfor %}
-
-  <!-- AUTOS TSP — sin FK a militar, sección global al final -->
-  {% if autos_tsp %}
-  <div style="background: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 0.6rem 1rem; margin: 1.5rem 0 0.75rem; border-radius: 0 4px 4px 0;">
-    <span style="font-weight: 700; color: #6d28d9; font-size: 0.95rem;">Autos TSP</span>
-  </div>
-  {% for auto in autos_tsp %}
-  <div class="actuado-card" style="border-left-color: #8b5cf6;">
-    <div class="actuado-header">
-      <div class="actuado-titulo" style="color: #6d28d9;">Auto TSP Nº {{ auto.numero|default:"S/N" }}</div>
-    </div>
-    <div class="actuado-info">
-      <div class="info-item">
-        <span class="info-label">Fecha:</span>
-        <span class="info-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Tipo:</span>
-        <span class="info-value">{{ auto.get_tipo_display|default:"—" }}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Notificación:</span>
-        <span class="info-value">{% if auto.notificacion %}{{ auto.notificacion.get_tipo_display }} ({{ auto.notificacion.fecha|date:"d/m/Y" }}){% else %}—{% endif %}</span>
-      </div>
-    </div>
-    {% if auto.texto %}
-    <div style="margin-top: 0.75rem; padding: 0.6rem 0.75rem; background: #f5f3ff; border-top: 1px solid #ddd6fe; font-size: 0.82rem; color: #374151;">
-      <span style="font-weight: 600; color: #666;">Resolutiva:</span> {{ auto.texto }}
-    </div>
-    {% endif %}
-  </div>
-  {% endfor %}
-  {% endif %}
-
-  <!-- SIN ACTUADOS -->
-  {% if not militares_con_docs and not autos_tsp %}
-  <div class="empty-state">No hay actuados registrados para este sumario.</div>
-  {% endif %}
-</div>
-
-<!-- HISTORIAL DE CUSTODIA (Trazabilidad) - SOLO ADMIN2 -->
-{% if es_admin2 and custodia_historial %}
-<div class="section-container">
-  <h2 class="section-title">📂 Trazabilidad de Carpeta (Custodia)</h2>
-
-  {% if custodia_actual %}
-  <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 2px solid #10b981; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
-    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-      <span style="font-size: 1.5rem;">📍</span>
+    <!-- Encabezado con botones -->
+    <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
       <div>
-        <div style="font-weight: 700; color: #065f46; font-size: 1rem;">UBICACIÓN ACTUAL</div>
-        <div style="color: #047857; margin-top: 0.25rem;">{{ custodia_actual.get_tipo_custodio_display }}</div>
+        <a href="{% url 'buscador_dashboard' %}" class="btn btn-sm btn-secondary me-1">
+          <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+        <a href="{% url 'export_sim_pdf' sim.id %}" class="btn btn-sm btn-outline-danger me-1">
+          <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+        </a>
+        <a href="{% url 'export_sim_excel' sim.id %}" class="btn btn-sm btn-outline-success">
+          <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
       </div>
+      <span class="text-muted" style="font-size:.75rem;text-transform:uppercase;letter-spacing:.6px;">
+        {{ militares|length }} militar{% if militares|length != 1 %}es{% endif %} investigado{% if militares|length != 1 %}s{% endif %}
+      </span>
     </div>
-    {% if custodia_actual.abogado %}
-    <div style="color: #065f46; margin-bottom: 0.5rem;">
-      <strong>Abogado:</strong> {{ custodia_actual.abogado.get_grado_display }} {{ custodia_actual.abogado.paterno }} {{ custodia_actual.abogado.materno }}
-    </div>
-    {% endif %}
-    <div style="color: #065f46; margin-bottom: 0.5rem;">
-      <strong>Desde:</strong> {{ custodia_actual.fecha_recepcion|date:"d/m/Y H:i" }}
-    </div>
-    {% if custodia_actual.estado != 'RECIBIDA_CONFORME' %}
-    <div style="color: #d97706; font-weight: 600; margin-top: 0.5rem;">
-      ⚠️ Estado: {{ custodia_actual.get_estado_display }}
-    </div>
-    {% endif %}
-    {% if custodia_actual.observacion %}
-    <div class="timeline-obs" style="margin-top: 1rem;">
-      <strong>Observación:</strong> {{ custodia_actual.observacion }}
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
 
-  <div class="timeline">
-    {% for custodia in custodia_historial %}
-    <div class="timeline-item {% if custodia == custodia_actual %}actual{% endif %}">
-      <div class="timeline-date">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</div>
-      <div class="timeline-custodio">{{ custodia.get_tipo_custodio_display }}</div>
+    <!-- ── Acordeón por cada militar ── -->
+    {% for m in militares_con_docs %}
+    <div class="militar-accordion">
 
-      {% if custodia.abogado %}
-      <div class="timeline-info">
-        👤 <strong>{{ custodia.abogado.get_grado_display }} {{ custodia.abogado.paterno }}</strong>
-      </div>
-      {% endif %}
-
-      <div class="timeline-info">
-        {% if custodia.estado == 'RECIBIDA_CONFORME' %}
-          <span style="background: #d1fae5; color: #065f46; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">✓ Activa</span>
-        {% elif custodia.estado == 'PENDIENTE_CONFIRMACION' %}
-          <span style="background: #fef3c7; color: #92400e; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">⏳ Pendiente Confirmar</span>
+      <div class="militar-header" onclick="toggleAcordeon(this)">
+        {% if m.pm.foto %}
+          <img src="{{ m.pm.foto.url }}" class="militar-avatar" alt="">
         {% else %}
-          <span style="background: #f3f4f6; color: #374151; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">{{ custodia.get_estado_display }}</span>
+          <div class="militar-avatar-ini">{{ m.pm.nombre|first }}{{ m.pm.paterno|first }}</div>
         {% endif %}
-      </div>
 
-      {% if custodia.fecha_entrega %}
-      <div class="timeline-info">
-        📤 <strong>Entregada:</strong> {{ custodia.fecha_entrega|date:"d/m/Y H:i" }}
-      </div>
-      {% endif %}
+        <div style="flex:1;min-width:0;">
+          <div class="nombre">{{ m.pm.get_grado_display|default:"" }} {{ m.pm.nombre }} {{ m.pm.paterno }}{% if m.pm.materno %} {{ m.pm.materno }}{% endif %}</div>
+          <div class="sub">
+            {% if m.pm.arma %}{{ m.pm.get_arma_display }}{% endif %}
+            {% if m.pm.especialidad %} &bull; {{ m.pm.especialidad }}{% endif %}
+            {% if m.pm.ci %} &bull; CI {{ m.pm.ci }}{% endif %}
+          </div>
+        </div>
 
-      {% if custodia.observacion %}
-      <div class="timeline-obs">
-        <strong>📝 Nota:</strong> {{ custodia.observacion }}
-      </div>
-      {% endif %}
+        <div class="d-flex gap-1 flex-wrap justify-content-end" style="max-width:160px;">
+          {% if m.resoluciones   %}<span class="badge" style="background:var(--c-res);font-size:.63rem;">{{ m.resoluciones|length }} RES</span>{% endif %}
+          {% if m.rrs            %}<span class="badge" style="background:var(--c-rr);font-size:.63rem;">{{ m.rrs|length }} RR</span>{% endif %}
+          {% if m.autos_tpe      %}<span class="badge" style="background:var(--c-auto);font-size:.63rem;">{{ m.autos_tpe|length }} AUTO</span>{% endif %}
+          {% if m.apelaciones_tsp%}<span class="badge" style="background:var(--c-rap);font-size:.63rem;">{{ m.apelaciones_tsp|length }} RAP</span>{% endif %}
+          {% if not m.resoluciones and not m.rrs and not m.autos_tpe and not m.apelaciones_tsp %}
+            <span class="badge bg-secondary" style="font-size:.63rem;">Sin actuados</span>
+          {% endif %}
+        </div>
 
-      {% if custodia == custodia_actual %}
-      <div style="margin-top: 0.75rem; padding: 0.75rem; background: #dbeafe; border-radius: 4px; font-size: 0.85rem; color: #1e40af; font-weight: 600;">
-        🔄 Esta es la custodia actual
-      </div>
-      {% endif %}
+        <i class="bi bi-chevron-down caret"></i>
+      </div><!-- /militar-header -->
+
+      <div class="actuados-body">
+        {% if not m.resoluciones and not m.rrs and not m.autos_tpe and not m.apelaciones_tsp %}
+          <p class="text-center text-muted fst-italic py-2 mb-0" style="font-size:.83rem;">Sin actuados registrados.</p>
+        {% endif %}
+
+        {# ──── 1. RESOLUCIONES (1ª Instancia) ──── #}
+        {% for res in m.resoluciones %}
+        <div class="actuado-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar" style="background:var(--c-res);"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-res);">RESOLUCIÓN</span>
+                  <span class="actuado-numero">Nº {{ res.numero|default:"S/N" }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ res.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ res.get_tipo_display|default:"—" }}</span></div>
+                <div>
+                  <span class="campo-k">Notificación</span>
+                  <span class="campo-v d-block">
+                    {% if res.notificacion %}
+                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ res.notificacion.get_tipo_display }} &mdash; {{ res.notificacion.fecha|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                    {% endif %}
+                  </span>
+                </div>
+                {% with docs=res.documentos.all %}{% if docs %}
+                <div>
+                  <span class="campo-k">Archivo</span>
+                  <span class="campo-v d-block">
+                    <a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;">
+                      <i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF
+                    </a>
+                  </span>
+                </div>
+                {% endif %}{% endwith %}
+              </div>
+            </div>
+          </div>
+          {% if res.texto %}
+          <div class="actuado-resolutiva" style="color:var(--c-res);border-left-color:var(--c-res);">
+            <span class="res-label" style="color:var(--c-res);">Resolutiva</span>
+            {{ res.texto }}
+          </div>
+          {% endif %}
+        </div>
+        {# Memorándum ligado a esta RES #}
+        {% for memo in res.memorandums.all %}
+        <div class="actuado-item memo-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM</span>
+                  <span class="actuado-numero">Nº {{ memo.numero }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div>
+                  <span class="campo-k">Fecha Entrega</span>
+                  <span class="campo-v d-block">
+                    {% if memo.fecha_entrega %}
+                      <span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Sin fecha de entrega</span>
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+
+        {# ──── 2. RECURSO DE RECONSIDERACIÓN (RR) ──── #}
+        {% for rr in m.rrs %}
+        <div class="actuado-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar" style="background:var(--c-rr);"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-rr);">REC. RECONSIDERACIÓN</span>
+                  <span class="actuado-numero">Nº {{ rr.numero|default:"S/N" }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ rr.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ rr.get_tipo_display|default:"—" }}</span></div>
+                {% if rr.fecha_presentacion %}
+                <div><span class="campo-k">Presentado</span><span class="campo-v d-block">{{ rr.fecha_presentacion|date:"d/m/Y" }}</span></div>
+                {% endif %}
+
+                <div>
+                  <span class="campo-k">Notificación</span>
+                  <span class="campo-v d-block">
+                    {% if rr.notificacion %}
+                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ rr.notificacion.get_tipo_display }} &mdash; {{ rr.notificacion.fecha|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                    {% endif %}
+                  </span>
+                </div>
+                {% with docs=rr.documentos.all %}{% if docs %}
+                <div>
+                  <span class="campo-k">Archivo</span>
+                  <span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span>
+                </div>
+                {% endif %}{% endwith %}
+              </div>
+            </div>
+          </div>
+          {% if rr.texto %}
+          <div class="actuado-resolutiva" style="color:var(--c-rr);border-left-color:var(--c-rr);">
+            <span class="res-label" style="color:var(--c-rr);">Resolutiva</span>
+            {{ rr.texto }}
+          </div>
+          {% endif %}
+        </div>
+        {# Memorándum ligado a este RR #}
+        {% for memo in rr.memorandums.all %}
+        <div class="actuado-item memo-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM</span>
+                  <span class="actuado-numero">Nº {{ memo.numero }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div>
+                  <span class="campo-k">Fecha Entrega</span>
+                  <span class="campo-v d-block">
+                    {% if memo.fecha_entrega %}
+                      <span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Sin fecha de entrega</span>
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+
+        {# ──── 3. AUTOS TPE + MEMORÁNDUM como ítem siguiente ──── #}
+        {% for auto in m.autos_tpe %}
+        <div class="actuado-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar" style="background:var(--c-auto);"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-auto);">AUTO TPE</span>
+                  <span class="actuado-numero">Nº {{ auto.numero|default:"S/N" }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ auto.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ auto.get_tipo_display|default:"—" }}</span></div>
+                <div>
+                  <span class="campo-k">Notificación</span>
+                  <span class="campo-v d-block">
+                    {% if auto.notificacion %}
+                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ auto.notificacion.get_tipo_display }} &mdash; {{ auto.notificacion.fecha|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                    {% endif %}
+                  </span>
+                </div>
+                {% with docs=auto.documentos.all %}{% if docs %}
+                <div>
+                  <span class="campo-k">Archivo</span>
+                  <span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span>
+                </div>
+                {% endif %}{% endwith %}
+              </div>
+            </div>
+          </div>
+          {% if auto.texto %}
+          <div class="actuado-resolutiva" style="color:var(--c-auto);border-left-color:var(--c-auto);">
+            <span class="res-label" style="color:var(--c-auto);">Resolutiva</span>
+            {{ auto.texto }}
+          </div>
+          {% endif %}
+        </div>
+
+        {# — Memorándum Ejecutoria (ítem propio, indentado, inmediatamente después del auto) — #}
+        {% for memo in auto.memorandums.all %}
+        <div class="actuado-item memo-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM EJECUTORIA</span>
+                  <span class="actuado-numero">Nº {{ memo.numero }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div>
+                  <span class="campo-k">Fecha de Entrega</span>
+                  <span class="campo-v d-block">
+                    {% if memo.fecha_entrega %}
+                      <span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>Entregado el {{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Entrega pendiente</span>
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+
+        {# ──── 4. APELACIÓN TSP (RAP) + Actuados TSP anidados ──── #}
+        {% for apelacion in m.apelaciones_tsp %}
+        <div class="actuado-item">
+          <div class="actuado-stripe">
+            <div class="actuado-bar" style="background:var(--c-rap);"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-rap);">REC. APELACIÓN AL TSP (RAP)</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ apelacion.fecha_presentacion|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                {% if apelacion.numero_oficio %}
+                <div>
+                  <span class="campo-k">Oficio de Elevación</span>
+                  <span class="campo-v d-block">{{ apelacion.numero_oficio }}</span>
+                </div>
+                {% endif %}
+                {% if apelacion.fecha_oficio %}
+                <div>
+                  <span class="campo-k">Fecha del Oficio</span>
+                  <span class="campo-v d-block" style="font-size:.95rem;">
+                    <i class="bi bi-send me-1" style="color:var(--c-rap);"></i>{{ apelacion.fecha_oficio|date:"d/m/Y" }}
+                  </span>
+                </div>
+                {% endif %}
+                {% with docs=apelacion.documentos.all %}{% if docs %}
+                <div>
+                  <span class="campo-k">Archivo</span>
+                  <span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span>
+                </div>
+                {% endif %}{% endwith %}
+              </div>
+            </div>
+          </div>
+
+          {# Actuados del TSP para este RAP #}
+          {% for actuado in apelacion.actuados.all %}
+          <div class="actuado-tsp-sub">
+            <span class="tipo-badge" style="background:var(--c-tsp);">{{ actuado.get_instancia_display }}</span>
+            <span class="fw-bold" style="font-size:.8rem;">Nº {{ actuado.numero|default:"S/N" }}</span>
+            <span class="text-muted" style="font-size:.73rem;"><i class="bi bi-calendar3 me-1"></i>{{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+            {% if actuado.tipo %}<span class="badge bg-light text-dark border" style="font-size:.67rem;">{{ actuado.get_tipo_display }}</span>{% endif %}
+            {% if actuado.notificacion %}
+              <span class="chip chip-notif-ok" style="font-size:.68rem;"><i class="bi bi-check-circle-fill"></i>{{ actuado.notificacion.get_tipo_display }} {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>
+            {% else %}
+              <span class="chip chip-notif-pen" style="font-size:.68rem;"><i class="bi bi-clock"></i>Sin notif.</span>
+            {% endif %}
+            {% with docs=actuado.documentos.all %}{% if docs %}<a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary ms-auto" style="font-size:.68rem;padding:1px 6px;"><i class="bi bi-file-earmark-pdf"></i></a>{% endif %}{% endwith %}
+          </div>
+          {% if actuado.texto %}
+          <div class="actuado-resolutiva" style="color:var(--c-tsp);border-left-color:var(--c-tsp);padding-left:1.7rem;">
+            <span class="res-label" style="color:var(--c-tsp);">Resolutiva TSP</span>
+            {{ actuado.texto }}
+          </div>
+          {% endif %}
+          {% endfor %}
+
+        </div>
+        {% endfor %}
+
+      </div><!-- /actuados-body -->
+    </div><!-- /militar-accordion -->
+    {% empty %}
+    <div class="card border-0 shadow-sm p-4 text-center text-muted fst-italic">
+      <i class="bi bi-inbox fs-3 d-block mb-2"></i>No hay militares registrados.
     </div>
     {% endfor %}
-  </div>
-</div>
-{% endif %}
 
+    <!-- Actuados TSP sin militar asignado -->
+    {% if actuados_tsp %}
+    <div class="card border-0 shadow-sm mb-2">
+      <div class="card-header py-2 px-3" style="background:#4a1d96;color:#fff;font-size:.82rem;font-weight:700;">
+        <i class="bi bi-building me-1"></i>Actuados del Tribunal Supremo Policial
+      </div>
+      <div class="p-3">
+        {% for actuado in actuados_tsp %}
+        <div class="actuado-item mb-2">
+          <div class="actuado-stripe">
+            <div class="actuado-bar" style="background:var(--c-tsp);"></div>
+            <div class="actuado-main">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                <div>
+                  <span class="tipo-badge" style="background:var(--c-tsp);">{{ actuado.get_instancia_display }}</span>
+                  <span class="actuado-numero">Nº {{ actuado.numero|default:"S/N" }}</span>
+                </div>
+                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+              </div>
+              <div class="actuado-campos mt-2">
+                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ actuado.get_tipo_display|default:"—" }}</span></div>
+                <div>
+                  <span class="campo-k">Notificación</span>
+                  <span class="campo-v d-block">
+                    {% if actuado.notificacion %}
+                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ actuado.notificacion.get_tipo_display }} &mdash; {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>
+                    {% else %}
+                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% if actuado.texto %}
+          <div class="actuado-resolutiva" style="color:var(--c-tsp);border-left-color:var(--c-tsp);">
+            <span class="res-label" style="color:var(--c-tsp);">Resolutiva</span>
+            {{ actuado.texto }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /col izquierdo -->
+
+  <!-- ══════════════════════════════════════════
+       COLUMNA DERECHA — Sidebar SIM
+       ══════════════════════════════════════════ -->
+  <div class="col-lg-4 col-xl-3">
+    <div class="sidebar-sticky">
+
+      <!-- Banner SIM -->
+      <div class="sim-banner">
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="codigo">{{ sim.codigo }}</div>
+          {% if sim.estado == 'PARA_AGENDA' %}
+            <span class="badge bg-primary" style="font-size:.68rem;">{{ sim.get_estado_display }}</span>
+          {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
+            <span class="badge bg-warning text-dark" style="font-size:.68rem;">{{ sim.get_estado_display }}</span>
+          {% elif sim.estado == 'PROCESO_EN_EL_TSP' %}
+            <span class="badge bg-danger" style="font-size:.68rem;">{{ sim.get_estado_display }}</span>
+          {% elif sim.estado == 'CUMPLIMIENTO_EN_TPE' %}
+            <span class="badge" style="background:#7c3aed;font-size:.68rem;">{{ sim.get_estado_display }}</span>
+          {% elif sim.estado in 'PROCESO_CONCLUIDO_TPE,PROCESO_CONCLUIDO_TSP_TPE,PROCESO_EJECUTADO' %}
+            <span class="badge bg-success" style="font-size:.68rem;">{{ sim.get_estado_display }}</span>
+          {% else %}
+            <span class="badge bg-secondary" style="font-size:.68rem;">{{ sim.get_estado_display }}</span>
+          {% endif %}
+        </div>
+        <div class="lbl mt-2">Tipo</div>
+        <div class="val">{{ sim.get_tipo_display }}</div>
+        <hr>
+        <div class="lbl">Objeto</div>
+        <div class="val" style="font-size:.88rem;font-weight:700;line-height:1.35;">{{ sim.objeto|default:"—" }}</div>
+        <hr>
+        <div class="row g-0">
+          <div class="col-6">
+            <div class="lbl">Fecha Ingreso</div>
+            <div class="val">{{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</div>
+          </div>
+          <div class="col-6">
+            <div class="lbl">Fase</div>
+            <div class="val" style="font-size:.73rem;">{{ sim.get_fase_display|default:"—" }}</div>
+          </div>
+        </div>
+        {% if sim.resumen %}
+        <hr>
+        <div class="lbl">Resumen</div>
+        <div style="font-size:.78rem;opacity:.88;line-height:1.4;">{{ sim.resumen }}</div>
+        {% endif %}
+      </div><!-- /sim-banner -->
+
+      <!-- Lista compacta de militares -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header py-2 px-3" style="background:#1e3a5f;color:#fff;font-size:.78rem;font-weight:700;">
+          <i class="bi bi-people me-1"></i>Personal investigado
+        </div>
+        {% for militar in militares %}
+        <div class="pm-row">
+          {% if militar.foto %}
+            <img src="{{ militar.foto.url }}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">
+          {% else %}
+            <div class="pm-mini-ini">{{ militar.nombre|first }}{{ militar.paterno|first }}</div>
+          {% endif %}
+          <div style="min-width:0;overflow:hidden;">
+            <div style="font-weight:700;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ militar.get_grado_display|default:"" }} {{ militar.paterno }}{% if militar.materno %} {{ militar.materno }}{% endif %}
+            </div>
+            <div style="font-size:.7rem;color:#6b7280;">{{ militar.nombre }}</div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="px-3 py-2 text-muted fst-italic" style="font-size:.78rem;">Sin militares.</div>
+        {% endfor %}
+      </div>
+
+      <!-- Custodia (solo Admin2) -->
+      {% if es_admin2 and custodia_historial %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-header py-2 px-3" style="background:#1e3a5f;color:#fff;font-size:.78rem;font-weight:700;">
+          <i class="bi bi-folder2-open me-1"></i>Custodia de Carpeta
+        </div>
+        <div class="card-body p-3">
+          {% if custodia_actual %}
+          <div class="alert alert-success py-2 px-2 mb-2" style="font-size:.75rem;">
+            <i class="bi bi-geo-alt-fill me-1"></i>
+            <strong>{{ custodia_actual.get_tipo_custodio_display }}</strong><br>
+            {% if custodia_actual.abogado %}{{ custodia_actual.abogado.get_grado_display }} {{ custodia_actual.abogado.paterno }}<br>{% endif %}
+            Desde {{ custodia_actual.fecha_recepcion|date:"d/m/Y" }}
+          </div>
+          {% endif %}
+          <div class="timeline">
+            {% for c in custodia_historial %}
+            <div class="tl-item">
+              <div class="tl-dot {% if c == custodia_actual %}actual{% endif %}"></div>
+              <div style="font-size:.68rem;color:#7c3aed;font-weight:600;">{{ c.fecha_recepcion|date:"d/m/Y H:i" }}</div>
+              <div style="font-size:.78rem;font-weight:700;color:#1e3a5f;">{{ c.get_tipo_custodio_display }}</div>
+              {% if c.abogado %}<div style="font-size:.72rem;color:#555;">{{ c.abogado.paterno }}</div>{% endif %}
+              <div class="mt-1">
+                {% if c.estado == 'RECIBIDA_CONFORME' %}
+                  <span class="badge bg-success-subtle text-success border border-success" style="font-size:.62rem;">Activa</span>
+                {% elif c.estado == 'PENDIENTE_CONFIRMACION' %}
+                  <span class="badge bg-warning text-dark" style="font-size:.62rem;">Pendiente</span>
+                {% else %}
+                  <span class="badge bg-light text-dark border" style="font-size:.62rem;">{{ c.get_estado_display }}</span>
+                {% endif %}
+              </div>
+              {% if c.fecha_entrega %}
+              <div style="font-size:.68rem;color:#6b7280;margin-top:2px;"><i class="bi bi-box-arrow-right me-1"></i>{{ c.fecha_entrega|date:"d/m/Y" }}</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /sidebar-sticky -->
+  </div><!-- /col derecho -->
+
+</div><!-- /row -->
+</div><!-- /container -->
+
+<script>
+function toggleAcordeon(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const headers = document.querySelectorAll('.militar-header');
+  if (headers.length === 1) {
+    headers[0].classList.add('open');
+    headers[0].nextElementSibling.classList.add('open');
+  }
+});
+</script>
 {% endblock %}
