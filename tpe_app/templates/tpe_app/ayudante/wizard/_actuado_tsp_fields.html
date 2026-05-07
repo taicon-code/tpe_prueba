@@ -1,0 +1,41 @@
+<!-- Campos comunes para ActuadoTSP. Requiere: form, prefix -->
+<!-- Opcional: show_pronunciamiento=True para mostrar el checkbox de pronunciamiento final -->
+<div class="row g-3">
+    <div class="col-md-4">
+        <label class="form-label">{{ form.apelacion_tsp.label }}</label>
+        {{ form.apelacion_tsp }}
+        <small class="text-muted">Apelación de origen (si aplica)</small>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">{{ form.numero.label }}</label>
+        {{ form.numero }}
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">{{ form.fecha.label }}</label>
+        {{ form.fecha }}
+    </div>
+</div>
+<div class="row g-3 mt-2">
+    <div class="col-md-6">
+        <label class="form-label">{{ form.tipo.label }}</label>
+        {{ form.tipo }}
+    </div>
+    {% if show_pronunciamiento %}
+    <div class="col-md-6 d-flex align-items-end pb-1">
+        <div class="form-check">
+            {{ form.es_pronunciamiento_final }}
+            <label class="form-check-label" for="{{ form.es_pronunciamiento_final.id_for_label }}">
+                {{ form.es_pronunciamiento_final.label }}
+            </label>
+            <small class="d-block text-muted">Al marcar, el caso pasará a cumplimiento en el TPE</small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+<div class="row g-3 mt-2">
+    <div class="col-12">
+        <label class="form-label">{{ form.texto.label }}</label>
+        {{ form.texto }}
+    </div>
+</div>
+{% include 'tpe_app/ayudante/wizard/_notif_block.html' with prefix=prefix %}

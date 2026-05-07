@@ -21,7 +21,7 @@ from ..models import (
 )
 from ..forms import (
     RESForm, NotificacionForm, RAPForm, ActuadoTSPForm, AUTOTPEHistoricoForm, MemorandumForm,
-    PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm,
+    PMSIMFormSet, WizardSIMForm, WizardRESForm, WizardRRForm, WizardAUTOTPEForm, WizardRAPForm, WizardRAEEForm, WizardAUTOTSPForm, WizardActuadoTSPForm,
     BuscarSIMHistoricoForm, EditarSIMHistoricoForm
 )
 
@@ -935,33 +935,60 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
             messages.warning(request, 'No hay militares en este sumario.')
             return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
 
-    autotpe_existente  = AUTOTPE.objects.filter(sim=sim, pm=pm).first()
-    rap_existente      = ApelacionTSP.objects.filter(sim=sim, pm=pm).first()
-    raee_existente     = ActuadoTSP.objects.filter(sim=sim, instancia='RAEE').first()
-    autotsp_existente  = ActuadoTSP.objects.filter(sim=sim, instancia='AUTO_TSP').first()
+    autotpe_existente    = AUTOTPE.objects.filter(sim=sim, pm=pm).first()
+    apelacion_existente  = ApelacionTSP.objects.filter(sim=sim, pm=pm).first()
+    # Actuados del TSP — uno por cada instancia, en orden
+    rap_tsp_existente    = ActuadoTSP.objects.filter(sim=sim, instancia='RAP').first()
+    raee_existente       = ActuadoTSP.objects.filter(sim=sim, instancia='RAEE').first()
+    nulidad_existente    = ActuadoTSP.objects.filter(sim=sim, instancia='NULIDAD').first()
+    autotsp_existente    = ActuadoTSP.objects.filter(sim=sim, instancia='AUTO_TSP').first()
 
     # Obtener otros militares para el botón "Siguiente"
     otros_militares = sim.militares.exclude(id=pm.id).order_by('paterno', 'nombre')
+
+    def _guardar_actuado_tsp(form, instancia, existente_attr):
+        """Guarda un ActuadoTSP y su notificación. Devuelve (actuado, errores)."""
+        if form.is_valid():
+            actuado = form.save(commit=False)
+            actuado.sim = sim
+            actuado.instancia = instancia
+            actuado.save()
+            notif_tipo = request.POST.get(f'{form.prefix}_notif_tipo', '').strip()
+            if notif_tipo:
+                Notificacion.objects.update_or_create(
+                    actuado_tsp=actuado,
+                    defaults={
+                        'tipo': notif_tipo,
+                        'notificado_a': request.POST.get(f'{form.prefix}_notif_notificado_a', '').strip(),
+                        'fecha': request.POST.get(f'{form.prefix}_notif_fecha') or None,
+                        'hora': request.POST.get(f'{form.prefix}_notif_hora') or None,
+                    }
+                )
+            return actuado, False
+        return None, True
 
     if request.method == 'POST':
         action = request.POST.get('action', 'save')
 
         if action == 'skip':
-            # Si hay otros militares, volver a paso 2.5, si no ir al resumen
             if otros_militares.exists():
                 return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
             else:
                 return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
 
-        guardar_autotpe = request.POST.get('guardar_autotpe') == '1'
-        guardar_rap = request.POST.get('guardar_rap') == '1'
-        guardar_raee = request.POST.get('guardar_raee') == '1'
-        guardar_autotsp = request.POST.get('guardar_autotsp') == '1'
+        guardar_autotpe   = request.POST.get('guardar_autotpe') == '1'
+        guardar_apelacion = request.POST.get('guardar_apelacion') == '1'
+        guardar_rap_tsp   = request.POST.get('guardar_rap_tsp') == '1'
+        guardar_raee      = request.POST.get('guardar_raee') == '1'
+        guardar_nulidad   = request.POST.get('guardar_nulidad') == '1'
+        guardar_autotsp   = request.POST.get('guardar_autotsp') == '1'
 
-        autotpe_form = WizardAUTOTPEForm(request.POST if guardar_autotpe else None, instance=autotpe_existente, prefix='autotpe')
-        rap_form = WizardRAPForm(request.POST if guardar_rap else None, instance=rap_existente, prefix='rap', sim=sim)
-        raee_form = WizardRAEEForm(request.POST if guardar_raee else None, instance=raee_existente, prefix='raee', sim=sim)
-        autotsp_form = WizardAUTOTSPForm(request.POST if guardar_autotsp else None, instance=autotsp_existente, prefix='autotsp', sim=sim)
+        autotpe_form   = WizardAUTOTPEForm(request.POST if guardar_autotpe else None,   instance=autotpe_existente,   prefix='autotpe')
+        apelacion_form = WizardRAPForm(request.POST if guardar_apelacion else None,      instance=apelacion_existente, prefix='apelacion', sim=sim)
+        rap_tsp_form   = WizardActuadoTSPForm(request.POST if guardar_rap_tsp else None, instance=rap_tsp_existente,   prefix='rap_tsp',   sim=sim)
+        raee_form      = WizardActuadoTSPForm(request.POST if guardar_raee else None,    instance=raee_existente,      prefix='raee',       sim=sim)
+        nulidad_form   = WizardActuadoTSPForm(request.POST if guardar_nulidad else None, instance=nulidad_existente,   prefix='nulidad',    sim=sim)
+        autotsp_form   = WizardActuadoTSPForm(request.POST if guardar_autotsp else None, instance=autotsp_existente,   prefix='autotsp',    sim=sim)
 
         errores = False
         try:
@@ -974,7 +1001,6 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         auto.save()
                         autotpe_existente = auto
 
-                        # Procesar notificación de Auto TPE
                         autotpe_notif_tipo = request.POST.get('autotpe_notif_tipo', '').strip()
                         if autotpe_notif_tipo:
                             Notificacion.objects.update_or_create(
@@ -986,100 +1012,80 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                                     'hora': request.POST.get('autotpe_notif_hora') or None,
                                 }
                             )
-
-                        # Procesar memorándum si es AUTO_EJECUTORIA
                         if auto.tipo == 'AUTO_EJECUTORIA':
                             autotpe_memo_numero = request.POST.get('autotpe_memo_numero', '').strip()
-                            autotpe_memo_fecha = request.POST.get('autotpe_memo_fecha', '')
-                            autotpe_memo_fecha_entrega = request.POST.get('autotpe_memo_fecha_entrega', '')
-
                             if autotpe_memo_numero:
                                 Memorandum.objects.update_or_create(
                                     autotpe=auto,
                                     defaults={
                                         'numero': autotpe_memo_numero,
-                                        'fecha': autotpe_memo_fecha or None,
-                                        'fecha_entrega': autotpe_memo_fecha_entrega or None,
+                                        'fecha': request.POST.get('autotpe_memo_fecha') or None,
+                                        'fecha_entrega': request.POST.get('autotpe_memo_fecha_entrega') or None,
                                     }
                                 )
                     else:
                         errores = True
 
-                if guardar_rap:
-                    if rap_form.is_valid():
-                        rap = rap_form.save(commit=False)
-                        rap.sim = sim
-                        rap.pm = pm
-                        rap.save()
+                if guardar_apelacion:
+                    if apelacion_form.is_valid():
+                        apelacion = apelacion_form.save(commit=False)
+                        apelacion.sim = sim
+                        apelacion.pm = pm
+                        apelacion.save()
                         if sim.fase not in ['ELEVADO_TSP', 'CONCLUIDO']:
                             sim.fase = 'ELEVADO_TSP'
                             sim.estado = 'PROCESO_EN_EL_TSP'
                             sim.save()
-                        rap_existente = rap
-
-                        # Procesar notificación de RAP
-                        rap_notif_tipo = request.POST.get('rap_notif_tipo', '').strip()
-                        if rap_notif_tipo:
+                        apelacion_existente = apelacion
+                        # Notificación de apelacion
+                        apelacion_notif_tipo = request.POST.get('apelacion_notif_tipo', '').strip()
+                        if apelacion_notif_tipo:
                             Notificacion.objects.update_or_create(
-                                apelacion_tsp=rap,
+                                apelacion_tsp=apelacion,
                                 defaults={
-                                    'tipo': rap_notif_tipo,
-                                    'notificado_a': request.POST.get('rap_notif_notificado_a', '').strip(),
-                                    'fecha': request.POST.get('rap_notif_fecha') or None,
-                                    'hora': request.POST.get('rap_notif_hora') or None,
+                                    'tipo': apelacion_notif_tipo,
+                                    'notificado_a': request.POST.get('apelacion_notif_notificado_a', '').strip(),
+                                    'fecha': request.POST.get('apelacion_notif_fecha') or None,
+                                    'hora': request.POST.get('apelacion_notif_hora') or None,
                                 }
                             )
                     else:
                         errores = True
+
+                if guardar_rap_tsp:
+                    actuado, err = _guardar_actuado_tsp(rap_tsp_form, 'RAP', rap_tsp_existente)
+                    if err:
+                        errores = True
+                    else:
+                        rap_tsp_existente = actuado
 
                 if guardar_raee:
-                    if raee_form.is_valid():
-                        raee = raee_form.save(commit=False)
-                        raee.sim = sim
-                        raee.instancia = 'RAEE'
-                        raee.save()
-                        raee_existente = raee
-
-                        # Procesar notificación de RAEE
-                        raee_notif_tipo = request.POST.get('raee_notif_tipo', '').strip()
-                        if raee_notif_tipo:
-                            Notificacion.objects.update_or_create(
-                                actuado_tsp=raee,
-                                defaults={
-                                    'tipo': raee_notif_tipo,
-                                    'notificado_a': request.POST.get('raee_notif_notificado_a', '').strip(),
-                                    'fecha': request.POST.get('raee_notif_fecha') or None,
-                                    'hora': request.POST.get('raee_notif_hora') or None,
-                                }
-                            )
-                    else:
+                    actuado, err = _guardar_actuado_tsp(raee_form, 'RAEE', raee_existente)
+                    if err:
                         errores = True
+                    else:
+                        raee_existente = actuado
+
+                if guardar_nulidad:
+                    actuado, err = _guardar_actuado_tsp(nulidad_form, 'NULIDAD', nulidad_existente)
+                    if err:
+                        errores = True
+                    else:
+                        nulidad_existente = actuado
 
                 if guardar_autotsp:
-                    if autotsp_form.is_valid():
-                        autotsp = autotsp_form.save(commit=False)
-                        autotsp.sim = sim
-                        autotsp.save()
-                        autotsp_existente = autotsp
-
-                        # Procesar notificación de Auto TSP
-                        autotsp_notif_tipo = request.POST.get('autotsp_notif_tipo', '').strip()
-                        if autotsp_notif_tipo:
-                            Notificacion.objects.update_or_create(
-                                actuado_tsp=autotsp,
-                                defaults={
-                                    'tipo': autotsp_notif_tipo,
-                                    'notificado_a': request.POST.get('autotsp_notif_notificado_a', '').strip(),
-                                    'fecha': request.POST.get('autotsp_notif_fecha') or None,
-                                    'hora': request.POST.get('autotsp_notif_hora') or None,
-                                }
-                            )
-                    else:
+                    actuado, err = _guardar_actuado_tsp(autotsp_form, 'AUTO_TSP', autotsp_existente)
+                    if err:
                         errores = True
+                    else:
+                        autotsp_existente = actuado
+                        if actuado and actuado.es_pronunciamiento_final:
+                            sim.estado = 'CUMPLIMIENTO_EN_TPE'
+                            sim.fase = 'RECIBIDO_TSP'
+                            sim.save()
 
                 if not errores:
                     messages.success(request, 'Documentos guardados correctamente.')
-                    # Si hay otros militares, volver a paso 2.5, si no ir al resumen
                     if otros_militares.exists():
                         return redirect('ayudante_wizard_paso2b', sim_id=sim.pk)
                     else:
@@ -1092,12 +1098,14 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
             messages.error(request, 'Por favor corrija los errores en los formularios activos.')
 
     else:
-        autotpe_form = WizardAUTOTPEForm(instance=autotpe_existente, prefix='autotpe')
-        rap_form = WizardRAPForm(instance=rap_existente, prefix='rap', sim=sim)
-        raee_form = WizardRAEEForm(instance=raee_existente, prefix='raee', sim=sim)
-        autotsp_form = WizardAUTOTSPForm(instance=autotsp_existente, prefix='autotsp', sim=sim)
+        autotpe_form   = WizardAUTOTPEForm(instance=autotpe_existente,   prefix='autotpe')
+        apelacion_form = WizardRAPForm(instance=apelacion_existente,      prefix='apelacion', sim=sim)
+        rap_tsp_form   = WizardActuadoTSPForm(instance=rap_tsp_existente, prefix='rap_tsp',   sim=sim)
+        raee_form      = WizardActuadoTSPForm(instance=raee_existente,    prefix='raee',      sim=sim)
+        nulidad_form   = WizardActuadoTSPForm(instance=nulidad_existente, prefix='nulidad',   sim=sim)
+        autotsp_form   = WizardActuadoTSPForm(instance=autotsp_existente, prefix='autotsp',   sim=sim)
 
-    # Solo mostrar el militar actual, no permitir cambio
+    # Solo mostrar el militar actual
     autotpe_form.fields['pm'].queryset = PM.objects.filter(id=pm.id)
     autotpe_form.fields['pm'].initial = pm
 
@@ -1105,12 +1113,16 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
         'sim': sim,
         'pm': pm,
         'autotpe_form': autotpe_form,
-        'rap_form': rap_form,
+        'apelacion_form': apelacion_form,
+        'rap_tsp_form': rap_tsp_form,
         'raee_form': raee_form,
+        'nulidad_form': nulidad_form,
         'autotsp_form': autotsp_form,
         'autotpe_existente': autotpe_existente,
-        'rap_existente': rap_existente,
+        'apelacion_existente': apelacion_existente,
+        'rap_tsp_existente': rap_tsp_existente,
         'raee_existente': raee_existente,
+        'nulidad_existente': nulidad_existente,
         'autotsp_existente': autotsp_existente,
         'otros_militares': otros_militares,
         'paso_actual': 4,

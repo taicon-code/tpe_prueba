@@ -14,7 +14,6 @@
 
     {% include 'tpe_app/ayudante/wizard/_wizard_progress.html' with paso_actual=4 %}
 
-    <!-- Info del militar actual -->
     <div class="alert alert-info d-flex justify-content-between align-items-center">
         <div>
             <strong>Militar actual:</strong>
@@ -22,27 +21,31 @@
             <small class="text-muted">(CI: {{ pm.ci }})</small>
         </div>
         {% if otros_militares %}
-        <small class="text-muted">
-            Quedan {{ otros_militares.count }} militar(es) por procesar
-        </small>
+        <small class="text-muted">Quedan {{ otros_militares.count }} militar(es) por procesar</small>
         {% endif %}
     </div>
 
     <form method="POST">
         {% csrf_token %}
 
-        {% if autotpe_form.errors or rap_form.errors or raee_form.errors or autotsp_form.errors %}
+        {% if autotpe_form.errors or apelacion_form.errors or rap_tsp_form.errors or raee_form.errors or nulidad_form.errors or autotsp_form.errors %}
         <div class="alert alert-danger">
             <strong>Corrija los errores antes de continuar:</strong>
             <ul class="mb-0 mt-1">
                 {% for field in autotpe_form %}{% for error in field.errors %}
                     <li><strong>Auto TPE — {{ field.label }}:</strong> {{ error }}</li>
                 {% endfor %}{% endfor %}
-                {% for field in rap_form %}{% for error in field.errors %}
-                    <li><strong>RAP — {{ field.label }}:</strong> {{ error }}</li>
+                {% for field in apelacion_form %}{% for error in field.errors %}
+                    <li><strong>Apelación (memorial + oficio) — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for field in rap_tsp_form %}{% for error in field.errors %}
+                    <li><strong>RAP del TSP — {{ field.label }}:</strong> {{ error }}</li>
                 {% endfor %}{% endfor %}
                 {% for field in raee_form %}{% for error in field.errors %}
                     <li><strong>RAEE — {{ field.label }}:</strong> {{ error }}</li>
+                {% endfor %}{% endfor %}
+                {% for field in nulidad_form %}{% for error in field.errors %}
+                    <li><strong>Nulidad — {{ field.label }}:</strong> {{ error }}</li>
                 {% endfor %}{% endfor %}
                 {% for field in autotsp_form %}{% for error in field.errors %}
                     <li><strong>Auto TSP — {{ field.label }}:</strong> {{ error }}</li>
@@ -51,369 +54,209 @@
         </div>
         {% endif %}
 
-        <!-- Sección Auto TPE -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Auto del TPE</strong>
-                <div class="form-check form-switch ms-auto">
+        <!-- ══════════════════════════════════════════
+             SECCIÓN 1: AUTO TPE
+             ══════════════════════════════════════════ -->
+        <div class="card mb-3 border-secondary">
+            <div class="card-header d-flex justify-content-between align-items-center bg-secondary text-white">
+                <strong><i class="bi bi-file-earmark-text me-2"></i>Auto del TPE</strong>
+                <div class="form-check form-switch ms-auto mb-0">
                     <input class="form-check-input" type="checkbox" id="toggle-autotpe"
                            name="guardar_autotpe" value="1"
                            {% if autotpe_existente %}checked{% endif %}>
-                    <label class="form-check-label" for="toggle-autotpe">Registrar Auto TPE</label>
+                    <label class="form-check-label text-white" for="toggle-autotpe">Registrar</label>
                 </div>
             </div>
             <div class="card-body" id="seccion-autotpe"
                  style="{% if not autotpe_existente %}display:none{% endif %}">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ autotpe_form.numero.id_for_label }}" class="form-label">{{ autotpe_form.numero.label }}</label>
+                        <label class="form-label">{{ autotpe_form.pm.label }}</label>
+                        {{ autotpe_form.pm }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ autotpe_form.numero.label }}</label>
                         {{ autotpe_form.numero }}
                     </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.fecha.id_for_label }}" class="form-label">{{ autotpe_form.fecha.label }}</label>
+                    <div class="col-md-3">
+                        <label class="form-label">{{ autotpe_form.fecha.label }}</label>
                         {{ autotpe_form.fecha }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
-                        <label for="{{ autotpe_form.pm.id_for_label }}" class="form-label">{{ autotpe_form.pm.label }}</label>
-                        {{ autotpe_form.pm }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotpe_form.tipo.id_for_label }}" class="form-label">{{ autotpe_form.tipo.label }}</label>
+                        <label class="form-label">{{ autotpe_form.tipo.label }}</label>
                         {{ autotpe_form.tipo }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ autotpe_form.texto.id_for_label }}" class="form-label">{{ autotpe_form.texto.label }}</label>
+                        <label class="form-label">{{ autotpe_form.texto.label }}</label>
                         {{ autotpe_form.texto }}
                     </div>
                 </div>
-
-                <!-- Sección NOTIFICACIÓN Auto TPE (opcional) -->
-                <div class="card bg-light mt-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
-                    </div>
+                {% include 'tpe_app/ayudante/wizard/_notif_block.html' with prefix='autotpe' %}
+                <div class="card bg-light mt-3" id="seccion-memo-autotpe" style="display:none;">
+                    <div class="card-header bg-warning text-dark"><h6 class="mb-0">Datos de Memorándum (Ejecutoria)</h6></div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo de Notificación</label>
-                                <select name="autotpe_notif_tipo" class="form-select">
-                                    <option value="">— Sin notificación —</option>
-                                    <option value="FIRMA">Firma</option>
-                                    <option value="EDICTO">Edicto</option>
-                                    <option value="CEDULON">Cedulón</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Notificado a</label>
-                                <input type="text" name="autotpe_notif_notificado_a" class="form-control"
-                                       placeholder="Persona / dirección">
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha de Notificación</label>
-                                <input type="date" name="autotpe_notif_fecha" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Hora de Notificación</label>
-                                <input type="time" name="autotpe_notif_hora" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección MEMORÁNDUM (solo si tipo = AUTO_EJECUTORIA) -->
-                <div class="card bg-light mt-3" id="seccion-memo-autotpe" style="display: none;">
-                    <div class="card-header bg-warning text-dark">
-                        <h6 class="mb-0">📋 Datos de Memorándum (Ejecutoria)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">N° Memorándum</label>
-                                <input type="text" name="autotpe_memo_numero" class="form-control"
-                                       placeholder="Ej: SPRODA-2026-001">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha Memorándum</label>
-                                <input type="date" name="autotpe_memo_fecha" class="form-control">
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha Entrega Memorándum</label>
-                                <input type="date" name="autotpe_memo_fecha_entrega" class="form-control">
-                            </div>
+                            <div class="col-md-4"><label class="form-label">N° Memorándum</label>
+                                <input type="text" name="autotpe_memo_numero" class="form-control" placeholder="Ej: SPRODA-2026-001"></div>
+                            <div class="col-md-4"><label class="form-label">Fecha Memorándum</label>
+                                <input type="date" name="autotpe_memo_fecha" class="form-control"></div>
+                            <div class="col-md-4"><label class="form-label">Fecha Entrega</label>
+                                <input type="date" name="autotpe_memo_fecha_entrega" class="form-control"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sección RAP (Recurso de Apelación) -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Recurso de Apelación (RAP)</strong>
-                <div class="form-check form-switch ms-auto">
-                    <input class="form-check-input" type="checkbox" id="toggle-rap"
-                           name="guardar_rap" value="1"
-                           {% if rap_existente %}checked{% endif %}>
-                    <label class="form-check-label" for="toggle-rap">Registrar RAP</label>
+        <!-- ══════════════════════════════════════════
+             SECCIÓN 2: APELACIÓN AL TSP
+             Memorial del recurrente + oficio de elevación
+             ══════════════════════════════════════════ -->
+        <div class="card mb-3 border-primary">
+            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                <div>
+                    <strong><i class="bi bi-send me-2"></i>Apelación al TSP (Memorial + Oficio)</strong>
+                    <small class="d-block opacity-75">Presentación del memorial del recurrente y su elevación al TSP</small>
+                </div>
+                <div class="form-check form-switch ms-auto mb-0">
+                    <input class="form-check-input" type="checkbox" id="toggle-apelacion"
+                           name="guardar_apelacion" value="1"
+                           {% if apelacion_existente %}checked{% endif %}>
+                    <label class="form-check-label text-white" for="toggle-apelacion">Registrar</label>
                 </div>
             </div>
-            <div class="card-body" id="seccion-rap"
-                 style="{% if not rap_existente %}display:none{% endif %}">
+            <div class="card-body" id="seccion-apelacion"
+                 style="{% if not apelacion_existente %}display:none{% endif %}">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label for="{{ rap_form.fecha_presentacion.id_for_label }}" class="form-label">{{ rap_form.fecha_presentacion.label }}</label>
-                        {{ rap_form.fecha_presentacion }}
+                        <label class="form-label">{{ apelacion_form.pm.label }}</label>
+                        {{ apelacion_form.pm }}
                     </div>
                     <div class="col-md-6">
-                        <label for="{{ rap_form.numero_oficio.id_for_label }}" class="form-label">{{ rap_form.numero_oficio.label }}</label>
-                        {{ rap_form.numero_oficio }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.fecha_oficio.id_for_label }}" class="form-label">{{ rap_form.fecha_oficio.label }}</label>
-                        {{ rap_form.fecha_oficio }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.tipo.id_for_label }}" class="form-label">{{ rap_form.tipo.label }}</label>
-                        {{ rap_form.tipo }}
+                        <label class="form-label">{{ apelacion_form.resolucion.label }}</label>
+                        {{ apelacion_form.resolucion }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.numero.id_for_label }}" class="form-label">{{ rap_form.numero.label }}</label>
-                        {{ rap_form.numero }}
+                    <div class="col-md-4">
+                        <label class="form-label">{{ apelacion_form.fecha_presentacion.label }}</label>
+                        {{ apelacion_form.fecha_presentacion }}
                     </div>
-                    <div class="col-md-6">
-                        <label for="{{ rap_form.fecha.id_for_label }}" class="form-label">{{ rap_form.fecha.label }}</label>
-                        {{ rap_form.fecha }}
+                    <div class="col-md-4">
+                        <label class="form-label">{{ apelacion_form.numero_oficio.label }}</label>
+                        {{ apelacion_form.numero_oficio }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ apelacion_form.fecha_oficio.label }}</label>
+                        {{ apelacion_form.fecha_oficio }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ apelacion_form.numero.label }}</label>
+                        {{ apelacion_form.numero }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ apelacion_form.tipo.label }}</label>
+                        {{ apelacion_form.tipo }}
                     </div>
                 </div>
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label for="{{ rap_form.texto.id_for_label }}" class="form-label">{{ rap_form.texto.label }}</label>
-                        {{ rap_form.texto }}
+                        <label class="form-label">{{ apelacion_form.texto.label }}</label>
+                        {{ apelacion_form.texto }}
                     </div>
                 </div>
-
-                <!-- Sección NOTIFICACIÓN RAP (opcional) -->
-                <div class="card bg-light mt-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo de Notificación</label>
-                                <select name="rap_notif_tipo" class="form-select">
-                                    <option value="">— Sin notificación —</option>
-                                    <option value="FIRMA">Firma</option>
-                                    <option value="EDICTO">Edicto</option>
-                                    <option value="CEDULON">Cedulón</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Notificado a</label>
-                                <input type="text" name="rap_notif_notificado_a" class="form-control"
-                                       placeholder="Persona / dirección">
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha de Notificación</label>
-                                <input type="date" name="rap_notif_fecha" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Hora de Notificación</label>
-                                <input type="time" name="rap_notif_hora" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% include 'tpe_app/ayudante/wizard/_notif_block.html' with prefix='apelacion' %}
             </div>
         </div>
 
-        <!-- Sección RAEE (Aclaración, Explicación y Enmienda) -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Actuado TSP (RAEE, Nulidad, Auto)</strong>
-                <div class="form-check form-switch ms-auto">
+        <!-- ══════════════════════════════════════════
+             ACTUADOS DEL TSP (en orden)
+             ══════════════════════════════════════════ -->
+        <div class="alert alert-secondary py-2">
+            <strong>Actuados emitidos por el TSP</strong> — registrar en el orden que corresponda (todos opcionales)
+        </div>
+
+        <!-- ACTUADO 1: RECURSO DE APELACIÓN (RAP del TSP) -->
+        <div class="card mb-3 border-info">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background:#0ea5e9;color:white;">
+                <div>
+                    <strong><i class="bi bi-1-circle me-2"></i>Recurso de Apelación</strong>
+                    <small class="d-block opacity-75">Emitido por el TSP en respuesta a la apelación</small>
+                </div>
+                <div class="form-check form-switch ms-auto mb-0">
+                    <input class="form-check-input" type="checkbox" id="toggle-rap-tsp"
+                           name="guardar_rap_tsp" value="1"
+                           {% if rap_tsp_existente %}checked{% endif %}>
+                    <label class="form-check-label text-white" for="toggle-rap-tsp">Registrar</label>
+                </div>
+            </div>
+            <div class="card-body" id="seccion-rap-tsp"
+                 style="{% if not rap_tsp_existente %}display:none{% endif %}">
+                {% include 'tpe_app/ayudante/wizard/_actuado_tsp_fields.html' with form=rap_tsp_form prefix='rap_tsp' %}
+            </div>
+        </div>
+
+        <!-- ACTUADO 2: RECURSO DE ACLARACIÓN, EXPLICACIÓN Y ENMIENDA (RAEE) -->
+        <div class="card mb-3 border-warning">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background:#f59e0b;color:white;">
+                <div>
+                    <strong><i class="bi bi-2-circle me-2"></i>Recurso de Aclaración, Explicación y Enmienda (RAEE)</strong>
+                </div>
+                <div class="form-check form-switch ms-auto mb-0">
                     <input class="form-check-input" type="checkbox" id="toggle-raee"
                            name="guardar_raee" value="1"
                            {% if raee_existente %}checked{% endif %}>
-                    <label class="form-check-label" for="toggle-raee">Registrar Actuado TSP</label>
+                    <label class="form-check-label text-white" for="toggle-raee">Registrar</label>
                 </div>
             </div>
             <div class="card-body" id="seccion-raee"
                  style="{% if not raee_existente %}display:none{% endif %}">
-                <div class="alert alert-info">
-                    <strong>Tipos de Actuados TSP:</strong>
-                    <ul class="mb-0 mt-2">
-                        <li><strong>RAEE:</strong> Aclaración, Explicación y Enmienda (respuesta a apelación)</li>
-                        <li><strong>NULIDAD:</strong> Nulidad de Obrados (vicio procesal)</li>
-                        <li><strong>NULIDAD DE DEFECTOS ABSOLUTOS:</strong> Nulidad por defectos absolutos</li>
-                        <li><strong>AUTO_TSP:</strong> Auto del TSP (cumplimiento, ejecutoria, etc.)</li>
-                    </ul>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.instancia.id_for_label }}" class="form-label">{{ raee_form.instancia.label }} <span class="text-danger">*</span></label>
-                        {{ raee_form.instancia }}
-                        {% if raee_form.instancia.errors %}
-                            <div class="invalid-feedback d-block">{{ raee_form.instancia.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.apelacion_tsp.id_for_label }}" class="form-label">{{ raee_form.apelacion_tsp.label }}</label>
-                        {{ raee_form.apelacion_tsp }}
-                        <small class="text-muted d-block mt-1">Selecciona el RAP de origen (solo si es RAEE o Nulidad)</small>
-                        {% if raee_form.apelacion_tsp.errors %}
-                            <div class="invalid-feedback d-block">{{ raee_form.apelacion_tsp.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.numero.id_for_label }}" class="form-label">{{ raee_form.numero.label }}</label>
-                        {{ raee_form.numero }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.fecha.id_for_label }}" class="form-label">{{ raee_form.fecha.label }}</label>
-                        {{ raee_form.fecha }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.tipo.id_for_label }}" class="form-label">{{ raee_form.tipo.label }}</label>
-                        {{ raee_form.tipo }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ raee_form.es_pronunciamiento_final.id_for_label }}" class="form-label">{{ raee_form.es_pronunciamiento_final.label }}</label>
-                        <div>{{ raee_form.es_pronunciamiento_final }}</div>
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-12">
-                        <label for="{{ raee_form.texto.id_for_label }}" class="form-label">{{ raee_form.texto.label }}</label>
-                        {{ raee_form.texto }}
-                    </div>
-                </div>
-
-                <!-- Sección NOTIFICACIÓN RAEE (opcional) -->
-                <div class="card bg-light mt-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo de Notificación</label>
-                                <select name="raee_notif_tipo" class="form-select">
-                                    <option value="">— Sin notificación —</option>
-                                    <option value="FIRMA">Firma</option>
-                                    <option value="EDICTO">Edicto</option>
-                                    <option value="CEDULON">Cedulón</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Notificado a</label>
-                                <input type="text" name="raee_notif_notificado_a" class="form-control"
-                                       placeholder="Persona / dirección">
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha de Notificación</label>
-                                <input type="date" name="raee_notif_fecha" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Hora de Notificación</label>
-                                <input type="time" name="raee_notif_hora" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% include 'tpe_app/ayudante/wizard/_actuado_tsp_fields.html' with form=raee_form prefix='raee' %}
             </div>
         </div>
 
-        <!-- Sección Auto TSP -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Auto del TSP</strong>
-                <div class="form-check form-switch ms-auto">
+        <!-- ACTUADO 3: RECURSO DE NULIDAD -->
+        <div class="card mb-3 border-danger">
+            <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+                <div>
+                    <strong><i class="bi bi-3-circle me-2"></i>Recurso de Nulidad</strong>
+                </div>
+                <div class="form-check form-switch ms-auto mb-0">
+                    <input class="form-check-input" type="checkbox" id="toggle-nulidad"
+                           name="guardar_nulidad" value="1"
+                           {% if nulidad_existente %}checked{% endif %}>
+                    <label class="form-check-label text-white" for="toggle-nulidad">Registrar</label>
+                </div>
+            </div>
+            <div class="card-body" id="seccion-nulidad"
+                 style="{% if not nulidad_existente %}display:none{% endif %}">
+                {% include 'tpe_app/ayudante/wizard/_actuado_tsp_fields.html' with form=nulidad_form prefix='nulidad' %}
+            </div>
+        </div>
+
+        <!-- ACTUADO 4: AUTO DEL TSP (opcional) -->
+        <div class="card mb-3 border-dark">
+            <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
+                <div>
+                    <strong><i class="bi bi-4-circle me-2"></i>Auto del TSP</strong>
+                    <small class="d-block opacity-75">Pronunciamiento final (no siempre se emite)</small>
+                </div>
+                <div class="form-check form-switch ms-auto mb-0">
                     <input class="form-check-input" type="checkbox" id="toggle-autotsp"
                            name="guardar_autotsp" value="1"
                            {% if autotsp_existente %}checked{% endif %}>
-                    <label class="form-check-label" for="toggle-autotsp">Registrar Auto TSP</label>
+                    <label class="form-check-label text-white" for="toggle-autotsp">Registrar</label>
                 </div>
             </div>
             <div class="card-body" id="seccion-autotsp"
                  style="{% if not autotsp_existente %}display:none{% endif %}">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.numero.id_for_label }}" class="form-label">{{ autotsp_form.numero.label }}</label>
-                        {{ autotsp_form.numero }}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.fecha.id_for_label }}" class="form-label">{{ autotsp_form.fecha.label }}</label>
-                        {{ autotsp_form.fecha }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label for="{{ autotsp_form.tipo.id_for_label }}" class="form-label">{{ autotsp_form.tipo.label }}</label>
-                        {{ autotsp_form.tipo }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-12">
-                        <label for="{{ autotsp_form.texto.id_for_label }}" class="form-label">{{ autotsp_form.texto.label }}</label>
-                        {{ autotsp_form.texto }}
-                    </div>
-                </div>
-
-                <!-- Sección NOTIFICACIÓN Auto TSP (opcional) -->
-                <div class="card bg-light mt-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">📮 Datos de Notificación (opcional)</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo de Notificación</label>
-                                <select name="autotsp_notif_tipo" class="form-select">
-                                    <option value="">— Sin notificación —</option>
-                                    <option value="FIRMA">Firma</option>
-                                    <option value="EDICTO">Edicto</option>
-                                    <option value="CEDULON">Cedulón</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Notificado a</label>
-                                <input type="text" name="autotsp_notif_notificado_a" class="form-control"
-                                       placeholder="Persona / dirección">
-                            </div>
-                        </div>
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha de Notificación</label>
-                                <input type="date" name="autotsp_notif_fecha" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Hora de Notificación</label>
-                                <input type="time" name="autotsp_notif_hora" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% include 'tpe_app/ayudante/wizard/_actuado_tsp_fields.html' with form=autotsp_form prefix='autotsp' show_pronunciamiento=True %}
             </div>
         </div>
 
@@ -443,33 +286,36 @@
 </div>
 
 <script>
-function updateAutoTPEMemorandom() {
-    const tipoSelect = document.querySelector('[name="autotpe-tipo"]');
-    const memoSection = document.getElementById('seccion-memo-autotpe');
-    if (tipoSelect && memoSection) {
-        memoSection.style.display = tipoSelect.value === 'AUTO_EJECUTORIA' ? '' : 'none';
+// Toggles de cada sección
+[
+    ['toggle-autotpe',    'seccion-autotpe'],
+    ['toggle-apelacion',  'seccion-apelacion'],
+    ['toggle-rap-tsp',    'seccion-rap-tsp'],
+    ['toggle-raee',       'seccion-raee'],
+    ['toggle-nulidad',    'seccion-nulidad'],
+    ['toggle-autotsp',    'seccion-autotsp'],
+].forEach(([checkId, seccionId]) => {
+    const check = document.getElementById(checkId);
+    const seccion = document.getElementById(seccionId);
+    if (check && seccion) {
+        check.addEventListener('change', () => {
+            seccion.style.display = check.checked ? '' : 'none';
+        });
+    }
+});
+
+// Mostrar sección memorándum solo cuando tipo = AUTO_EJECUTORIA
+function updateAutoTPEMemo() {
+    const tipo = document.querySelector('[name="autotpe-tipo"]');
+    const memo = document.getElementById('seccion-memo-autotpe');
+    if (tipo && memo) {
+        memo.style.display = tipo.value === 'AUTO_EJECUTORIA' ? '' : 'none';
     }
 }
-
-document.getElementById('toggle-autotpe').addEventListener('change', function() {
-    document.getElementById('seccion-autotpe').style.display = this.checked ? '' : 'none';
-    updateAutoTPEMemorandom();
-});
-
-const tipoSelect = document.querySelector('[name="autotpe-tipo"]');
-if (tipoSelect) {
-    tipoSelect.addEventListener('change', updateAutoTPEMemorandom);
-    updateAutoTPEMemorandom();
+const tipoAutotpe = document.querySelector('[name="autotpe-tipo"]');
+if (tipoAutotpe) {
+    tipoAutotpe.addEventListener('change', updateAutoTPEMemo);
+    updateAutoTPEMemo();
 }
-
-document.getElementById('toggle-rap').addEventListener('change', function() {
-    document.getElementById('seccion-rap').style.display = this.checked ? '' : 'none';
-});
-document.getElementById('toggle-raee').addEventListener('change', function() {
-    document.getElementById('seccion-raee').style.display = this.checked ? '' : 'none';
-});
-document.getElementById('toggle-autotsp').addEventListener('change', function() {
-    document.getElementById('seccion-autotsp').style.display = this.checked ? '' : 'none';
-});
 </script>
 {% endblock %}

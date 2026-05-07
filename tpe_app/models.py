@@ -985,9 +985,9 @@ class Memorandum(models.Model):
 class ActuadoTSP(models.Model):
 
     INSTANCIA_CHOICES = [
-        ('RAEE',     'ACLARACIÓN, EXPLICACIÓN Y ENMIENDA (RAEE)'),
-        ('NULIDAD',  'NULIDAD DE OBRADOS'),
-        ('NULIDAD_DEFECTOS_ABSOLUTOS', 'NULIDAD POR DEFECTOS ABSOLUTOS'),
+        ('RAP',      'RECURSO DE APELACIÓN'),
+        ('RAEE',     'RECURSO DE ACLARACIÓN, EXPLICACIÓN Y ENMIENDA'),
+        ('NULIDAD',  'RECURSO DE NULIDAD'),
         ('AUTO_TSP', 'AUTO DEL TSP'),
     ]
 
