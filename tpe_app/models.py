@@ -892,15 +892,15 @@ class AsistenciaVocal(models.Model):
 class AUTOTPE(models.Model):
 
     TIPO_CHOICES = [
-        ('SOBRESEIDO',                 'Sobreseído'),
-        ('NULIDAD_OBRADOS',            'Nulidad de Obrados'),
-        ('SANCION_ARRESTO',            'Sanción Arresto'),
-        ('SANCION_LETRA_B',            'Sanción Letra B'),
-        ('SANCION_RETIRO_OBLIGATORIO', 'Sanción Retiro Obligatorio'),
-        ('AUTO_CUMPLIMIENTO',          'Auto de Cumplimiento'),
-        ('AUTO_EJECUTORIA',            'Auto de Ejecutoria'),
-        ('AUTO_EXCUSA',                'Auto de Excusa'),
-        ('AUTO_RECHAZO_RECURSO',       'Auto de Rechazo de Recurso'),
+        ('SOBRESEIDO',                 'SOBRESEÍDO'),
+        ('NULIDAD_OBRADOS',            'NULIDAD DE OBRADOS'),
+        ('SANCION_ARRESTO',            'SANCIÓN ARRESTO'),
+        ('SANCION_LETRA_B',            'SANCIÓN LETRA B'),
+        ('SANCION_RETIRO_OBLIGATORIO', 'SANCIÓN RETIRO OBLIGATORIO'),
+        ('AUTO_CUMPLIMIENTO',          'AUTO DE CUMPLIMIENTO'),
+        ('AUTO_EJECUTORIA',            'AUTO DE EJECUTORIA'),
+        ('AUTO_EXCUSA',                'AUTO DE EXCUSA'),
+        ('AUTO_RECHAZO_RECURSO',       'AUTO DE RECHAZO DE RECURSO'),
     ]
 
     sim            = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
@@ -985,9 +985,9 @@ class Memorandum(models.Model):
 class ActuadoTSP(models.Model):
 
     INSTANCIA_CHOICES = [
-        ('RAEE',     'Aclaración, Explicación y Enmienda'),
-        ('NULIDAD',  'Nulidad de Obrados'),
-        ('AUTO_TSP', 'Auto del TSP'),
+        ('RAEE',     'ACLARACIÓN, EXPLICACIÓN Y ENMIENDA (RAEE)'),
+        ('NULIDAD',  'NULIDAD DE OBRADOS'),
+        ('AUTO_TSP', 'AUTO DEL TSP'),
     ]
 
     TIPO_CHOICES = [
@@ -1079,31 +1079,31 @@ class DocumentoAdjunto(models.Model):
 class Resolucion(models.Model):
 
     INSTANCIA_CHOICES = [
-        ('PRIMERA',         'Primera Resolución'),
-        ('RECONSIDERACION', 'Recurso de Reconsideración'),
+        ('PRIMERA',         'PRIMERA RESOLUCIÓN'),
+        ('RECONSIDERACION', 'RECURSO DE RECONSIDERACIÓN'),
     ]
 
     TIPO_CHOICES = [
-        ('ARCHIVO_OBRADOS',                'Archivo de Obrados'),
-        ('ADMINISTRATIVO',                 'Administrativo'),
-        ('SANCIONES_DISCIPLINARIAS',       'Sanciones Disciplinarias'),
-        ('NO_HA_LUGAR_SANCION_DISCIPLINARIA', 'No ha Lugar a la Sanción Disciplinaria'),
-        ('SOLICITUD_DE_RETIRO_VOLUNTARIO', 'Solicitud de Retiro Voluntario'),
-        ('SANCION_ARRESTO',                'Sanción Arresto (Ejecutiva)'),
-        ('SANCION_LETRA_B',                'Sanción Letra B (Pérdida de Antigüedad)'),
-        ('SANCION_RETIRO_OBLIGATORIO',     'Sanción Retiro Obligatorio'),
-        ('SANCION_BAJA',                   'Sanción Baja'),
-        ('SOLICITUD_LETRA_D',              'Solicitud Letra D (Permiso Médico)'),
-        ('SOLICITUD_LICENCIA_MAXIMA',      'Solicitud Licencia Máxima'),
-        ('SOLICITUD_ASCENSO',              'Solicitud de Ascenso'),
-        ('SOLICITUD_RESTITUCION_ANTIGUEDAD','Solicitud de Restitución de Antigüedad'),
-        ('SOLICITUD_RESTITUCION_DE_DERECHOS_PROFESIONALES', 'Solicitud de Restitución de Derechos Profesionales'),
-        ('SOLICITUD_ART_114_(Invalidez Instructor)',   'Solicitud Artículo 114 (Invalides Instructor)'),
-        ('SOLICITUD_ART_117_(Fallecimiento)',  'Solicitud Artículo 117 (Fallecimiento)'),
-        ('SOLICITUD_ART_118_(Invalidez Sldo)', 'Solicitud Artículo 118 (Invalidez Sldo)'),
-        ('OTRO', 'Otro'),
-        ('PROCEDENCIA',   'Procedencia a su Recurso de Reconsideración'),
-        ('IMPROCEDENCIA', 'Improcedencia a su Recurso de Reconsideración'),
+        ('ARCHIVO_OBRADOS',                'ARCHIVO DE OBRADOS'),
+        ('ADMINISTRATIVO',                 'ADMINISTRATIVO'),
+        ('SANCIONES_DISCIPLINARIAS',       'SANCIONES DISCIPLINARIAS'),
+        ('NO_HA_LUGAR_SANCION_DISCIPLINARIA', 'NO HA LUGAR A LA SANCIÓN DISCIPLINARIA'),
+        ('SOLICITUD_DE_RETIRO_VOLUNTARIO', 'SOLICITUD DE RETIRO VOLUNTARIO'),
+        ('SANCION_ARRESTO',                'SANCIÓN ARRESTO (EJECUTIVA)'),
+        ('SANCION_LETRA_B',                'SANCIÓN LETRA B (PÉRDIDA DE ANTIGÜEDAD)'),
+        ('SANCION_RETIRO_OBLIGATORIO',     'SANCIÓN RETIRO OBLIGATORIO'),
+        ('SANCION_BAJA',                   'SANCIÓN BAJA'),
+        ('SOLICITUD_LETRA_D',              'SOLICITUD LETRA D (PERMISO MÉDICO)'),
+        ('SOLICITUD_LICENCIA_MAXIMA',      'SOLICITUD LICENCIA MÁXIMA'),
+        ('SOLICITUD_ASCENSO',              'SOLICITUD DE ASCENSO'),
+        ('SOLICITUD_RESTITUCION_ANTIGUEDAD','SOLICITUD DE RESTITUCIÓN DE ANTIGÜEDAD'),
+        ('SOLICITUD_RESTITUCION_DE_DERECHOS_PROFESIONALES', 'SOLICITUD DE RESTITUCIÓN DE DERECHOS PROFESIONALES'),
+        ('SOLICITUD_ART_114_(Invalidez Instructor)',   'SOLICITUD ARTÍCULO 114 (INVALIDEZ INSTRUCTOR)'),
+        ('SOLICITUD_ART_117_(Fallecimiento)',  'SOLICITUD ARTÍCULO 117 (FALLECIMIENTO)'),
+        ('SOLICITUD_ART_118_(Invalidez Sldo)', 'SOLICITUD ARTÍCULO 118 (INVALIDEZ SLDO)'),
+        ('OTRO', 'OTRO'),
+        ('PROCEDENCIA',   'PROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN'),
+        ('IMPROCEDENCIA', 'IMPROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN'),
     ]
 
     instancia          = models.CharField(max_length=20, choices=INSTANCIA_CHOICES, default='PRIMERA', verbose_name='Instancia')
@@ -1305,9 +1305,9 @@ def next_apelacion_tsp_num(year=None):
 class Notificacion(models.Model):
 
     NOTIF_CHOICES = [
-        ('FIRMA',   'Firma'),
-        ('EDICTO',  'Edicto'),
-        ('CEDULON', 'Cedulón'),
+        ('FIRMA',   'FIRMA'),
+        ('EDICTO',  'EDICTO'),
+        ('CEDULON', 'CEDULÓN'),
     ]
 
     tipo         = models.CharField(max_length=10, choices=NOTIF_CHOICES, verbose_name='Tipo de Notificación')
