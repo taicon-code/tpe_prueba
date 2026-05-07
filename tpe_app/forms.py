@@ -969,6 +969,9 @@ class WizardRAEEForm(ActuadoTSPForm):
         if sim:
             self.fields['apelacion_tsp'].queryset = ApelacionTSP.objects.filter(sim=sim)
         self.fields['instancia'].initial = 'RAEE'
+        # Hacer todos los campos opcionales para el wizard
+        for field_name in self.fields:
+            self.fields[field_name].required = False
 
 
 class WizardActuadoTSPForm(ActuadoTSPForm):

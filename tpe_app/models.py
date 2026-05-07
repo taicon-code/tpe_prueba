@@ -987,6 +987,7 @@ class ActuadoTSP(models.Model):
     INSTANCIA_CHOICES = [
         ('RAEE',     'ACLARACIÓN, EXPLICACIÓN Y ENMIENDA (RAEE)'),
         ('NULIDAD',  'NULIDAD DE OBRADOS'),
+        ('NULIDAD_DEFECTOS_ABSOLUTOS', 'NULIDAD POR DEFECTOS ABSOLUTOS'),
         ('AUTO_TSP', 'AUTO DEL TSP'),
     ]
 
@@ -1006,10 +1007,11 @@ class ActuadoTSP(models.Model):
     ]
 
     apelacion_tsp            = models.ForeignKey('ApelacionTSP', on_delete=models.PROTECT,
+                                   null=True, blank=True,
                                    verbose_name='Apelación TSP origen',
                                    related_name='actuados')
     sim                      = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
-    instancia                = models.CharField(max_length=20, choices=INSTANCIA_CHOICES,
+    instancia                = models.CharField(max_length=30, choices=INSTANCIA_CHOICES,
                                    verbose_name='Tipo de Actuado TSP')
     numero                   = models.CharField(max_length=15, null=True, blank=True,
                                    db_index=True, verbose_name='Número del Actuado TSP')

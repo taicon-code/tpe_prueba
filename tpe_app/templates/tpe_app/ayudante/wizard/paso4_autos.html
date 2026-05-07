@@ -244,17 +244,43 @@
         <!-- Sección RAEE (Aclaración, Explicación y Enmienda) -->
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>RAEE (Aclaración, Explicación y Enmienda)</strong>
+                <strong>Actuado TSP (RAEE, Nulidad, Auto)</strong>
                 <div class="form-check form-switch ms-auto">
                     <input class="form-check-input" type="checkbox" id="toggle-raee"
                            name="guardar_raee" value="1"
                            {% if raee_existente %}checked{% endif %}>
-                    <label class="form-check-label" for="toggle-raee">Registrar RAEE</label>
+                    <label class="form-check-label" for="toggle-raee">Registrar Actuado TSP</label>
                 </div>
             </div>
             <div class="card-body" id="seccion-raee"
                  style="{% if not raee_existente %}display:none{% endif %}">
+                <div class="alert alert-info">
+                    <strong>Tipos de Actuados TSP:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>RAEE:</strong> Aclaración, Explicación y Enmienda (respuesta a apelación)</li>
+                        <li><strong>NULIDAD:</strong> Nulidad de Obrados (vicio procesal)</li>
+                        <li><strong>NULIDAD DE DEFECTOS ABSOLUTOS:</strong> Nulidad por defectos absolutos</li>
+                        <li><strong>AUTO_TSP:</strong> Auto del TSP (cumplimiento, ejecutoria, etc.)</li>
+                    </ul>
+                </div>
                 <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.instancia.id_for_label }}" class="form-label">{{ raee_form.instancia.label }} <span class="text-danger">*</span></label>
+                        {{ raee_form.instancia }}
+                        {% if raee_form.instancia.errors %}
+                            <div class="invalid-feedback d-block">{{ raee_form.instancia.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.apelacion_tsp.id_for_label }}" class="form-label">{{ raee_form.apelacion_tsp.label }}</label>
+                        {{ raee_form.apelacion_tsp }}
+                        <small class="text-muted d-block mt-1">Selecciona el RAP de origen (solo si es RAEE o Nulidad)</small>
+                        {% if raee_form.apelacion_tsp.errors %}
+                            <div class="invalid-feedback d-block">{{ raee_form.apelacion_tsp.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
                     <div class="col-md-6">
                         <label for="{{ raee_form.numero.id_for_label }}" class="form-label">{{ raee_form.numero.label }}</label>
                         {{ raee_form.numero }}
@@ -262,6 +288,16 @@
                     <div class="col-md-6">
                         <label for="{{ raee_form.fecha.id_for_label }}" class="form-label">{{ raee_form.fecha.label }}</label>
                         {{ raee_form.fecha }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.tipo.id_for_label }}" class="form-label">{{ raee_form.tipo.label }}</label>
+                        {{ raee_form.tipo }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ raee_form.es_pronunciamiento_final.id_for_label }}" class="form-label">{{ raee_form.es_pronunciamiento_final.label }}</label>
+                        <div>{{ raee_form.es_pronunciamiento_final }}</div>
                     </div>
                 </div>
                 <div class="row g-3 mt-2">

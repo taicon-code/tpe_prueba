@@ -43,13 +43,15 @@ Tecnología: Django + MySQL + Bootstrap 5.
    │         ↓
    │   Resolucion (Segunda Resolución)    [instancia='RECONSIDERACION']
    │         ↓
-   └── RAP   (Recurso de Apelación al TSP) ← ante el Tribunal Supremo Policial
-             ↓  [RecursoTSP, instancia='APELACION']
-         AUTOTSP (Auto del TSP: confirma/revoca/modifica)
+   └── Memorial de apelación elevado al TSP → se registra como RAP
+             ↓  [ApelacionTSP]
+         TSP emite respuesta. Puede emitir:
+         ├── RAEE (Aclaración, Explicación y Enmienda)        [ActuadoTSP, instancia='RAEE']
+         ├── NULIDAD (Nulidad de Obrados)                     [ActuadoTSP, instancia='NULIDAD']
+         ├── NULIDAD DEFECTOS ABSOLUTOS                       [ActuadoTSP, instancia='NULIDAD_DEFECTOS_ABSOLUTOS']
+         └── AUTO TSP (Pronunciamiento final)                 [ActuadoTSP, instancia='AUTO_TSP']
              ↓
-         RAEE  (Aclaración, Explicación y Enmienda — RecursoTSP, instancia='ACLARACION_ENMIENDA')
-             ↓
-         AUTOTPE de Ejecutoria o Cumplimiento
+         AUTOTPE de Cumplimiento o Ejecutoria (si aplica)
 ```
 
 **Regla importante:** Para archivos históricos (casos anteriores a esta gestión),
@@ -62,10 +64,12 @@ muchos campos pueden ser `null`. El sistema debe tolerarlo sin errores.
 | Documento | Plazo | Campo calculado automáticamente |
 |-----------|-------|----------------------------------|
 | RR (Reconsideración) | 15 días hábiles desde `fecha_presentacion` | `fecha_limite` en Resolucion |
-| RAP (Apelación TSP)  | 3 días hábiles desde `fecha_oficio`        | `fecha_limite` en RecursoTSP |
+| RAP (Apelación TSP)  | 3 días hábiles desde `fecha_oficio`        | `fecha_limite` en ApelacionTSP |
 
 La función `add_business_days(fecha, dias)` en `models.py` calcula días hábiles
 excluyendo fines de semana y feriados de Bolivia 2026.
+
+**Nota:** Estos plazos se calculan automáticamente en el método `save()` del modelo correspondiente.
 
 ---
 
@@ -94,8 +98,8 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 | `DICTAMEN`     | `dictamen`        | Dictamen del abogado en una agenda para un SIM |
 | `Resolucion`   | `resolucion`      | Primera Resolución (instancia='PRIMERA') y RR (instancia='RECONSIDERACION') |
 | `AUTOTPE`      | `autotpe`         | Auto del TPE (sobreseído, nulidad, excusa, ejecutoria, etc.) |
-| `RecursoTSP`   | `recurso_tsp`     | Recurso Apelación (instancia='APELACION') y RAEE (instancia='ACLARACION_ENMIENDA') |
-| `AUTOTSP`      | `autotsp`         | Auto del TSP (respuesta a la apelación) |
+| `ApelacionTSP` | `apelacion_tsp`   | Recurso de Apelación presentado al TSP (con datos del oficio de elevación) |
+| `ActuadoTSP`   | `actuado_tsp`     | Documentos emitidos por el TSP: RAEE, NULIDAD, NULIDAD_DEFECTOS_ABSOLUTOS, AUTO_TSP |
 | `DocumentoAdjunto` | `documentos_adjuntos` | PDFs escaneados adjuntos a cualquier tabla |
 
 ---
@@ -119,10 +123,11 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 | `PM_SIM` | `pm`, `sim`, `grado_en_fecha` |
 | `AGENDA` | `numero`, `tipo`, `estado`, `fecha_prog`, `fecha_real` |
 | `DICTAMEN` | `sim`, `agenda`, `abogado`, `pm`, `secretario`, `numero`, `conclusion`, `conclusion_secretario`, `fecha_confirmacion` |
-| `Resolucion` | `instancia`, `sim`, `abogado`, `agenda`, `pm`, `dictamen`, `resolucion_origen`, `numero`, `fecha`, `texto`, `tipo`, `resumen`, `fecha_presentacion`, `fecha_limite`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
-| `AUTOTPE` | `sim`, `abogado`, `agenda`, `pm`, `resolucion`, `recurso_tsp`, `numero`, `fecha`, `texto`, `tipo`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif`, `memo_numero`, `memo_fecha`, `memo_fecha_entrega` |
-| `RecursoTSP` | `instancia`, `sim`, `abogado`, `pm`, `resolucion`, `recurso_origen`, `fecha_presentacion`, `numero_oficio`, `fecha_oficio`, `fecha_limite`, `tipo`, `numero`, `fecha`, `texto`, `tipo_notif`, `notif_a`, `fecha_notif`, `hora_notif` |
-| `DocumentoAdjunto` | `tabla`, `registro_id`, `tipo`, `archivo`, `nombre`, `fecha_registro` |
+| `Resolucion` | `instancia`, `sim`, `abogado`, `agenda`, `pm`, `dictamen`, `resolucion_origen`, `numero`, `fecha`, `texto`, `tipo`, `fecha_presentacion`, `fecha_limite` |
+| `AUTOTPE` | `sim`, `abogado`, `agenda`, `pm`, `resolucion`, `apelacion_tsp`, `numero`, `fecha`, `texto`, `tipo` |
+| `ApelacionTSP` | `sim`, `abogado`, `pm`, `resolucion`, `numero`, `fecha_presentacion`, `texto`, `tipo`, `numero_oficio`, `fecha_oficio`, `fecha_limite` |
+| `ActuadoTSP` | `sim`, `apelacion_tsp`, `instancia`, `numero`, `fecha`, `texto`, `tipo`, `es_pronunciamiento_final` |
+| `DocumentoAdjunto` | `sim`, `resolucion`, `autotpe`, `apelacion_tsp`, `actuado_tsp`, `tipo`, `archivo`, `nombre`, `fecha_registro` |
 
 ---
 
@@ -256,7 +261,7 @@ INF. | CAB. | ART. | ING. | COM. | INT. | SAN. | TGRAFO. | AV. | MÚS.
 | 0 | `PARA_AGENDA` | **Estado inicial**. SIM ingresa, pendiente agendar | ADMIN1 registra SIM |
 | 0 | `OBSERVADO` | Sumario con observaciones pendientes | Correcciones manuales |
 | 1 | `PROCESO_EN_EL_TPE` | Abogado trabajando (1ra RES, RR, ejecutoria) | ADMIN1 al agendar + asignar ABOG |
-| 2 | `PROCESO_EN_EL_TSP` | RAP elevado. Caso **físicamente en el TSP** (puede durar años) | ABOGADO o AYUDANTE al crear RecursoTSP |
+| 2 | `PROCESO_EN_EL_TSP` | RAP elevado. Caso **físicamente en el TSP** (puede durar años) | ABOGADO o AYUDANTE al crear ApelacionTSP |
 | 3 | `CUMPLIMIENTO_EN_TPE` | TSP devolvió pronunciamiento. TPE elabora auto de cumplimiento | Admin2 recibe doc TSP → Admin1 ordena a ABOG2 |
 | 4 | `PROCESO_CONCLUIDO_TPE` | Ejecutoria notificada y archivada en SPRODA (ruta sin TSP) | ADMIN2 al confirmar archivo |
 | 4 | `PROCESO_CONCLUIDO_TSP_TPE` | Auto de cumplimiento/ejecutoria notificado y archivado (ruta TSP) | ADMIN2 al confirmar archivo |
@@ -389,7 +394,11 @@ Si **NO hay `anio_promocion`** registrado (casos históricos):
 2. **v4.0 — Seguridad**: Todas las vistas de buscador y exportación protegidas con `@login_required`. `DEBUG` default cambiado a `False`. `ALLOWED_HOSTS` con fallback.
 3. **v4.0 — Integridad**: `max_length` de nombre/paterno/materno aumentado de 25→50; especialidad 15→30. `ABOG.ci` ahora `unique=True`. Índices en `SIM.estado`, `SIM.fase`, `SIM.fecha_ingreso`, `PM.paterno`. `Resolucion` tiene `unique_together = [('numero', 'instancia')]`. `resolucion_origen` FK cambiada de CASCADE a PROTECT.
 4. **v4.0 — Bug fix**: `_obtener_historial_completo()` usaba `pm_id=` (incorrecto) → corregido a `id=`.
-5. **Campo `TSP_RESUM` eliminado** del modelo RecursoTSP.
+5. **v4.2 — Reestructuración TSP**: Separación de `RecursoTSP` en dos modelos:
+   - `ApelacionTSP`: Recurso de Apelación (RAP) presentado por el implicado, con datos del oficio de elevación
+   - `ActuadoTSP`: Documentos emitidos por el TSP (RAEE, NULIDAD, NULIDAD_DEFECTOS_ABSOLUTOS, AUTO_TSP)
+   - Todos vinculados al SIM y siguiendo la lógica de relaciones
+   - Campo `apelacion_tsp` en `ActuadoTSP` es opcional (null=True, blank=True)
 6. **Admin nativo de Django**: Panel al estilo Django estándar. Dashboard `/panel-admin/dashboard/` es el panel principal del sistema.
 7. **Abogado NO va en SIM**: Va en `ABOG_SIM` (tabla puente).
 8. **DICTAMEN tiene FK a PM**: Para mostrar el nombre del implicado.
@@ -429,7 +438,7 @@ TPEsystem/
 ├── CLAUDE.md                          ← ESTE ARCHIVO
 ├── TO_DO.py                           ← Lista de tareas pendientes
 ├── tpe_app/
-│   ├── models.py                      ← Modelos: PM, SIM, AUTOTPE, Resolucion, RecursoTSP, etc.
+│   ├── models.py                      ← Modelos: PM, SIM, AUTOTPE, Resolucion, ApelacionTSP, ActuadoTSP, etc.
 │   ├── forms.py                       ← Formularios (SIM, Resoluciones, Autos, Wizards)
 │   ├── urls.py                        ← Rutas por rol
 │   ├── decorators.py                  ← @rol_requerido para control de acceso

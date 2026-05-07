@@ -961,7 +961,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
         autotpe_form = WizardAUTOTPEForm(request.POST if guardar_autotpe else None, instance=autotpe_existente, prefix='autotpe')
         rap_form = WizardRAPForm(request.POST if guardar_rap else None, instance=rap_existente, prefix='rap', sim=sim)
         raee_form = WizardRAEEForm(request.POST if guardar_raee else None, instance=raee_existente, prefix='raee', sim=sim)
-        autotsp_form = WizardAUTOTSPForm(request.POST if guardar_autotsp else None, instance=autotsp_existente, prefix='autotsp')
+        autotsp_form = WizardAUTOTSPForm(request.POST if guardar_autotsp else None, instance=autotsp_existente, prefix='autotsp', sim=sim)
 
         errores = False
         try:
@@ -1095,7 +1095,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
         autotpe_form = WizardAUTOTPEForm(instance=autotpe_existente, prefix='autotpe')
         rap_form = WizardRAPForm(instance=rap_existente, prefix='rap', sim=sim)
         raee_form = WizardRAEEForm(instance=raee_existente, prefix='raee', sim=sim)
-        autotsp_form = WizardAUTOTSPForm(instance=autotsp_existente, prefix='autotsp')
+        autotsp_form = WizardAUTOTSPForm(instance=autotsp_existente, prefix='autotsp', sim=sim)
 
     # Solo mostrar el militar actual, no permitir cambio
     autotpe_form.fields['pm'].queryset = PM.objects.filter(id=pm.id)
