@@ -900,6 +900,8 @@ class AUTOTPE(models.Model):
         ('AUTO_CUMPLIMIENTO',          'AUTO DE CUMPLIMIENTO'),
         ('AUTO_EJECUTORIA',            'AUTO DE EJECUTORIA'),
         ('AUTO_EXCUSA',                'AUTO DE EXCUSA'),
+        ('AUTO_RECUSA',                'AUTO DE RECUSA'),
+        ('AUTO_ACLARATORIO',           'AUTO ACLARATORIO'),
         ('AUTO_RECHAZO_RECURSO',       'AUTO DE RECHAZO DE RECURSO'),
     ]
 

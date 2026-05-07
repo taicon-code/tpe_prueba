@@ -935,7 +935,7 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
             messages.warning(request, 'No hay militares en este sumario.')
             return redirect('ayudante_wizard_paso2', sim_id=sim.pk)
 
-    autotpe_existente    = AUTOTPE.objects.filter(sim=sim, pm=pm).first()
+    autotpes_existentes  = AUTOTPE.objects.filter(sim=sim, pm=pm).order_by('fecha', 'id')
     apelacion_existente  = ApelacionTSP.objects.filter(sim=sim, pm=pm).first()
     # Actuados del TSP — uno por cada instancia, en orden
     rap_tsp_existente    = ActuadoTSP.objects.filter(sim=sim, instancia='RAP').first()
@@ -978,12 +978,14 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
 
         guardar_autotpe   = request.POST.get('guardar_autotpe') == '1'
         guardar_apelacion = request.POST.get('guardar_apelacion') == '1'
+        # Siempre crea un NUEVO auto (no edita existente)
+
         guardar_rap_tsp   = request.POST.get('guardar_rap_tsp') == '1'
         guardar_raee      = request.POST.get('guardar_raee') == '1'
         guardar_nulidad   = request.POST.get('guardar_nulidad') == '1'
         guardar_autotsp   = request.POST.get('guardar_autotsp') == '1'
 
-        autotpe_form   = WizardAUTOTPEForm(request.POST if guardar_autotpe else None,   instance=autotpe_existente,   prefix='autotpe')
+        autotpe_form   = WizardAUTOTPEForm(request.POST if guardar_autotpe else None, prefix='autotpe')
         apelacion_form = WizardRAPForm(request.POST if guardar_apelacion else None,      instance=apelacion_existente, prefix='apelacion', sim=sim)
         rap_tsp_form   = WizardActuadoTSPForm(request.POST if guardar_rap_tsp else None, instance=rap_tsp_existente,   prefix='rap_tsp',   sim=sim)
         raee_form      = WizardActuadoTSPForm(request.POST if guardar_raee else None,    instance=raee_existente,      prefix='raee',       sim=sim)
@@ -999,29 +1001,25 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
                         auto.sim = sim
                         auto.pm = pm
                         auto.save()
-                        autotpe_existente = auto
+                        autotpes_existentes = AUTOTPE.objects.filter(sim=sim, pm=pm).order_by('fecha', 'id')
 
                         autotpe_notif_tipo = request.POST.get('autotpe_notif_tipo', '').strip()
                         if autotpe_notif_tipo:
-                            Notificacion.objects.update_or_create(
+                            Notificacion.objects.create(
                                 autotpe=auto,
-                                defaults={
-                                    'tipo': autotpe_notif_tipo,
-                                    'notificado_a': request.POST.get('autotpe_notif_notificado_a', '').strip(),
-                                    'fecha': request.POST.get('autotpe_notif_fecha') or None,
-                                    'hora': request.POST.get('autotpe_notif_hora') or None,
-                                }
+                                tipo=autotpe_notif_tipo,
+                                notificado_a=request.POST.get('autotpe_notif_notificado_a', '').strip(),
+                                fecha=request.POST.get('autotpe_notif_fecha') or None,
+                                hora=request.POST.get('autotpe_notif_hora') or None,
                             )
                         if auto.tipo == 'AUTO_EJECUTORIA':
                             autotpe_memo_numero = request.POST.get('autotpe_memo_numero', '').strip()
                             if autotpe_memo_numero:
-                                Memorandum.objects.update_or_create(
+                                Memorandum.objects.create(
                                     autotpe=auto,
-                                    defaults={
-                                        'numero': autotpe_memo_numero,
-                                        'fecha': request.POST.get('autotpe_memo_fecha') or None,
-                                        'fecha_entrega': request.POST.get('autotpe_memo_fecha_entrega') or None,
-                                    }
+                                    numero=autotpe_memo_numero,
+                                    fecha=request.POST.get('autotpe_memo_fecha') or None,
+                                    fecha_entrega=request.POST.get('autotpe_memo_fecha_entrega') or None,
                                 )
                     else:
                         errores = True
@@ -1098,14 +1096,14 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
             messages.error(request, 'Por favor corrija los errores en los formularios activos.')
 
     else:
-        autotpe_form   = WizardAUTOTPEForm(instance=autotpe_existente,   prefix='autotpe')
+        autotpe_form   = WizardAUTOTPEForm(prefix='autotpe')
         apelacion_form = WizardRAPForm(instance=apelacion_existente,      prefix='apelacion', sim=sim)
         rap_tsp_form   = WizardActuadoTSPForm(instance=rap_tsp_existente, prefix='rap_tsp',   sim=sim)
         raee_form      = WizardActuadoTSPForm(instance=raee_existente,    prefix='raee',      sim=sim)
         nulidad_form   = WizardActuadoTSPForm(instance=nulidad_existente, prefix='nulidad',   sim=sim)
         autotsp_form   = WizardActuadoTSPForm(instance=autotsp_existente, prefix='autotsp',   sim=sim)
 
-    # Solo mostrar el militar actual
+    # pm fijo en el formulario de auto TPE
     autotpe_form.fields['pm'].queryset = PM.objects.filter(id=pm.id)
     autotpe_form.fields['pm'].initial = pm
 
@@ -1113,12 +1111,12 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
         'sim': sim,
         'pm': pm,
         'autotpe_form': autotpe_form,
+        'autotpes_existentes': autotpes_existentes,
         'apelacion_form': apelacion_form,
         'rap_tsp_form': rap_tsp_form,
         'raee_form': raee_form,
         'nulidad_form': nulidad_form,
         'autotsp_form': autotsp_form,
-        'autotpe_existente': autotpe_existente,
         'apelacion_existente': apelacion_existente,
         'rap_tsp_existente': rap_tsp_existente,
         'raee_existente': raee_existente,
