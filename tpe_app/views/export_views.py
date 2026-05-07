@@ -942,7 +942,7 @@ def export_sim_pdf(request, sim_id):
         docs_pm, _ = _compilar_documentos(sim, hist_simple, pm=pm_obj)
 
         # RAP: agregar como sub-nota (tipo '_RAP_NOTA'), se renderiza igual que memorándum
-        for rap in hist_simple['recursos_apelacion'].filter(pm=pm_obj).order_by('fecha_oficio'):
+        for rap in hist_simple['apelaciones_tsp'].filter(pm=pm_obj).order_by('fecha_oficio'):
             docs_pm.append({
                 'tipo': '_RAP_NOTA',
                 'numero_oficio': rap.numero_oficio,
