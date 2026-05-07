@@ -275,7 +275,7 @@ class ApelacionTSPAdmin(admin.ModelAdmin):
     list_display  = ('numero', 'sim', 'pm', 'fecha_presentacion', 'numero_oficio',
                      'fecha_oficio', 'alerta_plazo')
     search_fields = ('numero', 'sim__codigo')
-    list_filter   = ('tipo',)
+    list_filter   = ('fecha_presentacion',)
     inlines       = [NotificacionApelacionTSPInline]
 
     @mark_safe

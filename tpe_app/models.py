@@ -1010,7 +1010,7 @@ class ActuadoTSP(models.Model):
 
     apelacion_tsp            = models.ForeignKey('ApelacionTSP', on_delete=models.PROTECT,
                                    null=True, blank=True,
-                                   verbose_name='Apelación TSP origen',
+                                   verbose_name='Recurso de Apelación de origen',
                                    related_name='actuados')
     sim                      = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
     instancia                = models.CharField(max_length=30, choices=INSTANCIA_CHOICES,
@@ -1214,13 +1214,6 @@ def next_resolucion_num(year=None):
 # ============================================================
 class ApelacionTSP(models.Model):
 
-    TIPO_CHOICES = [
-        ('REVOCAR',                           'REVOCAR'),
-        ('MODIFICAR',                         'MODIFICAR'),
-        ('ANULAR HASTA EL VICIO MAS ANTIGUO', 'ANULAR HASTA EL VICIO MAS ANTIGUO'),
-        ('OTRO',                              'OTRO'),
-    ]
-
     sim                = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
     abogado            = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
                              verbose_name='Abogado',
@@ -1231,12 +1224,9 @@ class ApelacionTSP(models.Model):
     resolucion         = models.ForeignKey(Resolucion, on_delete=models.SET_NULL, null=True, blank=True,
                              verbose_name='Resolución impugnada')
 
-    numero             = models.CharField(max_length=15, null=True, blank=True,
+    numero             = models.CharField(max_length=35, null=True, blank=True,
                              db_index=True, verbose_name='Número del RAP')
     fecha_presentacion = models.DateField(null=True, blank=True, verbose_name='Fecha de Presentación')
-    texto              = models.TextField(null=True, blank=True, verbose_name='Texto del Recurso')
-    tipo               = models.CharField(max_length=50, choices=TIPO_CHOICES, null=True, blank=True,
-                             verbose_name='Petitorio (lo que solicita al TSP)')
 
     # Datos de elevación física al TSP
     numero_oficio      = models.CharField(max_length=60, null=True, blank=True, verbose_name='N° Oficio Elevación')
@@ -1264,8 +1254,6 @@ class ApelacionTSP(models.Model):
             self.fecha_limite = add_business_days(self.fecha_oficio, 3)
         self.numero_oficio = self.numero_oficio.upper() if self.numero_oficio else self.numero_oficio
         self.numero        = self.numero.upper()        if self.numero        else self.numero
-        self.texto         = self.texto.upper()         if self.texto         else self.texto
-        self.tipo          = self.tipo.upper()          if self.tipo          else self.tipo
         super().save(*args, **kwargs)
 
     def get_alerta_plazo(self):

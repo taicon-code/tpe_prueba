@@ -556,7 +556,7 @@ class RAPForm(forms.ModelForm):
         model = ApelacionTSP
         fields = [
             'sim', 'pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio',
-            'numero', 'texto', 'tipo'
+            'numero'
         ]
         widgets = {
             'sim':                forms.Select(attrs={'class': 'form-control'}),
@@ -566,9 +566,6 @@ class RAPForm(forms.ModelForm):
             'numero_oficio':      forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de oficio'}),
             'fecha_oficio':       forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'numero':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/26'}),
-            'texto':              forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
-                                                       'placeholder': 'Texto del recurso'}),
-            'tipo':               forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
             'sim':                'Sumario',
@@ -578,8 +575,6 @@ class RAPForm(forms.ModelForm):
             'numero_oficio':      'Número de Oficio',
             'fecha_oficio':       'Fecha de Oficio',
             'numero':             'Número del RAP',
-            'texto':              'Texto del RAP',
-            'tipo':               'Petitorio (lo que solicita al TSP)',
         }
 
     def __init__(self, *args, **kwargs):
@@ -629,7 +624,7 @@ class ActuadoTSPForm(forms.ModelForm):
             'es_pronunciamiento_final': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         labels = {
-            'apelacion_tsp':           'Apelación TSP (RAP) origen',
+            'apelacion_tsp':           'Recurso de Apelación de origen',
             'sim':                     'Sumario',
             'instancia':               'Tipo de Actuado TSP',
             'numero':                  'Número',
@@ -768,16 +763,9 @@ class RAPConNotificacionForm(forms.Form):
     fecha_oficio = forms.DateField(required=False,
                                   widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
                                   label='Fecha de Oficio')
-    numero = forms.CharField(max_length=15,
+    numero = forms.CharField(max_length=35,
                             widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 03/26'}),
                             label='Número del RAP')
-    fecha = forms.DateField(widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-                           label='Fecha del RAP')
-    texto = forms.CharField(widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-                           label='Texto del RAP')
-    tipo = forms.ChoiceField(choices=ApelacionTSP.TIPO_CHOICES,
-                            widget=forms.Select(attrs={'class': 'form-control'}),
-                            label='Petitorio (lo que solicita al TSP)')
 
     # Notificación opcional
     notif_tipo = forms.ChoiceField(choices=[('', 'Sin notificación')] + list(Notificacion.NOTIF_CHOICES),
@@ -950,7 +938,7 @@ class WizardAUTOTPEForm(AUTOTPEHistoricoForm):
 class WizardRAPForm(RAPForm):
 
     class Meta(RAPForm.Meta):
-        fields = ['pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio', 'numero', 'tipo', 'texto']
+        fields = ['pm', 'resolucion', 'fecha_presentacion', 'numero_oficio', 'fecha_oficio']
 
     def __init__(self, *args, sim=None, **kwargs):
         super().__init__(*args, **kwargs)

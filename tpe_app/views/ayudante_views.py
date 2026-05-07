@@ -267,8 +267,6 @@ def ayudante_registrar_rap(request):
                         numero_oficio=form.cleaned_data.get('numero_oficio'),
                         fecha_oficio=form.cleaned_data.get('fecha_oficio'),
                         numero=form.cleaned_data['numero'],
-                        texto=form.cleaned_data['texto'],
-                        tipo=form.cleaned_data['tipo'],
                     )
                     rap.save()
 

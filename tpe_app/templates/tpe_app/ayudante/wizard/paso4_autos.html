@@ -193,23 +193,6 @@
                         {{ apelacion_form.fecha_oficio }}
                     </div>
                 </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-4">
-                        <label class="form-label">{{ apelacion_form.numero.label }}</label>
-                        {{ apelacion_form.numero }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ apelacion_form.tipo.label }}</label>
-                        {{ apelacion_form.tipo }}
-                    </div>
-                </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-12">
-                        <label class="form-label">{{ apelacion_form.texto.label }}</label>
-                        {{ apelacion_form.texto }}
-                    </div>
-                </div>
-                {% include 'tpe_app/ayudante/wizard/_notif_block.html' with prefix='apelacion' %}
             </div>
         </div>
 
@@ -225,7 +208,7 @@
             <div class="card-header d-flex justify-content-between align-items-center" style="background:#0ea5e9;color:white;">
                 <div>
                     <strong><i class="bi bi-1-circle me-2"></i>Recurso de Apelación</strong>
-                    <small class="d-block opacity-75">Emitido por el TSP en respuesta a la apelación</small>
+                    <small class="d-block opacity-75">Emitido por el Tribunal Superior de Personal en respuesta a la apelación</small>
                 </div>
                 <div class="form-check form-switch ms-auto mb-0">
                     <input class="form-check-input" type="checkbox" id="toggle-rap-tsp"
@@ -244,7 +227,7 @@
         <div class="card mb-3 border-warning">
             <div class="card-header d-flex justify-content-between align-items-center" style="background:#f59e0b;color:white;">
                 <div>
-                    <strong><i class="bi bi-2-circle me-2"></i>Recurso de Aclaración, Explicación y Enmienda (RAEE)</strong>
+                    <strong><i class="bi bi-2-circle me-2"></i>Recurso de Aclaración, Explicación y Enmienda</strong>
                 </div>
                 <div class="form-check form-switch ms-auto mb-0">
                     <input class="form-check-input" type="checkbox" id="toggle-raee"
