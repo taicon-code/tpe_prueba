@@ -111,7 +111,7 @@ def _compilar_documentos(sim, historial, pm=None):
             }
 
         documentos.append({
-            'tipo': 'REC. RECONSIDERACIÓN',
+            'tipo': 'RECURSO DE RECONSIDERACIÓN',
             'numero': rr.numero or 'S/N',
             'fecha_doc': rr.fecha,
             'resolutiva': (rr.texto or 'N/A').upper(),
@@ -179,7 +179,8 @@ def _compilar_documentos(sim, historial, pm=None):
                 'memo': None,
             })
 
-    documentos.sort(key=lambda x: x['fecha_doc'] or date.min)
+    _ORDEN_TIPO = {'RESOLUCIÓN': 0, 'RECURSO DE RECONSIDERACIÓN': 1, 'AUTO TPE': 2}
+    documentos.sort(key=lambda x: (_ORDEN_TIPO.get(x['tipo'], 99), x['fecha_doc'] or date.min))
     return documentos, info_tsp
 
 
@@ -941,16 +942,6 @@ def export_sim_pdf(request, sim_id):
     for pm_obj in militares:
         docs_pm, _ = _compilar_documentos(sim, hist_simple, pm=pm_obj)
 
-        # RAP: agregar como sub-nota (tipo '_RAP_NOTA'), se renderiza igual que memorándum
-        for rap in hist_simple['apelaciones_tsp'].filter(pm=pm_obj).order_by('fecha_oficio'):
-            docs_pm.append({
-                'tipo': '_RAP_NOTA',
-                'numero_oficio': rap.numero_oficio,
-                'fecha_oficio': rap.fecha_oficio,
-                'fecha_doc': rap.fecha_oficio or rap.fecha_presentacion,
-            })
-        docs_pm.sort(key=lambda x: x['fecha_doc'] or date.min)
-
         if not docs_pm:
             continue
         hay_actuados = True
@@ -958,36 +949,6 @@ def export_sim_pdf(request, sim_id):
         story.append(Paragraph(nombre_pm, s_pm_sub))
         story.append(Spacer(1, 3))
         story.append(_tabla_docs(docs_pm))
-        story.append(Spacer(1, 10))
-
-    # Actuados TSP — sin FK a militar, se muestran al final como sección propia
-    actuados_tsp_qs = ActuadoTSP.objects.filter(sim=sim)
-    if actuados_tsp_qs.exists():
-        hay_actuados = True
-        story.append(Paragraph("ACTUADOS DEL TSP", s_pm_sub))
-        story.append(Spacer(1, 3))
-        docs_tsp = []
-        for actuado in actuados_tsp_qs.order_by('fecha'):
-            notif_info = None
-            _notif = getattr(actuado, 'notificacion', None)
-            if _notif:
-                notif_info = {
-                    'tipo': _notif.get_tipo_display(),
-                    'fecha': _notif.fecha,
-                }
-            tipo_label = {
-                'RAEE':    'REC. ACLARACIÓN Y ENMIENDA (RAEE)',
-                'NULIDAD': 'NULIDAD DE OBRADOS TSP',
-            }.get(actuado.instancia, 'AUTO TSP')
-            docs_tsp.append({
-                'tipo': tipo_label,
-                'numero': actuado.numero or 'S/N',
-                'fecha_doc': actuado.fecha,
-                'resolutiva': (actuado.texto or (actuado.get_tipo_display() if actuado.tipo else 'N/A')).upper(),
-                'notificacion': notif_info,
-                'memo': None,
-            })
-        story.append(_tabla_docs(docs_tsp))
         story.append(Spacer(1, 10))
 
     if not hay_actuados:
