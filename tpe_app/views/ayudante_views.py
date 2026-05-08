@@ -479,6 +479,11 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
                                 sim.fase not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']):
                             sim.fase = 'EJECUTORIA_NOTIFICADA'
                             sim.save()
+                    elif auto.tipo == 'AUTO_CUMPLIMIENTO' and auto.sim:
+                        sim = auto.sim
+                        if sim.fase not in ['CUMPLIMIENTO_NOTIFICADO', 'CONCLUIDO_TSP_TPE']:
+                            sim.fase = 'CUMPLIMIENTO_NOTIFICADO'
+                            sim.save()
                     messages.success(request, f'Notificación de Auto {auto.numero} registrada exitosamente')
                     if next_url:
                         return redirect(next_url)
