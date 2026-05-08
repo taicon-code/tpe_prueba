@@ -16,6 +16,19 @@ def _normalizar(texto):
     return sin_acentos.upper()
 
 
+def _format_date_safe(fecha, formato='%d/%m/%y'):
+    """Formatea fecha de forma segura. En Windows, strftime con %y falla en fechas < 1900.
+    Este método convierte manualmente sin usar strftime para %y."""
+    if not fecha:
+        return 'S/F'
+    try:
+        if formato == '%d/%m/%y':
+            return f'{fecha.day:02d}/{fecha.month:02d}/{fecha.year % 100:02d}'
+        return fecha.strftime(formato)
+    except (ValueError, AttributeError):
+        return 'S/F'
+
+
 def _campo_sin_n(campo):
     """Reemplaza Ñ→N en el campo de BD para comparación. Los datos están en mayúsculas."""
     return Replace(campo, Value('Ñ'), Value('N'))
@@ -37,19 +50,13 @@ def _obtener_historial_completo(personal_id):
     from django.db.models.functions import Substr, Length, Cast
 
     sims = SIM.objects.filter(militares__id=personal_id).annotate(
-        # Prioridad: sumarios CON fecha primero (0), luego sin fecha (1)
-        fecha_null_order=Case(
-            When(fecha_ingreso__isnull=True, then=Value(1)),
-            default=Value(0),
-            output_field=IntegerField()
-        ),
         # Extraer año del código (últimos 2 caracteres: ej: "DJE-259/19" → "19" → 19)
         # Substr(campo, posición, longitud) - posición comienza en 1
         year_from_code=Cast(
             Substr('codigo', Length('codigo') - 1, 2),
             output_field=IntegerField()
         )
-    ).order_by('fecha_null_order', 'fecha_ingreso', 'year_from_code', 'codigo', 'version').distinct()
+    ).order_by('year_from_code', 'codigo', 'version', 'fecha_ingreso').distinct()
 
     # Convertir a lista para preservar el orden
     sim_ids = [sim.id for sim in sims]
@@ -83,47 +90,29 @@ def _compilar_documentos_lotes(sim, historial):
 
     # Resoluciones
     for res in historial['resoluciones'].filter(sim=sim):
-        fecha_str = res.fecha.strftime('%d/%m/%y') if res.fecha else 'S/F'
+        fecha_str = _format_date_safe(res.fecha)
         resolutiva = (res.texto or 'N/A').upper() if res.texto else 'N/A'
         documentos.append(('RES', res.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Segundas Resoluciones
     for rr in historial.get('segundas_resoluciones', Resolucion.objects.none()).filter(sim=sim):
-        fecha_str = rr.fecha.strftime('%d/%m/%y') if rr.fecha else 'S/F'
+        fecha_str = _format_date_safe(rr.fecha)
         resolutiva = (rr.texto or 'N/A').upper() if rr.texto else 'N/A'
         documentos.append(('RR', rr.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Autos TPE
     for auto in historial['autos_tpe'].filter(sim=sim):
-        fecha_str = auto.fecha.strftime('%d/%m/%y') if auto.fecha else 'S/F'
+        fecha_str = _format_date_safe(auto.fecha)
         resolutiva = (auto.texto or (auto.get_tipo_display() if auto.tipo else 'N/A')).upper()
         memo = auto.memorandums.first()
         if memo:
-            entrega = memo.fecha_entrega.strftime('%d/%m/%y') if memo.fecha_entrega else 'PENDIENTE'
-            memo_str = f"MEMO N° {memo.numero}  |  FECHA: {memo.fecha.strftime('%d/%m/%y') if memo.fecha else 'S/F'}  |  ENTREGA: {entrega}"
+            entrega = _format_date_safe(memo.fecha_entrega) if memo.fecha_entrega else 'PENDIENTE'
+            memo_fecha = _format_date_safe(memo.fecha)
+            memo_str = f"MEMO N° {memo.numero}  |  FECHA: {memo_fecha}  |  ENTREGA: {entrega}"
         else:
             memo_str = None
         documentos.append(('AUTO TPE', auto.numero or 'S/N', fecha_str, resolutiva, memo_str))
 
-    # Recursos Apelación
-    for rap in historial['recursos_apelacion'].filter(sim=sim):
-        fecha_str = rap.fecha.strftime('%d/%m/%y') if rap.fecha else 'S/F'
-        oficio_str = rap.numero_oficio or 'S/N'
-        fecha_oficio_str = rap.fecha_oficio.strftime('%d/%m/%y') if rap.fecha_oficio else 'S/F'
-        resolutiva = f'SE ELEVÓ SU RECURSO DE APELACIÓN - N° OFICIO: {oficio_str} EN FECHA: {fecha_oficio_str}'
-        documentos.append(('RAP', rap.numero or 'S/N', fecha_str, resolutiva, None))
-
-    # RAEE
-    for raee in historial['raees'].filter(sim=sim):
-        fecha_str = raee.fecha.strftime('%d/%m/%y') if raee.fecha else 'S/F'
-        resolutiva = 'ACLARACIÓN Y ENMIENDA'
-        documentos.append(('RAEE', raee.numero or 'S/N', fecha_str, resolutiva, None))
-
-    # Autos TSP
-    for autotsp in historial['autos_tsp'].filter(sim=sim):
-        fecha_str = autotsp.fecha.strftime('%d/%m/%y') if autotsp.fecha else 'S/F'
-        resolutiva = (autotsp.texto or (autotsp.get_tipo_display() if autotsp.tipo else 'N/A')).upper()
-        documentos.append(('AUTO TSP', autotsp.numero or 'S/N', fecha_str, resolutiva, None))
 
     # Ordenar por fecha
     return documentos
@@ -513,9 +502,17 @@ def export_batch_pdf(request):
             contador = 1
             numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
+            # Mapeo de tipos de documento para el PDF de lotes
+            tipo_display = {
+                'RES': 'RES. TPE. N.º',
+                'RR': 'RR. TPE. N.º',
+                'AUTO TPE': 'AUTO TPE. N.º',
+            }
+
             for tipo, numero, fecha, resolutiva, memo in documentos:
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                linea = f"{num_circulo} {tipo} {numero} ({fecha})<br/>   {resolutiva}"
+                tipo_label = tipo_display.get(tipo, tipo)
+                linea = f"{num_circulo} {tipo_label} {numero} ({fecha})<br/>   {resolutiva}"
                 if memo:
                     linea += f"<br/>   <i>- {memo}</i>"
                 actuados_list.append(linea + "<br/><br/>")
@@ -647,9 +644,17 @@ def export_batch_excel(request):
             contador = 1
             numeros_circulos = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩']
 
+            # Mapeo de tipos de documento para los reportes de lotes
+            tipo_display = {
+                'RES': 'RES. TPE. N.º',
+                'RR': 'RR. TPE. N.º',
+                'AUTO TPE': 'AUTO TPE. N.º',
+            }
+
             for tipo, numero, fecha, resolutiva, memo in documentos:
                 num_circulo = numeros_circulos[min(contador - 1, 9)]
-                linea = f"{num_circulo} {tipo} {numero} ({fecha})\n   {resolutiva}"
+                tipo_label = tipo_display.get(tipo, tipo)
+                linea = f"{num_circulo} {tipo_label} {numero} ({fecha})\n   {resolutiva}"
                 if memo:
                     linea += f"\n   └─ {memo}"
                 actuados_list.append(linea + "\n")

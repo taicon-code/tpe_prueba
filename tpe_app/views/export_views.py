@@ -196,18 +196,12 @@ def _obtener_historial(personal_id):
     from django.db.models.functions import Substr, Length, Cast
 
     sims = SIM.objects.filter(militares__id=personal_id).annotate(
-        # Prioridad: sumarios CON fecha primero (0), luego sin fecha (1)
-        fecha_null_order=Case(
-            When(fecha_ingreso__isnull=True, then=Value(1)),
-            default=Value(0),
-            output_field=IntegerField()
-        ),
         # Extraer año del código (últimos 2 caracteres: ej: "DJE-259/19" → "19" → 19)
         year_from_code=Cast(
             Substr('codigo', Length('codigo') - 1, 2),
             output_field=IntegerField()
         )
-    ).order_by('fecha_null_order', 'fecha_ingreso', 'year_from_code', 'codigo', 'version').distinct()
+    ).order_by('year_from_code', 'codigo', 'version', 'fecha_ingreso').distinct()
 
     sim_ids = [sim.id for sim in sims]
 
