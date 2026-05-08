@@ -162,6 +162,49 @@
     </div>
     {% endif %}
 
+    <!-- Corrección manual de estado/fase -->
+    <div class="card mb-3 border-warning">
+        <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center"
+             style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#panelCorreccion">
+            <span><i class="bi bi-pencil-square me-2 text-warning"></i><strong>Corregir Estado / Fase del Sumario</strong></span>
+            <i class="bi bi-chevron-down text-warning"></i>
+        </div>
+        <div class="collapse" id="panelCorreccion">
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Usa esta opción para corregir el estado y fase de sumarios históricos que no siguieron el flujo automático.
+                </p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="corregir_estado">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Estado</label>
+                            <select name="estado" class="form-select form-select-sm">
+                                {% for val, label in estado_choices %}
+                                    <option value="{{ val }}" {% if val == sim.estado %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Fase</label>
+                            <select name="fase" class="form-select form-select-sm">
+                                {% for val, label in fase_choices %}
+                                    <option value="{{ val }}" {% if val == sim.fase %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-warning btn-sm w-100">
+                                <i class="bi bi-check-lg me-1"></i>Guardar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Botones de navegación -->
     <div class="d-flex justify-content-between gap-2 mt-4">
         <a href="{% url 'ayudante_dashboard' %}" class="btn btn-outline-secondary">

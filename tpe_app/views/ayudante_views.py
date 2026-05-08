@@ -1133,12 +1133,27 @@ def ayudante_wizard_paso4(request, sim_id, pm_id=None):
 
 @rol_requerido('AYUDANTE')
 def ayudante_wizard_resumen(request, sim_id):
-    """Vista de resumen final del wizard — solo lectura"""
+    """Vista de resumen final del wizard. Permite corrección manual de estado/fase."""
     sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
-    resoluciones = Resolucion.objects.filter(sim=sim).order_by('fecha')
-    autos_tpe = AUTOTPE.objects.filter(sim=sim).order_by('fecha')
+
+    if request.method == 'POST' and request.POST.get('accion') == 'corregir_estado':
+        nuevo_estado = request.POST.get('estado', '').strip()
+        nueva_fase   = request.POST.get('fase', '').strip()
+        estados_validos = [c[0] for c in SIM.ESTADO_CHOICES]
+        fases_validas   = [c[0] for c in SIM.FASE_CHOICES]
+        if nuevo_estado in estados_validos and nueva_fase in fases_validas:
+            sim.estado = nuevo_estado
+            sim.fase   = nueva_fase
+            sim.save()
+            messages.success(request, f'Estado y fase del SIM {sim.codigo} actualizados correctamente.')
+        else:
+            messages.error(request, 'Valor de estado o fase no válido.')
+        return redirect('ayudante_wizard_resumen', sim_id=sim.pk)
+
+    resoluciones    = Resolucion.objects.filter(sim=sim).order_by('fecha')
+    autos_tpe       = AUTOTPE.objects.filter(sim=sim).order_by('fecha')
     apelaciones_tsp = ApelacionTSP.objects.filter(sim=sim).order_by('fecha_presentacion')
-    actuados_tsp = ActuadoTSP.objects.filter(sim=sim).order_by('fecha')
+    actuados_tsp    = ActuadoTSP.objects.filter(sim=sim).order_by('fecha')
 
     return render(request, 'tpe_app/ayudante/wizard/resumen.html', {
         'sim': sim,
@@ -1146,6 +1161,8 @@ def ayudante_wizard_resumen(request, sim_id):
         'autos_tpe': autos_tpe,
         'apelaciones_tsp': apelaciones_tsp,
         'actuados_tsp': actuados_tsp,
+        'estado_choices': SIM.ESTADO_CHOICES,
+        'fase_choices':   SIM.FASE_CHOICES,
         'paso_actual': 5,
         'total_pasos': 4,
     })

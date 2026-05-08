@@ -592,6 +592,7 @@ def admin2_confirmar_archivo_sproda(request, sim_id):
         observacion = request.POST.get('observacion', '').strip()
         with transaction.atomic():
             sim.fase = 'CONCLUIDO'
+            sim.estado = 'PROCESO_CONCLUIDO_TPE'
             sim.save()
             # Registrar en historial de custodia
             CustodiaSIM.objects.create(

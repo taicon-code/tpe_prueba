@@ -488,8 +488,9 @@ def export_person_historial_pdf(request, personal_id):
             else:
                 story.append(Paragraph("Sin actuados registrados.", s_dato))
 
-            # Mostrar estado en TSP si aplica (DESPUÉS de la tabla)
-            if info_tsp:
+            # Mostrar estado en TSP solo si el proceso sigue activo en el TSP
+            ESTADOS_CONCLUIDOS = {'PROCESO_CONCLUIDO_TPE', 'PROCESO_CONCLUIDO_TSP_TPE', 'PROCESO_EJECUTADO'}
+            if info_tsp and sim.estado not in ESTADOS_CONCLUIDOS:
                 story.append(Spacer(1, 8))
                 story.append(Paragraph(
                     f"<b>PROCESO EN EL TRIBUNAL SUPERIOR DEL PERSONAL DE LAS FF.AA.</b><br/>Oficio Nº {info_tsp['numero_oficio']} de {_format_date(info_tsp['fecha_oficio'])}",
@@ -940,15 +941,22 @@ def export_sim_pdf(request, sim_id):
     hay_actuados = False
 
     for pm_obj in militares:
-        docs_pm, _ = _compilar_documentos(sim, hist_simple, pm=pm_obj)
+        docs_pm, info_tsp_pm = _compilar_documentos(sim, hist_simple, pm=pm_obj)
 
-        if not docs_pm:
+        if not docs_pm and not info_tsp_pm:
             continue
         hay_actuados = True
         nombre_pm = f"{pm_obj.get_grado_display() or ''} {pm_obj.nombre or ''} {pm_obj.paterno or ''} {pm_obj.materno or ''}".strip().upper()
         story.append(Paragraph(nombre_pm, s_pm_sub))
         story.append(Spacer(1, 3))
-        story.append(_tabla_docs(docs_pm))
+        if docs_pm:
+            story.append(_tabla_docs(docs_pm))
+        if info_tsp_pm:
+            story.append(Paragraph(
+                f"<b>Elevado al T.S.P.</b> — Oficio N° {info_tsp_pm['numero_oficio'] or 'S/N'}"
+                f"  —  Fecha: {_format_date(info_tsp_pm['fecha_oficio'])}",
+                s_memo
+            ))
         story.append(Spacer(1, 10))
 
     if not hay_actuados:
