@@ -251,28 +251,49 @@ def detalles_sim(request, sim_id):
     # Obtener todos los actuados del SIM
     from ..models import Memorandum
 
-    resoluciones = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')
-    autos_tpe = AUTOTPE.objects.filter(sim=sim).select_related('abogado', 'pm')
+    resoluciones    = Resolucion.objects.filter(sim=sim).select_related('abogado', 'pm')
+    autos_tpe       = AUTOTPE.objects.filter(sim=sim).select_related('abogado', 'pm')
     apelaciones_tsp = ApelacionTSP.objects.filter(sim=sim).select_related('abogado', 'pm')
-    actuados_tsp    = ActuadoTSP.objects.filter(sim=sim)
+    # ActuadoTSP huérfanos (sin RAP de origen) — sección global al final de la página
+    actuados_tsp = ActuadoTSP.objects.filter(sim=sim, apelacion_tsp=None).order_by('fecha')
 
-    # Agrupar actuados por militar en orden cronológico del flujo
+    # Agrupar actuados por militar con paneles TPE y TSP separados
     militares_con_docs = []
     for pm_obj in militares:
-        res_primera = resoluciones.filter(pm=pm_obj, instancia='PRIMERA')
-        rrs_del_pm = resoluciones.filter(pm=pm_obj, instancia='RECONSIDERACION')
-        autos_del_pm = autos_tpe.filter(pm=pm_obj)
+        res_primera  = resoluciones.filter(pm=pm_obj, instancia='PRIMERA').order_by('fecha')
+        rrs_del_pm   = resoluciones.filter(pm=pm_obj, instancia='RECONSIDERACION').order_by('fecha')
+        autos_del_pm = autos_tpe.filter(pm=pm_obj).order_by('fecha')
+        raps_del_pm  = apelaciones_tsp.filter(pm=pm_obj).order_by('fecha_presentacion')
 
-        # Obtener memorándums ligados a RES o AUTO de este militar
-        memos_del_pm = Memorandum.objects.filter(resolucion__in=res_primera) | Memorandum.objects.filter(resolucion__in=rrs_del_pm) | Memorandum.objects.filter(autotpe__in=autos_del_pm)
+        memos_del_pm = (
+            Memorandum.objects.filter(resolucion__in=res_primera)
+            | Memorandum.objects.filter(resolucion__in=rrs_del_pm)
+            | Memorandum.objects.filter(autotpe__in=autos_del_pm)
+        )
+
+        # Panel TSP: actuados agrupados por sección (filtrados por RAPs de este militar)
+        tsp_raee    = ActuadoTSP.objects.filter(
+            apelacion_tsp__in=raps_del_pm, instancia='RAEE'
+        ).order_by('fecha')
+        tsp_nulidad = ActuadoTSP.objects.filter(
+            apelacion_tsp__in=raps_del_pm,
+            instancia__in=['NULIDAD', 'NULIDAD_DEFECTOS_ABSOLUTOS']
+        ).order_by('fecha')
+        tsp_auto    = ActuadoTSP.objects.filter(
+            apelacion_tsp__in=raps_del_pm, instancia='AUTO_TSP'
+        ).order_by('fecha')
 
         militares_con_docs.append({
-            'pm': pm_obj,
-            'resoluciones': res_primera.order_by('fecha'),
-            'rrs':          rrs_del_pm.order_by('fecha'),
-            'autos_tpe':    autos_del_pm.order_by('fecha'),
-            'memorandums':  memos_del_pm.order_by('fecha'),
-            'apelaciones_tsp': apelaciones_tsp.filter(pm=pm_obj).order_by('fecha_presentacion'),
+            'pm':              pm_obj,
+            'resoluciones':    res_primera,
+            'rrs':             rrs_del_pm,
+            'autos_tpe':       autos_del_pm,
+            'memorandums':     memos_del_pm.order_by('fecha'),
+            'apelaciones_tsp': raps_del_pm,
+            'tsp_raee':        tsp_raee,
+            'tsp_nulidad':     tsp_nulidad,
+            'tsp_auto':        tsp_auto,
+            'has_tsp':         raps_del_pm.exists(),
         })
 
     # Obtener historial de custodia (trazabilidad) - SOLO para Admin2
