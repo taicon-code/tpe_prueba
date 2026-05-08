@@ -26,12 +26,12 @@
    ──────────────────────────────────────────────────── */
 :root {
   --c-res:   #1a4480;   /* azul marino        */
-  --c-rr:    #2d3a8c;   /* índigo oscuro      */
-  --c-auto:  #7c4a16;   /* ámbar/café oscuro  */
-  --c-memo:  #155e75;   /* verde azulado      */
-  --c-rap:   #1a5c3a;   /* verde bosque       */
-  --c-raee:  #4a1d96;   /* violeta oscuro     */
-  --c-tsp:   #4a1d96;
+  --c-rr:    #1a4480;   /* índigo oscuro      */
+  --c-auto:  #1a4480;   /* azul oceánico TPE  */
+  --c-memo:  #1a4480;   /* verde azulado      */
+  --c-rap:   #3e3c3b;   /* ámbar TSP          */
+  --c-raee:  #3e3c3b;   /* naranja TSP        */
+  --c-tsp:   #3e3c3b;
 }
 
 /* ────────────────────────────────────────────────────
@@ -170,14 +170,36 @@
 .chip-sinentrega{ background: #fef9c3; border: 1px solid #fde047; color: #854d0e; }
 .chip-plazo     { background: #fef3c7; border: 1px solid #fbbf24; color: #92400e; }
 
-/* Sub-item TSP (RAEE, AUTO TSP) */
-.actuado-tsp-sub {
-  display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
-  background: #f5f3ff;
-  border-top: 1px dashed #c4b5fd;
-  padding: .5rem .85rem .5rem 1.6rem;
-  font-size: .78rem;
+/* ── Paneles TPE / TSP ── */
+.panel-tribunal {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
 }
+.panel-trib-header {
+  padding: .45rem .9rem;
+  font-size: .73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: #fff;
+}
+.panel-trib-body {
+  padding: .6rem .75rem;
+  background: #f8fafc;
+}
+.seccion-sep {
+  font-size: .67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 3px;
+  margin: .65rem 0 .4rem;
+}
+.panel-trib-body .seccion-sep:first-child { margin-top: 0; }
 
 /* ── Sidebar: militares listados ── */
 .pm-row {
@@ -265,13 +287,13 @@
           </div>
         </div>
 
-        <div class="d-flex gap-1 flex-wrap justify-content-end" style="max-width:160px;">
-          {% if m.resoluciones   %}<span class="badge" style="background:var(--c-res);font-size:.63rem;">{{ m.resoluciones|length }} RES</span>{% endif %}
-          {% if m.rrs            %}<span class="badge" style="background:var(--c-rr);font-size:.63rem;">{{ m.rrs|length }} RR</span>{% endif %}
-          {% if m.autos_tpe      %}<span class="badge" style="background:var(--c-auto);font-size:.63rem;">{{ m.autos_tpe|length }} AUTO</span>{% endif %}
-          {% if m.apelaciones_tsp%}<span class="badge" style="background:var(--c-rap);font-size:.63rem;">{{ m.apelaciones_tsp|length }} RAP</span>{% endif %}
-          {% if not m.resoluciones and not m.rrs and not m.autos_tpe and not m.apelaciones_tsp %}
-            <span class="badge bg-secondary" style="font-size:.63rem;">Sin actuados</span>
+        <div class="d-flex gap-1 flex-wrap justify-content-end" style="max-width:200px;">
+          {% if m.resoluciones   %}<span class="badge" style="background:var(--c-res);font-size:.62rem;">{{ m.resoluciones|length }} Resolución</span>{% endif %}
+          {% if m.rrs            %}<span class="badge" style="background:var(--c-rr);font-size:.62rem;">{{ m.rrs|length }} Reconsideración</span>{% endif %}
+          {% if m.autos_tpe      %}<span class="badge" style="background:var(--c-auto);font-size:.62rem;">{{ m.autos_tpe|length }} Auto TPE</span>{% endif %}
+          {% if m.has_tsp        %}<span class="badge" style="background:var(--c-rap);font-size:.62rem;">Apelación TSP</span>{% endif %}
+          {% if not m.resoluciones and not m.rrs and not m.autos_tpe and not m.has_tsp %}
+            <span class="badge bg-secondary" style="font-size:.62rem;">Sin actuados</span>
           {% endif %}
         </div>
 
@@ -279,296 +301,345 @@
       </div><!-- /militar-header -->
 
       <div class="actuados-body">
-        {% if not m.resoluciones and not m.rrs and not m.autos_tpe and not m.apelaciones_tsp %}
+        {% if not m.resoluciones and not m.rrs and not m.autos_tpe and not m.has_tsp %}
           <p class="text-center text-muted fst-italic py-2 mb-0" style="font-size:.83rem;">Sin actuados registrados.</p>
+        {% else %}
+        <div class="row g-2">
+
+        <div class="{% if m.has_tsp %}col-lg-6 col-12{% else %}col-12{% endif %}">
+          <div class="panel-tribunal">
+            <div class="panel-trib-header" style="background:linear-gradient(135deg,#1e3a5f,#2d5282);">
+              <i class="bi bi-building-check me-1"></i>ACTUADOS TPE
+            </div>
+            <div class="panel-trib-body">
+
+              {% if not m.resoluciones and not m.rrs and not m.autos_tpe %}
+                <p class="text-muted fst-italic mb-0" style="font-size:.8rem;">Sin actuados TPE registrados.</p>
+              {% endif %}
+
+              {# — Resoluciones — #}
+              {% if m.resoluciones %}
+              <div class="seccion-sep">Resoluciones</div>
+              {% for res in m.resoluciones %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-res);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div>
+                        <span class="tipo-badge" style="background:var(--c-res);">RESOLUCIÓN</span>
+                        <span class="actuado-numero">Nº {{ res.numero|default:"S/N" }}</span>
+                      </div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ res.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ res.get_tipo_display|default:"—" }}</span></div>
+                      <div><span class="campo-k">Notificación</span><span class="campo-v d-block">
+                        {% if res.notificacion %}
+                          <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ res.notificacion.get_tipo_display }} &mdash; {{ res.notificacion.fecha|date:"d/m/Y" }}</span>
+                        {% else %}
+                          <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                        {% endif %}
+                      </span></div>
+                      {% with docs=res.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block">
+                        <a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a>
+                      </span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+                {% if res.texto %}
+                <div class="actuado-resolutiva" style="color:var(--c-res);border-left-color:var(--c-res);">
+                  <span class="res-label" style="color:var(--c-res);">Resolutiva</span>{{ res.texto }}
+                </div>
+                {% endif %}
+              </div>
+              {% for memo in res.memorandums.all %}
+              <div class="actuado-item memo-item">
+                <div class="actuado-stripe"><div class="actuado-bar"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div><span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM</span><span class="actuado-numero">Nº {{ memo.numero }}</span></div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2"><div><span class="campo-k">Fecha Entrega</span><span class="campo-v d-block">
+                      {% if memo.fecha_entrega %}<span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                      {% else %}<span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Sin fecha de entrega</span>{% endif %}
+                    </span></div></div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+              {% endfor %}
+              {% endif %}
+
+              {# — Recursos de Reconsideración — #}
+              {% if m.rrs %}
+              <div class="seccion-sep">Recursos de Reconsideración</div>
+              {% for rr in m.rrs %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-rr);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div>
+                        <span class="tipo-badge" style="background:var(--c-rr);">RECURSO DE RECONSIDERACIÓN</span>
+                        <span class="actuado-numero">Nº {{ rr.numero|default:"S/N" }}</span>
+                      </div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ rr.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ rr.get_tipo_display|default:"—" }}</span></div>
+                      {% if rr.fecha_presentacion %}<div><span class="campo-k">Presentado</span><span class="campo-v d-block">{{ rr.fecha_presentacion|date:"d/m/Y" }}</span></div>{% endif %}
+                      <div><span class="campo-k">Notificación</span><span class="campo-v d-block">
+                        {% if rr.notificacion %}
+                          <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ rr.notificacion.get_tipo_display }} &mdash; {{ rr.notificacion.fecha|date:"d/m/Y" }}</span>
+                        {% else %}
+                          <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                        {% endif %}
+                      </span></div>
+                      {% with docs=rr.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+                {% if rr.texto %}
+                <div class="actuado-resolutiva" style="color:var(--c-rr);border-left-color:var(--c-rr);">
+                  <span class="res-label" style="color:var(--c-rr);">Resolutiva</span>{{ rr.texto }}
+                </div>
+                {% endif %}
+              </div>
+              {% for memo in rr.memorandums.all %}
+              <div class="actuado-item memo-item">
+                <div class="actuado-stripe"><div class="actuado-bar"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div><span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM</span><span class="actuado-numero">Nº {{ memo.numero }}</span></div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2"><div><span class="campo-k">Fecha Entrega</span><span class="campo-v d-block">
+                      {% if memo.fecha_entrega %}<span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                      {% else %}<span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Sin fecha de entrega</span>{% endif %}
+                    </span></div></div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+              {% endfor %}
+              {% endif %}
+
+              {# — Autos TPE — #}
+              {% if m.autos_tpe %}
+              <div class="seccion-sep">Autos TPE</div>
+              {% for auto in m.autos_tpe %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-auto);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div>
+                        <span class="tipo-badge" style="background:var(--c-auto);">AUTO TPE</span>
+                        <span class="actuado-numero">Nº {{ auto.numero|default:"S/N" }}</span>
+                      </div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ auto.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ auto.get_tipo_display|default:"—" }}</span></div>
+                      <div><span class="campo-k">Notificación</span><span class="campo-v d-block">
+                        {% if auto.notificacion %}
+                          <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ auto.notificacion.get_tipo_display }} &mdash; {{ auto.notificacion.fecha|date:"d/m/Y" }}</span>
+                        {% else %}
+                          <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
+                        {% endif %}
+                      </span></div>
+                      {% with docs=auto.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+                {% if auto.texto %}
+                <div class="actuado-resolutiva" style="color:var(--c-auto);border-left-color:var(--c-auto);">
+                  <span class="res-label" style="color:var(--c-auto);">Resolutiva</span>{{ auto.texto }}
+                </div>
+                {% endif %}
+              </div>
+              {% for memo in auto.memorandums.all %}
+              <div class="actuado-item memo-item">
+                <div class="actuado-stripe"><div class="actuado-bar"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div><span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM EJECUTORIA</span><span class="actuado-numero">Nº {{ memo.numero }}</span></div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2"><div><span class="campo-k">Fecha de Entrega</span><span class="campo-v d-block">
+                      {% if memo.fecha_entrega %}<span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>Entregado el {{ memo.fecha_entrega|date:"d/m/Y" }}</span>
+                      {% else %}<span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Entrega pendiente</span>{% endif %}
+                    </span></div></div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+              {% endfor %}
+              {% endif %}
+
+            </div>{# /panel-trib-body TPE #}
+          </div>{# /panel-tribunal TPE #}
+        </div>{# /col TPE #}
+
+        {% if m.has_tsp %}
+        <div class="col-lg-6 col-12">
+          <div class="panel-tribunal">
+            <div class="panel-trib-header" style="background:linear-gradient(135deg,#3e3c3b,#3e3c3b);">
+              <i class="bi bi-building me-1"></i>ACTUADOS TSP
+            </div>
+            <div class="panel-trib-body">
+
+              {# — Recursos de Apelación al TSP — #}
+              {% if m.apelaciones_tsp %}
+              <div class="seccion-sep">Recursos de Apelación al TSP</div>
+              {% for rap in m.apelaciones_tsp %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-rap);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div><span class="tipo-badge" style="background:var(--c-rap);">RECURSO DE APELACIÓN AL TSP</span></div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ rap.fecha_presentacion|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      {% if rap.numero_oficio %}<div><span class="campo-k">Oficio de Elevación</span><span class="campo-v d-block">{{ rap.numero_oficio }}</span></div>{% endif %}
+                      {% if rap.fecha_oficio %}
+                      <div><span class="campo-k">Fecha del Oficio</span><span class="campo-v d-block" style="font-size:.95rem;"><i class="bi bi-send me-1" style="color:var(--c-rap);"></i>{{ rap.fecha_oficio|date:"d/m/Y" }}</span></div>
+                      {% endif %}
+                      {% with docs=rap.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+              {% endif %}
+
+              {# — RAEE — #}
+              {% if m.tsp_raee %}
+              <div class="seccion-sep">Recurso de Aclaración, Explicación y Enmienda</div>
+              {% for actuado in m.tsp_raee %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-tsp);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div>
+                        <span class="tipo-badge" style="background:var(--c-tsp);">{{ actuado.get_instancia_display }}</span>
+                        <span class="actuado-numero">Nº {{ actuado.numero|default:"S/N" }}</span>
+                      </div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      {% if actuado.tipo %}<div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ actuado.get_tipo_display }}</span></div>{% endif %}
+                      <div><span class="campo-k">Notificación</span><span class="campo-v d-block">
+                        {% if actuado.notificacion %}<span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ actuado.notificacion.get_tipo_display }} &mdash; {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>
+                        {% else %}<span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>{% endif %}
+                      </span></div>
+                      {% with docs=actuado.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+                {% if actuado.texto %}
+                <div class="actuado-resolutiva" style="color:var(--c-tsp);border-left-color:var(--c-tsp);">
+                  <span class="res-label" style="color:var(--c-tsp);">Resolutiva</span>{{ actuado.texto }}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+              {% endif %}
+
+              {# — Nulidad — #}
+              {% if m.tsp_nulidad %}
+              <div class="seccion-sep">Recurso de Nulidad</div>
+              {% for actuado in m.tsp_nulidad %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-tsp);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div>
+                        <span class="tipo-badge" style="background:var(--c-tsp);">{{ actuado.get_instancia_display }}</span>
+                        <span class="actuado-numero">Nº {{ actuado.numero|default:"S/N" }}</span>
+                      </div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      {% if actuado.tipo %}<div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ actuado.get_tipo_display }}</span></div>{% endif %}
+                      <div><span class="campo-k">Notificación</span><span class="campo-v d-block">
+                        {% if actuado.notificacion %}<span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ actuado.notificacion.get_tipo_display }} &mdash; {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>
+                        {% else %}<span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>{% endif %}
+                      </span></div>
+                      {% with docs=actuado.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+                {% if actuado.texto %}
+                <div class="actuado-resolutiva" style="color:var(--c-tsp);border-left-color:var(--c-tsp);">
+                  <span class="res-label" style="color:var(--c-tsp);">Resolutiva</span>{{ actuado.texto }}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+              {% endif %}
+
+              {# — Autos del TSP — #}
+              {% if m.tsp_auto %}
+              <div class="seccion-sep">Autos del TSP</div>
+              {% for actuado in m.tsp_auto %}
+              <div class="actuado-item">
+                <div class="actuado-stripe">
+                  <div class="actuado-bar" style="background:var(--c-tsp);"></div>
+                  <div class="actuado-main">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                      <div>
+                        <span class="tipo-badge" style="background:var(--c-tsp);">{{ actuado.get_instancia_display }}</span>
+                        <span class="actuado-numero">Nº {{ actuado.numero|default:"S/N" }}</span>
+                      </div>
+                      <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+                    </div>
+                    <div class="actuado-campos mt-2">
+                      {% if actuado.tipo %}<div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ actuado.get_tipo_display }}</span></div>{% endif %}
+                      <div><span class="campo-k">Notificación</span><span class="campo-v d-block">
+                        {% if actuado.notificacion %}<span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ actuado.notificacion.get_tipo_display }} &mdash; {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>
+                        {% else %}<span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>{% endif %}
+                      </span></div>
+                      {% with docs=actuado.documentos.all %}{% if docs %}
+                      <div><span class="campo-k">Archivo</span><span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span></div>
+                      {% endif %}{% endwith %}
+                    </div>
+                  </div>
+                </div>
+                {% if actuado.texto %}
+                <div class="actuado-resolutiva" style="color:var(--c-tsp);border-left-color:var(--c-tsp);">
+                  <span class="res-label" style="color:var(--c-tsp);">Resolutiva</span>{{ actuado.texto }}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+              {% endif %}
+
+            </div>{# /panel-trib-body TSP #}
+          </div>{# /panel-tribunal TSP #}
+        </div>{# /col TSP #}
         {% endif %}
 
-        {# ──── 1. RESOLUCIONES (1ª Instancia) ──── #}
-        {% for res in m.resoluciones %}
-        <div class="actuado-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar" style="background:var(--c-res);"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-res);">RESOLUCIÓN</span>
-                  <span class="actuado-numero">Nº {{ res.numero|default:"S/N" }}</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ res.fecha|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ res.get_tipo_display|default:"—" }}</span></div>
-                <div>
-                  <span class="campo-k">Notificación</span>
-                  <span class="campo-v d-block">
-                    {% if res.notificacion %}
-                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ res.notificacion.get_tipo_display }} &mdash; {{ res.notificacion.fecha|date:"d/m/Y" }}</span>
-                    {% else %}
-                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
-                    {% endif %}
-                  </span>
-                </div>
-                {% with docs=res.documentos.all %}{% if docs %}
-                <div>
-                  <span class="campo-k">Archivo</span>
-                  <span class="campo-v d-block">
-                    <a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;">
-                      <i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF
-                    </a>
-                  </span>
-                </div>
-                {% endif %}{% endwith %}
-              </div>
-            </div>
-          </div>
-          {% if res.texto %}
-          <div class="actuado-resolutiva" style="color:var(--c-res);border-left-color:var(--c-res);">
-            <span class="res-label" style="color:var(--c-res);">Resolutiva</span>
-            {{ res.texto }}
-          </div>
-          {% endif %}
-        </div>
-        {# Memorándum ligado a esta RES #}
-        {% for memo in res.memorandums.all %}
-        <div class="actuado-item memo-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM</span>
-                  <span class="actuado-numero">Nº {{ memo.numero }}</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                <div>
-                  <span class="campo-k">Fecha Entrega</span>
-                  <span class="campo-v d-block">
-                    {% if memo.fecha_entrega %}
-                      <span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
-                    {% else %}
-                      <span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Sin fecha de entrega</span>
-                    {% endif %}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-        {% endfor %}
+        </div>{# /row g-2 #}
+        {% endif %}{# /has actuados #}
 
-        {# ──── 2. RECURSO DE RECONSIDERACIÓN (RR) ──── #}
-        {% for rr in m.rrs %}
-        <div class="actuado-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar" style="background:var(--c-rr);"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-rr);">REC. RECONSIDERACIÓN</span>
-                  <span class="actuado-numero">Nº {{ rr.numero|default:"S/N" }}</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ rr.fecha|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ rr.get_tipo_display|default:"—" }}</span></div>
-                {% if rr.fecha_presentacion %}
-                <div><span class="campo-k">Presentado</span><span class="campo-v d-block">{{ rr.fecha_presentacion|date:"d/m/Y" }}</span></div>
-                {% endif %}
-
-                <div>
-                  <span class="campo-k">Notificación</span>
-                  <span class="campo-v d-block">
-                    {% if rr.notificacion %}
-                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ rr.notificacion.get_tipo_display }} &mdash; {{ rr.notificacion.fecha|date:"d/m/Y" }}</span>
-                    {% else %}
-                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
-                    {% endif %}
-                  </span>
-                </div>
-                {% with docs=rr.documentos.all %}{% if docs %}
-                <div>
-                  <span class="campo-k">Archivo</span>
-                  <span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span>
-                </div>
-                {% endif %}{% endwith %}
-              </div>
-            </div>
-          </div>
-          {% if rr.texto %}
-          <div class="actuado-resolutiva" style="color:var(--c-rr);border-left-color:var(--c-rr);">
-            <span class="res-label" style="color:var(--c-rr);">Resolutiva</span>
-            {{ rr.texto }}
-          </div>
-          {% endif %}
-        </div>
-        {# Memorándum ligado a este RR #}
-        {% for memo in rr.memorandums.all %}
-        <div class="actuado-item memo-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM</span>
-                  <span class="actuado-numero">Nº {{ memo.numero }}</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                <div>
-                  <span class="campo-k">Fecha Entrega</span>
-                  <span class="campo-v d-block">
-                    {% if memo.fecha_entrega %}
-                      <span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
-                    {% else %}
-                      <span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Sin fecha de entrega</span>
-                    {% endif %}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-        {% endfor %}
-
-        {# ──── 3. AUTOS TPE + MEMORÁNDUM como ítem siguiente ──── #}
-        {% for auto in m.autos_tpe %}
-        <div class="actuado-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar" style="background:var(--c-auto);"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-auto);">AUTO TPE</span>
-                  <span class="actuado-numero">Nº {{ auto.numero|default:"S/N" }}</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ auto.fecha|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                <div><span class="campo-k">Tipo</span><span class="campo-v d-block">{{ auto.get_tipo_display|default:"—" }}</span></div>
-                <div>
-                  <span class="campo-k">Notificación</span>
-                  <span class="campo-v d-block">
-                    {% if auto.notificacion %}
-                      <span class="chip chip-notif-ok"><i class="bi bi-check-circle-fill"></i>{{ auto.notificacion.get_tipo_display }} &mdash; {{ auto.notificacion.fecha|date:"d/m/Y" }}</span>
-                    {% else %}
-                      <span class="chip chip-notif-pen"><i class="bi bi-clock"></i>Pendiente</span>
-                    {% endif %}
-                  </span>
-                </div>
-                {% with docs=auto.documentos.all %}{% if docs %}
-                <div>
-                  <span class="campo-k">Archivo</span>
-                  <span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span>
-                </div>
-                {% endif %}{% endwith %}
-              </div>
-            </div>
-          </div>
-          {% if auto.texto %}
-          <div class="actuado-resolutiva" style="color:var(--c-auto);border-left-color:var(--c-auto);">
-            <span class="res-label" style="color:var(--c-auto);">Resolutiva</span>
-            {{ auto.texto }}
-          </div>
-          {% endif %}
-        </div>
-
-        {# — Memorándum Ejecutoria (ítem propio, indentado, inmediatamente después del auto) — #}
-        {% for memo in auto.memorandums.all %}
-        <div class="actuado-item memo-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-memo);">MEMORÁNDUM EJECUTORIA</span>
-                  <span class="actuado-numero">Nº {{ memo.numero }}</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ memo.fecha|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                <div>
-                  <span class="campo-k">Fecha de Entrega</span>
-                  <span class="campo-v d-block">
-                    {% if memo.fecha_entrega %}
-                      <span class="chip chip-entrega"><i class="bi bi-check-circle-fill"></i>Entregado el {{ memo.fecha_entrega|date:"d/m/Y" }}</span>
-                    {% else %}
-                      <span class="chip chip-sinentrega"><i class="bi bi-hourglass-split"></i>Entrega pendiente</span>
-                    {% endif %}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-        {% endfor %}
-
-        {# ──── 4. APELACIÓN TSP (RAP) + Actuados TSP anidados ──── #}
-        {% for apelacion in m.apelaciones_tsp %}
-        <div class="actuado-item">
-          <div class="actuado-stripe">
-            <div class="actuado-bar" style="background:var(--c-rap);"></div>
-            <div class="actuado-main">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
-                <div>
-                  <span class="tipo-badge" style="background:var(--c-rap);">REC. APELACIÓN AL TSP (RAP)</span>
-                </div>
-                <span class="actuado-fecha"><i class="bi bi-calendar3 me-1"></i>{{ apelacion.fecha_presentacion|date:"d/m/Y"|default:"—" }}</span>
-              </div>
-              <div class="actuado-campos mt-2">
-                {% if apelacion.numero_oficio %}
-                <div>
-                  <span class="campo-k">Oficio de Elevación</span>
-                  <span class="campo-v d-block">{{ apelacion.numero_oficio }}</span>
-                </div>
-                {% endif %}
-                {% if apelacion.fecha_oficio %}
-                <div>
-                  <span class="campo-k">Fecha del Oficio</span>
-                  <span class="campo-v d-block" style="font-size:.95rem;">
-                    <i class="bi bi-send me-1" style="color:var(--c-rap);"></i>{{ apelacion.fecha_oficio|date:"d/m/Y" }}
-                  </span>
-                </div>
-                {% endif %}
-                {% with docs=apelacion.documentos.all %}{% if docs %}
-                <div>
-                  <span class="campo-k">Archivo</span>
-                  <span class="campo-v d-block"><a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:1px 7px;"><i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF</a></span>
-                </div>
-                {% endif %}{% endwith %}
-              </div>
-            </div>
-          </div>
-
-          {# Actuados del TSP para este RAP #}
-          {% for actuado in apelacion.actuados.all %}
-          <div class="actuado-tsp-sub">
-            <span class="tipo-badge" style="background:var(--c-tsp);">{{ actuado.get_instancia_display }}</span>
-            <span class="fw-bold" style="font-size:.8rem;">Nº {{ actuado.numero|default:"S/N" }}</span>
-            <span class="text-muted" style="font-size:.73rem;"><i class="bi bi-calendar3 me-1"></i>{{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
-            {% if actuado.tipo %}<span class="badge bg-light text-dark border" style="font-size:.67rem;">{{ actuado.get_tipo_display }}</span>{% endif %}
-            {% if actuado.notificacion %}
-              <span class="chip chip-notif-ok" style="font-size:.68rem;"><i class="bi bi-check-circle-fill"></i>{{ actuado.notificacion.get_tipo_display }} {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>
-            {% else %}
-              <span class="chip chip-notif-pen" style="font-size:.68rem;"><i class="bi bi-clock"></i>Sin notif.</span>
-            {% endif %}
-            {% with docs=actuado.documentos.all %}{% if docs %}<a href="{{ docs.0.archivo.url }}" target="_blank" class="btn btn-xs btn-outline-secondary ms-auto" style="font-size:.68rem;padding:1px 6px;"><i class="bi bi-file-earmark-pdf"></i></a>{% endif %}{% endwith %}
-          </div>
-          {% if actuado.texto %}
-          <div class="actuado-resolutiva" style="color:var(--c-tsp);border-left-color:var(--c-tsp);padding-left:1.7rem;">
-            <span class="res-label" style="color:var(--c-tsp);">Resolutiva TSP</span>
-            {{ actuado.texto }}
-          </div>
-          {% endif %}
-          {% endfor %}
-
-        </div>
-        {% endfor %}
 
       </div><!-- /actuados-body -->
     </div><!-- /militar-accordion -->
@@ -578,11 +649,11 @@
     </div>
     {% endfor %}
 
-    <!-- Actuados TSP sin militar asignado -->
+    <!-- Actuados TSP sin RAP vinculado (sin militar / sin apelación de origen) -->
     {% if actuados_tsp %}
     <div class="card border-0 shadow-sm mb-2">
-      <div class="card-header py-2 px-3" style="background:#4a1d96;color:#fff;font-size:.82rem;font-weight:700;">
-        <i class="bi bi-building me-1"></i>Actuados del Tribunal Supremo Policial
+      <div class="card-header py-2 px-3" style="background:#9a3412;color:#fff;font-size:.82rem;font-weight:700;">
+        <i class="bi bi-building me-1"></i>Actuados del TSP sin apelación de origen registrada
       </div>
       <div class="p-3">
         {% for actuado in actuados_tsp %}
