@@ -381,14 +381,16 @@ def agendar_rr(request):
         if form.is_valid():
             rr = form.cleaned_data['rr']
             abogado = form.cleaned_data['abogado']
-            fecha_agenda = form.cleaned_data['fecha_agenda']
+            agenda = form.cleaned_data['agenda']
 
             rr.abogado = abogado
+            rr.agenda = agenda
             rr.save()
 
+            fecha_str = agenda.fecha_prog.strftime('%d/%m/%Y') if agenda.fecha_prog else agenda.numero
             messages.success(
                 request,
-                f'✅ RR asignado para el abogado {abogado} el {fecha_agenda.strftime("%d/%m/%Y")}. Admin2 debe entregar la carpeta.'
+                f'✅ RR asignado al abogado {abogado} en la Agenda {agenda.numero} ({fecha_str}). Admin2 debe entregar la carpeta.'
             )
             return redirect('admin1_dashboard')
     else:

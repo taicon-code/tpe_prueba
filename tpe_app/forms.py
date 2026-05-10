@@ -402,9 +402,11 @@ class AgendarRRForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'}),
         empty_label='Seleccione un abogado...'
     )
-    fecha_agenda = forms.DateField(
-        label='Fecha de Agenda/Reunión',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    agenda = forms.ModelChoiceField(
+        queryset=AGENDA.objects.filter(estado='PROGRAMADA').order_by('fecha_prog'),
+        label='Agenda (Sesión del Tribunal)',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label='Seleccione una agenda...'
     )
 
     def __init__(self, *args, **kwargs):
@@ -416,6 +418,11 @@ class AgendarRRForm(forms.Form):
             return f"RR sobre RES {origen_num}{pm_info} (SIM: {obj.sim.codigo})"
         self.fields['rr'].label_from_instance = rr_label
         self.fields['abogado'].label_from_instance = lambda obj: f"{obj.grado} {obj.nombre} {obj.paterno}"
+        def agenda_label(obj):
+            fecha = obj.fecha_prog.strftime('%d/%m/%Y') if obj.fecha_prog else 'S/F'
+            tipo = obj.get_tipo_display() if obj.tipo else 'Sin tipo'
+            return f"Agenda {obj.numero} — {tipo} — {fecha}"
+        self.fields['agenda'].label_from_instance = agenda_label
 
 
 # ============================================================
