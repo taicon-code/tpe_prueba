@@ -388,6 +388,11 @@ def agendar_rr(request):
             rr.agenda = agenda
             rr.save()
 
+            sim = rr.sim
+            if sim.fase == 'PARA_AGENDA_RR':
+                sim.fase = 'EN_DICTAMEN_RR'
+                sim.save()
+
             custodia_admin2 = CustodiaSIM.objects.filter(
                 sim=rr.sim,
                 tipo_custodio='ADMIN2_ARCHIVO',
@@ -721,6 +726,10 @@ def quitar_rr_de_agenda(request, ag_id, rr_id):
         rr.agenda = None
         rr.abogado = None
         rr.save()
+        sim = rr.sim
+        if sim.fase == 'EN_DICTAMEN_RR':
+            sim.fase = 'PARA_AGENDA_RR'
+            sim.save()
     messages.success(request, f'RR del sumario {rr.sim.codigo} quitado de la Agenda {agenda.numero}. Vuelve al listado de pendientes.')
     return redirect('ver_agenda_detalle', ag_id=ag_id)
 

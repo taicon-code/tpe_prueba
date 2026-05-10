@@ -917,6 +917,11 @@ def registrar_rr(request):
             rr.numero = None
             rr.save()
 
+            sim = rr.sim
+            if sim.fase in ['1RA_RESOLUCION', 'NOTIFICADO_1RA', 'EN_ESPERA_RR']:
+                sim.fase = 'PARA_AGENDA_RR'
+                sim.save()
+
             CustodiaSIM.objects.create(
                 sim=rr.sim,
                 tipo_custodio='ADMIN2_ARCHIVO',

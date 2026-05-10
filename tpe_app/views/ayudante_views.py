@@ -195,7 +195,13 @@ def ayudante_registrar_res(request):
 
                     # Actualizar la fase del SIM si es necesario
                     sim = res.sim
-                    if sim.fase not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'ELEVADO_TSP', 'CONCLUIDO']:
+                    fases_avanzadas = ['2DA_RESOLUCION', 'EN_ESPERA_RR', 'PARA_AGENDA_RR', 'EN_DICTAMEN_RR',
+                                       'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']
+                    if form.cleaned_data.get('notif_tipo') and sim.fase not in fases_avanzadas:
+                        sim.fase = 'EN_ESPERA_RR'
+                        sim.estado = 'PROCESO_EN_EL_TPE'
+                        sim.save()
+                    elif sim.fase not in ['1RA_RESOLUCION'] + fases_avanzadas:
                         sim.fase = '1RA_RESOLUCION'
                         sim.estado = 'PROCESO_EN_EL_TPE'
                         sim.save()
@@ -232,6 +238,9 @@ def ayudante_registrar_notificacion(request, res_id):
                     notif = form.save(commit=False)
                     notif.resolucion = res
                     notif.save()
+                    if res.instancia == 'PRIMERA' and res.sim.fase == '1RA_RESOLUCION':
+                        res.sim.fase = 'EN_ESPERA_RR'
+                        res.sim.save()
                     messages.success(request, f'Notificación de RES {res.numero} registrada exitosamente')
                     if next_url:
                         return redirect(next_url)
@@ -843,7 +852,12 @@ def ayudante_wizard_paso3(request, sim_id, pm_id=None):
                         )
                         notif.save()
 
-                    if sim.fase not in ['1RA_RESOLUCION', '2DA_RESOLUCION', 'NOTIFICADO_1RA', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']:
+                    fases_pos_rr = ['EN_ESPERA_RR', 'PARA_AGENDA_RR', 'EN_DICTAMEN_RR', '2DA_RESOLUCION',
+                                    'NOTIFICADO_1RA', 'NOTIFICADO_RR', 'ELEVADO_TSP', 'CONCLUIDO']
+                    if res_notif_tipo and sim.fase not in fases_pos_rr:
+                        sim.fase = 'EN_ESPERA_RR'
+                        sim.save()
+                    elif not res_notif_tipo and sim.fase not in ['1RA_RESOLUCION'] + fases_pos_rr:
                         sim.fase = '1RA_RESOLUCION'
                         sim.save()
 
