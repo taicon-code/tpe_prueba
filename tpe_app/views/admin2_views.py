@@ -7,6 +7,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import datetime
 from ..decorators import rol_requerido
 from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, ApelacionTSP
+from ..forms import RegistrarRRForm
 
 
 # ============================================================
@@ -897,3 +898,37 @@ def anular_entrega_custodia(request, custodia_id):
         messages.error(request, f'❌ Error al anular: {str(e)}')
 
     return redirect('admin2_dashboard')
+
+
+# ============================================================
+# REGISTRO DE RECURSO DE RECONSIDERACIÓN (RR)
+# ============================================================
+
+@rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
+def registrar_rr(request):
+    """Formulario para registrar un Recurso de Reconsideración (Resolucion RECONSIDERACION)"""
+    if request.method == 'POST':
+        form = RegistrarRRForm(request.POST)
+        if form.is_valid():
+            rr = form.save(commit=False)
+            rr.instancia = 'RECONSIDERACION'
+            rr.sim = rr.resolucion_origen.sim
+            rr.pm = rr.resolucion_origen.pm or rr.sim.militares.first()
+            rr.numero = None
+            rr.save()
+
+            CustodiaSIM.objects.create(
+                sim=rr.sim,
+                tipo_custodio='ADMIN2_ARCHIVO',
+                usuario=request.user,
+                motivo='AGENDA',
+            )
+
+            messages.success(request, '✅ Recurso de Reconsideración registrado. Admin1 deberá agendarlo con un abogado.')
+            return redirect('admin2_dashboard')
+        else:
+            messages.error(request, '❌ Por favor corrija los errores en el formulario')
+    else:
+        form = RegistrarRRForm()
+
+    return render(request, 'tpe_app/admin2/registrar_rr.html', {'form': form})

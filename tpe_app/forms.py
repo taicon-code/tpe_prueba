@@ -381,6 +381,7 @@ class RegistrarRRForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.instance.instancia = 'RECONSIDERACION'
         def res_label(obj):
             pm_info = f" - {obj.pm.grado} {obj.pm.paterno}" if obj.pm else ""
             return f"RES {obj.numero}{pm_info} (SIM: {obj.sim.codigo})"

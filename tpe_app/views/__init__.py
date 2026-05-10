@@ -28,7 +28,6 @@ from .admin1_views import (
     registrar_sumario,
     autocomplete_pm,
     agendar_sumario,
-    registrar_rr,
     agendar_rr,
     crear_agenda,
     lista_agendas,
@@ -51,6 +50,7 @@ from .admin2_views import (
     admin2_registrar_retorno_memo,
     admin2_registrar_rap,
     admin2_registrar_salida_tsp,
+    registrar_rr,
 )
 from .admin3_views import (
     admin3_dashboard,

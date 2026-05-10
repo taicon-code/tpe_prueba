@@ -78,7 +78,7 @@ urlpatterns = [
     path('admin1/sumarios/registrar/', views.registrar_sumario, name='registrar_sumario'),
     path('admin1/sumarios/autocomplete-pm/', views.autocomplete_pm, name='autocomplete_pm'),
     path('admin1/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
-    path('admin1/rr/registrar/', views.registrar_rr, name='registrar_rr'),
+    path('admin2/rr/registrar/', views.registrar_rr, name='registrar_rr'),
     path('admin1/rr/agendar/', views.agendar_rr, name='agendar_rr'),
     path('admin1/sumarios/<int:sim_id>/abogados/', views.gestionar_abogados_sim, name='gestionar_abogados_sim'),
 

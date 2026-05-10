@@ -12,7 +12,7 @@ import calendar
 from ..decorators import rol_requerido
 from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP
 from ..models import get_pendientes_ejecutoria
-from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, RegistrarRRForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
+from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -371,40 +371,6 @@ def agendar_sumario(request):
     }
 
     return render(request, 'tpe_app/admin1/agendar_sumario.html', context)
-
-@rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
-def registrar_rr(request):
-    """Formulario para registrar un Recurso de Reconsideración (Resolucion RECONSIDERACION)"""
-    if request.method == 'POST':
-        form = RegistrarRRForm(request.POST)
-        if form.is_valid():
-            rr = form.save(commit=False)
-            # La instancia se fija explícitamente
-            rr.instancia = 'RECONSIDERACION'
-            # Heredar sim y pm de la resolución origen
-            rr.sim = rr.resolucion_origen.sim
-            rr.pm = rr.resolucion_origen.pm or rr.sim.militares.first()
-            # Número se asigna al momento del fallo; por ahora vacío
-            if not rr.numero:
-                rr.numero = ''
-            rr.save()
-
-            # Crear custodia inicial: Admin2 es custodio del RR desde que se registra
-            CustodiaSIM.objects.create(
-                sim=rr.sim,
-                tipo_custodio='ADMIN2_ARCHIVO',
-                usuario=request.user,
-                motivo='AGENDA',
-            )
-
-            messages.success(request, '✅ Recurso de Reconsideración registrado exitosamente. Ahora agendar con un abogado.')
-            return redirect(f"{reverse('agendar_rr')}?rr={rr.id}")
-        else:
-            messages.error(request, '❌ Por favor corrija los errores en el formulario')
-    else:
-        form = RegistrarRRForm()
-
-    return render(request, 'tpe_app/admin1/registrar_rr.html', {'form': form})
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def agendar_rr(request):

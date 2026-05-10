@@ -1132,7 +1132,7 @@ class Resolucion(models.Model):
         related_name='recursos_reconsideracion',
         verbose_name='Resolución impugnada (solo RECONSIDERACION)')
 
-    numero             = models.CharField(max_length=15, db_index=True, verbose_name='Número de Resolución')
+    numero             = models.CharField(max_length=15, db_index=True, null=True, blank=True, verbose_name='Número de Resolución')
     fecha              = models.DateField(null=True, blank=True, verbose_name='Fecha')
     texto              = models.TextField(null=True, blank=True, verbose_name='Resolución')
     tipo               = models.CharField(max_length=100, choices=TIPO_CHOICES, null=True, blank=True, verbose_name='Tipo')
