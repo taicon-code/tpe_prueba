@@ -93,8 +93,8 @@
                         {{ mform.escalafon }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ mform.grado.label }}</label>
-                        {{ mform.grado }}
+                        <label class="field-label-sm">{{ mform.grado_en_fecha.label }}</label>
+                        {{ mform.grado_en_fecha }}
                     </div>
                     <div>
                         <label class="field-label-sm">{{ mform.arma.label }}</label>
@@ -159,8 +159,8 @@
                         {{ formset.empty_form.escalafon }}
                     </div>
                     <div>
-                        <label class="field-label-sm">{{ formset.empty_form.grado.label }}</label>
-                        {{ formset.empty_form.grado }}
+                        <label class="field-label-sm">{{ formset.empty_form.grado_en_fecha.label }}</label>
+                        {{ formset.empty_form.grado_en_fecha }}
                     </div>
                     <div>
                         <label class="field-label-sm">{{ formset.empty_form.arma.label }}</label>
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function applyGradoFilter(formEl) {
         const escalafonSelect = formEl.querySelector('select[name$="-escalafon"]');
-        const gradoSelect = formEl.querySelector('select[name$="-grado"]');
+        const gradoSelect = formEl.querySelector('select[name$="-grado_en_fecha"]');
         if (!escalafonSelect || !gradoSelect) return;
         const escalafon = escalafonSelect.value;
         const permitidos = GRADOS_POR_ESCALAFON[escalafon] || null;
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (escSelect) {
             applyGradoFilter(formEl);
             escSelect.addEventListener('change', function() {
-                formEl.querySelector('select[name$="-grado"]').value = '';
+                formEl.querySelector('select[name$="-grado_en_fecha"]').value = '';
                 applyGradoFilter(formEl);
             });
         }
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const nombreInput = formEl.querySelector('input[name$="-nombre"]');
         const paternoInput = formEl.querySelector('input[name$="-paterno"]');
         const maternoInput = formEl.querySelector('input[name$="-materno"]');
-        const gradoSelect = formEl.querySelector('select[name$="-grado"]');
+        const gradoSelect = formEl.querySelector('select[name$="-grado_en_fecha"]');
         const armaSelect = formEl.querySelector('select[name$="-arma"]');
         const escalafonSelect = formEl.querySelector('select[name$="-escalafon"]');
         const especInput = formEl.querySelector('input[name$="-especialidad"]');
