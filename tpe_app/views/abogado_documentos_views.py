@@ -56,19 +56,34 @@ def abogado_sumario_detalle(request, sim_id: int):
     es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
     rrs_asignados = list(
         Resolucion.objects.filter(sim=sim, instancia='RECONSIDERACION', abogado=abogado)
-        .select_related("resolucion_origen").order_by("-fecha")
+        .select_related("resolucion_origen", "resolucion_origen__abogado", "pm")
+        .order_by("-fecha")
     )
+
+    # Enriquecer cada RR con el estado de avance del abogado
+    pms_rr_pks = set()
+    for rr in rrs_asignados:
+        if rr.pm:
+            rr.mi_dictamen = DICTAMEN.objects.filter(
+                sim=sim, abogado=abogado, pm=rr.pm
+            ).order_by('-id').first()
+            pms_rr_pks.add(rr.pm.pk)
+        else:
+            rr.mi_dictamen = None
 
     # Verificar si este abogado es el responsable de la carpeta
     es_responsable = ABOG_SIM.objects.filter(
         sim=sim, abogado=abogado, es_responsable=True
     ).exists()
 
-    # Custodia activa (solo relevante para el responsable — botón entregar)
+    # Custodia activa: el abogado TIENE la carpeta (no solo que la entregó a Admin2)
+    # Los tipos ADMIN2_ARCHIVO guardan al abogado como entregador, no como tenedor.
+    _TIPOS_ABOGADO_TENEDOR = ['ABOG_ASESOR', 'ABOG_RR', 'ABOG_AUTOS', 'VOCAL_SESION', 'ADMIN1_AGENDADOR']
     tiene_custodia = CustodiaSIM.objects.filter(
         sim=sim,
         fecha_entrega__isnull=True,
-        abogado=abogado
+        abogado=abogado,
+        tipo_custodio__in=_TIPOS_ABOGADO_TENEDOR,
     ).exists()
     custodio_actual = sim.custodio_actual()
 
@@ -113,6 +128,7 @@ def abogado_sumario_detalle(request, sim_id: int):
         "autos_tpe": autos_tpe,
         "es_via_sim": es_via_sim,
         "rrs_asignados": rrs_asignados,
+        "pms_rr_pks": list(pms_rr_pks),
         "es_responsable": es_responsable,
         "tiene_custodia": tiene_custodia,
         "custodio_actual": custodio_actual,
@@ -130,16 +146,29 @@ def abogado_dictamen_crear(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM.objects.prefetch_related('militares'), pk=sim_id)
 
-    # Verificar que el abogado esté asignado al SIM (no requiere custodia)
-    if not sim.abogados.filter(pk=abogado.pk).exists():
-        rr_asignado = Resolucion.objects.filter(
-            sim=sim, abogado=abogado, instancia='RECONSIDERACION'
-        ).exists()
-        if not rr_asignado:
-            messages.error(request, "❌ No está asignado a este sumario.")
-            return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+    # Determinar acceso: vía SIM directo (Etapa 1) o solo vía RR asignados (Etapa 2)
+    es_via_sim = sim.abogados.filter(pk=abogado.pk).exists()
+    rrs_asignados = list(
+        Resolucion.objects.filter(sim=sim, abogado=abogado, instancia='RECONSIDERACION')
+        .select_related('pm')
+    )
 
-    militares = list(sim.militares.all())
+    if not es_via_sim and not rrs_asignados:
+        messages.error(request, "❌ No está asignado a este sumario.")
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
+    # Si accede solo vía RR, limitar los militares a los de sus RRs asignadas.
+    # Así cada abogado crea dictámenes únicamente para los militares que le corresponden.
+    if es_via_sim:
+        militares = list(sim.militares.all())
+    else:
+        seen_pks = set()
+        militares = []
+        for rr in rrs_asignados:
+            if rr.pm and rr.pm.pk not in seen_pks:
+                militares.append(rr.pm)
+                seen_pks.add(rr.pm.pk)
+
     agendas = AGENDA.objects.all().order_by("-fecha_prog")
 
     if request.method == "POST":
