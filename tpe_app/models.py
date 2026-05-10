@@ -774,6 +774,11 @@ class AGENDA(models.Model):
     def __str__(self):
         return f"{self.numero} — {self.fecha_prog}"
 
+    def save(self, *args, **kwargs):
+        if self.numero:
+            self.numero = self.numero.upper()
+        super().save(*args, **kwargs)
+
 
 # ============================================================
 # MODELO 3.6: DICTAMEN — Dictamen de abogado en agenda
