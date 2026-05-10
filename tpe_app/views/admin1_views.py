@@ -208,7 +208,7 @@ def admin1_dashboard(request):
     return render(request, 'tpe_app/admin1/admin1_dashboard.html', context)
 
 
-@rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')
+@rol_requerido('ADMIN1_AGENDADOR', 'MASTER', 'ADMINISTRADOR')
 def registrar_sumario(request):
     """Formulario para registrar un nuevo sumario con militares"""
 
@@ -216,7 +216,13 @@ def registrar_sumario(request):
         form = SIMForm(request.POST)
         formset = PMSIMFormSet(request.POST, request.FILES)
 
-        if form.is_valid() and formset.is_valid():
+        # Validar que haya al menos un militar
+        formset_valid = formset.is_valid()
+        if not formset_valid and formset.non_form_errors():
+            # Mostrar errores del formset (ej: min_num, max_num)
+            messages.error(request, f'❌ {formset.non_form_errors().as_text()}')
+
+        if form.is_valid() and formset_valid:
             try:
                 with transaction.atomic():
                     # Guardar el sumario
