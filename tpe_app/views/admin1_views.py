@@ -598,9 +598,26 @@ def crear_agenda(request):
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
 def lista_agendas(request):
-    """Lista todas las agendas con su estado y opciones de edición"""
+    """Lista agendas filtradas por gestión (año). Por defecto muestra el año actual."""
+    from datetime import date
 
-    agendas = AGENDA.objects.all().order_by('-fecha_prog')
+    anio_actual = date.today().year
+    anio_param = request.GET.get('anio', '')
+    try:
+        anio_sel = int(anio_param)
+    except (ValueError, TypeError):
+        anio_sel = anio_actual
+
+    # Años disponibles en BD (para el selector)
+    anios_disponibles = (
+        AGENDA.objects
+        .dates('fecha_prog', 'year', order='DESC')
+    )
+    anios = [d.year for d in anios_disponibles]
+    if anio_sel not in anios:
+        anio_sel = anios[0] if anios else anio_actual
+
+    qs = AGENDA.objects.filter(fecha_prog__year=anio_sel).order_by('-fecha_prog')
 
     rol = request.perfil.rol
     if rol == 'ADMIN2_ARCHIVO':
@@ -611,10 +628,12 @@ def lista_agendas(request):
         dashboard_url = 'admin1_dashboard'
 
     context = {
-        'agendas': agendas,
-        'total_programadas': AGENDA.objects.filter(estado='PROGRAMADA').count(),
-        'total_realizadas': AGENDA.objects.filter(estado='REALIZADA').count(),
-        'total_suspendidas': AGENDA.objects.filter(estado='SUSPENDIDA').count(),
+        'agendas': qs,
+        'anio_sel': anio_sel,
+        'anios': anios,
+        'total_programadas': qs.filter(estado='PROGRAMADA').count(),
+        'total_realizadas': qs.filter(estado='REALIZADA').count(),
+        'total_suspendidas': qs.filter(estado='SUSPENDIDA').count(),
         'dashboard_url': dashboard_url,
     }
 

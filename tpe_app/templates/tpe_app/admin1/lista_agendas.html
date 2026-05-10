@@ -11,13 +11,29 @@
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1 style="margin: 0; color: #1e3c72;">📅 Agendas Programadas</h1>
+    <h1 style="margin: 0; color: #1e3c72;">📅 Agendas — Gestión {{ anio_sel }}</h1>
     <a href="{% url 'crear_agenda' %}" class="btn" style="background: #28a745;">
         ➕ Nueva Agenda
     </a>
 </div>
 
-{# Estadísticas de agendas #}
+{# Selector de gestión (año) #}
+<form method="get" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+    <label for="anio" style="font-weight: 600; color: #1e3c72; white-space: nowrap;">Gestión:</label>
+    <select name="anio" id="anio" onchange="this.form.submit()"
+            style="padding: 0.4rem 0.8rem; border: 1px solid #ccc; border-radius: 6px; font-size: 0.95rem; color: #1e3c72; background: #fff; cursor: pointer;">
+        {% for anio in anios %}
+        <option value="{{ anio }}" {% if anio == anio_sel %}selected{% endif %}>
+            Gestión {{ anio }}
+        </option>
+        {% endfor %}
+    </select>
+    <span style="color: #666; font-size: 0.9rem;">
+        — {{ agendas|length }} agenda(s) encontrada(s)
+    </span>
+</form>
+
+{# Estadísticas de agendas (filtradas por gestión) #}
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
     <div class="card" style="background: #eff6ff; border-left: 4px solid #2196f3; margin: 0;">
         <p style="margin: 0; color: #1565c0;">
@@ -37,7 +53,7 @@
 </div>
 
 <div class="card">
-    <h2>Todas las Agendas</h2>
+    <h2>Agendas — Gestión {{ anio_sel }}</h2>
 
     {% if agendas %}
     <table>
