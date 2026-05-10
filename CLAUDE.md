@@ -405,6 +405,11 @@ Si **NO hay `anio_promocion`** registrado (casos históricos):
 9. **Todos los textos en MAYÚSCULAS**: El método `save()` de cada modelo lo hace automáticamente.
 10. **Reaperturas de SIM**: `sim.version` (int), `sim.origen` (FK self, PROTECT), `sim.motivo_reapertura` para manejar reaperturas tras nulidad.
 11. **Memorándum ejecutoria**: `autotpe.memo_numero`, `autotpe.memo_fecha`, `autotpe.memo_fecha_entrega`. Al registrar retorno → `sim.estado = 'PROCESO_EJECUTADO'`.
+12. **v4.3 — Flujo de custodia y entrega (BUG FIX CRÍTICO)**:
+    - **Bug 1**: `admin2_entregar_carpeta()` usaba `abogado=abog` en lugar de `abogado_destino=abog` → causaba ValidationError silencioso en PENDIENTE_CONFIRMACION
+    - **Bug 2**: Sección 0 del dashboard Admin2 no mostraba sumarios agendados (casos históricos + entregas fallidas)
+    - **Bug 3**: Sección B del dashboard Admin2 tenía botón "Recibir" confuso en entregas al abogado
+    - **Solución**: Flujo correcto ahora: ADMIN1 agenda → custodia PENDIENTE_CONFIRMACION → ADMIN2 entrega con abogado_destino → ABOGADO confirma → custodia RECIBIDA_CONFORME con abogado. Dashboards mejorados con secciones claras y unívocas (commit 2cd5bdd).
 
 ---
 

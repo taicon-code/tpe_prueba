@@ -49,7 +49,12 @@ def abogado_dashboard(request):
         custodias__estado='PENDIENTE_CONFIRMACION',
         custodias__fecha_entrega__isnull=True,
     ).distinct()
-    
+    sim_ids_pendientes_confirmar = sumarios_para_confirmar.values_list('pk', flat=True)
+
+    # Excluir los pendientes de confirmación de la lista principal (no se puede trabajar aún)
+    mis_sumarios = mis_sumarios.exclude(pk__in=sim_ids_pendientes_confirmar)
+    mis_solicitudes = mis_solicitudes.exclude(pk__in=sim_ids_pendientes_confirmar)
+
     # ✅ NUEVO v3.1: Recursos asignados a este abogado
     # Mostrar Resolucion RECONSIDERACION donde el abogado está asignado,
     # aunque Admin2 aún no haya entregado custodia
@@ -123,56 +128,6 @@ def abogado_dashboard(request):
     }
 
     return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
-
-# ============================================================
-# CUSTODIA: CONFIRMAR RECEPCIÓN Y ENTREGA DE CARPETA
-# ============================================================
-
-@rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
-def abogado_confirmar_recepcion(request, sim_id):
-    """El abogado confirma que recibió físicamente la carpeta de Admin2.
-    Solo aplica cuando Admin2 ya entregó (custodia en PENDIENTE_CONFIRMACION con abogado_destino).
-    """
-    from django.shortcuts import redirect
-    from django.contrib import messages
-    from django.db import transaction
-    from django.utils import timezone
-
-    sim = get_object_or_404(SIM, pk=sim_id)
-    perfil = request.perfil
-
-    try:
-        with transaction.atomic():
-            custodia_pendiente = CustodiaSIM.objects.filter(
-                sim=sim,
-                abogado_destino=perfil.pm,
-                estado='PENDIENTE_CONFIRMACION',
-                fecha_entrega__isnull=True,
-            ).first()
-
-            if not custodia_pendiente:
-                messages.error(request, '❌ No hay entrega pendiente de confirmar para este sumario.')
-                return redirect('abogado_dashboard')
-
-            # Cerrar la custodia pendiente
-            custodia_pendiente.fecha_entrega = timezone.now()
-            custodia_pendiente.save()
-
-            # Crear custodia activa: el abogado ya tiene la carpeta
-            CustodiaSIM.objects.create(
-                sim=sim,
-                tipo_custodio=custodia_pendiente.tipo_custodio,
-                abogado=perfil.pm,
-                usuario=request.user,
-                motivo=custodia_pendiente.motivo or 'AGENDA',
-                estado='RECIBIDA_CONFORME',
-            )
-
-            messages.success(request, f'✅ Recepción confirmada. Ahora tienes la carpeta de {sim.codigo}.')
-    except Exception as e:
-        messages.error(request, f'❌ Error al confirmar: {str(e)}')
-
-    return redirect('abogado_dashboard')
 
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')

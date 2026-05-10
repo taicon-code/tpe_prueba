@@ -721,9 +721,12 @@ class CustodiaSIM(models.Model):
 
     def clean(self):
         from django.core.exceptions import ValidationError
-        if self.estado == 'PENDIENTE_CONFIRMACION' and not self.abogado_destino:
+        # abogado_destino requerido solo cuando Admin2 entrega A un abogado (ABOG_*)
+        # No aplica cuando un abogado devuelve a Admin2 (ADMIN2_ARCHIVO sin destino)
+        entrega_a_abogado = self.tipo_custodio and self.tipo_custodio.startswith('ABOG_')
+        if self.estado == 'PENDIENTE_CONFIRMACION' and entrega_a_abogado and not self.abogado_destino:
             raise ValidationError({
-                'abogado_destino': 'El abogado destino es obligatorio cuando la custodia está pendiente de confirmación.'
+                'abogado_destino': 'El abogado destino es obligatorio cuando se entrega a un abogado.'
             })
 
     def save(self, *args, **kwargs):

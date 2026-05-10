@@ -55,6 +55,15 @@ def admin2_dashboard(request):
             fecha_entrega__isnull=True,
         )
     )
+    # Si Admin2 ya tiene custodia activa (carpeta devuelta por abogado o en su poder),
+    # el SIM no debe aparecer en "Para entregar" — ya está en otra sección.
+    tiene_custodia_admin2_activa = Exists(
+        CustodiaSIM.objects.filter(
+            sim=OuterRef('pk'),
+            tipo_custodio='ADMIN2_ARCHIVO',
+            fecha_entrega__isnull=True,
+        )
+    )
     fases_excluidas = [
         'PENDIENTE_ARCHIVO', 'CONCLUIDO', 'MEMORANDUM_RETORNADO',
         'EN_EJECUTORIA', 'EJECUTORIA_NOTIFICADA', 'EN_AGENDA_EJECUTORIA',
@@ -64,7 +73,9 @@ def admin2_dashboard(request):
         .exclude(pk__in=sim_ids_caso_a)
         .exclude(fase__in=fases_excluidas)
         .annotate(tiene_custodia_abogado=tiene_custodia_abogado_activa)
+        .annotate(tiene_custodia_admin2=tiene_custodia_admin2_activa)
         .filter(tiene_custodia_abogado=False)
+        .filter(tiene_custodia_admin2=False)
         .prefetch_related('militares', 'abogados')
         .distinct()
     )

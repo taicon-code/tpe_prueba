@@ -490,20 +490,34 @@ def abogado_confirmar_recepcion(request, sim_id: int):
     abogado = _get_abogado_or_403(request)
     sim = get_object_or_404(SIM, pk=sim_id)
 
+    # Admin2 crea la custodia con abogado_destino (no abogado) cuando entrega
     custodia = CustodiaSIM.objects.filter(
-        sim=sim, abogado=abogado, estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
+        sim=sim, abogado_destino=abogado, estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
     ).first()
 
     if not custodia:
         messages.error(request, "❌ No hay carpeta pendiente de confirmación")
-        return redirect('abogado_sumario_detalle', sim_id=sim_id)
+        return redirect('abogado_dashboard')
 
     if request.method == 'POST':
         try:
-            custodia.estado = 'RECIBIDA_CONFORME'
-            custodia.save()
-            messages.success(request, "✅ Recepción confirmada. La carpeta está en su poder.")
-            return redirect('abogado_sumario_detalle', sim_id=sim_id)
+            from django.db import transaction
+            from django.utils import timezone
+            with transaction.atomic():
+                # Cerrar la custodia PENDIENTE_CONFIRMACION
+                custodia.fecha_entrega = timezone.now()
+                custodia.save()
+                # Crear nueva custodia RECIBIDA_CONFORME con abogado ya asignado
+                CustodiaSIM.objects.create(
+                    sim=sim,
+                    tipo_custodio=custodia.tipo_custodio,
+                    abogado=abogado,
+                    usuario=request.user,
+                    motivo=custodia.motivo or 'AGENDA',
+                    estado='RECIBIDA_CONFORME',
+                )
+            messages.success(request, f"✅ Recepción confirmada. La carpeta de {sim.codigo} está en su poder.")
+            return redirect('abogado_dashboard')
         except Exception as e:
             messages.error(request, f"❌ Error: {str(e)}")
 
