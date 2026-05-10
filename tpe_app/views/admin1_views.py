@@ -291,7 +291,7 @@ def registrar_sumario(request):
         'personal_militar': personal_militar,
     }
 
-    return render(request, 'tpe_app/admin1/registrar_sumario.html', context)
+    return render(request, 'tpe_app/admin2/registrar_sumario.html', context)
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')

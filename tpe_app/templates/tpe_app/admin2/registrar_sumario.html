@@ -5,7 +5,7 @@
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
-    <a href="{% url 'admin1_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
         ← Volver al Dashboard
     </a>
 </div>
@@ -247,7 +247,7 @@
     <!-- BOTONES -->
     <div style="display: flex; gap: 1rem; margin-top: 2rem;">
         <button type="submit" class="btn" style="background: #1e3c72;">✅ Registrar Sumario</button>
-        <a href="{% url 'admin1_dashboard' %}" class="btn" style="background: #6c757d;">Cancelar</a>
+        <a href="{% url 'admin2_dashboard' %}" class="btn" style="background: #6c757d;">Cancelar</a>
     </div>
 </form>
 
@@ -432,7 +432,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(r => r.json())
                 .then(data => {
                     if (data.encontrado) {
-                        // Autocompleta todos los campos
                         if (ciInput && data.ci) ciInput.value = data.ci;
                         if (nombreInput) nombreInput.value = data.nombre;
                         if (paternoInput) paternoInput.value = data.paterno;
@@ -441,13 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (gradoSelect) gradoSelect.value = data.grado;
                         if (armaSelect) armaSelect.value = data.arma;
                         if (especInput) especInput.value = data.especialidad;
-
-                        // Aplicar filtro de grado según escalafón
-                        if (escalafonSelect) {
-                            applyGradoFilter(formEl);
-                        }
-
-                        // Marcar como "encontrado"
+                        if (escalafonSelect) applyGradoFilter(formEl);
                         nombreInput?.style.setProperty('border-color', '#10b981', 'important');
                     }
                 })

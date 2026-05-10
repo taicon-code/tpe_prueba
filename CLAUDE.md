@@ -137,8 +137,8 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 
 | Rol (nombre en código)  | Vista principal          | Responsabilidades |
 |-------------------------|--------------------------|-------------------|
-| `ADMIN1_AGENDADOR`      | `admin1_views.py`        | Ingresa SIM, asigna abogados, crea agendas, ordena ejecutoria |
-| `ADMIN2_ARCHIVO`        | `admin2_views.py`        | Gestiona custodia/entrega de carpetas entre actores |
+| `ADMIN1_AGENDADOR`      | `admin1_views.py`        | Asigna abogados, crea y gestiona agendas, ordena ejecutoria |
+| `ADMIN2_ARCHIVO`        | `admin2_views.py`        | **Registra SIM** (versión 1 y reaperturas), gestiona custodia/entrega de carpetas |
 | `ADMIN3_NOTIFICADOR`    | `admin3_views.py`        | Envía notificaciones a terceros |
 | `ABOG1_ASESOR`          | `abogado_views.py`       | Crea dictámenes, resoluciones (1ra instancia y RR) |
 | `ABOG2_AUTOS`           | `abogado_views.py`       | Crea autos sin agenda previa (Excusa, Ejecutoria) |
@@ -173,7 +173,7 @@ El sistema controla la **trazabilidad** de carpetas entre actores mediante `Cust
 
 ### Flujo resumido:
 ```
-ADMIN1 registra SIM → ADMIN2 recibe (CustodiaSIM ACTIVA)
+ADMIN2 registra SIM → ADMIN2 es custodio inicial (CustodiaSIM ACTIVA)
     ↓
 ADMIN2 entrega a ABOGADO (estado='PENDIENTE_CONFIRMACION')
     ↓
