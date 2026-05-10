@@ -12,7 +12,7 @@ import calendar
 from ..decorators import rol_requerido
 from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP
 from ..models import get_pendientes_ejecutoria
-from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm
+from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm, SIMInstitucionalForm, ResolucionInstitucionalForm, AutoInstitucionalForm
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -189,6 +189,7 @@ def admin1_dashboard(request):
         'total_sin_notificar': total_sin_notificar,
         'ejecutorias_notificadas': ejecutorias_notificadas,
         'total_ejecutorias_notificadas': ejecutorias_notificadas.count(),
+        'sims_institucionales': SIM.objects.filter(tipo='INSTITUCIONAL').prefetch_related('resolucion_set', 'autotpe_set').order_by('-fecha_ingreso'),
     }
 
     return render(request, 'tpe_app/admin1/admin1_dashboard.html', context)
@@ -846,3 +847,112 @@ def admin1_ordenar_rap(request, rap_id):
         'abogados': abogados,
     }
     return render(request, 'tpe_app/admin1/ordenar_rap.html', context)
+
+
+# ─────────────────────────────────────────────────────────────
+# Vistas para SIM Institucional (posesión, cierre, autos)
+# ─────────────────────────────────────────────────────────────
+
+def _dashboard_url_para_rol(rol):
+    """Devuelve la URL del dashboard según el rol del usuario."""
+    if rol == 'AYUDANTE':
+        return reverse('ayudante_dashboard')
+    return reverse('admin1_dashboard')
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'MASTER', 'ADMINISTRADOR', 'AYUDANTE')
+def registrar_sim_institucional(request):
+    back_url = _dashboard_url_para_rol(request.perfil.rol)
+    if request.method == 'POST':
+        form = SIMInstitucionalForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    sim = form.save(commit=False)
+                    sim.tipo   = 'INSTITUCIONAL'
+                    sim.fase   = 'INSTITUCIONAL'
+                    sim.estado = 'INSTITUCIONAL_VIGENTE'
+                    sim.version = 1
+                    sim.save()
+                messages.success(request, f'Acto institucional {sim.codigo} registrado.')
+                return redirect('sim_institucional_detalle', sim_id=sim.pk)
+            except Exception as e:
+                messages.error(request, f'Error al guardar: {str(e)}')
+    else:
+        form = SIMInstitucionalForm()
+
+    return render(request, 'tpe_app/admin1/sim_institucional_form.html', {
+        'form': form,
+        'back_url': back_url,
+    })
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'MASTER', 'ADMINISTRADOR', 'AYUDANTE')
+def sim_institucional_detalle(request, sim_id):
+    sim = get_object_or_404(SIM, pk=sim_id, tipo='INSTITUCIONAL')
+    resoluciones = sim.resolucion_set.order_by('fecha')
+    autos        = sim.autotpe_set.order_by('fecha')
+    back_url     = _dashboard_url_para_rol(request.perfil.rol)
+
+    if request.method == 'POST' and 'concluir' in request.POST:
+        sim.estado = 'INSTITUCIONAL_CONCLUIDO'
+        sim.save(update_fields=['estado'])
+        messages.success(request, 'Acto institucional marcado como concluido.')
+        return redirect('sim_institucional_detalle', sim_id=sim.pk)
+
+    return render(request, 'tpe_app/admin1/sim_institucional_detalle.html', {
+        'sim': sim,
+        'resoluciones': resoluciones,
+        'autos': autos,
+        'back_url': back_url,
+    })
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'MASTER', 'ADMINISTRADOR', 'AYUDANTE')
+def agregar_resolucion_institucional(request, sim_id):
+    sim = get_object_or_404(SIM, pk=sim_id, tipo='INSTITUCIONAL')
+    if request.method == 'POST':
+        form = ResolucionInstitucionalForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    res = form.save(commit=False)
+                    res.sim       = sim
+                    res.instancia = 'PRIMERA'
+                    res.save()
+                messages.success(request, f'Resolución {res.numero} agregada.')
+                return redirect('sim_institucional_detalle', sim_id=sim.pk)
+            except Exception as e:
+                messages.error(request, f'Error al guardar: {str(e)}')
+    else:
+        from ..models import next_resolucion_num
+        form = ResolucionInstitucionalForm(initial={'numero': next_resolucion_num()})
+
+    return render(request, 'tpe_app/admin1/resolucion_institucional_form.html', {
+        'form': form,
+        'sim': sim,
+    })
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'MASTER', 'ADMINISTRADOR', 'AYUDANTE')
+def agregar_auto_institucional(request, sim_id):
+    sim = get_object_or_404(SIM, pk=sim_id, tipo='INSTITUCIONAL')
+    if request.method == 'POST':
+        form = AutoInstitucionalForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    auto = form.save(commit=False)
+                    auto.sim = sim
+                    auto.save()
+                messages.success(request, f'Auto {auto.numero} agregado.')
+                return redirect('sim_institucional_detalle', sim_id=sim.pk)
+            except Exception as e:
+                messages.error(request, f'Error al guardar: {str(e)}')
+    else:
+        form = AutoInstitucionalForm()
+
+    return render(request, 'tpe_app/admin1/auto_institucional_form.html', {
+        'form': form,
+        'sim': sim,
+    })

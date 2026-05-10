@@ -93,6 +93,12 @@ def ayudante_dashboard(request):
     # Militares sin CI (DecimalField: solo null)
     total_pm_sin_ci = PM.objects.filter(ci__isnull=True).count()
 
+    sims_institucionales = (
+        SIM.objects.filter(tipo='INSTITUCIONAL')
+        .prefetch_related('resolucion_set', 'autotpe_set')
+        .order_by('-fecha_ingreso')
+    )
+
     context = {
         'ultimos_sim': ultimos_sim,
         'ultimas_res': ultimas_res,
@@ -108,6 +114,7 @@ def ayudante_dashboard(request):
         'total_pm_sin_foto': total_pm_sin_foto,
         'total_pm_sin_anio_promocion': total_pm_sin_anio_promocion,
         'total_pm_sin_ci': total_pm_sin_ci,
+        'sims_institucionales': sims_institucionales,
     }
 
     return render(request, 'tpe_app/ayudante/dashboard.html', context)

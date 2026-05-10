@@ -91,6 +91,12 @@ urlpatterns = [
     # ✅ NUEVO v4.0: RAP - Recurso de Apelación (Admin1)
     path('admin1/rap/<int:rap_id>/ordenar-entrega/', views.admin1_ordenar_rap, name='admin1_ordenar_rap'),
 
+    # Actos Institucionales (posesión, cierre, autos de facultad)
+    path('admin1/institucional/registrar/', views.registrar_sim_institucional, name='registrar_sim_institucional'),
+    path('admin1/institucional/<int:sim_id>/', views.sim_institucional_detalle, name='sim_institucional_detalle'),
+    path('admin1/institucional/<int:sim_id>/resolucion/', views.agregar_resolucion_institucional, name='agregar_resolucion_institucional'),
+    path('admin1/institucional/<int:sim_id>/auto/', views.agregar_auto_institucional, name='agregar_auto_institucional'),
+
     # ✅ NUEVO v3.1: Custodia de carpetas (Admin2)
     path('admin2/custodia/<int:sim_id>/entregar/', views.admin2_entregar_carpeta, name='admin2_entregar_carpeta'),
     path('admin2/custodia/<int:sim_id>/recibir/', views.admin2_recibir_carpeta, name='admin2_recibir_carpeta'),

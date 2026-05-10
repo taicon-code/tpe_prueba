@@ -1,0 +1,86 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Agregar Auto - {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}⚖️ Agregar Auto Institucional{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <a href="{% url 'sim_institucional_detalle' sim.pk %}" style="color: #1e3c72; text-decoration: none; font-weight: 500;">
+        ← Volver al Acto Institucional
+    </a>
+</div>
+
+<div style="max-width: 680px; margin: 0 auto;">
+    <div style="background: #ede9fe; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; color: #5b21b6;">
+        <strong>🏛️ Acto:</strong> {{ sim.codigo }} — {{ sim.resumen }}
+    </div>
+
+    <h1 style="color: #1e3c72; margin-bottom: 2rem; text-align: center;">⚖️ Nuevo Auto Institucional</h1>
+
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem;
+            background: {% if msg.tags == 'error' %}#fee2e2{% else %}#dcfce7{% endif %};
+            border-left: 4px solid {% if msg.tags == 'error' %}#dc2626{% else %}#16a34a{% endif %};">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                        {{ form.numero.label }}
+                    </label>
+                    {{ form.numero }}
+                    {% if form.numero.errors %}
+                    <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.numero.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                        {{ form.fecha.label }}
+                    </label>
+                    {{ form.fecha }}
+                    {% if form.fecha.errors %}
+                    <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.fecha.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                    {{ form.tipo.label }}
+                </label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.tipo.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom: 1.75rem;">
+                <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                    {{ form.texto.label }}
+                </label>
+                {{ form.texto }}
+                {% if form.texto.errors %}
+                <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.texto.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <a href="{% url 'sim_institucional_detalle' sim.pk %}" class="btn" style="background: #6b7280; color: #fff;">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn" style="background: #7c3aed; color: #fff;">
+                    💾 Guardar Auto
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

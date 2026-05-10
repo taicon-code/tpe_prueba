@@ -37,6 +37,10 @@ from .admin1_views import (
     admin1_ordenar_ejecutoria,
     admin1_ordenar_rap,
     admin1_ordenar_archivo_sproda,
+    registrar_sim_institucional,
+    sim_institucional_detalle,
+    agregar_resolucion_institucional,
+    agregar_auto_institucional,
 )
 from .admin2_views import (
     admin2_dashboard,

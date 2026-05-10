@@ -1035,3 +1035,117 @@ class EditarSIMHistoricoForm(forms.ModelForm):
                 'class': 'form-select'
             })
         }
+
+
+# ─────────────────────────────────────────────────────────────
+# Formularios para SIM Institucional (posesión, cierre, autos)
+# ─────────────────────────────────────────────────────────────
+
+class SIMInstitucionalForm(forms.ModelForm):
+    class Meta:
+        model = SIM
+        fields = ['codigo', 'fecha_ingreso', 'objeto', 'resumen']
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: TPE-POSESION/26, TPE-CIERRE/26',
+                'autocomplete': 'off',
+            }),
+            'fecha_ingreso': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'objeto': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descripción del acto institucional',
+            }),
+            'resumen': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Resumen breve',
+            }),
+        }
+        labels = {
+            'codigo':       'Código de Referencia',
+            'fecha_ingreso': 'Fecha del Acto',
+            'objeto':       'Objeto / Descripción',
+            'resumen':      'Resumen',
+        }
+
+
+class ResolucionInstitucionalForm(forms.ModelForm):
+
+    TIPO_INST_CHOICES = [
+        ('', '---------'),
+        ('POSESION', 'POSESIÓN DEL TPE'),
+        ('CIERRE',   'CIERRE DEL TPE'),
+    ]
+
+    tipo = forms.ChoiceField(
+        choices=TIPO_INST_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Tipo de Resolución',
+    )
+
+    class Meta:
+        model = Resolucion
+        fields = ['numero', 'fecha', 'tipo', 'texto']
+        widgets = {
+            'numero': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 05/26',
+                'autocomplete': 'off',
+            }),
+            'fecha': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'texto': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Parte resolutiva de la resolución',
+            }),
+        }
+        labels = {
+            'numero': 'N° de Resolución',
+            'fecha':  'Fecha',
+            'texto':  'Parte Resolutiva',
+        }
+
+
+class AutoInstitucionalForm(forms.ModelForm):
+
+    TIPO_INST_CHOICES = [
+        ('AUTO_FACULTAD', 'AUTO DE FACULTAD'),
+    ]
+
+    tipo = forms.ChoiceField(
+        choices=TIPO_INST_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Tipo de Auto',
+    )
+
+    class Meta:
+        model = AUTOTPE
+        fields = ['numero', 'fecha', 'tipo', 'texto']
+        widgets = {
+            'numero': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 03/26',
+                'autocomplete': 'off',
+            }),
+            'fecha': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'texto': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Parte resolutiva del auto',
+            }),
+        }
+        labels = {
+            'numero': 'N° de Auto',
+            'fecha':  'Fecha',
+            'texto':  'Parte Resolutiva',
+        }

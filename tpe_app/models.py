@@ -360,6 +360,7 @@ class SIM(models.Model):
         ('SOLICITUD_ART_114_(Invalidez Instructor)',   'SOLICITUD ARTÍCULO 114 (INVALIDEZ INSTRUCTOR)'),
         ('SOLICITUD_ART_117_(Fallecimiento)',  'SOLICITUD ARTÍCULO 117 (FALLECIMIENTO)'),
         ('SOLICITUD_ART_118_(Invalidez Sldo)', 'SOLICITUD ARTÍCULO 118 (INVALIDEZ SLDO)'),
+        ('INSTITUCIONAL', 'INSTITUCIONAL'),
     ]
 
     MOTIVO_REAPERTURA_CHOICES = [
@@ -379,6 +380,8 @@ class SIM(models.Model):
         ('PROCESO_CONCLUIDO_TSP_TPE', 'Proceso Concluido (TSP-TPE)'),
         ('PROCESO_EJECUTADO',         'Proceso Ejecutado'),
         ('OBSERVADO',                 'Observado'),
+        ('INSTITUCIONAL_VIGENTE',     'Vigente (Institucional)'),
+        ('INSTITUCIONAL_CONCLUIDO',   'Concluido (Institucional)'),
     ]
 
     FASE_CHOICES = [
@@ -410,6 +413,8 @@ class SIM(models.Model):
         ('CUMPLIMIENTO_NOTIFICADO',   'Cumplimiento TSP Notificado (Pte. Archivo)'),
         ('CONCLUIDO_TSP_TPE',         'Archivado / Concluido (TSP-TPE)'),
         ('NULIDAD_TSP',               'Nulidad de Obrados por el TSP'),
+        # ── Ruta Institucional ────────────────────────────────────────────
+        ('INSTITUCIONAL',             'Acto Institucional'),
     ]
 
     ESTADO_JERARQUIA = {
@@ -421,6 +426,8 @@ class SIM(models.Model):
         'PROCESO_CONCLUIDO_TPE':     4,  # era 3
         'PROCESO_CONCLUIDO_TSP_TPE': 4,  # mismo nivel que CONCLUIDO_TPE
         'PROCESO_EJECUTADO':         5,  # era 4
+        'INSTITUCIONAL_VIGENTE':     10,
+        'INSTITUCIONAL_CONCLUIDO':   11,
     }
 
     FASE_A_ESTADO = {
@@ -452,6 +459,8 @@ class SIM(models.Model):
         'CUMPLIMIENTO_NOTIFICADO': 'PROCESO_CONCLUIDO_TSP_TPE', # notificado → concluye
         'CONCLUIDO_TSP_TPE':       'PROCESO_CONCLUIDO_TSP_TPE',
         'NULIDAD_TSP':             'PROCESO_CONCLUIDO_TSP_TPE',
+        # Ruta Institucional
+        'INSTITUCIONAL':           'INSTITUCIONAL_VIGENTE',
     }
 
     # Whitelist de transiciones válidas entre fases (máquina de estados)
@@ -912,6 +921,7 @@ class AUTOTPE(models.Model):
         ('AUTO_RECUSA',                'AUTO DE RECUSA'),
         ('AUTO_ACLARATORIO',           'AUTO ACLARATORIO'),
         ('AUTO_RECHAZO_RECURSO',       'AUTO DE RECHAZO DE RECURSO'),
+        ('AUTO_FACULTAD',              'AUTO DE FACULTAD'),
     ]
 
     sim            = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
@@ -1117,6 +1127,8 @@ class Resolucion(models.Model):
         ('OTRO', 'OTRO'),
         ('PROCEDENCIA',   'PROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN'),
         ('IMPROCEDENCIA', 'IMPROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN'),
+        ('POSESION',      'POSESIÓN DEL TPE'),
+        ('CIERRE',        'CIERRE DEL TPE'),
     ]
 
     instancia          = models.CharField(max_length=20, choices=INSTANCIA_CHOICES, default='PRIMERA', verbose_name='Instancia')

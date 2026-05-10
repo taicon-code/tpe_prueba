@@ -1,0 +1,81 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Registrar Acto Institucional - TPE{% endblock %}
+{% block navbar_title %}🏛️ Registrar Acto Institucional{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <a href="{{ back_url }}" style="color: #1e3c72; text-decoration: none; font-weight: 500;">← Volver al Dashboard</a>
+</div>
+
+<div style="max-width: 680px; margin: 0 auto;">
+    <h1 style="color: #1e3c72; margin-bottom: 0.5rem; text-align: center;">🏛️ Nuevo Acto Institucional</h1>
+    <p style="text-align: center; color: #666; margin-bottom: 2rem;">
+        Posesión del TPE, Cierre del TPE, Autos de Facultad u otros actos de la institución
+    </p>
+
+    {% if messages %}
+        {% for msg in messages %}
+        <div style="padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem;
+            background: {% if msg.tags == 'error' %}#fee2e2{% else %}#dcfce7{% endif %};
+            border-left: 4px solid {% if msg.tags == 'error' %}#dc2626{% else %}#16a34a{% endif %};">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                    {{ form.codigo.label }}
+                </label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}
+                <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.codigo.errors.0 }}</div>
+                {% endif %}
+                <small style="color: #6b7280;">{{ form.codigo.help_text }}</small>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                    {{ form.fecha_ingreso.label }}
+                </label>
+                {{ form.fecha_ingreso }}
+                {% if form.fecha_ingreso.errors %}
+                <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.fecha_ingreso.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                    {{ form.objeto.label }}
+                </label>
+                {{ form.objeto }}
+                {% if form.objeto.errors %}
+                <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.objeto.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div style="margin-bottom: 1.75rem;">
+                <label style="font-weight: 600; color: #374151; display: block; margin-bottom: 0.4rem;">
+                    {{ form.resumen.label }}
+                </label>
+                {{ form.resumen }}
+                {% if form.resumen.errors %}
+                <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">{{ form.resumen.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <a href="{{ back_url }}" class="btn" style="background: #6b7280; color: #fff;">Cancelar</a>
+                <button type="submit" class="btn" style="background: #1e3c72; color: #fff;">
+                    💾 Registrar Acto Institucional
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
