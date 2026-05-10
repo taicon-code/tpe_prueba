@@ -63,21 +63,25 @@
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
                 <div style="width: 20px; height: 20px; background: #2196f3; border-radius: 3px;"></div>
-                <span>Agenda Programada</span>
+                <span>Sesión Programada</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                <div style="width: 20px; height: 20px; background: #4caf50; border-radius: 3px;"></div>
-                <span>Agenda Realizada</span>
+                <div style="width: 20px; height: 20px; background: #10b981; border-radius: 3px;"></div>
+                <span>Sesión Ordinaria</span>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
-                <div style="width: 20px; height: 20px; background: #ff9800; border-radius: 3px;"></div>
-                <span>Agenda Reprogramada</span>
+                <div style="width: 20px; height: 20px; background: #f59e0b; border-radius: 3px;"></div>
+                <span>Sesión Extraordinaria</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                <div style="width: 20px; height: 20px; background: #8b5cf6; border-radius: 3px;"></div>
+                <span>Sesión Complementaria</span>
             </div>
         </div>
 
         {# Calendario #}
         <div class="card" style="padding: 1rem; overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem; table-layout: fixed;">
                 <thead>
                     <tr style="background: #1e3c72; color: white;">
                         <th style="padding: 0.75rem; text-align: center; font-weight: bold;">L</th>
@@ -106,13 +110,13 @@
                                             {% for dia_num, dia_info in dias_datos.items %}
                                                 {% if dia_num == day %}
                                                     {% if dia_info.feriado %}
-                                                        <div style="background: #ffebee; border-left: 3px solid #dc2626; padding: 0.35rem 0.5rem; border-radius: 3px; margin-bottom: 0.4rem; font-size: 0.8rem; line-height: 1.2;">
-                                                            <strong style="color: #dc2626;">🎉 {{ dia_info.feriado }}</strong>
+                                                        <div style="background: #ffebee; border-left: 3px solid #dc2626; padding: 0.25rem 0.4rem; border-radius: 3px; margin-bottom: 0.3rem; font-size: 0.72rem; line-height: 1.2; overflow: hidden; word-break: break-word;">
+                                                            <strong style="color: #dc2626;">🔴 {{ dia_info.feriado }}</strong>
                                                         </div>
                                                     {% endif %}
 
                                                     {% for agenda in dia_info.agendas %}
-                                                        <div style="background: #e3f2fd; border-left: 3px solid #2196f3; padding: 0.35rem 0.5rem; border-radius: 3px; margin-bottom: 0.4rem; font-size: 0.8rem; line-height: 1.2; color: #1565c0;">
+                                                        <div style="background: #e3f2fd; border-left: 3px solid #2196f3; padding: 0.25rem 0.4rem; border-radius: 3px; margin-bottom: 0.3rem; font-size: 0.72rem; line-height: 1.2; color: #1565c0; overflow: hidden; word-break: break-word;">
                                                             <strong>{{ agenda.tipo|truncatewords:1 }}</strong><br>#{{ agenda.num }}
                                                         </div>
                                                     {% endfor %}

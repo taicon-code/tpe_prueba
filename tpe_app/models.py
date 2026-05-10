@@ -747,6 +747,7 @@ class AGENDA(models.Model):
     TIPO_AGENDA_CHOICES = [
         ('ORDINARIA',      'Sesión Ordinaria'),
         ('EXTRAORDINARIA', 'Sesión Extraordinaria'),
+        ('COMPLEMENTARIA', 'Sesión Complementaria'),
     ]
 
     ESTADO_CHOICES = [
