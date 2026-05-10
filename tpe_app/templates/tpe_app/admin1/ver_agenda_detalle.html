@@ -1,4 +1,5 @@
 {% extends 'tpe_app/base.html' %}
+{% load custom_filters %}
 
 {% block title %}Detalle Agenda - TPE Sistema{% endblock %}
 {% block navbar_title %}📅 Detalle de Agenda{% endblock %}
@@ -75,63 +76,87 @@
         </span>
     </h2>
 
-    {% if dictamenes %}
+    {% if sims %}
     <table>
         <thead>
             <tr>
-                <th style="width: 80px;">Nº Sumario</th>
-                <th style="width: 150px;">Causas</th>
-                <th>Militar(es) Implicado(s)</th>
-                <th style="width: 120px;">Abogado</th>
+                <th style="width: 90px;">Nº SIM</th>
+                <th style="width: 110px;">Tipo</th>
+                <th>Objeto del Caso</th>
+                <th>Militar(es)</th>
+                <th style="width: 120px;">Abogado Asignado</th>
                 <th style="width: 100px;">Estado</th>
             </tr>
         </thead>
         <tbody>
-            {% for dictamen in dictamenes %}
-            <tr>
-                <td style="font-weight: 600; color: #1e3c72;">
-                    <a href="{% url 'abogado_sumario_detalle' dictamen.sim.id %}?next={% url 'lista_agendas' %}"
-                       style="color: #1e3c72; text-decoration: none;">
-                        {{ dictamen.sim.id }}
-                    </a>
-                </td>
-                <td>
-                    <small style="color: #666;">
-                        {{ dictamen.sim.get_tipo_display }}
-                    </small>
-                </td>
-                <td>
-                    {% if dictamen.pm %}
-                        <strong>{{ dictamen.pm.paterno }} {{ dictamen.pm.materno }}, {{ dictamen.pm.nombre }}</strong>
-                        <br>
+            {% for sim in sims %}
+                {% with abog_sim=abog_sims_dict|get_item:sim.id dictamen=dictamenes_dict|get_item:sim.id %}
+                <tr>
+                    <td style="font-weight: 600; color: #1e3c72;">
+                        <a href="{% url 'abogado_sumario_detalle' sim.id %}?next={% url 'lista_agendas' %}"
+                           style="color: #1e3c72; text-decoration: none;">
+                            {{ sim.codigo }}
+                        </a>
+                    </td>
+                    <td>
                         <small style="color: #666;">
-                            {{ dictamen.pm.grado|default:"—" }} • {{ dictamen.pm.arma|default:"—" }}
+                            {{ sim.get_tipo_display }}
                         </small>
-                    {% else %}
-                        <span style="color: #999;">No especificado</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if dictamen.abogado %}
-                        <small>{{ dictamen.abogado.paterno }}</small>
-                    {% else %}
-                        <span style="color: #999;">—</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if dictamen.sim.estado == 'PARA_AGENDA' %}
-                        <span class="badge badge-blue">Para Agenda</span>
-                    {% elif dictamen.sim.estado == 'PROCESO_EN_EL_TPE' %}
-                        <span class="badge badge-orange">En Proceso</span>
-                    {% elif dictamen.sim.estado == 'EN_APELACION_TSP' %}
-                        <span class="badge badge-red">En Apelación</span>
-                    {% elif dictamen.sim.estado == 'CONCLUIDO' %}
-                        <span class="badge badge-green">Concluido</span>
-                    {% else %}
-                        {{ dictamen.sim.get_estado_display }}
-                    {% endif %}
-                </td>
-            </tr>
+                    </td>
+                    <td>
+                        <div style="max-height: 60px; overflow-y: auto; font-size: 0.9rem;">
+                            {{ sim.objeto|truncatewords:20 }}
+                        </div>
+                    </td>
+                    <td style="font-size: 0.9rem;">
+                        {% if dictamen and dictamen.pm %}
+                            {# Si hay dictamen, mostrar el militar del dictamen #}
+                            <strong>{{ dictamen.pm.paterno }} {{ dictamen.pm.materno }}, {{ dictamen.pm.nombre }}</strong>
+                            <br>
+                            <small style="color: #666;">{{ dictamen.pm.grado|default:"—" }} • {{ dictamen.pm.arma|default:"—" }}</small>
+                        {% else %}
+                            {# Si no hay dictamen, mostrar militares del sumario #}
+                            {% if sim.militares.all %}
+                                {% for mil in sim.militares.all %}
+                                    <strong>{{ mil.paterno }} {{ mil.materno }}, {{ mil.nombre }}</strong>
+                                    <br>
+                                    <small style="color: #666;">{{ mil.grado|default:"—" }} • {{ mil.arma|default:"—" }}</small>
+                                    {% if not forloop.last %}<hr style="margin: 0.3rem 0;">{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span style="color: #999;">—</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 0.9rem;">
+                        {% if abog_sim and abog_sim.abogado %}
+                            <small><strong>{{ abog_sim.abogado.paterno }}</strong></small>
+                            {% if abog_sim.es_responsable %}
+                                <br><small style="color: #16a34a; font-weight: 600;">👤 Responsable</small>
+                            {% endif %}
+                        {% elif dictamen and dictamen.abogado %}
+                            <small><strong>{{ dictamen.abogado.paterno }}</strong></small>
+                        {% else %}
+                            <span style="color: #999;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if sim.estado == 'PARA_AGENDA' %}
+                            <span class="badge badge-blue">Para Agenda</span>
+                        {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
+                            <span class="badge badge-orange">En Proceso</span>
+                        {% elif sim.estado == 'PROCESO_EN_EL_TSP' %}
+                            <span class="badge badge-red">En TSP</span>
+                        {% elif sim.estado == 'PROCESO_CONCLUIDO_TPE' %}
+                            <span class="badge badge-green">Concluido</span>
+                        {% elif sim.estado == 'PROCESO_CONCLUIDO_TSP_TPE' %}
+                            <span class="badge badge-green">Concluido</span>
+                        {% else %}
+                            <span class="badge badge-secondary">{{ sim.get_estado_display }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endwith %}
             {% endfor %}
         </tbody>
     </table>

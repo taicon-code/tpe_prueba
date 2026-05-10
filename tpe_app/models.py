@@ -640,6 +640,9 @@ class ABOG_SIM(models.Model):
     sim      = models.ForeignKey(SIM, on_delete=models.PROTECT,  verbose_name='Sumario')
     abogado  = models.ForeignKey(PM,  on_delete=models.RESTRICT, verbose_name='Abogado',
                                  related_name='asignaciones_abogado')
+    agenda   = models.ForeignKey('AGENDA', null=True, blank=True, on_delete=models.SET_NULL,
+                                 verbose_name='Agenda',
+                                 help_text='Agenda en la que se agendó este sumario')
     es_responsable = models.BooleanField(
         default=False,
         verbose_name='Responsable de carpeta',

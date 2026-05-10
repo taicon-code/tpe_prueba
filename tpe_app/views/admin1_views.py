@@ -320,6 +320,7 @@ def agendar_sumario(request):
                         ABOG_SIM.objects.create(
                             sim=sumario,
                             abogado=abog,
+                            agenda=agenda,
                             es_responsable=(i == 0),
                         )
 
@@ -622,18 +623,41 @@ def lista_agendas(request):
 
 @rol_requerido('ADMIN1_AGENDADOR')
 def ver_agenda_detalle(request, ag_id):
-    """Ver detalles de una agenda: sumarios y militares involucrados"""
+    """Ver detalles de una agenda: sumarios agendados o con dictámenes"""
 
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
-    # Obtener todos los dictámenes de esta agenda con sus sumarios y militares
+    # Obtener sumarios de dos fuentes:
+    # 1. A través de ABOG_SIM.agenda (para sumarios agendados recientemente con nuevo campo)
+    # 2. A través de DICTAMEN.agenda (para sumarios históricos o con dictámenes ya creados)
+
+    # Opción 1: ABOG_SIM con agenda registrada
+    abog_sims_nuevos = ABOG_SIM.objects.filter(agenda=agenda).select_related(
+        'sim', 'abogado'
+    ).order_by('sim__codigo')
+
+    # Opción 2: DICTAMEN (cubre casos históricos)
     dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related(
         'sim', 'pm', 'abogado'
-    ).order_by('sim__id')
+    ).order_by('sim__codigo')
+
+    # Combinar: tomar SIM IDs de ambos para evitar duplicados
+    sim_ids_nuevos = set(abog_sims_nuevos.values_list('sim_id', flat=True))
+    sim_ids_dictamenes = set(dictamenes.values_list('sim_id', flat=True))
+    sim_ids_todos = sim_ids_nuevos | sim_ids_dictamenes
+
+    # Obtener todos los SIM únicos en una sola query
+    sims = SIM.objects.filter(id__in=sim_ids_todos).prefetch_related('militares').order_by('codigo')
+
+    # Crear diccionarios para fácil acceso
+    abog_sims_dict = {abog.sim_id: abog for abog in abog_sims_nuevos}
+    dictamenes_dict = {dict_obj.sim_id: dict_obj for dict_obj in dictamenes}
 
     context = {
         'agenda': agenda,
-        'dictamenes': dictamenes,
+        'sims': sims,
+        'abog_sims_dict': abog_sims_dict,
+        'dictamenes_dict': dictamenes_dict,
     }
 
     return render(request, 'tpe_app/admin1/ver_agenda_detalle.html', context)
