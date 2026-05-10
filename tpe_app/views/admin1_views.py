@@ -387,6 +387,26 @@ def agendar_rr(request):
             rr.agenda = agenda
             rr.save()
 
+            custodia_admin2 = CustodiaSIM.objects.filter(
+                sim=rr.sim,
+                tipo_custodio='ADMIN2_ARCHIVO',
+                estado='PENDIENTE_CONFIRMACION',
+                fecha_entrega__isnull=True,
+            ).first()
+
+            if custodia_admin2:
+                custodia_admin2.abogado_destino = abogado
+                custodia_admin2.save()
+            else:
+                CustodiaSIM.objects.create(
+                    sim=rr.sim,
+                    tipo_custodio='ADMIN2_ARCHIVO',
+                    abogado_destino=abogado,
+                    usuario=request.user,
+                    motivo='AGENDA_RR',
+                    estado='PENDIENTE_CONFIRMACION',
+                )
+
             fecha_str = agenda.fecha_prog.strftime('%d/%m/%Y') if agenda.fecha_prog else agenda.numero
             messages.success(
                 request,
@@ -581,11 +601,20 @@ def lista_agendas(request):
 
     agendas = AGENDA.objects.all().order_by('-fecha_prog')
 
+    rol = request.perfil.rol
+    if rol == 'ADMIN2_ARCHIVO':
+        dashboard_url = 'admin2_dashboard'
+    elif rol == 'ADMIN3_NOTIFICADOR':
+        dashboard_url = 'admin3_dashboard'
+    else:
+        dashboard_url = 'admin1_dashboard'
+
     context = {
         'agendas': agendas,
         'total_programadas': AGENDA.objects.filter(estado='PROGRAMADA').count(),
         'total_realizadas': AGENDA.objects.filter(estado='REALIZADA').count(),
         'total_suspendidas': AGENDA.objects.filter(estado='SUSPENDIDA').count(),
+        'dashboard_url': dashboard_url,
     }
 
     return render(request, 'tpe_app/admin1/lista_agendas.html', context)
@@ -657,7 +686,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
     custodia_existente = CustodiaSIM.objects.filter(
         sim=sim,
         motivo='EJECUTORIA',
-        estado='RECIBIDA_CONFORME'
+        estado__in=['PENDIENTE_CONFIRMACION', 'RECIBIDA_CONFORME']
     ).first()
 
     if custodia_existente:
@@ -681,7 +710,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
         messages.error(request, '❌ No hay abogado ABOG2_AUTOS activo asignado. Contactar administrador.')
         return redirect('pendientes_ejecutoria')
 
-    # Crear orden (custodia en estado ACTIVA) para Admin2
+    # Crear orden (custodia en estado PENDIENTE_CONFIRMACION) para Admin2
     try:
         with transaction.atomic():
             CustodiaSIM.objects.create(
@@ -689,7 +718,7 @@ def admin1_ordenar_ejecutoria(request, res_id):
                 tipo_custodio='ADMIN2_ARCHIVO',
                 motivo='EJECUTORIA',
                 abogado_destino=abog_destino,
-                estado='RECIBIDA_CONFORME',
+                estado='PENDIENTE_CONFIRMACION',
                 usuario=request.user,
                 observacion='Orden: Entregar a Abog. de Autos (Ejecutoria)'
             )
