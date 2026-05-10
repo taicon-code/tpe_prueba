@@ -41,6 +41,11 @@ from .admin1_views import (
     sim_institucional_detalle,
     agregar_resolucion_institucional,
     agregar_auto_institucional,
+    quitar_sim_de_agenda,
+    quitar_rr_de_agenda,
+    agregar_auto_a_agenda,
+    quitar_auto_de_agenda,
+    agenda_detalle_pdf,
 )
 from .admin2_views import (
     admin2_dashboard,

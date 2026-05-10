@@ -627,40 +627,317 @@ def ver_agenda_detalle(request, ag_id):
 
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
-    # Obtener sumarios de dos fuentes:
-    # 1. A través de ABOG_SIM.agenda (para sumarios agendados recientemente con nuevo campo)
-    # 2. A través de DICTAMEN.agenda (para sumarios históricos o con dictámenes ya creados)
-
-    # Opción 1: ABOG_SIM con agenda registrada
+    # ABOG_SIM con agenda registrada (primera instancia)
     abog_sims_nuevos = ABOG_SIM.objects.filter(agenda=agenda).select_related(
         'sim', 'abogado'
     ).order_by('sim__codigo')
 
-    # Opción 2: DICTAMEN (cubre casos históricos)
+    # DICTAMEN (cubre casos históricos)
     dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related(
         'sim', 'pm', 'abogado'
     ).order_by('sim__codigo')
 
-    # Combinar: tomar SIM IDs de ambos para evitar duplicados
     sim_ids_nuevos = set(abog_sims_nuevos.values_list('sim_id', flat=True))
     sim_ids_dictamenes = set(dictamenes.values_list('sim_id', flat=True))
     sim_ids_todos = sim_ids_nuevos | sim_ids_dictamenes
 
-    # Obtener todos los SIM únicos en una sola query
     sims = SIM.objects.filter(id__in=sim_ids_todos).prefetch_related('militares').order_by('codigo')
 
-    # Crear diccionarios para fácil acceso
     abog_sims_dict = {abog.sim_id: abog for abog in abog_sims_nuevos}
     dictamenes_dict = {dict_obj.sim_id: dict_obj for dict_obj in dictamenes}
+
+    # RRs (Recursos de Reconsideración) agendados en esta sesión
+    rrs = Resolucion.objects.filter(
+        agenda=agenda, instancia='RECONSIDERACION'
+    ).select_related('sim', 'abogado', 'pm').order_by('sim__codigo')
+
+    # Autos TPE vinculados explícitamente a esta agenda
+    autos = AUTOTPE.objects.filter(agenda=agenda).select_related(
+        'sim', 'pm', 'abogado'
+    ).order_by('sim__codigo')
+
+    # Autos de ejecutoria disponibles para agregar (sin agenda asignada aún)
+    autos_disponibles = AUTOTPE.objects.filter(
+        agenda__isnull=True, tipo='AUTO_EJECUTORIA'
+    ).select_related('sim', 'pm').order_by('sim__codigo')
 
     context = {
         'agenda': agenda,
         'sims': sims,
         'abog_sims_dict': abog_sims_dict,
         'dictamenes_dict': dictamenes_dict,
+        'rrs': rrs,
+        'autos': autos,
+        'autos_disponibles': autos_disponibles,
     }
 
     return render(request, 'tpe_app/admin1/ver_agenda_detalle.html', context)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def quitar_sim_de_agenda(request, ag_id, sim_id):
+    """Quita un sumario de la agenda y lo devuelve al estado pendiente de agendar."""
+    if request.method != 'POST':
+        return redirect('ver_agenda_detalle', ag_id=ag_id)
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+    sim = get_object_or_404(SIM, pk=sim_id)
+    with transaction.atomic():
+        ABOG_SIM.objects.filter(sim=sim, agenda=agenda).delete()
+        if not ABOG_SIM.objects.filter(sim=sim).exists():
+            sim.estado = 'PARA_AGENDA'
+            sim.fase = 'PARA_AGENDA'
+            sim.save()
+    messages.success(request, f'Sumario {sim.codigo} quitado de la Agenda {agenda.numero}. Vuelve al listado de pendientes.')
+    return redirect('ver_agenda_detalle', ag_id=ag_id)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def quitar_rr_de_agenda(request, ag_id, rr_id):
+    """Quita un RR de la agenda y lo devuelve al estado pendiente de agendar."""
+    if request.method != 'POST':
+        return redirect('ver_agenda_detalle', ag_id=ag_id)
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+    rr = get_object_or_404(Resolucion, pk=rr_id, agenda=agenda, instancia='RECONSIDERACION')
+    with transaction.atomic():
+        rr.agenda = None
+        rr.abogado = None
+        rr.save()
+    messages.success(request, f'RR del sumario {rr.sim.codigo} quitado de la Agenda {agenda.numero}. Vuelve al listado de pendientes.')
+    return redirect('ver_agenda_detalle', ag_id=ag_id)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def agregar_auto_a_agenda(request, ag_id):
+    """Vincula un Auto de Ejecutoria existente a esta agenda para su lectura."""
+    if request.method != 'POST':
+        return redirect('ver_agenda_detalle', ag_id=ag_id)
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+    auto_id = request.POST.get('auto_id')
+    if not auto_id:
+        messages.error(request, 'Seleccione un auto de ejecutoria.')
+        return redirect('ver_agenda_detalle', ag_id=ag_id)
+    auto = get_object_or_404(AUTOTPE, pk=auto_id, agenda__isnull=True)
+    auto.agenda = agenda
+    auto.save()
+    messages.success(request, f'Auto {auto.numero or "S/N"} del sumario {auto.sim.codigo} agregado a la Agenda {agenda.numero}.')
+    return redirect('ver_agenda_detalle', ag_id=ag_id)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def quitar_auto_de_agenda(request, ag_id, auto_id):
+    """Desvincula un Auto TPE de esta agenda."""
+    if request.method != 'POST':
+        return redirect('ver_agenda_detalle', ag_id=ag_id)
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+    auto = get_object_or_404(AUTOTPE, pk=auto_id, agenda=agenda)
+    auto.agenda = None
+    auto.save()
+    messages.success(request, f'Auto del sumario {auto.sim.codigo} quitado de la Agenda {agenda.numero}.')
+    return redirect('ver_agenda_detalle', ag_id=ag_id)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def agenda_detalle_pdf(request, ag_id):
+    """Genera PDF de la agenda con los casos que se tratarán."""
+    from io import BytesIO
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from django.http import HttpResponse
+
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+
+    abog_sims = ABOG_SIM.objects.filter(agenda=agenda).select_related('sim', 'abogado').order_by('sim__codigo')
+    dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
+    sim_ids = set(abog_sims.values_list('sim_id', flat=True)) | set(dictamenes.values_list('sim_id', flat=True))
+    sims = SIM.objects.filter(id__in=sim_ids).prefetch_related('militares').order_by('codigo')
+    abog_dict = {a.sim_id: a for a in abog_sims}
+    dict_dict = {d.sim_id: d for d in dictamenes}
+
+    rrs = Resolucion.objects.filter(agenda=agenda, instancia='RECONSIDERACION').select_related('sim', 'abogado', 'pm').order_by('sim__codigo')
+    autos = AUTOTPE.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
+
+    buffer = BytesIO()
+    page_w, page_h = letter
+    margin = 0.65 * inch
+
+    styles = getSampleStyleSheet()
+    s_titulo = ParagraphStyle('titulo', parent=styles['Normal'], fontSize=13, fontName='Helvetica-Bold', alignment=TA_CENTER, spaceAfter=2)
+    s_sub = ParagraphStyle('sub', parent=styles['Normal'], fontSize=10, fontName='Helvetica', alignment=TA_CENTER, spaceAfter=8)
+    s_seccion = ParagraphStyle('sec', parent=styles['Normal'], fontSize=9, fontName='Helvetica-Bold', spaceBefore=10, spaceAfter=4)
+    s_cel = ParagraphStyle('cel', parent=styles['Normal'], fontSize=7.5, fontName='Helvetica', leading=10)
+    s_cel_b = ParagraphStyle('celb', parent=styles['Normal'], fontSize=7.5, fontName='Helvetica-Bold', leading=10)
+
+    from datetime import datetime
+    fecha_hoy = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    def _pie(canv, doc):
+        canv.saveState()
+        canv.setFont('Helvetica', 6.5)
+        canv.setFillColor(colors.grey)
+        canv.drawCentredString(page_w / 2, 0.35 * inch, f"Impreso: {fecha_hoy}  |  Pág. {doc.page}")
+        canv.restoreState()
+
+    doc = SimpleDocTemplate(buffer, pagesize=letter,
+                            leftMargin=margin, rightMargin=margin,
+                            topMargin=0.5 * inch, bottomMargin=0.6 * inch)
+    usable_w = page_w - 2 * margin
+    story = []
+
+    tipo_label = agenda.get_tipo_display() if hasattr(agenda, 'get_tipo_display') else agenda.tipo
+    fecha_prog = agenda.fecha_prog.strftime('%d/%m/%Y') if agenda.fecha_prog else '—'
+    fecha_real = agenda.fecha_real.strftime('%d/%m/%Y') if agenda.fecha_real else '—'
+
+    story.append(Paragraph("TRIBUNAL DE PERSONAL DEL EJÉRCITO", s_titulo))
+    story.append(Paragraph(f"AGENDA N° {agenda.numero}  —  {tipo_label}", s_sub))
+    story.append(Paragraph(f"Fecha Programada: {fecha_prog}   |   Fecha Realizada: {fecha_real}   |   Estado: {agenda.get_estado_display()}", s_sub))
+    story.append(Spacer(1, 8))
+
+    header_style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e3c72')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7.5),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f4ff')]),
+        ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#cccccc')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+    ])
+
+    # Tabla: Primera Instancia
+    story.append(Paragraph(f"PRIMERA INSTANCIA  ({sims.count()} sumario(s))", s_seccion))
+    if sims.exists():
+        cols_w = [usable_w * p for p in [0.14, 0.10, 0.36, 0.26, 0.14]]
+        data = [[
+            Paragraph('<b>N° SIM</b>', s_cel_b),
+            Paragraph('<b>Tipo</b>', s_cel_b),
+            Paragraph('<b>Objeto del Caso</b>', s_cel_b),
+            Paragraph('<b>Militar(es)</b>', s_cel_b),
+            Paragraph('<b>Abogado</b>', s_cel_b),
+        ]]
+        for sim in sims:
+            abog_sim = abog_dict.get(sim.id)
+            dict_obj = dict_dict.get(sim.id)
+            abog_nombre = '—'
+            if abog_sim and abog_sim.abogado:
+                abog_nombre = f"{abog_sim.abogado.grado or ''} {abog_sim.abogado.paterno}".strip()
+            elif dict_obj and dict_obj.abogado:
+                abog_nombre = f"{dict_obj.abogado.grado or ''} {dict_obj.abogado.paterno}".strip()
+
+            militares_txt = ''
+            if dict_obj and dict_obj.pm:
+                militares_txt = f"{dict_obj.pm.grado or ''} {dict_obj.pm.paterno} {dict_obj.pm.materno}, {dict_obj.pm.nombre}".strip()
+            else:
+                mils = list(sim.militares.all()[:3])
+                militares_txt = '\n'.join(f"{m.grado or ''} {m.paterno} {m.materno}, {m.nombre}".strip() for m in mils)
+
+            data.append([
+                Paragraph(sim.codigo or '—', s_cel_b),
+                Paragraph(sim.get_tipo_display() if hasattr(sim, 'get_tipo_display') else sim.tipo or '—', s_cel),
+                Paragraph((sim.objeto or '—')[:120], s_cel),
+                Paragraph(militares_txt or '—', s_cel),
+                Paragraph(abog_nombre, s_cel),
+            ])
+        t = Table(data, colWidths=cols_w, repeatRows=1)
+        t.setStyle(header_style)
+        story.append(t)
+    else:
+        story.append(Paragraph("Sin sumarios de primera instancia.", s_cel))
+
+    # Tabla: RRs
+    story.append(Paragraph(f"RECURSOS DE RECONSIDERACIÓN  ({rrs.count()} RR(s))", s_seccion))
+    if rrs.exists():
+        cols_w = [usable_w * p for p in [0.13, 0.09, 0.13, 0.13, 0.27, 0.25]]
+        data = [[
+            Paragraph('<b>N° SIM</b>', s_cel_b),
+            Paragraph('<b>N° RR</b>', s_cel_b),
+            Paragraph('<b>Fec. Presentación</b>', s_cel_b),
+            Paragraph('<b>Fec. Límite</b>', s_cel_b),
+            Paragraph('<b>Militar</b>', s_cel_b),
+            Paragraph('<b>Abogado RR</b>', s_cel_b),
+        ]]
+        for rr in rrs:
+            fp = rr.fecha_presentacion.strftime('%d/%m/%Y') if rr.fecha_presentacion else '—'
+            fl = rr.fecha_limite.strftime('%d/%m/%Y') if rr.fecha_limite else '—'
+            mil = '—'
+            if rr.pm:
+                mil = f"{rr.pm.grado or ''} {rr.pm.paterno} {rr.pm.materno}, {rr.pm.nombre}".strip()
+            abog = f"{rr.abogado.grado or ''} {rr.abogado.paterno}".strip() if rr.abogado else '—'
+            data.append([
+                Paragraph(rr.sim.codigo or '—', s_cel_b),
+                Paragraph(rr.numero or '—', s_cel),
+                Paragraph(fp, s_cel),
+                Paragraph(fl, s_cel),
+                Paragraph(mil, s_cel),
+                Paragraph(abog, s_cel),
+            ])
+        t = Table(data, colWidths=cols_w, repeatRows=1)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7b2d00')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTSIZE', (0, 0), (-1, -1), 7.5),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#fdf6f0')]),
+            ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#cccccc')),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(t)
+    else:
+        story.append(Paragraph("Sin RRs agendados.", s_cel))
+
+    # Tabla: Autos vinculados
+    if autos.exists():
+        story.append(Paragraph(f"AUTOS TPE EN ESTA AGENDA  ({autos.count()})", s_seccion))
+        cols_w = [usable_w * p for p in [0.13, 0.10, 0.12, 0.10, 0.30, 0.25]]
+        data = [[
+            Paragraph('<b>N° SIM</b>', s_cel_b),
+            Paragraph('<b>Tipo Auto</b>', s_cel_b),
+            Paragraph('<b>N° Auto</b>', s_cel_b),
+            Paragraph('<b>Fecha</b>', s_cel_b),
+            Paragraph('<b>Militar</b>', s_cel_b),
+            Paragraph('<b>Abogado</b>', s_cel_b),
+        ]]
+        for auto in autos:
+            fa = auto.fecha.strftime('%d/%m/%Y') if auto.fecha else '—'
+            mil = '—'
+            if auto.pm:
+                mil = f"{auto.pm.grado or ''} {auto.pm.paterno} {auto.pm.materno}, {auto.pm.nombre}".strip()
+            abog = f"{auto.abogado.grado or ''} {auto.abogado.paterno}".strip() if auto.abogado else '—'
+            data.append([
+                Paragraph(auto.sim.codigo or '—', s_cel_b),
+                Paragraph(auto.get_tipo_display() if hasattr(auto, 'get_tipo_display') else auto.tipo or '—', s_cel),
+                Paragraph(auto.numero or '—', s_cel),
+                Paragraph(fa, s_cel),
+                Paragraph(mil, s_cel),
+                Paragraph(abog, s_cel),
+            ])
+        t = Table(data, colWidths=cols_w, repeatRows=1)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d9488')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTSIZE', (0, 0), (-1, -1), 7.5),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0fdfa')]),
+            ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#cccccc')),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(t)
+
+    doc.build(story, onFirstPage=_pie, onLaterPages=_pie)
+    buffer.seek(0)
+    filename = f"Agenda_{agenda.numero.replace('/', '-')}.pdf"
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')

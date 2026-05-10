@@ -87,6 +87,11 @@ urlpatterns = [
     path('admin1/agendas/', views.lista_agendas, name='lista_agendas'),
     path('admin1/agendas/<int:ag_id>/', views.ver_agenda_detalle, name='ver_agenda_detalle'),
     path('admin1/agendas/<int:ag_id>/resultado/', views.editar_agenda_resultado, name='agenda_resultado'),
+    path('admin1/agendas/<int:ag_id>/quitar-sim/<int:sim_id>/', views.quitar_sim_de_agenda, name='quitar_sim_de_agenda'),
+    path('admin1/agendas/<int:ag_id>/quitar-rr/<int:rr_id>/', views.quitar_rr_de_agenda, name='quitar_rr_de_agenda'),
+    path('admin1/agendas/<int:ag_id>/agregar-auto/', views.agregar_auto_a_agenda, name='agregar_auto_a_agenda'),
+    path('admin1/agendas/<int:ag_id>/quitar-auto/<int:auto_id>/', views.quitar_auto_de_agenda, name='quitar_auto_de_agenda'),
+    path('admin1/agendas/<int:ag_id>/pdf/', views.agenda_detalle_pdf, name='agenda_detalle_pdf'),
 
     # ✅ NUEVO v4.0: RAP - Recurso de Apelación (Admin1)
     path('admin1/rap/<int:rap_id>/ordenar-entrega/', views.admin1_ordenar_rap, name='admin1_ordenar_rap'),

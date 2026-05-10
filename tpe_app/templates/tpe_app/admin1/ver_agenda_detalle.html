@@ -11,37 +11,36 @@
     </a>
 </div>
 
+{# ── ENCABEZADO ───────────────────────────────────────────── #}
 <div class="card" style="margin-bottom: 2rem; border: 2px solid #1e3c72;">
     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
         <div>
-            <p style="color: #666; font-size: 0.9rem; margin: 0;">Número de Agenda</p>
-            <p style="font-size: 1.3rem; font-weight: 600; color: #1e3c72; margin: 0.3rem 0;">
-                {{ agenda.numero }}
-            </p>
+            <p class="lbl">Número de Agenda</p>
+            <p style="font-size: 1.4rem; font-weight: 700; color: #1e3c72; margin: 0.3rem 0;">{{ agenda.numero }}</p>
         </div>
         <div>
-            <p style="color: #666; font-size: 0.9rem; margin: 0;">Tipo</p>
-            <p style="font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0;">
+            <p class="lbl">Tipo</p>
+            <p style="margin: 0.3rem 0;">
                 {% if agenda.tipo == 'ORDINARIA' %}
-                    <span class="badge badge-blue">Ordinaria</span>
+                    <span class="badge badge-navy">Ordinaria</span>
                 {% elif agenda.tipo == 'EXTRAORDINARIA' %}
-                    <span class="badge badge-purple">Extraordinaria</span>
+                    <span class="badge badge-amber">Extraordinaria</span>
                 {% else %}
                     {{ agenda.tipo }}
                 {% endif %}
             </p>
         </div>
         <div>
-            <p style="color: #666; font-size: 0.9rem; margin: 0;">Estado</p>
-            <p style="font-size: 1.1rem; font-weight: 600; margin: 0.3rem 0;">
+            <p class="lbl">Estado</p>
+            <p style="margin: 0.3rem 0;">
                 {% if agenda.estado == 'PROGRAMADA' %}
-                    <span class="badge badge-blue">Programada</span>
+                    <span class="badge badge-navy">Programada</span>
                 {% elif agenda.estado == 'REALIZADA' %}
                     <span class="badge badge-green">Realizada</span>
                 {% elif agenda.estado == 'SUSPENDIDA' %}
                     <span class="badge badge-red">Suspendida</span>
                 {% elif agenda.estado == 'REPROGRAMADA' %}
-                    <span class="badge badge-orange">Reprogramada</span>
+                    <span class="badge badge-amber">Reprogramada</span>
                 {% else %}
                     {{ agenda.estado }}
                 {% endif %}
@@ -49,170 +48,367 @@
         </div>
     </div>
 
-    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee; display: grid; grid-template-columns: 1fr 1fr;">
+    <div style="margin-top: 1.2rem; padding-top: 1.2rem; border-top: 1px solid #e5e7eb; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
         <div>
-            <p style="color: #666; font-size: 0.9rem; margin: 0;">Fecha Programada</p>
-            <p style="font-size: 1rem; font-weight: 500; color: #1e3c72; margin: 0.3rem 0;">
-                {{ agenda.fecha_prog|date:"d/m/Y" }}
-            </p>
+            <p class="lbl">Fecha Programada</p>
+            <p style="font-size: 1rem; font-weight: 600; color: #1e3c72; margin: 0.2rem 0;">{{ agenda.fecha_prog|date:"d/m/Y" }}</p>
         </div>
         <div>
-            <p style="color: #666; font-size: 0.9rem; margin: 0;">Fecha Realizada</p>
-            <p style="font-size: 1rem; font-weight: 500; color: #1e3c72; margin: 0.3rem 0;">
-                {% if agenda.fecha_real %}
-                    {{ agenda.fecha_real|date:"d/m/Y" }}
-                {% else %}
-                    <span style="color: #999;">—</span>
-                {% endif %}
+            <p class="lbl">Fecha Realizada</p>
+            <p style="font-size: 1rem; font-weight: 600; margin: 0.2rem 0;">
+                {% if agenda.fecha_real %}{{ agenda.fecha_real|date:"d/m/Y" }}
+                {% else %}<span style="color:#9ca3af;">—</span>{% endif %}
             </p>
         </div>
     </div>
+
+    <div style="margin-top: 1.2rem; padding-top: 1.2rem; border-top: 1px solid #e5e7eb; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        {% if agenda.estado == 'PROGRAMADA' %}
+        <a href="{% url 'agenda_resultado' agenda.id %}" class="btn-accion btn-navy">
+            ✏️ Registrar Resultado
+        </a>
+        {% endif %}
+        <a href="{% url 'agenda_detalle_pdf' agenda.id %}" target="_blank" class="btn-accion btn-pdf">
+            📄 Exportar PDF
+        </a>
+        <span style="color: #9ca3af; font-size: 0.8rem; margin-left: 0.5rem;">
+            {{ sims|length }} primera instancia
+            {% if rrs %} · {{ rrs|length }} RR{% endif %}
+            {% if autos %} · {{ autos|length }} auto(s){% endif %}
+        </span>
+    </div>
 </div>
 
-<div class="card">
-    <h2>📋 Sumarios de esta Agenda
-        <span style="font-size: 0.8rem; background: #e3f2fd; color: #1565c0; padding: 0.3rem 0.6rem; border-radius: 20px; margin-left: 1rem;">
-            {{ dictamenes|length }} dictamen(es)
-        </span>
-    </h2>
+{# ── PRIMERA INSTANCIA ────────────────────────────────────── #}
+<div class="section-card" style="border-left-color: #1e3c72;">
+    <div class="section-header" style="background: #1e3c72;">
+        <h2>📋 Primera Instancia
+            <span class="count-badge">{{ sims|length }} sumario(s)</span>
+        </h2>
+    </div>
 
     {% if sims %}
     <table>
         <thead>
             <tr>
-                <th style="width: 90px;">Nº SIM</th>
-                <th style="width: 110px;">Tipo</th>
+                <th style="width: 95px;">Nº SIM</th>
+                <th style="width: 90px;">Tipo</th>
                 <th>Objeto del Caso</th>
-                <th>Militar(es)</th>
-                <th style="width: 120px;">Abogado Asignado</th>
-                <th style="width: 100px;">Estado</th>
+                <th style="width: 180px;">Militar(es)</th>
+                <th style="width: 130px;">Abogado</th>
+                <th style="width: 90px;">Estado</th>
+                {% if agenda.estado == 'PROGRAMADA' %}<th style="width: 36px;"></th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for sim in sims %}
-                {% with abog_sim=abog_sims_dict|get_item:sim.id dictamen=dictamenes_dict|get_item:sim.id %}
-                <tr>
-                    <td style="font-weight: 600; color: #1e3c72;">
-                        <a href="{% url 'abogado_sumario_detalle' sim.id %}?next={% url 'lista_agendas' %}"
-                           style="color: #1e3c72; text-decoration: none;">
-                            {{ sim.codigo }}
-                        </a>
-                    </td>
-                    <td>
-                        <small style="color: #666;">
-                            {{ sim.get_tipo_display }}
-                        </small>
-                    </td>
-                    <td>
-                        <div style="max-height: 60px; overflow-y: auto; font-size: 0.9rem;">
-                            {{ sim.objeto|truncatewords:20 }}
-                        </div>
-                    </td>
-                    <td style="font-size: 0.9rem;">
-                        {% if dictamen and dictamen.pm %}
-                            {# Si hay dictamen, mostrar el militar del dictamen #}
-                            <strong>{{ dictamen.pm.paterno }} {{ dictamen.pm.materno }}, {{ dictamen.pm.nombre }}</strong>
-                            <br>
-                            <small style="color: #666;">{{ dictamen.pm.grado|default:"—" }} • {{ dictamen.pm.arma|default:"—" }}</small>
-                        {% else %}
-                            {# Si no hay dictamen, mostrar militares del sumario #}
-                            {% if sim.militares.all %}
-                                {% for mil in sim.militares.all %}
-                                    <strong>{{ mil.paterno }} {{ mil.materno }}, {{ mil.nombre }}</strong>
-                                    <br>
-                                    <small style="color: #666;">{{ mil.grado|default:"—" }} • {{ mil.arma|default:"—" }}</small>
-                                    {% if not forloop.last %}<hr style="margin: 0.3rem 0;">{% endif %}
-                                {% endfor %}
-                            {% else %}
-                                <span style="color: #999;">—</span>
-                            {% endif %}
-                        {% endif %}
-                    </td>
-                    <td style="font-size: 0.9rem;">
-                        {% if abog_sim and abog_sim.abogado %}
-                            <small><strong>{{ abog_sim.abogado.paterno }}</strong></small>
-                            {% if abog_sim.es_responsable %}
-                                <br><small style="color: #16a34a; font-weight: 600;">👤 Responsable</small>
-                            {% endif %}
-                        {% elif dictamen and dictamen.abogado %}
-                            <small><strong>{{ dictamen.abogado.paterno }}</strong></small>
-                        {% else %}
-                            <span style="color: #999;">—</span>
-                        {% endif %}
-                    </td>
-                    <td style="text-align: center;">
-                        {% if sim.estado == 'PARA_AGENDA' %}
-                            <span class="badge badge-blue">Para Agenda</span>
-                        {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
-                            <span class="badge badge-orange">En Proceso</span>
-                        {% elif sim.estado == 'PROCESO_EN_EL_TSP' %}
-                            <span class="badge badge-red">En TSP</span>
-                        {% elif sim.estado == 'PROCESO_CONCLUIDO_TPE' %}
-                            <span class="badge badge-green">Concluido</span>
-                        {% elif sim.estado == 'PROCESO_CONCLUIDO_TSP_TPE' %}
-                            <span class="badge badge-green">Concluido</span>
-                        {% else %}
-                            <span class="badge badge-secondary">{{ sim.get_estado_display }}</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endwith %}
+            {% with abog_sim=abog_sims_dict|get_item:sim.id dictamen=dictamenes_dict|get_item:sim.id %}
+            <tr>
+                <td class="cod navy">
+                    <a href="{% url 'abogado_sumario_detalle' sim.id %}?next={% url 'lista_agendas' %}" style="color:#1e3c72; text-decoration:none;">
+                        {{ sim.codigo }}
+                    </a>
+                </td>
+                <td><small class="muted">{{ sim.get_tipo_display }}</small></td>
+                <td>
+                    <div class="txt-truncate">{{ sim.objeto|truncatewords:18 }}</div>
+                </td>
+                <td class="txt-sm">
+                    {% if dictamen and dictamen.pm %}
+                        <strong>{{ dictamen.pm.paterno }} {{ dictamen.pm.materno }},<br>{{ dictamen.pm.nombre }}</strong>
+                        <br><small class="muted">{{ dictamen.pm.grado|default:"—" }}</small>
+                    {% else %}
+                        {% for mil in sim.militares.all %}
+                            <strong>{{ mil.paterno }} {{ mil.materno }}, {{ mil.nombre }}</strong>
+                            <br><small class="muted">{{ mil.grado|default:"—" }}</small>
+                            {% if not forloop.last %}<hr class="mil-sep">{% endif %}
+                        {% empty %}
+                            <span class="muted">—</span>
+                        {% endfor %}
+                    {% endif %}
+                </td>
+                <td class="txt-sm">
+                    {% if abog_sim and abog_sim.abogado %}
+                        <strong>{{ abog_sim.abogado.paterno }}</strong>
+                        {% if abog_sim.es_responsable %}<br><small style="color:#16a34a;">👤 Responsable</small>{% endif %}
+                    {% elif dictamen and dictamen.abogado %}
+                        <strong>{{ dictamen.abogado.paterno }}</strong>
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if sim.estado == 'PARA_AGENDA' %}
+                        <span class="badge badge-navy">Para Agenda</span>
+                    {% elif sim.estado == 'PROCESO_EN_EL_TPE' %}
+                        <span class="badge badge-orange">En Proceso</span>
+                    {% elif sim.estado == 'PROCESO_EN_EL_TSP' %}
+                        <span class="badge badge-red">En TSP</span>
+                    {% elif 'CONCLUIDO' in sim.estado %}
+                        <span class="badge badge-green">Concluido</span>
+                    {% else %}
+                        <span class="badge badge-gray">{{ sim.get_estado_display }}</span>
+                    {% endif %}
+                </td>
+                {% if agenda.estado == 'PROGRAMADA' %}
+                <td style="text-align:center;">
+                    <form method="post" action="{% url 'quitar_sim_de_agenda' agenda.id sim.id %}"
+                          onsubmit="return confirm('¿Quitar {{ sim.codigo }} de esta agenda?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-x" title="Quitar de la agenda">✕</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endwith %}
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p style="text-align: center; color: #999; padding: 2rem 0;">
-        No hay sumarios asociados a esta agenda aún.
-    </p>
+    <p class="empty-msg">Sin sumarios de primera instancia en esta agenda.</p>
+    {% endif %}
+</div>
+
+{# ── RECURSOS DE RECONSIDERACIÓN ──────────────────────────── #}
+{% if rrs %}
+<div class="section-card" style="border-left-color: #7b2d00;">
+    <div class="section-header" style="background: #7b2d00;">
+        <h2>⚖️ Recursos de Reconsideración
+            <span class="count-badge">{{ rrs|length }} RR(s)</span>
+        </h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 95px;">Nº SIM</th>
+                <th style="width: 65px;">Nº RR</th>
+                <th style="width: 105px;">Fec. Presentación</th>
+                <th style="width: 105px;">Fec. Límite</th>
+                <th>Objeto</th>
+                <th style="width: 170px;">Militar</th>
+                <th style="width: 120px;">Abogado RR</th>
+                {% if agenda.estado == 'PROGRAMADA' %}<th style="width: 36px;"></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for rr in rrs %}
+            <tr>
+                <td class="cod" style="color:#7b2d00;">
+                    <a href="{% url 'abogado_sumario_detalle' rr.sim.id %}?next={% url 'lista_agendas' %}" style="color:#7b2d00; text-decoration:none;">
+                        {{ rr.sim.codigo }}
+                    </a>
+                </td>
+                <td class="txt-sm">{{ rr.numero|default:"—" }}</td>
+                <td class="txt-sm">{{ rr.fecha_presentacion|date:"d/m/Y"|default:"—" }}</td>
+                <td class="txt-sm">
+                    {% if rr.fecha_limite %}
+                        <strong style="color:#b91c1c;">{{ rr.fecha_limite|date:"d/m/Y" }}</strong>
+                    {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td>
+                    <div class="txt-truncate">{{ rr.sim.objeto|truncatewords:15 }}</div>
+                </td>
+                <td class="txt-sm">
+                    {% if rr.pm %}
+                        <strong>{{ rr.pm.paterno }} {{ rr.pm.materno }}, {{ rr.pm.nombre }}</strong>
+                        <br><small class="muted">{{ rr.pm.grado|default:"—" }}</small>
+                    {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td class="txt-sm">
+                    {% if rr.abogado %}<strong>{{ rr.abogado.paterno }}</strong>
+                    {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                {% if agenda.estado == 'PROGRAMADA' %}
+                <td style="text-align:center;">
+                    <form method="post" action="{% url 'quitar_rr_de_agenda' agenda.id rr.id %}"
+                          onsubmit="return confirm('¿Quitar el RR del sumario {{ rr.sim.codigo }} de esta agenda?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-x" title="Quitar de la agenda">✕</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{# ── AUTOS TPE (EJECUTORIA Y OTROS) ──────────────────────── #}
+<div class="section-card" style="border-left-color: #0d9488;">
+    <div class="section-header" style="background: #0d9488;">
+        <h2>🔖 Autos TPE — Lectura en Sesión
+            <span class="count-badge">{{ autos|length }} auto(s)</span>
+        </h2>
+    </div>
+
+    {% if autos %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 95px;">Nº SIM</th>
+                <th style="width: 155px;">Tipo Auto</th>
+                <th style="width: 75px;">N° Auto</th>
+                <th style="width: 100px;">Fecha</th>
+                <th style="width: 175px;">Militar</th>
+                <th>Objeto</th>
+                {% if agenda.estado == 'PROGRAMADA' %}<th style="width: 36px;"></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for auto in autos %}
+            <tr>
+                <td class="cod" style="color:#0d9488;">
+                    <a href="{% url 'abogado_sumario_detalle' auto.sim.id %}?next={% url 'lista_agendas' %}" style="color:#0d9488; text-decoration:none;">
+                        {{ auto.sim.codigo }}
+                    </a>
+                </td>
+                <td><small>{{ auto.get_tipo_display }}</small></td>
+                <td class="txt-sm">{{ auto.numero|default:"—" }}</td>
+                <td class="txt-sm">{{ auto.fecha|date:"d/m/Y"|default:"—" }}</td>
+                <td class="txt-sm">
+                    {% if auto.pm %}
+                        <strong>{{ auto.pm.paterno }} {{ auto.pm.materno }}, {{ auto.pm.nombre }}</strong>
+                        <br><small class="muted">{{ auto.pm.grado|default:"—" }}</small>
+                    {% else %}<span class="muted">—</span>{% endif %}
+                </td>
+                <td>
+                    <div class="txt-truncate">{{ auto.sim.objeto|truncatewords:15 }}</div>
+                </td>
+                {% if agenda.estado == 'PROGRAMADA' %}
+                <td style="text-align:center;">
+                    <form method="post" action="{% url 'quitar_auto_de_agenda' agenda.id auto.id %}"
+                          onsubmit="return confirm('¿Quitar este auto de la agenda?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-x" title="Quitar de la agenda">✕</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-msg">Sin autos programados para lectura en esta agenda.</p>
     {% endif %}
 
-    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #eee;">
-        <a href="{% url 'agenda_resultado' agenda.id %}"
-           class="btn" style="background: #1e3c72; font-size: 0.9rem; padding: 0.5rem 1rem;">
-            ✏️ Registrar Resultado
-        </a>
+    {# Formulario para agregar auto de ejecutoria #}
+    {% if agenda.estado == 'PROGRAMADA' and autos_disponibles %}
+    <div style="margin-top: 1rem; padding: 0.9rem 1rem; background: #f0fdfa; border-radius: 8px; border: 1px dashed #0d9488;">
+        <form method="post" action="{% url 'agregar_auto_a_agenda' agenda.id %}" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            {% csrf_token %}
+            <label style="font-size: 0.85rem; font-weight: 600; color: #0d9488; white-space: nowrap;">
+                + Agregar Auto de Ejecutoria:
+            </label>
+            <select name="auto_id" required style="flex: 1; min-width: 220px; padding: 0.4rem 0.6rem; border: 1px solid #0d9488; border-radius: 6px; font-size: 0.85rem; background: white;">
+                <option value="">— Seleccionar —</option>
+                {% for auto in autos_disponibles %}
+                <option value="{{ auto.id }}">
+                    {{ auto.sim.codigo }}
+                    {% if auto.pm %} · {{ auto.pm.grado|default:"" }} {{ auto.pm.paterno }}{% endif %}
+                    {% if auto.numero %} (Auto {{ auto.numero }}){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-accion" style="background: #0d9488; padding: 0.4rem 1rem; font-size: 0.85rem;">
+                Agregar
+            </button>
+        </form>
     </div>
+    {% endif %}
 </div>
 
 <style>
+    .lbl { color: #6b7280; font-size: 0.82rem; margin: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .btn-accion {
+        display: inline-block;
+        padding: 0.5rem 1.2rem;
+        border-radius: 6px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        color: white;
+    }
+    .btn-navy  { background: #1e3c72; }
+    .btn-pdf   { background: #b91c1c; }
+    .btn-navy:hover  { background: #16306b; }
+    .btn-pdf:hover   { background: #991b1b; }
+
+    .btn-x {
+        background: none;
+        border: 1px solid #dc2626;
+        border-radius: 4px;
+        color: #dc2626;
+        font-size: 0.75rem;
+        padding: 0.15rem 0.45rem;
+        cursor: pointer;
+        line-height: 1.2;
+    }
+    .btn-x:hover { background: #fef2f2; }
+
+    .section-card {
+        background: white;
+        border-radius: 8px;
+        border-left: 4px solid #1e3c72;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    .section-header {
+        padding: 0.75rem 1.2rem;
+        color: white;
+    }
+    .section-header h2 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    .count-badge {
+        background: rgba(255,255,255,0.22);
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+    }
+
     .badge {
         display: inline-block;
-        padding: .3rem .7rem;
+        padding: .25rem .65rem;
         border-radius: 20px;
-        font-size: .75rem;
+        font-size: .73rem;
         font-weight: 700;
     }
-    .badge-blue   { background: #eff6ff; color: #1d4ed8; }
+    .badge-navy   { background: #eff6ff; color: #1e3c72; }
     .badge-green  { background: #f0fdf4; color: #16a34a; }
-    .badge-purple { background: #faf5ff; color: #7e22ce; }
+    .badge-amber  { background: #fef3c7; color: #b45309; }
     .badge-orange { background: #fff7ed; color: #c2410c; }
     .badge-red    { background: #fef2f2; color: #b91c1c; }
+    .badge-gray   { background: #f3f4f6; color: #374151; }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 1rem 0;
-    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
+    th { padding: 0.65rem 0.8rem; text-align: left; font-size: 0.78rem; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: 0.04em; }
+    td { padding: 0.7rem 0.8rem; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; vertical-align: top; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
 
-    table thead {
-        background: #f5f5f5;
-        border-bottom: 2px solid #ddd;
-    }
+    .cod       { font-weight: 700; }
+    .txt-sm    { font-size: 0.85rem; }
+    .txt-truncate { max-height: 56px; overflow-y: auto; }
+    .muted     { color: #9ca3af; }
+    .mil-sep   { margin: 0.25rem 0; border: none; border-top: 1px solid #f1f5f9; }
+    .empty-msg { text-align: center; color: #9ca3af; padding: 1.5rem 0; font-size: 0.9rem; }
 
-    table th {
-        padding: 0.8rem;
-        text-align: left;
-        font-weight: 600;
-        color: #333;
-    }
-
-    table td {
-        padding: 0.8rem;
-        border-bottom: 1px solid #eee;
-    }
-
-    table tbody tr:hover {
-        background: #f9f9f9;
-    }
+    /* Padding interno para tablas dentro de section-card */
+    .section-card table { margin: 0; }
+    .section-card .empty-msg { padding: 1.5rem; }
+    .section-card form { padding: 0 1.2rem 1.2rem; }
+    .section-card > table { padding: 0 1.2rem; }
 </style>
 {% endblock %}
