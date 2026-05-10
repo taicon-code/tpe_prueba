@@ -268,6 +268,19 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
     res = get_object_or_404(Resolucion, pk=res_id, sim=sim, instancia='PRIMERA')
 
+    # Requiere custodia física activa para crear una resolución de RR
+    tiene_custodia = CustodiaSIM.objects.filter(
+        sim=sim,
+        fecha_entrega__isnull=True,
+        abogado=abogado,
+    ).exists()
+    if not tiene_custodia:
+        messages.error(
+            request,
+            "No puede crear una Resolución de RR: la carpeta no está en su poder."
+        )
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
     if request.method == "POST":
         rr_fec = request.POST.get("RR_FEC") or ""
         rr_resum = (request.POST.get("RR_RESUM") or "").strip() or None

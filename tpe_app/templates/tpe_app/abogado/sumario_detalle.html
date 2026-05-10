@@ -516,8 +516,12 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
-                       href="{% url 'abogado_rr_crear' sim.pk r.pk %}">Crear RR</a>
+                    {% if tiene_custodia %}
+                        <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
+                           href="{% url 'abogado_rr_crear' sim.pk r.pk %}">Crear RR</a>
+                    {% else %}
+                        <span style="font-size:.75rem; color:#9ca3af;">Sin carpeta</span>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

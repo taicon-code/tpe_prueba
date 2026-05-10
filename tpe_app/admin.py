@@ -207,6 +207,19 @@ class ResolucionAdmin(admin.ModelAdmin):
         }),
     )
 
+    def save_model(self, request, obj, form, change):
+        abogado_anterior_id = form.initial.get('abogado') if change else None
+        obj.save()
+        # Si el abogado cambió, sincronizar automáticamente las tablas relacionadas
+        if change and abogado_anterior_id and obj.abogado_id != abogado_anterior_id:
+            from .models import ABOG_SIM, CustodiaSIM as CS
+            nuevo_id = obj.abogado_id
+            sim = obj.sim
+            DICTAMEN.objects.filter(sim=sim, abogado_id=abogado_anterior_id).update(abogado_id=nuevo_id)
+            ABOG_SIM.objects.filter(sim=sim, abogado_id=abogado_anterior_id).update(abogado_id=nuevo_id)
+            CS.objects.filter(sim=sim, abogado_id=abogado_anterior_id).update(abogado_id=nuevo_id)
+            CS.objects.filter(sim=sim, abogado_destino_id=abogado_anterior_id).update(abogado_destino_id=nuevo_id)
+
     @mark_safe
     def alerta_plazo(self, obj):
         color = obj.get_alerta_plazo()
