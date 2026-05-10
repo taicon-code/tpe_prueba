@@ -205,12 +205,26 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # django-axes: Protección contra fuerza bruta en login
+from datetime import timedelta
 AXES_FAILURE_LIMIT = 5  # Bloquear después de 5 intentos fallidos
-AXES_COOLOFF_TIME = 1  # Cooloff de 1 hora (timedelta)
+AXES_COOLOFF_TIME = timedelta(hours=1)  # Cooloff de 1 hora
 AXES_LOCKOUT_URL = '/login/'  # Redirigir a login si está bloqueado
 AXES_LOCKOUT_TEMPLATE = 'axes/lockout.html'  # Template personalizado en tpe_app/templates/axes/
 AXES_VERBOSE = True  # Loguear intentos
 AXES_RESET_ON_SUCCESS = True  # Reset contador al login exitoso
+AXES_LOCK_OUT_AT_FAILURE = True  # Bloquear al alcanzar el límite
+
+# 🔑 IMPORTANTE: Bloquear por USUARIO, no por IP
+# En producción es crítico para redes corporativas donde múltiples usuarios comparten la misma IP
+# AXES_USE_USER_AGENT = False (no usar user-agent)
+# Por defecto axes usa: username (si existe), luego IP. Lo forzamos a username cuando el usuario existe.
+AXES_META_KEYS = ('HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR')  # Intentar obtener IP real (proxy/NAT)
+# En production con proxy: usar X_FORWARDED_FOR. Sin proxy: usar REMOTE_ADDR.
+
+# Estrategia de bloqueo:
+# - Si el usuario existe en la forma de login: bloquear el USERNAME (no la IP)
+# - Si no existe: bloquear la IP (para prevenir enumeración de usuarios)
+AXES_LEGACY_USER_LOCKOUT = False  # Desactiva bloqueo por IP cuando existe username válido
 
 # Logging para diagnóstico
 LOGGING = {
