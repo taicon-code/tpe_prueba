@@ -599,7 +599,7 @@ def ver_agenda_detalle(request, ag_id):
 
     # Obtener todos los dictámenes de esta agenda con sus sumarios y militares
     dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related(
-        'sim', 'pm', 'abog'
+        'sim', 'pm', 'abogado'
     ).order_by('sim__id')
 
     context = {
