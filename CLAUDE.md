@@ -19,6 +19,7 @@ Tecnología: Django + MySQL + Bootstrap 5.
 - v3.5: Búsqueda por lotes de antecedentes militares
 - v3.5.1: Grado histórico por sumario, año de egreso y cálculo automático de ascensos
 - **v4.0: Estandarización completa de nombres de campos a snake_case (sin prefijos), auditoría de seguridad, índices y correcciones de integridad**
+- **v4.4: Bug fix crítico — transiciones de fase post-1ra resolución (EN_ESPERA_RR, PARA_AGENDA_RR, EN_DICTAMEN_RR nunca se asignaban)**
 
 ---
 
@@ -410,6 +411,14 @@ Si **NO hay `anio_promocion`** registrado (casos históricos):
     - **Bug 2**: Sección 0 del dashboard Admin2 no mostraba sumarios agendados (casos históricos + entregas fallidas)
     - **Bug 3**: Sección B del dashboard Admin2 tenía botón "Recibir" confuso en entregas al abogado
     - **Solución**: Flujo correcto ahora: ADMIN1 agenda → custodia PENDIENTE_CONFIRMACION → ADMIN2 entrega con abogado_destino → ABOGADO confirma → custodia RECIBIDA_CONFORME con abogado. Dashboards mejorados con secciones claras y unívocas (commit 2cd5bdd).
+13. **v4.4 — Transiciones de fase post-1ra resolución (BUG FIX CRÍTICO)** (commit abf20a9):
+    - **Diagnóstico**: Las fases `EN_ESPERA_RR`, `PARA_AGENDA_RR` y `EN_DICTAMEN_RR` nunca se asignaban. El SIM quedaba congelado en `1RA_RESOLUCION` indefinidamente, sin importar las notificaciones o RRs registrados.
+    - **Bug 1 — Notificación sin fase**: `ayudante_registrar_notificacion()` guardaba el objeto `Notificacion` pero no actualizaba `sim.fase`. **Corrección**: si `res.instancia == 'PRIMERA'` y `sim.fase == '1RA_RESOLUCION'` → `sim.fase = 'EN_ESPERA_RR'`.
+    - **Bug 2 — Wizard histórico sin fase**: Al registrar RES histórica con notificación simultánea, el wizard solo asignaba `1RA_RESOLUCION`. **Corrección**: si el formulario incluye `notif_tipo` → asignar `EN_ESPERA_RR` directamente.
+    - **Bug 3 — RR presentado sin fase**: `admin2_views.registrar_rr()` creaba el `Resolucion(instancia='RECONSIDERACION')` pero no tocaba `sim.fase`. **Corrección**: si `sim.fase in ['1RA_RESOLUCION', 'NOTIFICADO_1RA', 'EN_ESPERA_RR']` → `sim.fase = 'PARA_AGENDA_RR'`.
+    - **Bug 4 — RR agendado sin fase**: `admin1_views.agendar_rr()` asignaba agenda y abogado al RR pero no actualizaba `sim.fase`. **Corrección**: si `sim.fase == 'PARA_AGENDA_RR'` → `sim.fase = 'EN_DICTAMEN_RR'`.
+    - **Bug 5 — Quitar RR sin revertir fase**: `admin1_views.quitar_rr_de_agenda()` no restauraba la fase. **Corrección**: si `sim.fase == 'EN_DICTAMEN_RR'` → revertir a `'PARA_AGENDA_RR'`.
+    - **Regla multi-militar confirmada**: `sim.fase` avanza con el PRIMER evento de cualquier militar. Cuando un militar no presenta RR, su proceso termina en su última fase; el SIM continúa con el militar que sí avanza.
 
 ---
 
