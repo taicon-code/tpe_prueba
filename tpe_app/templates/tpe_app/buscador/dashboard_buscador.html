@@ -790,8 +790,9 @@
       <div class="sumario-info">
         <strong>Objeto:</strong> {{ sim.objeto }}<br>
         <strong>Resumen:</strong> {{ sim.resumen|truncatewords:15 }}<br>
-        <strong>Fecha Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }} |
-        <strong>Estado:</strong> {{ sim.get_estado_display }}
+        <strong>Fecha Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}<br>
+        <strong>Estado:</strong> {{ sim.get_estado_display }} &nbsp;
+        <strong>Fase:</strong> {% include "tpe_app/buscador/_fase_badge.html" %}
       </div>
     </div>
     {% endfor %}
@@ -816,6 +817,10 @@
           <div>
             <strong>Estado</strong>
             {{ sim.get_estado_display }}
+          </div>
+          <div>
+            <strong>Fase</strong>
+            {% include "tpe_app/buscador/_fase_badge.html" %}
           </div>
         </div>
       </div>
@@ -1216,6 +1221,7 @@
         <th>Resumen</th>
         <th>Fecha Ingreso</th>
         <th>Estado</th>
+        <th>Fase</th>
       </tr>
     </thead>
     <tbody>
@@ -1233,6 +1239,7 @@
         <td>{{ sim.resumen|truncatewords:8 }}</td>
         <td>{{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</td>
         <td>{{ sim.get_estado_display }}</td>
+        <td>{% include "tpe_app/buscador/_fase_badge.html" %}</td>
       </tr>
       {% endfor %}
     </tbody>
