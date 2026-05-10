@@ -322,12 +322,35 @@ def agendar_sumario(request):
                             es_responsable=(i == 0),
                         )
 
+                    # Notificar a ADMIN2: marcar custodia como pendiente de entregar
+                    # Solo el abogado responsable (primero) recibe la carpeta física.
+                    # Los demás abogados asignados pueden crear dictámenes vía ABOG_SIM sin custodia.
+                    abog_responsable = abogados_list[0]
+                    custodia_admin2 = CustodiaSIM.objects.filter(
+                        sim=sumario,
+                        tipo_custodio='ADMIN2_ARCHIVO',
+                        fecha_entrega__isnull=True,
+                    ).first()
+                    if custodia_admin2:
+                        custodia_admin2.estado = 'PENDIENTE_CONFIRMACION'
+                        custodia_admin2.abogado_destino = abog_responsable
+                        custodia_admin2.save()
+                    else:
+                        CustodiaSIM.objects.create(
+                            sim=sumario,
+                            tipo_custodio='ADMIN2_ARCHIVO',
+                            abogado_destino=abog_responsable,
+                            usuario=request.user,
+                            motivo='AGENDA',
+                            estado='PENDIENTE_CONFIRMACION',
+                        )
+
                     nombres = ", ".join(str(a) for a in abogados)
                     messages.success(
                         request,
                         f'✅ Sumario {sumario.codigo} agendado en agenda {agenda.numero} '
                         f'con abogado(s): {nombres} — {agenda.fecha_prog.strftime("%d/%m/%Y")}. '
-                        f'Admin2 debe entregar la carpeta.'
+                        f'Admin2 debe entregar la carpeta a {abog_responsable.paterno}.'
                     )
             except Exception as exc:
                 messages.error(request, f'❌ Error al agendar: {exc}')

@@ -21,14 +21,80 @@ def admin2_dashboard(request):
     Cada SIM se muestra según su custodia actual.
     """
 
-    # ✅ 1. PENDIENTES DE CONFIRMAR RECEPCIÓN (Admin2 recibió de vuelta)
-    # Son custodias ADMIN2_ARCHIVO en estado PENDIENTE_CONFIRMACION
-    # Esto ocurre cuando Admin2 recibe un sumario de vuelta de un abogado/vocal
+    # ✅ 1. SIM PENDIENTES DE ENTREGAR AL ABOGADO
+    # Detecta tres casos:
+    #   A) Custodia ADMIN2 PENDIENTE_CONFIRMACION + abogado_destino (agendados con el nuevo flujo)
+    #   B) SIM PROCESO_EN_EL_TPE con ABOG_SIM pero custodia ADMIN2 aún RECIBIDA_CONFORME (datos viejos)
+    #   C) SIM PROCESO_EN_EL_TPE con ABOG_SIM y sin ninguna custodia activa (entrega fallida)
+    from django.db.models import Exists, OuterRef
+
+    # Caso A: custodia formal de entrega pendiente
+    custodias_para_entregar_qs = CustodiaSIM.objects.filter(
+        tipo_custodio='ADMIN2_ARCHIVO',
+        estado='PENDIENTE_CONFIRMACION',
+        fecha_entrega__isnull=True,
+        abogado_destino__isnull=False,
+    ).select_related('sim', 'abogado_destino').prefetch_related('sim__militares')
+
+    carpetas_para_entregar = []
+    sim_ids_caso_a = set()
+    for custodia in custodias_para_entregar_qs:
+        custodio = custodia.sim.custodio_actual()
+        if custodio and custodio.id == custodia.id:
+            abog_sim_qs = ABOG_SIM.objects.filter(sim=custodia.sim).select_related('abogado')
+            custodia.todos_abogados = [a.abogado for a in abog_sim_qs]
+            custodia.sin_custodia_formal = False
+            carpetas_para_entregar.append(custodia)
+            sim_ids_caso_a.add(custodia.sim_id)
+
+    # Casos B y C: SIM en proceso con abogado asignado pero sin custodia activa de abogado
+    tiene_custodia_abogado_activa = Exists(
+        CustodiaSIM.objects.filter(
+            sim=OuterRef('pk'),
+            tipo_custodio__in=['ABOG_ASESOR', 'ABOG_RR', 'ABOG_AUTOS'],
+            fecha_entrega__isnull=True,
+        )
+    )
+    fases_excluidas = [
+        'PENDIENTE_ARCHIVO', 'CONCLUIDO', 'MEMORANDUM_RETORNADO',
+        'EN_EJECUTORIA', 'EJECUTORIA_NOTIFICADA', 'EN_AGENDA_EJECUTORIA',
+    ]
+    sims_sin_custodia_abogado = (
+        SIM.objects.filter(estado='PROCESO_EN_EL_TPE', abogados__isnull=False)
+        .exclude(pk__in=sim_ids_caso_a)
+        .exclude(fase__in=fases_excluidas)
+        .annotate(tiene_custodia_abogado=tiene_custodia_abogado_activa)
+        .filter(tiene_custodia_abogado=False)
+        .prefetch_related('militares', 'abogados')
+        .distinct()
+    )
+    for sim in sims_sin_custodia_abogado:
+        abog_resp = ABOG_SIM.objects.filter(sim=sim, es_responsable=True).select_related('abogado').first()
+        todos = ABOG_SIM.objects.filter(sim=sim).select_related('abogado')
+        # Crear objeto proxy con los mismos atributos que usa el template
+        class _FakeEntrega:
+            pass
+        fe = _FakeEntrega()
+        fe.sim = sim
+        fe.abogado_destino = abog_resp.abogado if abog_resp else None
+        fe.todos_abogados = [a.abogado for a in todos]
+        fe.sin_custodia_formal = True
+        fe.fecha_recepcion = sim.fecha_ingreso or timezone.now()
+        carpetas_para_entregar.append(fe)
+
+    carpetas_para_entregar.sort(
+        key=lambda x: x.fecha_recepcion if x.fecha_recepcion else timezone.now(),
+        reverse=True,
+    )
+
+    # ✅ 1b. PENDIENTES DE CONFIRMAR RECEPCIÓN (Admin2 recibió carpeta de vuelta)
+    # Custodias ADMIN2 en PENDIENTE_CONFIRMACION sin abogado_destino (devueltas por abogados).
     custodias_admin2_pendientes = CustodiaSIM.objects.filter(
         tipo_custodio='ADMIN2_ARCHIVO',
         estado='PENDIENTE_CONFIRMACION',
-        fecha_entrega__isnull=True
-    ).select_related('sim').prefetch_related('sim__militares')
+        fecha_entrega__isnull=True,
+        abogado_destino__isnull=True,
+    ).select_related('sim', 'abogado').prefetch_related('sim__militares')
 
     carpetas_admin2_pendientes = []
     for custodia in custodias_admin2_pendientes:
@@ -110,33 +176,7 @@ def admin2_dashboard(request):
 
     carpetas_prestadas.sort(key=lambda x: x.fecha_recepcion, reverse=True)
 
-    # ✅ 6. PENDIENTES DE ENTREGAR
-    # Son SIM asignados a abogados pero sin custodia activa aún
-    sims_asignados = SIM.objects.filter(
-        abogados__isnull=False
-    ).exclude(
-        custodias__estado='RECIBIDA_CONFORME'
-    ).exclude(
-        custodias__estado='PENDIENTE_CONFIRMACION'
-    ).distinct().prefetch_related('militares', 'abogados')
-
-    sims_pendientes_entregar = []
-    for sim in sims_asignados:
-        # Verificar que no haya custodia activa ni pendiente
-        has_active_custody = sim.custodias.filter(
-            estado__in=['RECIBIDA_CONFORME', 'PENDIENTE_CONFIRMACION']
-        ).exists()
-
-        # No incluir archivados/concluidos
-        if not has_active_custody and sim.estado not in ['PROCESO_CONCLUIDO_TPE', 'PROCESO_EJECUTADO']:
-            abog_primera = ABOG_SIM.objects.filter(sim=sim).select_related('abogado')
-            sim.abogados_asignados = [a.abogado for a in abog_primera]
-            sims_pendientes_entregar.append(sim)
-
-    # Ordenar por fecha de ingreso descendente
-    sims_pendientes_entregar.sort(key=lambda x: x.fecha_ingreso if x.fecha_ingreso else timezone.now(), reverse=True)
-
-    # ✅ 7. PENDIENTE ARCHIVO SPRODA (Admin1 ordenó el archivo final)
+    # ✅ 6. PENDIENTE ARCHIVO SPRODA (Admin1 ordenó el archivo final)
     sims_pendiente_archivo = list(
         SIM.objects.filter(fase='PENDIENTE_ARCHIVO')
         .prefetch_related('militares')
@@ -228,16 +268,18 @@ def admin2_dashboard(request):
     except EmptyPage:
         para_ejecutoria_page = paginator_ejecutoria.page(paginator_ejecutoria.num_pages)
 
-    paginator_entregar = Paginator(sims_pendientes_entregar, 15)
+    paginator_entregar = Paginator(carpetas_para_entregar, 15)
     page_entregar = request.GET.get('page_entregar')
     try:
-        sims_pendientes_entregar_page = paginator_entregar.page(page_entregar)
+        carpetas_para_entregar_page = paginator_entregar.page(page_entregar)
     except PageNotAnInteger:
-        sims_pendientes_entregar_page = paginator_entregar.page(1)
+        carpetas_para_entregar_page = paginator_entregar.page(1)
     except EmptyPage:
-        sims_pendientes_entregar_page = paginator_entregar.page(paginator_entregar.num_pages)
+        carpetas_para_entregar_page = paginator_entregar.page(paginator_entregar.num_pages)
 
     context = {
+        'carpetas_para_entregar': carpetas_para_entregar_page,
+        'total_para_entregar': len(carpetas_para_entregar),
         'carpetas_admin2_pendientes': carpetas_admin2_pendientes_page,
         'total_admin2_pendientes': len(carpetas_admin2_pendientes),
         'carpetas_en_poder': carpetas_en_poder_page,
@@ -248,8 +290,6 @@ def admin2_dashboard(request):
         'total_prestadas': len(carpetas_prestadas),
         'para_ejecutoria': para_ejecutoria_page,
         'total_ejecutoria': len(para_ejecutoria),
-        'sims_pendientes_entregar': sims_pendientes_entregar_page,
-        'total_sin_entregar': len(sims_pendientes_entregar),
         'sims_pendiente_archivo': sims_pendiente_archivo,
         'total_pendiente_archivo': len(sims_pendiente_archivo),
         'sims_con_memo_pendiente': sims_con_memo_pendiente,
@@ -311,21 +351,32 @@ def admin2_entregar_carpeta(request, sim_id):
                     custodio_actual.fecha_entrega = timezone.now()
                     custodio_actual.save()
 
-                    # Crear nueva custodia (pendiente de confirmación del abogado si es entrega a abogado)
-                    estado_custodia = 'PENDIENTE_CONFIRMACION' if tipo_custodio.startswith('ABOG_') else 'RECIBIDA_CONFORME'
-                    custodia_nueva = CustodiaSIM.objects.create(
+                    # Determinar estado: si va a un abogado, queda PENDIENTE hasta que él confirme.
+                    # El modelo exige abogado_destino (no abogado) cuando es PENDIENTE_CONFIRMACION.
+                    es_entrega_a_abogado = tipo_custodio.startswith('ABOG_')
+                    estado_custodia = 'PENDIENTE_CONFIRMACION' if es_entrega_a_abogado else 'RECIBIDA_CONFORME'
+
+                    CustodiaSIM.objects.create(
                         sim=sim,
                         tipo_custodio=tipo_custodio,
-                        abogado=abog,
+                        abogado_destino=abog if es_entrega_a_abogado else None,
+                        abogado=abog if not es_entrega_a_abogado else None,
                         usuario=request.user,
                         observacion=observacion or None,
                         motivo=motivo,
                         nro_oficio=nro_oficio,
                         fecha_oficio=fecha_oficio,
-                        estado=estado_custodia
+                        estado=estado_custodia,
                     )
 
-                    messages.success(request, f'✅ Carpeta entregada correctamente')
+                    if es_entrega_a_abogado:
+                        messages.success(
+                            request,
+                            f'✅ Carpeta de {sim.codigo} entregada a {abog}. '
+                            f'El abogado debe confirmar la recepción desde su panel.'
+                        )
+                    else:
+                        messages.success(request, f'✅ Carpeta de {sim.codigo} entregada correctamente.')
                     return redirect('admin2_dashboard')
             except PM.DoesNotExist:
                 messages.error(request, '❌ Abogado no encontrado')

@@ -22,7 +22,7 @@
 <!-- Stats Grid -->
 <div class="stats-grid">
     <div class="stat-card" style="border-left-color: #dc2626;">
-        <h3 style="color: #1e3c72;">{{ total_sin_entregar }}</h3>
+        <h3 style="color: #1e3c72;">{{ total_para_entregar }}</h3>
         <p>Pendientes de entregar</p>
     </div>
     <div class="stat-card" style="border-left-color: #3b82f6;">
@@ -188,72 +188,89 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN 0: SIM Pendientes de Entregar (asignados, sin custodia) -->
+<!-- SECCIÓN 0: SIM Pendientes de Entregar al Abogado (agendados por Admin1) -->
 <!-- ============================================================ -->
 <div class="card">
     <h2 style="color: #dc2626;">⚠️ SIM Pendientes de Entregar (Asignados a Abogados)</h2>
+    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+        Admin1 agendó y asignó estos sumarios. Saque la carpeta del archivo y entréguela físicamente al abogado indicado.
+    </p>
 
-    {% if sims_pendientes_entregar %}
+    {% if carpetas_para_entregar %}
     <table>
         <thead>
             <tr>
                 <th scope="col">Sumario</th>
-                <th scope="col">Fecha Ingreso</th>
-                <th scope="col">Militar(es)</th>
-                <th scope="col">Asignado a Abogado(s)</th>
-                <th scope="col">Estado</th>
-                <th scope="col">Acciones</th>
+                <th scope="col">Militar(es) Investigado(s)</th>
+                <th scope="col" style="background:#fde8e8; color:#991b1b;">ENTREGAR CARPETA A</th>
+                <th scope="col">También asignado(s)</th>
+                <th scope="col">Acción</th>
             </tr>
         </thead>
         <tbody>
-            {% for sim in sims_pendientes_entregar %}
+            {% for custodia in carpetas_para_entregar %}
             <tr style="background: #fef2f2;">
-                <td><strong>{{ sim.codigo }}</strong></td>
-                <td style="white-space: nowrap;">{{ sim.fecha_ingreso|date:"d/m/Y" }}</td>
+                <td>
+                    <strong>{{ custodia.sim.codigo }}</strong><br>
+                    <span style="font-size:0.75rem; color:#6b7280;">{{ custodia.sim.fecha_ingreso|date:"d/m/Y" }}</span>
+                </td>
                 <td style="font-size: 0.9rem;">
-                    {% for pm in sim.militares.all %}
-                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }}</span>
+                    {% for pm in custodia.sim.militares.all %}
+                        <span style="display: block; font-weight:600;">{{ pm.grado }} {{ pm.paterno }} {{ pm.materno }}</span>
                     {% empty %}
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
-                <td style="font-size: 0.9rem;">
-                    {% for abog in sim.abogados_asignados %}
-                        <span style="background: #dcfce7; color: #166534; padding: 0.2rem 0.5rem; border-radius: 12px; display: inline-block; margin: 0.1rem; font-weight: 600;">
-                            {{ abog.grado }} {{ abog.paterno }}
+                <td style="background:#fde8e8;">
+                    {% if custodia.abogado_destino %}
+                    <div style="display:flex; flex-direction:column; gap:0.25rem;">
+                        <span style="background:#dc2626; color:#fff; padding:0.3rem 0.7rem; border-radius:20px; font-weight:700; font-size:0.95rem; display:inline-block;">
+                            {{ custodia.abogado_destino.grado }} {{ custodia.abogado_destino.paterno }} {{ custodia.abogado_destino.materno }}
                         </span>
+                        <span style="font-size:0.75rem; color:#991b1b; font-weight:600;">&#x2192; Abogado responsable de la carpeta</span>
+                    </div>
+                    {% else %}
+                    <span style="color:#9ca3af;">Sin asignar</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:0.85rem; color:#6b7280;">
+                    {% for abog in custodia.todos_abogados %}
+                        {% if abog.pk != custodia.abogado_destino.pk %}
+                            <span style="display:block;">{{ abog.grado }} {{ abog.paterno }} (también asignado)</span>
+                        {% endif %}
                     {% endfor %}
                 </td>
                 <td>
-                    <span style="background: #fee2e2; color: #991b1b; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600;">
-                        {{ sim.get_estado_display }}
+                    {% if custodia.sin_custodia_formal %}
+                    <span style="display:block; background:#fef3c7; color:#92400e; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.72rem; font-weight:600; margin-bottom:0.3rem;">
+                        ⚠️ Sin registro formal de custodia
                     </span>
-                </td>
-                <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-                    <a href="{% url 'admin2_entregar_carpeta' sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #dc2626; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                        📤 Entregar
+                    {% endif %}
+                    <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}"
+                       class="btn"
+                       style="background:#dc2626; color:#fff; padding:0.4rem 0.8rem; border-radius:4px; text-decoration:none; font-weight:700; white-space:nowrap; display:block; text-align:center; margin-bottom:0.3rem;">
+                        📤 Entregar{% if custodia.abogado_destino %} a {{ custodia.abogado_destino.paterno }}{% endif %}
                     </a>
-                    <a href="{% url 'detalles_sim' sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                        📋 Historial
-                    </a>
-                    <a href="{% url 'export_custodia_pdf' sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                        📄 PDF
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}"
+                       class="btn"
+                       style="background:#8b5cf6; color:#fff; padding:0.3rem 0.6rem; border-radius:4px; text-decoration:none; font-size:0.75rem; white-space:nowrap; display:block; text-align:center;">
+                        📋 Ver detalle
                     </a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% if sims_pendientes_entregar.has_other_pages %}
+    {% if carpetas_para_entregar.has_other_pages %}
     <nav style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap;">
-        {% if sims_pendientes_entregar.has_previous %}
+        {% if carpetas_para_entregar.has_previous %}
             <a href="?page_entregar=1" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">⏮️ Primero</a>
-            <a href="?page_entregar={{ sims_pendientes_entregar.previous_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">◀️ Anterior</a>
+            <a href="?page_entregar={{ carpetas_para_entregar.previous_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">◀️ Anterior</a>
         {% endif %}
-        <span style="padding: 0.4rem 0.8rem; color: #666; font-weight: 500;">Página {{ sims_pendientes_entregar.number }} de {{ sims_pendientes_entregar.paginator.num_pages }}</span>
-        {% if sims_pendientes_entregar.has_next %}
-            <a href="?page_entregar={{ sims_pendientes_entregar.next_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Siguiente ▶️</a>
-            <a href="?page_entregar={{ sims_pendientes_entregar.paginator.num_pages }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Último ⏭️</a>
+        <span style="padding: 0.4rem 0.8rem; color: #666; font-weight: 500;">Página {{ carpetas_para_entregar.number }} de {{ carpetas_para_entregar.paginator.num_pages }}</span>
+        {% if carpetas_para_entregar.has_next %}
+            <a href="?page_entregar={{ carpetas_para_entregar.next_page_number }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Siguiente ▶️</a>
+            <a href="?page_entregar={{ carpetas_para_entregar.paginator.num_pages }}" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.8rem; background: #3b82f6; color: white; border-radius: 4px; text-decoration: none;">Último ⏭️</a>
         {% endif %}
     </nav>
     {% endif %}
@@ -421,10 +438,14 @@
 </div>
 
 <!-- ============================================================ -->
-<!-- SECCIÓN B: Carpetas entregadas pendientes de confirmar -->
+<!-- SECCIÓN B: Entregadas al abogado — esperando su confirmación -->
 <!-- ============================================================ -->
 <div class="card">
-    <h2 style="color: #d97706;">⏳ Pendientes de Confirmación — Abogados/Vocales</h2>
+    <h2 style="color: #d97706;">📬 Entregadas — Esperando Confirmación del Abogado</h2>
+    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+        Ya entregó estas carpetas físicamente. El abogado debe confirmar la recepción desde su panel.
+        No requiere acción de su parte.
+    </p>
 
     {% if carpetas_pendientes %}
     <table>
@@ -432,15 +453,14 @@
             <tr>
                 <th scope="col">Sumario</th>
                 <th scope="col">Militar(es)</th>
-                <th scope="col">Entregada por</th>
-                <th scope="col">Desde</th>
-                <th scope="col">Observaciones</th>
+                <th scope="col" style="background:#fef3c7; color:#92400e;">Esperando confirmación de</th>
+                <th scope="col">Fecha Entrega</th>
                 <th scope="col">Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for custodia in carpetas_pendientes %}
-            <tr>
+            <tr style="background:#fffbeb;">
                 <td><strong>{{ custodia.sim.codigo }}</strong></td>
                 <td style="font-size: 0.9rem;">
                     {% for pm in custodia.sim.militares.all %}
@@ -449,28 +469,32 @@
                         <span style="color: #9ca3af;">—</span>
                     {% endfor %}
                 </td>
-                <td style="font-size: 0.85rem; font-weight: 600;">
-                    {% if custodia.abogado %}
-                        <span style="background: #fecaca; color: #7f1d1d; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">
+                <td style="background:#fef3c7;">
+                    {% if custodia.abogado_destino %}
+                        <span style="background:#d97706; color:#fff; padding:0.3rem 0.6rem; border-radius:12px; font-weight:700; display:inline-block;">
+                            {{ custodia.abogado_destino.grado }} {{ custodia.abogado_destino.paterno }} {{ custodia.abogado_destino.materno }}
+                        </span>
+                        <span style="display:block; font-size:0.72rem; color:#92400e; margin-top:0.2rem;">
+                            Pendiente que confirme en su panel
+                        </span>
+                    {% elif custodia.abogado %}
+                        <span style="background:#d97706; color:#fff; padding:0.3rem 0.6rem; border-radius:12px; font-weight:700; display:inline-block;">
                             {{ custodia.abogado.grado }} {{ custodia.abogado.paterno }}
                         </span>
                     {% else %}
-                        <span style="color: #9ca3af;">—</span>
+                        <span style="color:#9ca3af;">{{ custodia.get_tipo_custodio_display }}</span>
                     {% endif %}
                 </td>
                 <td style="white-space: nowrap; font-size: 0.85rem;">{{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}</td>
-                <td style="font-size: 0.85rem; max-width: 250px; color: #555;">
-                    {{ custodia.observacion|truncatewords:20|default:"—" }}
-                </td>
-                <td style="display: flex; gap: 0.3rem; flex-wrap: wrap;">
-                    <a href="{% url 'admin2_confirmar_recepcion' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #d97706; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                        ✅ Recibir
+                <td>
+                    <a href="{% url 'anular_entrega_custodia' custodia.pk %}" class="btn"
+                       style="font-size:0.75rem; padding:0.25rem 0.5rem; background:#ef4444; color:#fff; text-decoration:none; border-radius:4px; white-space:nowrap;"
+                       onclick="return confirm('¿Anular esta entrega y recuperar la carpeta?')">
+                        ↩️ Anular Entrega
                     </a>
-                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                    <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn"
+                       style="font-size:0.75rem; padding:0.25rem 0.5rem; background:#8b5cf6; color:#fff; text-decoration:none; border-radius:4px; white-space:nowrap; display:inline-block; margin-top:0.2rem;">
                         📋 Ver
-                    </a>
-                    <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                        📄 PDF
                     </a>
                 </td>
             </tr>
@@ -479,7 +503,7 @@
     </table>
     {% else %}
     <p style="text-align: center; color: #999; padding: 2rem;">
-        ✅ No hay carpetas pendientes de confirmar recepción
+        ✅ No hay entregas pendientes de confirmación
     </p>
     {% endif %}
 </div>

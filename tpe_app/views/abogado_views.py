@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Exists, OuterRef
 from ..decorators import rol_requerido
-from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, ApelacionTSP
+from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, ApelacionTSP, ABOG_SIM
 from datetime import date, timedelta
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
@@ -10,28 +10,45 @@ def abogado_dashboard(request):
     """Dashboard para abogados - solo ven sus sumarios asignados"""
 
     perfil = request.perfil
-    
+
     # Si el abogado no está vinculado a PM, mostrar error
     if not perfil.pm:
         context = {'error': 'Tu usuario no está vinculado a un registro de Personal Militar'}
         return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
 
-    # ✅ NUEVO v3.1: Sumarios CON CUSTODIA ACTIVA (que NO son solicitudes)
-    # Obtener IDs de SIM donde el abogado tiene custodia activa
-    sim_ids_con_custodia = CustodiaSIM.objects.filter(
+    # 1. Sumarios en los que el abogado fue asignado vía ABOG_SIM (con o sin custodia).
+    #    Esto cubre: abogado responsable + abogados adicionales en el sumario.
+    sim_ids_asignados = ABOG_SIM.objects.filter(
         abogado=perfil.pm,
-        fecha_entrega__isnull=True
+        sim__estado='PROCESO_EN_EL_TPE',
     ).values_list('sim_id', flat=True)
 
+    # 2. Sumarios donde el abogado ya tiene custodia física activa (responsable con carpeta).
+    sim_ids_con_custodia = CustodiaSIM.objects.filter(
+        abogado=perfil.pm,
+        fecha_entrega__isnull=True,
+    ).values_list('sim_id', flat=True)
+
+    # Unión: ve todos sus sumarios (asignados vía ABOG_SIM + los que tiene en custodia)
+    todos_sus_sim_ids = set(sim_ids_asignados) | set(sim_ids_con_custodia)
+
     mis_sumarios = SIM.objects.filter(
-        pk__in=sim_ids_con_custodia
+        pk__in=todos_sus_sim_ids
     ).exclude(tipo__startswith='SOLICITUD').order_by('-fecha_registro').distinct()
 
-    # ✅ NUEVO v3.1: Solicitudes CON CUSTODIA ACTIVA
+    # 3. Solicitudes asignadas
     mis_solicitudes = SIM.objects.filter(
-        pk__in=sim_ids_con_custodia,
+        pk__in=todos_sus_sim_ids,
         tipo__startswith='SOLICITUD'
     ).order_by('-fecha_registro').distinct()
+
+    # 4. Sumarios pendientes de confirmar recepción (Admin2 ya entregó la carpeta,
+    #    el abogado aún no confirmó que la recibió físicamente).
+    sumarios_para_confirmar = SIM.objects.filter(
+        custodias__abogado_destino=perfil.pm,
+        custodias__estado='PENDIENTE_CONFIRMACION',
+        custodias__fecha_entrega__isnull=True,
+    ).distinct()
     
     # ✅ NUEVO v3.1: Recursos asignados a este abogado
     # Mostrar Resolucion RECONSIDERACION donde el abogado está asignado,
@@ -89,12 +106,14 @@ def abogado_dashboard(request):
         'mis_sumarios': mis_sumarios,
         'mis_solicitudes': mis_solicitudes,
         'mis_recursos': mis_recursos,
+        'sumarios_para_confirmar': sumarios_para_confirmar,
+        'total_para_confirmar': sumarios_para_confirmar.count(),
         'total_asignados': total_asignados,
         'total_res': Resolucion.objects.filter(
             instancia='PRIMERA', abogado=perfil.pm
         ).count(),
         'total_rr': Resolucion.objects.filter(
-            instancia='RECONSIDERACION', sim__pk__in=sim_ids_con_custodia
+            instancia='RECONSIDERACION', sim__pk__in=todos_sus_sim_ids
         ).count(),
         'total_autotpe': AUTOTPE.objects.filter(abogado=perfil.pm).count(),
         'raps_para_elaborar': raps_para_elaborar,
@@ -106,8 +125,55 @@ def abogado_dashboard(request):
     return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
 
 # ============================================================
-# ENTREGA DE CARPETA (Custodia)
+# CUSTODIA: CONFIRMAR RECEPCIÓN Y ENTREGA DE CARPETA
 # ============================================================
+
+@rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
+def abogado_confirmar_recepcion(request, sim_id):
+    """El abogado confirma que recibió físicamente la carpeta de Admin2.
+    Solo aplica cuando Admin2 ya entregó (custodia en PENDIENTE_CONFIRMACION con abogado_destino).
+    """
+    from django.shortcuts import redirect
+    from django.contrib import messages
+    from django.db import transaction
+    from django.utils import timezone
+
+    sim = get_object_or_404(SIM, pk=sim_id)
+    perfil = request.perfil
+
+    try:
+        with transaction.atomic():
+            custodia_pendiente = CustodiaSIM.objects.filter(
+                sim=sim,
+                abogado_destino=perfil.pm,
+                estado='PENDIENTE_CONFIRMACION',
+                fecha_entrega__isnull=True,
+            ).first()
+
+            if not custodia_pendiente:
+                messages.error(request, '❌ No hay entrega pendiente de confirmar para este sumario.')
+                return redirect('abogado_dashboard')
+
+            # Cerrar la custodia pendiente
+            custodia_pendiente.fecha_entrega = timezone.now()
+            custodia_pendiente.save()
+
+            # Crear custodia activa: el abogado ya tiene la carpeta
+            CustodiaSIM.objects.create(
+                sim=sim,
+                tipo_custodio=custodia_pendiente.tipo_custodio,
+                abogado=perfil.pm,
+                usuario=request.user,
+                motivo=custodia_pendiente.motivo or 'AGENDA',
+                estado='RECIBIDA_CONFORME',
+            )
+
+            messages.success(request, f'✅ Recepción confirmada. Ahora tienes la carpeta de {sim.codigo}.')
+    except Exception as e:
+        messages.error(request, f'❌ Error al confirmar: {str(e)}')
+
+    return redirect('abogado_dashboard')
+
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
 def abogado_entregar_carpeta(request, sim_id):

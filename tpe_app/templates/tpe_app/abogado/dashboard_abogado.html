@@ -30,8 +30,57 @@
         <h3>{{ total_autotpe }}</h3>
         <p>Total Autos TPE</p>
     </div>
+    {% if total_para_confirmar %}
+    <div class="stat-card" style="border-left-color: #dc2626; background: #fef2f2;">
+        <h3 style="color: #dc2626;">{{ total_para_confirmar }}</h3>
+        <p style="color: #dc2626; font-weight: 600;">Carpetas a Confirmar</p>
+    </div>
+    {% endif %}
 </div>
 
+{% if sumarios_para_confirmar %}
+<!-- ============================================================ -->
+<!-- ALERTA: Sumarios que deben confirmar recepción de carpeta -->
+<!-- ============================================================ -->
+<div class="card" style="border-left: 4px solid #dc2626;">
+    <h2 style="color: #dc2626;">🔔 Carpetas Pendientes de Confirmar Recepción</h2>
+    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+        Admin2 ya entregó la carpeta física. Confirme que la recibió para poder trabajar con estos sumarios.
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Militar(es)</th>
+                <th>Resumen</th>
+                <th>Fecha Ingreso</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in sumarios_para_confirmar %}
+            <tr style="background: #fef2f2;">
+                <td><strong>{{ sim.codigo }}</strong></td>
+                <td style="font-size: 0.9rem;">
+                    {% for pm in sim.militares.all %}
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }} {{ pm.materno }}</span>
+                    {% empty %}—{% endfor %}
+                </td>
+                <td>{{ sim.resumen|truncatewords:8 }}</td>
+                <td style="white-space: nowrap;">{{ sim.fecha_ingreso|date:"d/m/Y"|default:"-" }}</td>
+                <td>
+                    <a href="{% url 'abogado_confirmar_recepcion' sim.pk %}"
+                       class="btn"
+                       style="background: #dc2626; color: #fff; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; font-weight: 600; white-space: nowrap;">
+                        ✅ Confirmar Recepción
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 
 <div class="card">
     <h2>📄 Sumarios Asignados</h2>
