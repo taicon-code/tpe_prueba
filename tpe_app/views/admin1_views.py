@@ -9,7 +9,6 @@ from django.http import JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import date, timedelta
 import calendar
-import json
 from ..decorators import rol_requerido
 from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP
 from ..models import get_pendientes_ejecutoria
@@ -174,18 +173,6 @@ def admin1_dashboard(request):
         .order_by('-notificacion__fecha')
     )
 
-    # Agendas realizadas para marcar en el calendario del sidebar
-    agendas_realizadas = AGENDA.objects.filter(
-        estado='REALIZADA', fecha_real__isnull=False
-    ).values_list('fecha_real', flat=True).order_by('fecha_real')
-
-    # Formatear fechas de agendas realizadas para el JavaScript (JSON válido)
-    agendas_dict = {}
-    for fecha in agendas_realizadas:
-        if fecha:
-            agendas_dict[fecha.isoformat()] = True
-    agendas_por_fecha = json.dumps(agendas_dict)
-
     context = {
         'query': query,
         'sumarios_recientes': sumarios_recientes,
@@ -200,7 +187,6 @@ def admin1_dashboard(request):
         'total_pendientes_ejecutoria': len(por_res_ej) + len(por_rr_ej),
         'sumarios_en_proceso': sumarios_en_proceso,
         'total_sin_notificar': total_sin_notificar,
-        'agendas_por_fecha': agendas_por_fecha,
         'ejecutorias_notificadas': ejecutorias_notificadas,
         'total_ejecutorias_notificadas': ejecutorias_notificadas.count(),
     }
