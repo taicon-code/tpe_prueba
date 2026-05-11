@@ -1153,7 +1153,7 @@
 
 </div>
 
-{% elif query and resultados_pm %}
+{% elif resultados_pm %}
 <!-- MÚLTIPLES RESULTADOS DE PM -->
 <div class="results-section">
   <div class="section-title">
@@ -1253,10 +1253,15 @@
   <p>🔍 No se encontraron resultados para "{{ query }}"</p>
   <p style="color: #ccc; font-size: 0.9rem;">Intenta buscar con otro término</p>
 </div>
+{% elif promocion and not personal_seleccionado and not resultados_pm %}
+<div class="empty-state">
+  <p>🔍 No se encontraron militares egresados en {{ promocion }}</p>
+  <p style="color: #ccc; font-size: 0.9rem;">Intenta con otro año</p>
+</div>
 {% endif %}
 
 <!-- INICIAL -->
-{% if not query %}
+{% if not query and not promocion %}
 <div class="empty-state">
   <p>Ingresa un CI, nombre, apellido o código DJE para comenzar</p>
   <p style="color: #ccc; font-size: 0.9rem;">Ejemplos: 7309870 | DANIELA | DJE-001/24</p>

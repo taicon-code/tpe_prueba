@@ -210,6 +210,12 @@ def buscador_dashboard(request):
             historial = _obtener_historial_completo(personal_seleccionado.id)
             estado = _obtener_estado_actual(personal_seleccionado.id)
 
+    # Si hay búsqueda por promoción y exactamente 1 resultado, también mostrar historial
+    if promocion and promocion.isdigit() and len(resultados_pm) == 1:
+        personal_seleccionado = resultados_pm[0]
+        historial = _obtener_historial_completo(personal_seleccionado.id)
+        estado = _obtener_estado_actual(personal_seleccionado.id)
+
     context = {
         'query': query,
         'promocion': promocion,
