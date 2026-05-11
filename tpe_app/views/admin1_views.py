@@ -661,11 +661,23 @@ def ver_agenda_detalle(request, ag_id):
         'sim', 'pm', 'abogado'
     ).order_by('sim__codigo')
 
+    # SIMs que ya avanzaron más allá de primera instancia no se muestran en esa sección
+    FASES_POST_1RA = [
+        'EN_ESPERA_RR', 'PARA_AGENDA_RR', 'EN_DICTAMEN_RR', '2DA_RESOLUCION',
+        'NOTIFICACION_RR', 'NOTIFICADO_RR', 'EN_ESPERA_RAP', 'ELEVADO_TSP',
+        'RECIBIDO_TSP', 'EN_CUMPLIMIENTO', 'CUMPLIMIENTO_EMITIDO',
+        'CUMPLIMIENTO_NOTIFICADO', 'CONCLUIDO_TSP_TPE', 'NULIDAD_TSP',
+        'EN_AGENDA_EJECUTORIA', 'EN_EJECUTORIA', 'EJECUTORIA_NOTIFICADA',
+        'PENDIENTE_ARCHIVO', 'CONCLUIDO', 'MEMORANDUM_RETORNADO',
+    ]
+
     sim_ids_nuevos = set(abog_sims_nuevos.values_list('sim_id', flat=True))
     sim_ids_dictamenes = set(dictamenes.values_list('sim_id', flat=True))
     sim_ids_todos = sim_ids_nuevos | sim_ids_dictamenes
 
-    sims = SIM.objects.filter(id__in=sim_ids_todos).prefetch_related('militares').order_by('codigo')
+    sims = SIM.objects.filter(id__in=sim_ids_todos).exclude(
+        fase__in=FASES_POST_1RA
+    ).prefetch_related('militares').order_by('codigo')
 
     abog_sims_dict = {abog.sim_id: abog for abog in abog_sims_nuevos}
     dictamenes_dict = {dict_obj.sim_id: dict_obj for dict_obj in dictamenes}
@@ -705,6 +717,19 @@ def quitar_sim_de_agenda(request, ag_id, sim_id):
         return redirect('ver_agenda_detalle', ag_id=ag_id)
     agenda = get_object_or_404(AGENDA, pk=ag_id)
     sim = get_object_or_404(SIM, pk=sim_id)
+
+    FASES_PRIMERA_INSTANCIA = {
+        'PARA_AGENDA', 'EN_DICTAMEN_1RA', '1RA_RESOLUCION',
+        'NOTIFICACION_1RA', 'NOTIFICADO_1RA',
+    }
+    if sim.fase not in FASES_PRIMERA_INSTANCIA:
+        messages.error(
+            request,
+            f'No se puede quitar {sim.codigo} de la agenda: el sumario ya avanzó a la fase "{sim.get_fase_display()}" (RR o posterior). '
+            f'Use la acción correspondiente en el panel de RR.'
+        )
+        return redirect('ver_agenda_detalle', ag_id=ag_id)
+
     with transaction.atomic():
         ABOG_SIM.objects.filter(sim=sim, agenda=agenda).delete()
         if not ABOG_SIM.objects.filter(sim=sim).exists():
