@@ -11,7 +11,7 @@
 </div>
 
 <h1 style="margin-bottom: 1rem; color: #1e3c72;">✅ Crear Auto de Ejecutoria</h1>
-<div class="card" style="max-width: 700px; margin: 0 auto;">
+<div class="card" style="max-width: 900px; margin: 0 auto;">
     <p style="margin: 0 0 0.5rem 0;"><strong>Sumario:</strong> {{ sim.codigo }} — {{ sim.resumen|truncatewords:12 }}</p>
     <p style="margin: 0 0 1.5rem 0; font-size: 0.9rem; color: #666;">
         <strong>Resolución origen:</strong> {{ resolucion.numero }} ({{ resolucion.get_instancia_display|default:"" }}) —
@@ -21,6 +21,58 @@
     <p style="color:#16a34a; font-size: 0.9rem; margin: 0 0 1.5rem 0; background: #f0fdf4; padding: 0.75rem; border-radius: 4px; border-left: 4px solid #16a34a;">
         ℹ️ Auto de Ejecutoria: finaliza el proceso del sumario marcándolo como concluido.
     </p>
+
+    {% if resoluciones or autos %}
+    <div style="background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+        <div style="font-weight: 600; color: #1e3c72; margin-bottom: 0.75rem;">📥 Actuados del TPE — Disponibles para descarga</div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <!-- Resoluciones -->
+            {% for res in resoluciones %}
+            <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                <div style="min-width: 0; flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: #111827;">
+                        RES N° {{ res.numero|default:"S/N" }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #6b7280;">
+                        {{ res.fecha|date:"d/m/Y"|default:"—" }}
+                        {% if res.get_instancia_display %}· {{ res.get_instancia_display }}{% endif %}
+                    </div>
+                </div>
+                {% if res.pdf_url %}
+                <a href="{{ res.pdf_url }}" target="_blank" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.7rem; background: #dc3545; color: #fff; white-space: nowrap; text-decoration: none;">
+                    ⬇ PDF
+                </a>
+                {% else %}
+                <span style="font-size: 0.75rem; color: #9ca3af;">Sin PDF</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <!-- Autos TPE -->
+            {% for auto in autos %}
+            <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                <div style="min-width: 0; flex: 1;">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: #111827;">
+                        AUTO N° {{ auto.numero|default:"S/N" }}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #6b7280;">
+                        {{ auto.fecha|date:"d/m/Y"|default:"—" }}
+                        · {{ auto.get_tipo_display }}
+                    </div>
+                </div>
+                {% if auto.pdf_url %}
+                <a href="{{ auto.pdf_url }}" target="_blank" class="btn" style="font-size: 0.75rem; padding: 0.4rem 0.7rem; background: #dc3545; color: #fff; white-space: nowrap; text-decoration: none;">
+                    ⬇ PDF
+                </a>
+                {% else %}
+                <span style="font-size: 0.75rem; color: #9ca3af;">Sin PDF</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <form method="post">
         {% csrf_token %}

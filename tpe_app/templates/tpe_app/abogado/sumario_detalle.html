@@ -373,30 +373,30 @@
 
             <!-- Paso 1: Dictamen -->
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; flex: 1;">
                     {% if rr.mi_dictamen %}
                         <span style="background: #dcfce7; color: #16a34a; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;">✓</span>
                     {% else %}
                         <span style="background: #fef3c7; color: #d97706; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;">1</span>
                     {% endif %}
-                    <div>
-                        <span style="font-weight: 600; font-size: 0.88rem; color: #374151;">Dictamen RR</span>
+                    <div style="min-width: 0; flex: 1;">
+                        <span style="font-weight: 600; font-size: 0.88rem; color: #374151; display: block;">Dictamen RR</span>
                         {% if rr.mi_dictamen %}
-                            <span style="font-size: 0.78rem; color: #16a34a; margin-left: 0.4rem;">N° {{ rr.mi_dictamen.numero|default:"S/N" }}{% if rr.mi_dictamen.conclusion %} — {{ rr.mi_dictamen.conclusion|truncatechars:40 }}{% endif %}</span>
+                            <span style="font-size: 0.78rem; color: #16a34a; margin-left: 0;">N° {{ rr.mi_dictamen.numero|default:"S/N" }}{% if rr.mi_dictamen.conclusion %} — {{ rr.mi_dictamen.conclusion }}{% endif %}</span>
                         {% else %}
-                            <span style="font-size: 0.78rem; color: #d97706; margin-left: 0.4rem;">Pendiente</span>
+                            <span style="font-size: 0.78rem; color: #d97706;">Pendiente</span>
                         {% endif %}
                     </div>
                 </div>
                 {% if not rr.mi_dictamen %}
-                    <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; background: #1e3c72; white-space: nowrap;">
+                    <a href="{% url 'abogado_dictamen_crear' sim.pk %}" class="btn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; background: #1e3c72; white-space: nowrap; flex-shrink: 0;">
                         ➕ Crear Dictamen
                     </a>
                 {% endif %}
             </div>
 
             <!-- Paso 2: Resolución RR -->
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.6rem;">
                     {% if rr.texto %}
                         <span style="background: #dcfce7; color: #16a34a; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0;">✓</span>
@@ -416,11 +416,13 @@
                         {% endif %}
                     </div>
                 </div>
-                {% if rr.mi_dictamen and not rr.texto and rr.resolucion_origen %}
-                    <a href="{% url 'abogado_rr_crear' sim.pk rr.resolucion_origen.pk %}" class="btn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; background: #059669; white-space: nowrap;">
-                        ⚖️ Crear Resolución RR
-                    </a>
-                {% endif %}
+                <div style="display: flex; gap: 0.4rem;">
+                    {% if rr.mi_dictamen and not rr.texto and rr.resolucion_origen %}
+                        <a href="{% url 'abogado_rr_crear' sim.pk rr.resolucion_origen.pk %}" class="btn" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; background: #059669; white-space: nowrap;">
+                            ⚖️ Crear Resolución RR
+                        </a>
+                    {% endif %}
+                </div>
             </div>
 
         </div>
@@ -597,34 +599,42 @@
 {% if reconsideraciones %}
 <div class="card section-card">
     <div class="card-title">🔄 Recursos de Reconsideración (RR)</div>
-    <table>
-        <thead>
-            <tr>
-                <th>N° RR</th>
-                <th>Fecha</th>
-                <th>Abogado</th>
-                <th>En contra de RES</th>
-                <th>Resumen</th>
-                <th>Resolución RR</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for rr in reconsideraciones %}
-            <tr>
-                <td><strong>{{ rr.numero|default:"S/N" }}</strong></td>
-                <td style="white-space:nowrap;">{{ rr.fecha|date:"d/m/Y"|default:"-" }}</td>
-                <td style="white-space:nowrap; font-size:.85rem;">
-                    {% if rr.abogado %}
-                        {{ rr.abogado.paterno }}{% if rr.abogado.pk == abogado.pk %} <span style="color:#1e40af; font-size:.75rem;">(Ud.)</span>{% endif %}
-                    {% else %}—{% endif %}
-                </td>
-                <td style="white-space:nowrap;"><strong>{{ rr.resolucion_origen.numero|default:"-" }}</strong></td>
-                <td style="max-width:200px; word-break:break-word;">{{ rr.get_tipo_display|default:"-" }}</td>
-                <td style="max-width:200px; word-break:break-word;">{{ rr.texto|truncatewords:10|default:"-" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">N° RR</th>
+                    <th style="width: 90px;">Fecha</th>
+                    <th style="width: 100px;">Abogado</th>
+                    <th style="width: 90px;">RES origen</th>
+                    <th style="width: 140px;">Resumen</th>
+                    <th style="min-width: 400px;">Parte Resolutiva</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rr in reconsideraciones %}
+                <tr>
+                    <td style="white-space:nowrap;"><strong>{{ rr.numero|default:"S/N" }}</strong></td>
+                    <td style="white-space:nowrap;">{{ rr.fecha|date:"d/m/Y"|default:"-" }}</td>
+                    <td style="white-space:nowrap; font-size:.85rem;">
+                        {% if rr.abogado %}
+                            {{ rr.abogado.paterno }}{% if rr.abogado.pk == abogado.pk %} <span style="color:#1e40af; font-size:.75rem;">(Ud.)</span>{% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="white-space:nowrap; text-align:center;"><strong>{{ rr.resolucion_origen.numero|default:"-" }}</strong></td>
+                    <td style="font-size:.85rem;">{{ rr.get_tipo_display|default:"-" }}</td>
+                    <td style="font-size:.85rem; word-break: break-word; line-height: 1.4; text-align: justify;">
+                        {% if rr.texto %}
+                            {{ rr.texto }}
+                        {% else %}
+                            <span style="color:#9ca3af;">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
 

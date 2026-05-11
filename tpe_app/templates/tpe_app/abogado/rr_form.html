@@ -12,7 +12,12 @@
 
 <h1 style="margin-bottom: 1rem; color: #1e3c72;">🧩 Crear Segunda Resolución (RR)</h1>
 <div class="card" style="max-width: 1000px; margin: 0 auto;">
-    <p style="margin: 0 0 1rem 0;"><strong>RES origen:</strong> {{ res.numero }} — {{ res.get_tipo_display }}</p>
+    <p style="margin: 0 0 0.25rem 0;"><strong>RES origen:</strong> {{ res.numero }} — {{ res.get_tipo_display }}</p>
+    {% if res.agenda %}
+    <p style="margin: 0 0 1rem 0; font-size: 0.95rem; color: #555;">
+        📅 Agenda: <strong>{{ res.agenda.fecha_real|date:"d/m/Y" }}</strong>
+    </p>
+    {% endif %}
 
     <form method="post">
         {% csrf_token %}

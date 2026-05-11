@@ -311,6 +311,20 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
         )
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
+    # Validar que no exista un RR para esta RES origen
+    rr_existente = Resolucion.objects.filter(
+        sim=sim,
+        instancia='RECONSIDERACION',
+        resolucion_origen=res,
+        pm=res.pm
+    ).exists()
+    if rr_existente:
+        messages.error(
+            request,
+            "❌ Ya existe un RR para esta Resolución. No se puede crear un RR duplicado."
+        )
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
     if request.method == "POST":
         rr_fec = request.POST.get("RR_FEC") or ""
         rr_resum = (request.POST.get("RR_RESUM") or "").strip() or None
@@ -451,10 +465,25 @@ def abogado_autotpe_ejecutoria_crear(request, sim_id: int):
         except Exception as exc:
             messages.error(request, f"❌ Error: {exc}")
 
+    # Compilar actuados para descarga
+    resoluciones = Resolucion.objects.filter(sim=sim).select_related("pm").order_by("-fecha")
+    autos = AUTOTPE.objects.filter(sim=sim).exclude(tipo='AUTO_EJECUTORIA').select_related("pm").order_by("-fecha")
+
+    # Adjuntar URLs de PDFs
+    for res in resoluciones:
+        doc = DocumentoAdjunto.objects.filter(resolucion_id=res.pk).first()
+        res.pdf_url = doc.archivo.url if doc else None
+
+    for auto in autos:
+        doc = DocumentoAdjunto.objects.filter(autotpe_id=auto.pk).first()
+        auto.pdf_url = doc.archivo.url if doc else None
+
     context = {
         "sim": sim,
         "abogado": abogado,
         "resolucion": resolucion,
+        "resoluciones": resoluciones,
+        "autos": autos,
     }
     return render(request, "tpe_app/abogado/autotpe_ejecutoria_form.html", context)
 
