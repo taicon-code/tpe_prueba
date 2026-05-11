@@ -21,6 +21,7 @@ urlpatterns = [
     path('abogado/sumarios/<int:sim_id>/dictamen/<int:dictamen_id>/autotpe/nuevo/', views.abogado_autotpe_crear, name='abogado_autotpe_crear'),
     path('abogado/sumarios/<int:sim_id>/auto-excusa/crear/', views.abogado_auto_excusa_crear, name='abogado_auto_excusa_crear'),
     path('abogado/sumarios/<int:sim_id>/auto-ejecutoria/crear/', views.abogado_autotpe_ejecutoria_crear, name='abogado_autotpe_ejecutoria_crear'),
+    path('abogado/doc-recurrente/<int:doc_id>/auto-respuesta/crear/', views.abogado_autotpe_respuesta_crear, name='abogado_autotpe_respuesta_crear'),
     path('abogado/sumarios/<int:sim_id>/rap/<int:rap_id>/elaborar/', views.abogado_rap_elaborar, name='abogado_rap_elaborar'),
     path('buscador/dashboard/', views.buscador_dashboard, name='buscador_dashboard'),
     path('admin1/dashboard/', views.admin1_dashboard, name='admin1_dashboard'),
@@ -141,6 +142,17 @@ urlpatterns = [
     path('ejecutoria/pendientes/', views.pendientes_ejecutoria, name='pendientes_ejecutoria'),
     path('ejecutoria/crear/<str:origen>/<int:origen_id>/', views.crear_auto_ejecutoria, name='crear_auto_ejecutoria'),
     path('admin1/ejecutoria/<int:res_id>/entregar/', views.admin1_ordenar_ejecutoria, name='admin1_ordenar_ejecutoria'),
+
+    # Memorial Presentado (incidente / recurso fuera de plazo / amparo constitucional)
+    path('admin2/memorial/buscar/',
+         views.admin2_buscar_sim_doc_recurrente,
+         name='admin2_buscar_sim_doc_recurrente'),
+    path('admin2/sumarios/<int:sim_id>/doc-recurrente/registrar/',
+         views.admin2_registrar_documento_recurrente,
+         name='admin2_registrar_documento_recurrente'),
+    path('admin1/doc-recurrente/<int:doc_id>/asignar/',
+         views.admin1_asignar_doc_recurrente,
+         name='admin1_asignar_doc_recurrente'),
 
     # Archivo final SPRODA (flujo post-ejecutoria notificada)
     path('admin1/sim/<int:sim_id>/ordenar-archivo/', views.admin1_ordenar_archivo_sproda, name='admin1_ordenar_archivo_sproda'),

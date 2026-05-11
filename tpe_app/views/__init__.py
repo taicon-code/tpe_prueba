@@ -6,6 +6,7 @@ from .abogado_documentos_views import (
     abogado_auto_excusa_crear,
     abogado_autotpe_crear,
     abogado_autotpe_ejecutoria_crear,
+    abogado_autotpe_respuesta_crear,
     abogado_dictamen_crear,
     abogado_res_crear,
     abogado_rr_crear,
@@ -35,6 +36,7 @@ from .admin1_views import (
     editar_agenda_resultado,
     gestionar_abogados_sim,
     admin1_ordenar_ejecutoria,
+    admin1_asignar_doc_recurrente,
     admin1_ordenar_rap,
     admin1_ordenar_archivo_sproda,
     registrar_sim_institucional,
@@ -59,6 +61,8 @@ from .admin2_views import (
     admin2_registrar_retorno_memo,
     admin2_registrar_rap,
     admin2_registrar_salida_tsp,
+    admin2_registrar_documento_recurrente,
+    admin2_buscar_sim_doc_recurrente,
     registrar_rr,
 )
 from .admin3_views import (
