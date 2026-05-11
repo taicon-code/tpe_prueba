@@ -20,6 +20,7 @@ Tecnología: Django + MySQL + Bootstrap 5.
 - v3.5.1: Grado histórico por sumario, año de egreso y cálculo automático de ascensos
 - **v4.0: Estandarización completa de nombres de campos a snake_case (sin prefijos), auditoría de seguridad, índices y correcciones de integridad**
 - **v4.4: Bug fix crítico — transiciones de fase post-1ra resolución (EN_ESPERA_RR, PARA_AGENDA_RR, EN_DICTAMEN_RR nunca se asignaban)**
+- **v4.5: Documentos del Recurrente (incidente, recurso fuera de plazo, amparo constitucional) — flujo paralelo que NO modifica `sim.fase` ni `sim.estado`. Nuevo tipo `AUTO_RESPUESTA` en AUTOTPE**
 
 ---
 
@@ -101,6 +102,7 @@ excluyendo fines de semana y feriados de Bolivia 2026.
 | `AUTOTPE`      | `autotpe`         | Auto del TPE (sobreseído, nulidad, excusa, ejecutoria, etc.) |
 | `ApelacionTSP` | `apelacion_tsp`   | Recurso de Apelación presentado al TSP (con datos del oficio de elevación) |
 | `ActuadoTSP`   | `actuado_tsp`     | Documentos emitidos por el TSP: RAEE, NULIDAD, NULIDAD_DEFECTOS_ABSOLUTOS, AUTO_TSP |
+| `DocumentoRecurrente` | `documento_recurrente` | **v4.5** — Documentos presentados por el militar recurrente: INCIDENTE, RECURSO_FUERA_PLAZO, AMPARO_CONSTITUCIONAL. Flujo paralelo (no toca `sim.fase`). Se responden con AUTOTPE tipo `AUTO_RESPUESTA`. |
 | `DocumentoAdjunto` | `documentos_adjuntos` | PDFs escaneados adjuntos a cualquier tabla |
 
 ---
@@ -411,6 +413,15 @@ Si **NO hay `anio_promocion`** registrado (casos históricos):
     - **Bug 2**: Sección 0 del dashboard Admin2 no mostraba sumarios agendados (casos históricos + entregas fallidas)
     - **Bug 3**: Sección B del dashboard Admin2 tenía botón "Recibir" confuso en entregas al abogado
     - **Solución**: Flujo correcto ahora: ADMIN1 agenda → custodia PENDIENTE_CONFIRMACION → ADMIN2 entrega con abogado_destino → ABOGADO confirma → custodia RECIBIDA_CONFORME con abogado. Dashboards mejorados con secciones claras y unívocas (commit 2cd5bdd).
+14. **v4.5 — Documentos del Recurrente (FLUJO PARALELO)**:
+    - Modelo nuevo `DocumentoRecurrente` (tabla `documento_recurrente`) con campos: `sim`, `pm` (recurrente), `abogado`, `tipo` (INCIDENTE / RECURSO_FUERA_PLAZO / AMPARO_CONSTITUCIONAL), `ntd`, `fecha_ingreso`, `objeto`, `plazo_respuesta`.
+    - Nuevo `tipo='AUTO_RESPUESTA'` en `AUTOTPE.TIPO_CHOICES` + FK `autotpe.documento_recurrente` (SET_NULL).
+    - **Flujo**: ADMIN2 registra → ADMIN1 asigna ABOG2 (crea custodia `motivo='REVISION'`) → ADMIN2 entrega antecedentes → ABOG2 confirma recepción → ABOG2 crea Auto de Respuesta.
+    - **REGLA CRÍTICA**: `sim.estado` y `sim.fase` **NO cambian** al registrar el documento ni al emitir el Auto de Respuesta. Es proceso paralelo al flujo principal del sumario.
+    - URLs: `admin2_registrar_documento_recurrente`, `admin1_asignar_doc_recurrente`, `abogado_autotpe_respuesta_crear`.
+    - Templates: `tpe_app/admin2/documento_recurrente_form.html`, `tpe_app/abogado/autotpe_respuesta_form.html`.
+    - Reporte: `_compilar_documentos()` enriquece resolutiva del Auto de Respuesta con `[RESPUESTA A <tipo> NTD <ntd>]`.
+
 13. **v4.4 — Transiciones de fase post-1ra resolución (BUG FIX CRÍTICO)** (commit abf20a9):
     - **Diagnóstico**: Las fases `EN_ESPERA_RR`, `PARA_AGENDA_RR` y `EN_DICTAMEN_RR` nunca se asignaban. El SIM quedaba congelado en `1RA_RESOLUCION` indefinidamente, sin importar las notificaciones o RRs registrados.
     - **Bug 1 — Notificación sin fase**: `ayudante_registrar_notificacion()` guardaba el objeto `Notificacion` pero no actualizaba `sim.fase`. **Corrección**: si `res.instancia == 'PRIMERA'` y `sim.fase == '1RA_RESOLUCION'` → `sim.fase = 'EN_ESPERA_RR'`.
