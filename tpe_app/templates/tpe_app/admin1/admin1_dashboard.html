@@ -77,6 +77,51 @@
 </div>
 {% endif %}
 
+<!-- 3b-bis. Memoriales Presentados sin Abogado asignado -->
+{% if total_docs_recurrente_sin_abogado %}
+<div class="card" style="border-left: 4px solid #f59e0b; margin-bottom: 1.5rem;">
+    <h2 style="color: #b45309;">📄 Memoriales Presentados sin Abogado</h2>
+    <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 1rem;">
+        Memoriales presentados por el recurrente (incidente, recurso fuera de plazo o amparo) pendientes de asignar a ABOG2.
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>NTD</th>
+                <th>Tipo</th>
+                <th>SIM</th>
+                <th>Recurrente</th>
+                <th>Fec. Ingreso</th>
+                <th>Plazo</th>
+                <th>Objeto</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in docs_recurrente_sin_abogado %}
+            <tr style="background:#fffbeb;">
+                <td><strong>{{ doc.ntd }}</strong></td>
+                <td><span class="badge" style="background:#b45309; color:#fff; font-size:0.75rem;">{{ doc.get_tipo_display }}</span></td>
+                <td style="white-space: nowrap;">{{ doc.sim.codigo }}</td>
+                <td style="font-size: 0.9rem;">{{ doc.pm.grado }} {{ doc.pm.paterno }} {{ doc.pm.materno|default:"" }}</td>
+                <td style="white-space: nowrap;">{{ doc.fecha_ingreso|date:"d/m/Y" }}</td>
+                <td style="white-space: nowrap;">{{ doc.plazo_respuesta|date:"d/m/Y"|default:"—" }}</td>
+                <td>{{ doc.objeto|truncatewords:10 }}</td>
+                <td>
+                    <a href="{% url 'admin1_asignar_doc_recurrente' doc.pk %}"
+                       class="btn"
+                       style="background:#b45309; color:#fff; padding:0.4rem 0.8rem; border-radius:4px; text-decoration:none; font-weight:600; white-space:nowrap;"
+                       onclick="return confirm('¿Asignar a ABOG2_AUTOS y crear orden de entrega para Admin2?');">
+                        ⚖️ Asignar a ABOG2
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
 <!-- 3c. Alerta de Ejecutorias Notificadas (pendiente ordenar archivo) -->
 {% if total_ejecutorias_notificadas %}
 <div style="background: #ecfdf5; border: 1px solid #6ee7b7; border-left: 4px solid #059669; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">

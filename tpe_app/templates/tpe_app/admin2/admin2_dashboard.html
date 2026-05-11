@@ -17,6 +17,9 @@
     <a href="{% url 'admin2_registrar_rap' %}" class="btn" style="background: #ef4444; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;">
         ➕ Registrar RAP
     </a>
+    <a href="{% url 'admin2_buscar_sim_doc_recurrente' %}" class="btn" style="background: #b45309; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: 500;" title="Incidente, recurso fuera de plazo o amparo constitucional">
+        📄 Memorial Presentado
+    </a>
 </div>
 
 <!-- Stats Grid -->
@@ -330,6 +333,9 @@
                 <td style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                     <a href="{% url 'admin2_entregar_carpeta' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #3b82f6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                         📤 Entregar
+                    </a>
+                    <a href="{% url 'admin2_registrar_documento_recurrente' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #b45309; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;" title="Registrar memorial presentado: incidente, recurso fuera de plazo o amparo">
+                        📄 Memorial Presentado
                     </a>
                     <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                         📋 Historial
