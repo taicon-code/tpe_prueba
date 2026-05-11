@@ -1,0 +1,78 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block navbar_title %}📄 Memorial Presentado — Buscar SIM{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">← Volver al Dashboard</a>
+</div>
+
+<h1 style="margin-bottom: 1rem; color: #1e3c72;">📄 Registrar Memorial Presentado</h1>
+
+<div class="card" style="max-width: 920px; margin: 0 auto 1rem;">
+    <p style="color: #6b7280; margin: 0 0 1rem 0;">
+        Busque el SIM contra el cual se presenta el memorial (incidente, recurso fuera de plazo o amparo constitucional).
+        Funciona también con SIMs ya archivados o concluidos (ej. amparos presentados años después del archivo final).
+    </p>
+
+    <form method="get" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <input type="text"
+               name="q"
+               value="{{ query }}"
+               class="form-control"
+               placeholder="Código del SIM, apellido, nombre o CI del militar..."
+               style="flex: 1; min-width: 300px;"
+               autofocus />
+        <button type="submit" class="btn" style="background: #1e3c72; color: #fff; padding: 0.5rem 1.25rem;">
+            🔍 Buscar
+        </button>
+    </form>
+</div>
+
+{% if query %}
+<div class="card" style="max-width: 1100px; margin: 0 auto;">
+    <h2 style="font-size: 1.1rem;">Resultados para "<em>{{ query }}</em>"</h2>
+
+    {% if resultados %}
+    <table>
+        <thead>
+            <tr>
+                <th>Código SIM</th>
+                <th>Militar(es)</th>
+                <th>Estado</th>
+                <th>Fase</th>
+                <th>Fec. Ingreso</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sim in resultados %}
+            <tr>
+                <td><strong>{{ sim.codigo }}</strong></td>
+                <td style="font-size: 0.9rem;">
+                    {% for pm in sim.militares.all %}
+                        <span style="display: block;">{{ pm.grado }} {{ pm.paterno }} {{ pm.materno|default:"" }} {{ pm.nombre }}</span>
+                    {% empty %}—{% endfor %}
+                </td>
+                <td><span class="badge" style="background:#6b7280; color:#fff; font-size:0.75rem;">{{ sim.get_estado_display }}</span></td>
+                <td><span class="badge" style="background:#0ea5e9; color:#fff; font-size:0.75rem;">{{ sim.get_fase_display|default:"—" }}</span></td>
+                <td style="white-space: nowrap;">{{ sim.fecha_ingreso|date:"d/m/Y"|default:"-" }}</td>
+                <td>
+                    <a href="{% url 'admin2_registrar_documento_recurrente' sim.pk %}"
+                       class="btn"
+                       style="background:#b45309; color:#fff; padding:0.4rem 0.8rem; border-radius:4px; text-decoration:none; font-weight:600; white-space:nowrap;">
+                        📄 Registrar Memorial
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="color:#6b7280; font-size: 0.85rem; margin-top: 1rem;">Mostrando hasta 30 resultados. Refine la búsqueda si no encuentra el SIM.</p>
+    {% else %}
+    <p style="color:#6b7280; padding: 1rem 0;">No se encontraron sumarios con ese término.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

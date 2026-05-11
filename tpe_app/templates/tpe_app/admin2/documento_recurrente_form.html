@@ -1,0 +1,74 @@
+{% extends 'tpe_app/base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">📄 {{ titulo }}</h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-muted mb-2">
+                        <strong>Sumario:</strong> {{ sim.codigo }} — {{ sim.objeto|truncatewords:14 }}
+                    </p>
+                    <p class="text-muted mb-4">
+                        Registre el memorial que el recurrente (militar implicado) presentó al TPE.
+                        Tras guardar, Admin1 asignará un abogado para responder mediante un Auto de Respuesta.
+                    </p>
+
+                    <form method="post" class="needs-validation">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo de Memorial <span class="text-danger">*</span></label>
+                            {{ form.tipo }}
+                            {% if form.tipo.errors %}<div class="text-danger small mt-1">{{ form.tipo.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.ntd.id_for_label }}" class="form-label">N° NTD (control) <span class="text-danger">*</span></label>
+                            {{ form.ntd }}
+                            {% if form.ntd.errors %}<div class="text-danger small mt-1">{{ form.ntd.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.fecha_ingreso.id_for_label }}" class="form-label">Fecha de Ingreso al TPE <span class="text-danger">*</span></label>
+                            {{ form.fecha_ingreso }}
+                            {% if form.fecha_ingreso.errors %}<div class="text-danger small mt-1">{{ form.fecha_ingreso.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.pm.id_for_label }}" class="form-label">Recurrente (Militar implicado) <span class="text-danger">*</span></label>
+                            {{ form.pm }}
+                            <small class="text-muted">Solo se listan los militares implicados en este SIM.</small>
+                            {% if form.pm.errors %}<div class="text-danger small mt-1">{{ form.pm.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.objeto.id_for_label }}" class="form-label">Objeto del Memorial <span class="text-danger">*</span></label>
+                            {{ form.objeto }}
+                            {% if form.objeto.errors %}<div class="text-danger small mt-1">{{ form.objeto.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.plazo_respuesta.id_for_label }}" class="form-label">Plazo de Respuesta (si aplica)</label>
+                            {{ form.plazo_respuesta }}
+                            <small class="text-muted">Algunos memoriales (ej. amparo constitucional) traen un plazo legal de respuesta.</small>
+                            {% if form.plazo_respuesta.errors %}<div class="text-danger small mt-1">{{ form.plazo_respuesta.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'admin2_dashboard' %}" class="btn btn-secondary">← Cancelar</a>
+                            <button type="submit" class="btn btn-primary">💾 Registrar Memorial</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
