@@ -95,6 +95,14 @@
     <p style="color: #6b7280; font-size: 0.95rem;">
         Confirma o modifica los dictámenes emitidos por los abogados en las agendas del tribunal
     </p>
+    <form method="get" style="margin-top: 1rem; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap;">
+        <label for="gestion" style="font-weight: 600; color: #1e3c72;">Gestión:</label>
+        <select id="gestion" name="gestion" onchange="this.form.submit()" style="padding: .45rem .65rem; border: 1px solid #d1d5db; border-radius: 6px;">
+            {% for anio in gestiones_disponibles %}
+            <option value="{{ anio }}" {% if anio == gestion_sel %}selected{% endif %}>{{ anio }}</option>
+            {% endfor %}
+        </select>
+    </form>
 </div>
 
 {% if sin_vocal_vinculado %}

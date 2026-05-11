@@ -227,7 +227,9 @@
                     {% else %}
                     <span style="font-size: 0.8rem; color: #6b7280;">{{ dic.get_estado_display }}</span>
                     {% endif %}
-                    <a href="{% url 'vocal_registrar_votos' dic.pk %}" class="btn-confirmar" style="background: #059669;">
+                    <a href="{% url 'vocal_registrar_votos' dic.pk %}"
+                       class="btn-confirmar"
+                       style="background: {% if dic.pk in dictamen_ids_con_votos %}#059669{% else %}#f59e0b{% endif %};">
                         🗳️ Votos
                     </a>
                 </div>

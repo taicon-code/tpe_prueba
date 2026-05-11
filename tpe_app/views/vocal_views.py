@@ -49,14 +49,36 @@ def _get_vocal_or_403(request):
 def vocal_dashboard(request):
     """Dashboard de vocal/secretario de actas. Lista agendas pasadas y próximas"""
     vocal = _get_vocal_or_403(request)
+    hoy = date.today()
 
-    # Agendas del tribunal (todas)
-    agendas_proximas = AGENDA.objects.filter(
-        fecha_prog__gte=date.today()
+    # Gestión (año) seleccionada desde querystring: ?gestion=2026
+    gestiones_disponibles = list(
+        AGENDA.objects.filter(fecha_prog__isnull=False)
+        .dates("fecha_prog", "year", order="DESC")
+    )
+    anios_disponibles = [d.year for d in gestiones_disponibles]
+
+    anio_actual = hoy.year
+    gestion_str = (request.GET.get("gestion") or "").strip()
+    try:
+        gestion_sel = int(gestion_str) if gestion_str else anio_actual
+    except ValueError:
+        gestion_sel = anio_actual
+
+    if anios_disponibles and gestion_sel not in anios_disponibles:
+        gestion_sel = anios_disponibles[0]
+
+    agendas_base = AGENDA.objects.filter(
+        fecha_prog__year=gestion_sel
+    )
+
+    # Agendas de la gestión seleccionada
+    agendas_proximas = agendas_base.filter(
+        fecha_prog__gte=hoy
     ).order_by("fecha_prog")
 
-    agendas_pasadas = AGENDA.objects.filter(
-        fecha_prog__lt=date.today()
+    agendas_pasadas = agendas_base.filter(
+        fecha_prog__lt=hoy
     ).order_by("-fecha_prog")[:10]  # Últimas 10
 
     # Contar dictámenes pendientes de confirmar y agregar al objeto
@@ -70,6 +92,8 @@ def vocal_dashboard(request):
         "vocal": vocal,
         "agendas_proximas": agendas_proximas,
         "agendas_pasadas": agendas_pasadas,
+        "gestiones_disponibles": anios_disponibles,
+        "gestion_sel": gestion_sel,
         "sin_vocal_vinculado": vocal is None,
     }
 
@@ -107,11 +131,19 @@ def vocal_agenda_detalle(request, ag_id: int):
             }
         dictamenes_por_sim[dic.sim.pk]["dictamenes"].append(dic)
 
+    # IDs de dictámenes que ya tienen votos registrados
+    dictamen_ids_con_votos = set(
+        VotoVocal.objects.filter(dictamen__in=dictamenes)
+        .values_list("dictamen_id", flat=True)
+        .distinct()
+    )
+
     context = {
         "vocal": vocal,
         "agenda": agenda,
         "dictamenes": dictamenes,
         "dictamenes_por_sim": dictamenes_por_sim,
+        "dictamen_ids_con_votos": dictamen_ids_con_votos,
         "rr_en_agenda": rr_en_agenda,
         "autos_en_agenda": autos_en_agenda,
     }

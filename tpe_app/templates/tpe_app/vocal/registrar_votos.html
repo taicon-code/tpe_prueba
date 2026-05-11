@@ -229,6 +229,16 @@
         background: #047857;
     }
 
+    .btn-warning {
+        background: #f59e0b;
+        color: #111827;
+    }
+
+    .btn-warning:hover {
+        background: #d97706;
+        color: #111827;
+    }
+
     .warning-box {
         background: #fffbeb;
         border-left: 4px solid #f59e0b;
@@ -326,7 +336,7 @@
                 {% with voto_valor=votos|get_item:vocal_obj.pk %}
                 <tr>
                     <td class="grado-col">{{ vocal_obj.pm.grado }}</td>
-                    <td class="nombre-col">{{ vocal_obj.pm.nombre }} {{ vocal_obj.pm.paterno }}</td>
+                    <td class="nombre-col">{{ vocal_obj.pm.nombre }} {{ vocal_obj.pm.paterno }}{% if vocal_obj.pm.materno %} {{ vocal_obj.pm.materno }}{% endif %}</td>
                     <td class="cargo-col">{{ vocal_obj.get_cargo_display }}</td>
                     <td class="voto-col">
                         <select name="voto_{{ vocal_obj.pk }}" class="voto-select" onchange="actualizarContadores()">
@@ -362,6 +372,9 @@
             ← Cancelar
         </a>
         {% if vocales_presentes %}
+        <button type="button" class="btn btn-warning" onclick="aprobarTodos()">
+            Aprueba Todos
+        </button>
         <button type="submit" class="btn btn-success">
             ✓ Registrar Votos
         </button>
@@ -399,6 +412,17 @@ function actualizarContadores() {
 
 // Ejecutar al cargar la página
 document.addEventListener('DOMContentLoaded', actualizarContadores);
+
+function aprobarTodos() {
+    const selects = document.querySelectorAll('select[name^="voto_"]');
+    selects.forEach(select => {
+        const valor = select.value;
+        if (!valor || valor === 'ABSTIENE' || valor === 'EXCUSADO' || valor === 'AUSENTE') {
+            select.value = 'APRUEBA';
+        }
+    });
+    actualizarContadores();
+}
 </script>
 
 {% endblock %}
