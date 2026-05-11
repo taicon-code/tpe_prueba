@@ -926,16 +926,20 @@ class AUTOTPE(models.Model):
         ('AUTO_ACLARATORIO',           'AUTO ACLARATORIO'),
         ('AUTO_RECHAZO_RECURSO',       'AUTO DE RECHAZO DE RECURSO'),
         ('AUTO_FACULTAD',              'AUTO DE FACULTAD'),
+        ('AUTO_RESPUESTA',             'AUTO DE RESPUESTA'),
     ]
 
-    sim            = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
-    abogado        = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
-                        related_name='autos_como_abogado')
-    agenda         = models.ForeignKey(AGENDA, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Agenda')
-    vocal_excusado = models.ForeignKey('VOCAL_TPE', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Vocal Excusado')
-    pm             = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
-    resolucion     = models.ForeignKey('Resolucion', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Resolución origen')
-    apelacion_tsp  = models.ForeignKey('ApelacionTSP', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Apelación TSP origen')
+    sim                  = models.ForeignKey(SIM, on_delete=models.PROTECT, verbose_name='Sumario')
+    abogado              = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Abogado',
+                              related_name='autos_como_abogado')
+    agenda               = models.ForeignKey(AGENDA, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Agenda')
+    vocal_excusado       = models.ForeignKey('VOCAL_TPE', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Vocal Excusado')
+    pm                   = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Militar')
+    resolucion           = models.ForeignKey('Resolucion', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Resolución origen')
+    apelacion_tsp        = models.ForeignKey('ApelacionTSP', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Apelación TSP origen')
+    documento_recurrente = models.ForeignKey('DocumentoRecurrente', on_delete=models.SET_NULL, null=True, blank=True,
+                              verbose_name='Documento del Recurrente al que responde',
+                              related_name='autos_respuesta')
 
     numero         = models.CharField(null=True, blank=True, max_length=15, db_index=True, verbose_name='Número de Auto')
     fecha          = models.DateField(null=True, blank=True, verbose_name='Fecha del Auto')
@@ -1063,6 +1067,58 @@ class ActuadoTSP(models.Model):
     def save(self, *args, **kwargs):
         self.numero = self.numero.upper() if self.numero else self.numero
         self.texto  = self.texto.upper()  if self.texto  else self.texto
+        super().save(*args, **kwargs)
+
+
+# ============================================================
+# MODELO 10b: DocumentoRecurrente — Incidente / Recurso Fuera de Plazo / Amparo Constitucional
+# Documentos que presenta el militar (recurrente) y deben responderse con Auto de Respuesta
+# Flujo paralelo: NO modifica sim.estado ni sim.fase
+# ============================================================
+class DocumentoRecurrente(models.Model):
+
+    TIPO_CHOICES = [
+        ('INCIDENTE',             'INCIDENTE'),
+        ('RECURSO_FUERA_PLAZO',   'RECURSO FUERA DE PLAZO'),
+        ('AMPARO_CONSTITUCIONAL', 'AMPARO CONSTITUCIONAL'),
+    ]
+
+    sim             = models.ForeignKey(SIM, on_delete=models.PROTECT,
+                          related_name='documentos_recurrente', verbose_name='Sumario')
+    pm              = models.ForeignKey(PM, on_delete=models.PROTECT,
+                          related_name='documentos_recurrente_como_recurrente',
+                          verbose_name='Recurrente')
+    abogado         = models.ForeignKey(PM, on_delete=models.SET_NULL, null=True, blank=True,
+                          related_name='documentos_recurrente_asignados',
+                          verbose_name='Abogado asignado')
+
+    tipo            = models.CharField(max_length=30, choices=TIPO_CHOICES, db_index=True,
+                          verbose_name='Tipo de Documento')
+    ntd             = models.CharField(max_length=30, db_index=True, verbose_name='N° NTD')
+    fecha_ingreso   = models.DateField(verbose_name='Fecha de Ingreso al TPE')
+    objeto          = models.TextField(verbose_name='Objeto del Documento')
+    plazo_respuesta = models.DateField(null=True, blank=True,
+                          verbose_name='Plazo de Respuesta (si aplica)')
+
+    history = HistoricalRecords()
+
+    class Meta:
+        db_table            = 'documento_recurrente'
+        verbose_name        = 'Documento del Recurrente'
+        verbose_name_plural = 'Documentos del Recurrente'
+        ordering            = ['-fecha_ingreso']
+        indexes = [
+            models.Index(fields=['sim']),
+            models.Index(fields=['pm']),
+            models.Index(fields=['tipo']),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} NTD {self.ntd} — {self.sim.codigo}"
+
+    def save(self, *args, **kwargs):
+        self.ntd    = self.ntd.upper()    if self.ntd    else self.ntd
+        self.objeto = self.objeto.upper() if self.objeto else self.objeto
         super().save(*args, **kwargs)
 
 
