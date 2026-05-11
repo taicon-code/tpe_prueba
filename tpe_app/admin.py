@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum
+from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum, DocumentoRecurrente
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -342,6 +342,18 @@ class ActuadoTSPAdmin(admin.ModelAdmin):
             'fields': ('es_pronunciamiento_final',)
         }),
     )
+
+# ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Documento del Recurrente (incidente / RFP / amparo)
+# ════════════════════════════════════════════════════════════════════════════
+@admin.register(DocumentoRecurrente)
+class DocumentoRecurrenteAdmin(admin.ModelAdmin):
+    list_display   = ('ntd', 'tipo', 'sim', 'pm', 'fecha_ingreso', 'plazo_respuesta', 'abogado')
+    search_fields  = ('ntd', 'sim__codigo', 'pm__paterno', 'pm__nombre')
+    list_filter    = ('tipo',)
+    raw_id_fields  = ('sim', 'pm', 'abogado')
+    ordering       = ('-fecha_ingreso',)
+
 
 # ════════════════════════════════════════════════════════════════════════════
 #  ADMIN: Documentos Adjuntos

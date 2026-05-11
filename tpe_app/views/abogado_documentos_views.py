@@ -11,6 +11,7 @@ from ..decorators import rol_requerido
 from ..models import (
     ABOG_SIM, AGENDA, AUTOTPE, DICTAMEN, DocumentoAdjunto, PM, SIM, VOCAL_TPE,
     CustodiaSIM, Resolucion, ApelacionTSP, next_resolucion_num, PerfilUsuario,
+    DocumentoRecurrente,
 )
 from ..utils.numeracion import next_num_yy
 
@@ -520,6 +521,63 @@ def abogado_auto_excusa_crear(request, sim_id: int):
         "agendas": agendas,
     }
     return render(request, "tpe_app/abogado/auto_excusa_form.html", context)
+
+
+# ============================================================
+# AUTO DE RESPUESTA: respuesta a Documento del Recurrente
+# (incidente / recurso fuera de plazo / amparo constitucional)
+# Proceso paralelo — NO modifica sim.estado ni sim.fase.
+# ============================================================
+@rol_requerido("ABOG2_AUTOS", "ADMINISTRADOR", "MASTER")
+def abogado_autotpe_respuesta_crear(request, doc_id: int):
+    """ABOG2 crea Auto de Respuesta para un Documento del Recurrente."""
+    abogado = _get_abogado_or_403(request)
+    doc = get_object_or_404(DocumentoRecurrente, pk=doc_id)
+    sim = doc.sim
+
+    # Validar: no permitir doble Auto de Respuesta para el mismo memorial
+    if AUTOTPE.objects.filter(documento_recurrente=doc, tipo='AUTO_RESPUESTA').exists():
+        messages.warning(request, f'⚠️ Ya existe Auto de Respuesta para el memorial NTD {doc.ntd}.')
+        return redirect('abogado_dashboard')
+
+    if request.method == "POST":
+        tpe_fec = request.POST.get("fecha") or ""
+        tpe_resol = (request.POST.get("texto") or "").strip()
+        autogen = request.POST.get("autogenerar_numero") == "1"
+
+        try:
+            with transaction.atomic():
+                tpe_num = None
+                if autogen:
+                    existentes = list(AUTOTPE.objects.values_list("numero", flat=True))
+                    tpe_num = next_num_yy(existentes, today=date.today())
+
+                AUTOTPE.objects.create(
+                    sim=sim,
+                    abogado=abogado,
+                    pm=doc.pm,
+                    documento_recurrente=doc,
+                    numero=tpe_num,
+                    fecha=tpe_fec or None,
+                    tipo='AUTO_RESPUESTA',
+                    texto=tpe_resol or None,
+                )
+                # NOTA: NO se modifica sim.estado ni sim.fase (proceso paralelo)
+
+                messages.success(
+                    request,
+                    f"✅ Auto de Respuesta {tpe_num or 'S/N'} creado para memorial de {doc.get_tipo_display()} NTD {doc.ntd}"
+                )
+                return redirect("abogado_dashboard")
+        except Exception as exc:
+            messages.error(request, f"❌ Error: {exc}")
+
+    context = {
+        "sim": sim,
+        "abogado": abogado,
+        "doc": doc,
+    }
+    return render(request, "tpe_app/abogado/autotpe_respuesta_form.html", context)
 
 
 # ============================================================

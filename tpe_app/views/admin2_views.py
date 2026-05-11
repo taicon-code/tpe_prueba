@@ -6,8 +6,8 @@ from django.utils import timezone
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from datetime import datetime
 from ..decorators import rol_requerido
-from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, ApelacionTSP
-from ..forms import RegistrarRRForm
+from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, ApelacionTSP, DocumentoRecurrente
+from ..forms import RegistrarRRForm, DocumentoRecurrenteForm
 
 
 # ============================================================
@@ -775,6 +775,74 @@ def admin2_registrar_rap(request):
         'titulo': 'Registrar Recurso de Apelación (RAP)',
     }
     return render(request, 'tpe_app/admin2/registrar_rap.html', context)
+
+
+# ============================================================
+# DOCUMENTO DEL RECURRENTE (incidente / recurso fuera plazo / amparo)
+# ============================================================
+@rol_requerido('ADMIN2_ARCHIVO', 'ADMINISTRADOR', 'MASTER')
+def admin2_buscar_sim_doc_recurrente(request):
+    """Buscador de SIMs (cualquier estado, incluso archivados) para registrar
+    un documento del recurrente. Permite registrar contra SIMs ya archivados en SPRODA
+    cuando llega un amparo constitucional u otro documento años después."""
+
+    query = (request.GET.get('q') or '').strip()
+    resultados = None
+
+    if query:
+        from django.db.models import Q
+        resultados = (
+            SIM.objects
+            .filter(
+                Q(codigo__icontains=query) |
+                Q(militares__paterno__icontains=query.upper()) |
+                Q(militares__nombre__icontains=query.upper()) |
+                Q(militares__ci__icontains=query)
+            )
+            .prefetch_related('militares')
+            .distinct()
+            .order_by('-fecha_ingreso')[:30]
+        )
+
+    return render(request, 'tpe_app/admin2/buscar_sim_doc_recurrente.html', {
+        'query': query,
+        'resultados': resultados,
+        'titulo': 'Buscar SIM para registrar Memorial Presentado',
+    })
+
+
+@rol_requerido('ADMIN2_ARCHIVO', 'ADMINISTRADOR', 'MASTER')
+def admin2_registrar_documento_recurrente(request, sim_id):
+    """Admin2 registra un documento presentado por el recurrente (incidente,
+    recurso fuera de plazo o amparo constitucional). No modifica la fase del SIM."""
+
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    if request.method == 'POST':
+        form = DocumentoRecurrenteForm(request.POST, sim=sim)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    doc = form.save(commit=False)
+                    doc.sim = sim
+                    doc.save()
+                messages.success(
+                    request,
+                    f'✅ Memorial de {doc.get_tipo_display()} registrado (NTD {doc.ntd}). '
+                    f'Admin1 debe asignar abogado.'
+                )
+                return redirect('admin2_dashboard')
+            except Exception as e:
+                messages.error(request, f'❌ Error al registrar documento: {e}')
+    else:
+        form = DocumentoRecurrenteForm(sim=sim)
+
+    context = {
+        'form':  form,
+        'sim':   sim,
+        'titulo': 'Registrar Memorial Presentado',
+    }
+    return render(request, 'tpe_app/admin2/documento_recurrente_form.html', context)
 
 
 @rol_requerido('ADMIN2_ARCHIVO')

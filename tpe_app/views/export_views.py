@@ -136,11 +136,17 @@ def _compilar_documentos(sim, historial, pm=None):
                 'tipo': _notif.get_tipo_display(),
                 'fecha': _notif.fecha,
             }
+        resolutiva = (auto.texto or (auto.get_tipo_display() if auto.tipo else 'N/A')).upper()
+        # Para AUTO_RESPUESTA, agregar referencia al memorial presentado
+        if auto.tipo == 'AUTO_RESPUESTA' and auto.documento_recurrente_id:
+            doc = auto.documento_recurrente
+            ref = f"[RESPUESTA A MEMORIAL DE {doc.get_tipo_display()} NTD {doc.ntd}] "
+            resolutiva = (ref + resolutiva).upper()
         documentos.append({
             'tipo': 'AUTO TPE',
             'numero': auto.numero or 'S/N',
             'fecha_doc': auto.fecha,
-            'resolutiva': (auto.texto or (auto.get_tipo_display() if auto.tipo else 'N/A')).upper(),
+            'resolutiva': resolutiva,
             'notificacion': notif_info,
             'memo': memo_info,
         })

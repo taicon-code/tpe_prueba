@@ -10,7 +10,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import date, timedelta
 import calendar
 from ..decorators import rol_requerido
-from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP
+from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP, DocumentoRecurrente
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm, SIMInstitucionalForm, ResolucionInstitucionalForm, AutoInstitucionalForm
 
@@ -173,6 +173,14 @@ def admin1_dashboard(request):
         .order_by('-notificacion__fecha')
     )
 
+    # Documentos del Recurrente sin abogado asignado
+    docs_recurrente_sin_abogado = (
+        DocumentoRecurrente.objects
+        .filter(abogado__isnull=True)
+        .select_related('sim', 'pm')
+        .order_by('-fecha_ingreso')
+    )
+
     context = {
         'query': query,
         'sumarios_recientes': sumarios_recientes,
@@ -190,6 +198,8 @@ def admin1_dashboard(request):
         'ejecutorias_notificadas': ejecutorias_notificadas,
         'total_ejecutorias_notificadas': ejecutorias_notificadas.count(),
         'sims_institucionales': SIM.objects.filter(tipo='INSTITUCIONAL').prefetch_related('resolucion_set', 'autotpe_set').order_by('-fecha_ingreso'),
+        'docs_recurrente_sin_abogado': docs_recurrente_sin_abogado,
+        'total_docs_recurrente_sin_abogado': docs_recurrente_sin_abogado.count(),
     }
 
     return render(request, 'tpe_app/admin1/admin1_dashboard.html', context)
@@ -1084,6 +1094,57 @@ def admin1_ordenar_ejecutoria(request, res_id):
         messages.error(request, f'❌ Error al crear orden: {exc}')
 
     return redirect('pendientes_ejecutoria')
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def admin1_asignar_doc_recurrente(request, doc_id):
+    """Admin1 asigna un Documento del Recurrente al abogado ABOG2_AUTOS y crea
+    la orden de custodia (Admin2 deberá entregar los antecedentes)."""
+
+    doc = get_object_or_404(DocumentoRecurrente, pk=doc_id)
+    sim = doc.sim
+
+    if doc.abogado_id:
+        messages.warning(request, f'⚠️ El memorial NTD {doc.ntd} ya fue asignado.')
+        return redirect('admin1_dashboard')
+
+    # Buscar ABOG2_AUTOS activo (mismo patrón que admin1_ordenar_ejecutoria)
+    from django.contrib.auth.models import User
+    abog2_user = User.objects.filter(
+        perfilusuario__rol='ABOG2_AUTOS',
+        perfilusuario__activo=True,
+        perfilusuario__pm__isnull=False
+    ).select_related('perfilusuario__pm').first()
+
+    abog_destino = abog2_user.perfilusuario.pm if abog2_user else None
+
+    if not abog_destino:
+        messages.error(request, '❌ No hay abogado ABOG2_AUTOS activo asignado. Contactar administrador.')
+        return redirect('admin1_dashboard')
+
+    try:
+        with transaction.atomic():
+            doc.abogado = abog_destino
+            doc.save()
+
+            CustodiaSIM.objects.create(
+                sim=sim,
+                tipo_custodio='ADMIN2_ARCHIVO',
+                motivo='REVISION',
+                abogado_destino=abog_destino,
+                estado='PENDIENTE_CONFIRMACION',
+                usuario=request.user,
+                observacion=f'Entregar a ABOG2 para responder memorial de {doc.get_tipo_display()} NTD {doc.ntd}',
+            )
+            messages.success(
+                request,
+                f'✅ Memorial de {doc.get_tipo_display()} NTD {doc.ntd} asignado a {abog_destino}. '
+                f'Admin2 debe entregar antecedentes.'
+            )
+    except Exception as exc:
+        messages.error(request, f'❌ Error al asignar documento: {exc}')
+
+    return redirect('admin1_dashboard')
 
 
 @rol_requerido('ADMIN2_ARCHIVO', 'MASTER', 'ADMINISTRADOR')

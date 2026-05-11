@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Q, Exists, OuterRef
 from ..decorators import rol_requerido
-from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, ApelacionTSP, ABOG_SIM
+from ..models import SIM, AUTOTPE, DocumentoAdjunto, CustodiaSIM, Resolucion, ApelacionTSP, ABOG_SIM, DocumentoRecurrente
 from datetime import date, timedelta
 
 @rol_requerido('ABOGADO', 'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR')
@@ -106,6 +106,17 @@ def abogado_dashboard(request):
             ).select_related('sim', 'pm', 'resolucion').distinct()
         )
 
+    # Documentos del Recurrente pendientes de responder (solo ABOG2_AUTOS)
+    docs_recurrente_pendientes = []
+    if perfil.rol in ('ABOG2_AUTOS', 'ADMINISTRADOR', 'MASTER'):
+        docs_recurrente_pendientes = list(
+            DocumentoRecurrente.objects
+            .filter(abogado=perfil.pm)
+            .exclude(autos_respuesta__tipo='AUTO_RESPUESTA')
+            .select_related('sim', 'pm')
+            .order_by('-fecha_ingreso')
+        )
+
     context = {
         'abogado': perfil.pm,
         'mis_sumarios': mis_sumarios,
@@ -125,6 +136,8 @@ def abogado_dashboard(request):
         'total_raps_elaborar': len(raps_para_elaborar),
         'pendientes_ejecutoria': pendientes_ej,
         'total_pendientes_ejecutoria': len(pendientes_ej),
+        'docs_recurrente_pendientes': docs_recurrente_pendientes,
+        'total_docs_recurrente_pendientes': len(docs_recurrente_pendientes),
     }
 
     return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)

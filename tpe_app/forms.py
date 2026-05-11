@@ -1,7 +1,7 @@
 # tpe_app/forms.py
 from django import forms
 from django.forms import inlineformset_factory
-from .models import SIM, PM, PM_SIM, CustodiaSIM, AGENDA, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, Notificacion, Memorandum
+from .models import SIM, PM, PM_SIM, CustodiaSIM, AGENDA, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, Notificacion, Memorandum, DocumentoRecurrente
 from .widgets import ResumenConOpcionesWidget
 from .resumen_choices import RESUMEN_CHOICES
 
@@ -986,6 +986,38 @@ class WizardActuadoTSPForm(ActuadoTSPForm):
 # Alias retrocompatibilidad para imports existentes
 WizardAUTOTSPForm = WizardActuadoTSPForm
 
+
+# ============================================================
+# Formulario: DocumentoRecurrente
+# Incidente / Recurso Fuera de Plazo / Amparo Constitucional
+# ============================================================
+class DocumentoRecurrenteForm(forms.ModelForm):
+
+    class Meta:
+        model = DocumentoRecurrente
+        fields = ['tipo', 'ntd', 'fecha_ingreso', 'pm', 'objeto', 'plazo_respuesta']
+        widgets = {
+            'tipo':            forms.Select(attrs={'class': 'form-control'}),
+            'ntd':             forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: NTD-1234/26', 'autocomplete': 'off'}),
+            'fecha_ingreso':   forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'pm':              forms.Select(attrs={'class': 'form-control'}),
+            'objeto':          forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Objeto del documento...'}),
+            'plazo_respuesta': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+        labels = {
+            'tipo':            'Tipo de Documento',
+            'ntd':             'N° NTD',
+            'fecha_ingreso':   'Fecha de Ingreso al TPE',
+            'pm':              'Recurrente (Militar implicado)',
+            'objeto':          'Objeto del Documento',
+            'plazo_respuesta': 'Plazo de Respuesta (opcional)',
+        }
+
+    def __init__(self, *args, sim=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Restringir el recurrente a militares pertenecientes al SIM
+        if sim:
+            self.fields['pm'].queryset = sim.militares.all()
 
 class BuscarSIMHistoricoForm(forms.Form):
     """Formulario para buscar SIM a importar datos históricos"""
