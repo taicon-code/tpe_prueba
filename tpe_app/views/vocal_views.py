@@ -8,6 +8,36 @@ from django.shortcuts import get_object_or_404, redirect, render
 from ..decorators import rol_requerido
 from ..models import AGENDA, AUTOTPE, DICTAMEN, Resolucion, VOCAL_TPE, VotoVocal, AsistenciaVocal
 
+# Orden jerárquico de cargos en el tribunal
+_CARGO_ORDER = {
+    'PRESIDENTE': 0, 'VICEPRESIDENTE': 1, 'VOCAL': 2, 'RELATOR': 3,
+    'SECRETARIO_ACTAS': 4, 'ASESOR_JEFE': 5, 'ASESOR_JURIDICO': 6,
+}
+# Cargos que participan como asesores pero NO votan
+_CARGOS_SIN_VOTO = {'ASESOR_JEFE', 'ASESOR_JURIDICO'}
+
+# Orden jerárquico de grados militares
+_GRADO_ORDER = {
+    'GRAL. EJTO.': 0, 'GRAL. DIV.': 1, 'GRAL. BRIG.': 2,
+    'CNL.': 3, 'TCNL.': 4, 'MY.': 5,
+    'CAP.': 6, 'TTE.': 7, 'SBTTE.': 8,
+    'SOF. MTRE.': 9, 'SOF. MY.': 10, 'SOF. 1RO.': 11,
+    'SOF. 2DO.': 12, 'SOF. INCL.': 13,
+    'SGTO. 1RO.': 14, 'SGTO. 2DO.': 15, 'SGTO. INCL.': 16,
+    'CABO': 17, 'DGTE.': 18, 'SLDO.': 19,
+}
+
+def _ordenar_vocales(qs):
+    """Ordena vocales: primero por cargo jerárquico, luego por grado."""
+    return sorted(
+        qs,
+        key=lambda v: (
+            _CARGO_ORDER.get(v.cargo, 99),
+            _GRADO_ORDER.get(v.pm.grado, 99),
+            v.pm.paterno or '',
+        )
+    )
+
 
 def _get_vocal_or_403(request):
     """Obtiene el VOCAL_TPE del usuario actual, o None si no está vinculado"""
@@ -153,8 +183,8 @@ def vocal_registrar_asistencia(request, ag_id: int):
     vocal = _get_vocal_or_403(request)
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
-    # Todos los vocales activos
-    vocales_activos = VOCAL_TPE.objects.filter(activo=True).order_by("cargo", "pm__paterno")
+    # Todos los vocales activos en orden jerárquico
+    vocales_activos = _ordenar_vocales(VOCAL_TPE.objects.filter(activo=True).select_related("pm"))
 
     if request.method == "GET":
         # Cargar asistencias existentes (si las hay)
@@ -213,13 +243,16 @@ def vocal_registrar_votos(request, dic_id: int):
 
     agenda = dictamen.agenda
 
-    # Vocales presentes en esa sesión (según asistencia)
+    # Vocales presentes en esa sesión, excluir cargos sin voto (asesores)
     asistencias = AsistenciaVocal.objects.filter(
         agenda=agenda,
         estado="PRESENTE"
-    ).select_related("vocal")
+    ).select_related("vocal__pm")
 
-    vocales_presentes = [a.vocal for a in asistencias]
+    vocales_presentes = _ordenar_vocales(
+        a.vocal for a in asistencias
+        if a.vocal.cargo not in _CARGOS_SIN_VOTO
+    )
 
     if request.method == "GET":
         # Cargar votos existentes
@@ -251,7 +284,7 @@ def vocal_registrar_votos(request, dic_id: int):
                     observacion = request.POST.get(f"observacion_{vocal_obj.pk}", "").strip()
 
                     # Validar voto
-                    if voto not in ["APRUEBA", "RECHAZA", "ABSTIENE", "AUSENTE"]:
+                    if voto not in ["APRUEBA", "RECHAZA", "ABSTIENE", "AUSENTE", "EXCUSADO"]:
                         voto = "ABSTIENE"
 
                     if voto == "APRUEBA":

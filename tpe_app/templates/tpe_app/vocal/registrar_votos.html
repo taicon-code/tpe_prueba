@@ -172,6 +172,15 @@
         font-weight: 700;
     }
 
+    .badge-excusado {
+        background: #f3e8ff;
+        color: #7c3aed;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
     .action-buttons {
         display: flex;
         gap: 0.75rem;
@@ -290,6 +299,10 @@
             <div class="label">Se Abstiene</div>
             <div class="value" id="contador-abstiene">0</div>
         </div>
+        <div class="summary-card" style="border-left-color: #7c3aed;">
+            <div class="label">Excusados del Caso</div>
+            <div class="value" id="contador-excusado" style="color: #7c3aed;">0</div>
+        </div>
         <div class="summary-card">
             <div class="label">Resultado Esperado</div>
             <div class="value" id="resultado-esperado">—</div>
@@ -318,9 +331,10 @@
                     <td class="voto-col">
                         <select name="voto_{{ vocal_obj.pk }}" class="voto-select" onchange="actualizarContadores()">
                             <option value="">— Seleccionar —</option>
-                            <option value="APRUEBA" {% if voto_valor == 'APRUEBA' %}selected{% endif %}>✓ Aprueba</option>
-                            <option value="RECHAZA" {% if voto_valor == 'RECHAZA' %}selected{% endif %}>✗ Rechaza</option>
+                            <option value="APRUEBA"  {% if voto_valor == 'APRUEBA'  %}selected{% endif %}>✓ Aprueba</option>
+                            <option value="RECHAZA"  {% if voto_valor == 'RECHAZA'  %}selected{% endif %}>✗ Rechaza</option>
                             <option value="ABSTIENE" {% if voto_valor == 'ABSTIENE' %}selected{% endif %}>◐ Se abstiene</option>
+                            <option value="EXCUSADO" {% if voto_valor == 'EXCUSADO' %}selected{% endif %}>⊘ Excusado del caso</option>
                         </select>
                     </td>
                     <td class="obs-col">
@@ -358,25 +372,27 @@
 <script>
 function actualizarContadores() {
     const selects = document.querySelectorAll('select[name^="voto_"]');
-    let aprueba = 0, rechaza = 0, abstiene = 0;
+    let aprueba = 0, rechaza = 0, abstiene = 0, excusado = 0;
 
     selects.forEach(select => {
         const valor = select.value;
         if (valor === 'APRUEBA') aprueba++;
         else if (valor === 'RECHAZA') rechaza++;
         else if (valor === 'ABSTIENE') abstiene++;
+        else if (valor === 'EXCUSADO') excusado++;
     });
 
     document.getElementById('contador-aprueba').textContent = aprueba;
     document.getElementById('contador-rechaza').textContent = rechaza;
     document.getElementById('contador-abstiene').textContent = abstiene;
+    document.getElementById('contador-excusado').textContent = excusado;
 
-    // Calcular resultado
+    // Calcular resultado (excusados no cuentan)
     let resultado = '—';
     if (aprueba > 0 || rechaza > 0) {
         if (aprueba > rechaza) resultado = '✓ PROCEDENTE';
         else if (rechaza > aprueba) resultado = '✗ IMPROCEDENTE';
-        else if (aprueba === rechaza) resultado = '◐ MIXTO';
+        else resultado = '◐ MIXTO';
     }
     document.getElementById('resultado-esperado').textContent = resultado;
 }

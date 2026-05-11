@@ -248,7 +248,12 @@
                 <tr>
                     <td class="grado-col">{{ vocal_obj.pm.grado }}</td>
                     <td class="nombre-col">{{ vocal_obj.pm.nombre }} {{ vocal_obj.pm.paterno }}</td>
-                    <td class="cargo-col">{{ vocal_obj.get_cargo_display }}</td>
+                    <td class="cargo-col">
+                        {{ vocal_obj.get_cargo_display }}
+                        {% if vocal_obj.cargo == 'ASESOR_JEFE' or vocal_obj.cargo == 'ASESOR_JURIDICO' %}
+                        <span style="background:#f3e8ff;color:#7c3aed;padding:0.15rem 0.4rem;border-radius:4px;font-size:0.7rem;font-weight:700;margin-left:0.3rem;">Sin voto</span>
+                        {% endif %}
+                    </td>
                     <td class="estado-col">
                         <select name="estado_{{ vocal_obj.pk }}" class="state-select">
                             <option value="PRESENTE" {% if asistencia.estado == 'PRESENTE' %}selected{% endif %}>PRESENTE</option>

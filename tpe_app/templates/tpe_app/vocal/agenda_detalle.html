@@ -173,8 +173,18 @@
 
 <!-- ── BANNER AGENDA ──────────────────────────── -->
 <div class="agenda-banner">
-    <h1>📋 {{ agenda.fecha_prog|date:"d/m/Y" }}</h1>
-    <p>{{ agenda.AG_DESC|default:"Agenda del tribunal" }}</p>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1>📋 {{ agenda.fecha_prog|date:"d/m/Y" }}</h1>
+            <p>{{ agenda.AG_DESC|default:"Agenda del tribunal" }}</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <a href="{% url 'vocal_registrar_asistencia' agenda.pk %}"
+               style="padding: 0.5rem 1rem; background: #fff; color: #1e3c72; border-radius: 6px; font-size: 0.85rem; font-weight: 700; text-decoration: none; white-space: nowrap;">
+                👥 Asistencia del Tribunal
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- ── DICTÁMENES A CONFIRMAR ──────────────────────────── -->
@@ -209,15 +219,18 @@
                     {% endif %}
                 </div>
 
-                {% if dic.estado == 'PENDIENTE' %}
-                <a href="{% url 'vocal_confirmar_dictamen' dic.pk %}" class="btn-confirmar">
-                    Confirmar
-                </a>
-                {% else %}
-                <span style="font-size: 0.8rem; color: #6b7280;">
-                    {{ dic.get_estado_display }}
-                </span>
-                {% endif %}
+                <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end;">
+                    {% if dic.estado == 'PENDIENTE' %}
+                    <a href="{% url 'vocal_confirmar_dictamen' dic.pk %}" class="btn-confirmar">
+                        Confirmar
+                    </a>
+                    {% else %}
+                    <span style="font-size: 0.8rem; color: #6b7280;">{{ dic.get_estado_display }}</span>
+                    {% endif %}
+                    <a href="{% url 'vocal_registrar_votos' dic.pk %}" class="btn-confirmar" style="background: #059669;">
+                        🗳️ Votos
+                    </a>
+                </div>
             </div>
             {% endfor %}
         </div>

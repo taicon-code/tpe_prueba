@@ -857,10 +857,11 @@ class DICTAMEN(models.Model):
 class VotoVocal(models.Model):
 
     VOTO_CHOICES = [
-        ('APRUEBA',  'Aprueba / Procedente'),
-        ('RECHAZA',  'Rechaza / Improcedente'),
-        ('ABSTIENE', 'Se abstiene'),
-        ('AUSENTE',  'Ausente en sesión'),
+        ('APRUEBA',   'Aprueba / Procedente'),
+        ('RECHAZA',   'Rechaza / Improcedente'),
+        ('ABSTIENE',  'Se abstiene'),
+        ('AUSENTE',   'Ausente en sesión'),
+        ('EXCUSADO',  'Excusado del caso'),
     ]
 
     dictamen      = models.ForeignKey(DICTAMEN, on_delete=models.CASCADE, related_name='votos')
