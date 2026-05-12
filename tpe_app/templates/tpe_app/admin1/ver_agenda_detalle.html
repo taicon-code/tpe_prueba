@@ -72,17 +72,17 @@
             📄 Exportar PDF
         </a>
         <span style="color: #9ca3af; font-size: 0.8rem; margin-left: 0.5rem;">
-            {{ sims|length }} primera instancia
+            {{ sims|length }} caso(s) agendado(s)
             {% if rrs %} · {{ rrs|length }} RR{% endif %}
             {% if autos %} · {{ autos|length }} auto(s){% endif %}
         </span>
     </div>
 </div>
 
-{# ── PRIMERA INSTANCIA ────────────────────────────────────── #}
+{# ── CASOS AGENDADOS (todos, incluyendo avanzados) ──────────── #}
 <div class="section-card" style="border-left-color: #1e3c72;">
     <div class="section-header" style="background: #1e3c72;">
-        <h2>📋 Primera Instancia
+        <h2>📋 Casos Agendados en Esta Sesión
             <span class="count-badge">{{ sims|length }} sumario(s)</span>
         </h2>
     </div>
@@ -165,7 +165,7 @@
         </tbody>
     </table>
     {% else %}
-    <p class="empty-msg">Sin sumarios de primera instancia en esta agenda.</p>
+    <p class="empty-msg">Sin sumarios agendados en esta sesión.</p>
     {% endif %}
 </div>
 

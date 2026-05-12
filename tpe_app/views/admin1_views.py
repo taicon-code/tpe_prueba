@@ -671,23 +671,12 @@ def ver_agenda_detalle(request, ag_id):
         'sim', 'pm', 'abogado'
     ).order_by('sim__codigo')
 
-    # SIMs que ya avanzaron más allá de primera instancia no se muestran en esa sección
-    FASES_POST_1RA = [
-        'EN_ESPERA_RR', 'PARA_AGENDA_RR', 'EN_DICTAMEN_RR', '2DA_RESOLUCION',
-        'NOTIFICACION_RR', 'NOTIFICADO_RR', 'EN_ESPERA_RAP', 'ELEVADO_TSP',
-        'RECIBIDO_TSP', 'EN_CUMPLIMIENTO', 'CUMPLIMIENTO_EMITIDO',
-        'CUMPLIMIENTO_NOTIFICADO', 'CONCLUIDO_TSP_TPE', 'NULIDAD_TSP',
-        'EN_AGENDA_EJECUTORIA', 'EN_EJECUTORIA', 'EJECUTORIA_NOTIFICADA',
-        'PENDIENTE_ARCHIVO', 'CONCLUIDO', 'MEMORANDUM_RETORNADO',
-    ]
-
+    # Obtener todos los SIMs agendados en esta agenda (sin filtro de fase restrictivo)
     sim_ids_nuevos = set(abog_sims_nuevos.values_list('sim_id', flat=True))
     sim_ids_dictamenes = set(dictamenes.values_list('sim_id', flat=True))
     sim_ids_todos = sim_ids_nuevos | sim_ids_dictamenes
 
-    sims = SIM.objects.filter(id__in=sim_ids_todos).exclude(
-        fase__in=FASES_POST_1RA
-    ).prefetch_related('militares').order_by('codigo')
+    sims = SIM.objects.filter(id__in=sim_ids_todos).prefetch_related('militares').order_by('codigo')
 
     abog_sims_dict = {abog.sim_id: abog for abog in abog_sims_nuevos}
     dictamenes_dict = {dict_obj.sim_id: dict_obj for dict_obj in dictamenes}
@@ -825,18 +814,8 @@ def agenda_detalle_pdf(request, ag_id):
     sim_ids_dict = set(dictamenes.values_list('sim_id', flat=True))
     sim_ids = (sim_ids_abog | sim_ids_dict) - rr_sim_ids  # Excluir sumarios que solo tienen RRs
 
-    # Excluir fases que ya pasaron primera instancia (consistente con HTML)
-    FASES_POST_1RA = [
-        'EN_ESPERA_RR', 'PARA_AGENDA_RR', 'EN_DICTAMEN_RR', '2DA_RESOLUCION',
-        'NOTIFICACION_RR', 'NOTIFICADO_RR', 'EN_ESPERA_RAP', 'ELEVADO_TSP',
-        'RECIBIDO_TSP', 'EN_CUMPLIMIENTO', 'CUMPLIMIENTO_EMITIDO',
-        'CUMPLIMIENTO_NOTIFICADO', 'CONCLUIDO_TSP_TPE', 'NULIDAD_TSP',
-        'EN_AGENDA_EJECUTORIA', 'EN_EJECUTORIA', 'EJECUTORIA_NOTIFICADA',
-        'PENDIENTE_ARCHIVO', 'CONCLUIDO', 'MEMORANDUM_RETORNADO',
-    ]
-    sims = SIM.objects.filter(id__in=sim_ids).exclude(
-        fase__in=FASES_POST_1RA
-    ).prefetch_related('militares').order_by('codigo')
+    # Obtener todos los SIMs agendados (sin filtro de fase restrictivo)
+    sims = SIM.objects.filter(id__in=sim_ids).prefetch_related('militares').order_by('codigo')
     abog_dict = {a.sim_id: a for a in abog_sims}
     dict_dict = {d.sim_id: d for d in dictamenes}
     autos = AUTOTPE.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
