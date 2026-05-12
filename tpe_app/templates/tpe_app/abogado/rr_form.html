@@ -1,7 +1,7 @@
 {% extends 'tpe_app/base.html' %}
 
 {% block title %}Crear RR - {{ sim.codigo }}{% endblock %}
-{% block navbar_title %}🔄 Crear RR — {{ sim.codigo }}{% endblock %}
+{% block navbar_title %}🔄 {% if rr_existente %}Completar{% else %}Crear{% endif %} RR — {{ sim.codigo }}{% endblock %}
 
 {% block content %}
 <div style="margin-bottom: 1.5rem;">
@@ -10,7 +10,15 @@
     </a>
 </div>
 
-<h1 style="margin-bottom: 1rem; color: #1e3c72;">🧩 Crear Segunda Resolución (RR)</h1>
+<h1 style="margin-bottom: 1rem; color: #1e3c72;">🧩 {% if rr_existente %}Completar{% else %}Crear{% endif %} Segunda Resolución (RR)</h1>
+{% if rr_existente %}
+<div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.88rem; color: #92400e;">
+    ℹ️ Este RR fue registrado por Archivo (Admin2). Complete los datos de la resolución.
+    {% if rr_existente.fecha_presentacion %}
+        Fecha de presentación: <strong>{{ rr_existente.fecha_presentacion|date:"d/m/Y" }}</strong>.
+    {% endif %}
+</div>
+{% endif %}
 <div class="card" style="max-width: 1000px; margin: 0 auto;">
     <p style="margin: 0 0 0.25rem 0;"><strong>RES origen:</strong> {{ res.numero }} — {{ res.get_tipo_display }}</p>
     {% if res.agenda %}

@@ -16,21 +16,35 @@ def abogado_dashboard(request):
         context = {'error': 'Tu usuario no está vinculado a un registro de Personal Militar'}
         return render(request, 'tpe_app/abogado/dashboard_abogado.html', context)
 
-    # 1. Sumarios en los que el abogado fue asignado vía ABOG_SIM (con o sin custodia).
-    #    Esto cubre: abogado responsable + abogados adicionales en el sumario.
-    sim_ids_asignados = ABOG_SIM.objects.filter(
-        abogado=perfil.pm,
-        sim__estado='PROCESO_EN_EL_TPE',
-    ).values_list('sim_id', flat=True)
+    # Visibilidad basada en TRABAJO ACTIVO, no en asignación permanente (ABOG_SIM).
+    # Un sumario aparece en el dashboard solo mientras el abogado tiene algo que hacer en él.
+    # Cuando termina su etapa y devuelve la carpeta, el caso desaparece — lo retomará
+    # otro abogado en la siguiente etapa (ejecutoria, RAP, etc.).
 
-    # 2. Sumarios donde el abogado ya tiene custodia física activa (responsable con carpeta).
+    # 1. Tiene la carpeta físicamente en este momento.
     sim_ids_con_custodia = CustodiaSIM.objects.filter(
         abogado=perfil.pm,
+        tipo_custodio__in=['ABOG_ASESOR', 'ABOG_RR', 'ABOG_AUTOS'],
         fecha_entrega__isnull=True,
     ).values_list('sim_id', flat=True)
 
-    # Unión: ve todos sus sumarios (asignados vía ABOG_SIM + los que tiene en custodia)
-    todos_sus_sim_ids = set(sim_ids_asignados) | set(sim_ids_con_custodia)
+    # 2. Le van a entregar la carpeta pero aún no confirmó (Admin2 preparó la entrega).
+    #    Estos quedan excluidos de mis_sumarios (ver más abajo) pero visibles en la
+    #    sección "Carpetas Pendientes de Confirmar".
+    sim_ids_pendiente_entrega = CustodiaSIM.objects.filter(
+        abogado_destino=perfil.pm,
+        estado='PENDIENTE_CONFIRMACION',
+        fecha_entrega__isnull=True,
+    ).values_list('sim_id', flat=True)
+
+    # 3. Tiene un RR asignado que aún no completó (sin texto de resolución).
+    #    Cubre el periodo entre "asignado vía agendar_rr" y "carpeta en su poder".
+    sim_ids_rr_pendientes = Resolucion.objects.filter(
+        instancia='RECONSIDERACION',
+        abogado=perfil.pm,
+    ).filter(Q(texto__isnull=True) | Q(texto='')).values_list('sim_id', flat=True)
+
+    todos_sus_sim_ids = set(sim_ids_con_custodia) | set(sim_ids_pendiente_entrega) | set(sim_ids_rr_pendientes)
 
     mis_sumarios = SIM.objects.filter(
         pk__in=todos_sus_sim_ids
@@ -42,8 +56,8 @@ def abogado_dashboard(request):
         tipo__startswith='SOLICITUD'
     ).order_by('-fecha_registro').distinct()
 
-    # 4. Sumarios pendientes de confirmar recepción (Admin2 ya entregó la carpeta,
-    #    el abogado aún no confirmó que la recibió físicamente).
+    # Pendientes de confirmar: Admin2 ya preparó la entrega, abogado aún no confirmó.
+    # Se muestran en sección separada y se EXCLUYEN de mis_sumarios (no puede trabajar aún).
     sumarios_para_confirmar = SIM.objects.filter(
         custodias__abogado_destino=perfil.pm,
         custodias__estado='PENDIENTE_CONFIRMACION',
@@ -129,7 +143,7 @@ def abogado_dashboard(request):
             instancia='PRIMERA', abogado=perfil.pm
         ).count(),
         'total_rr': Resolucion.objects.filter(
-            instancia='RECONSIDERACION', sim__pk__in=todos_sus_sim_ids
+            instancia='RECONSIDERACION', abogado=perfil.pm
         ).count(),
         'total_autotpe': AUTOTPE.objects.filter(abogado=perfil.pm).count(),
         'raps_para_elaborar': raps_para_elaborar,

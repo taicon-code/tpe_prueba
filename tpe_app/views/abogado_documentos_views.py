@@ -31,6 +31,21 @@ def abogado_sumario_detalle(request, sim_id: int):
         pk=sim_id,
     )
 
+    # Gate duro: si Admin2 ya preparó la entrega pero el abogado no confirmó,
+    # redirigir al formulario de confirmación antes de permitir acceso al detalle.
+    pendiente_confirmacion = CustodiaSIM.objects.filter(
+        sim=sim,
+        abogado_destino=abogado,
+        estado='PENDIENTE_CONFIRMACION',
+        fecha_entrega__isnull=True,
+    ).first()
+    if pendiente_confirmacion:
+        messages.info(
+            request,
+            f'⚠️ Debe confirmar la recepción de la carpeta de {sim.codigo} antes de trabajar con este sumario.'
+        )
+        return redirect('abogado_confirmar_recepcion', sim.pk)
+
     dictamenes       = DICTAMEN.objects.filter(sim=sim).select_related("agenda", "abogado").order_by("-id")
     resoluciones     = list(
         Resolucion.objects.filter(sim=sim, instancia='PRIMERA')
@@ -118,6 +133,12 @@ def abogado_sumario_detalle(request, sim_id: int):
 
     next_url = request.GET.get('next')
 
+    # PKs de primeras resoluciones para las cuales este abogado tiene un RR asignado.
+    # Permite mostrar "Crear RR" en la tabla de RES aunque no tenga custodia física.
+    rr_origen_pks_asignados = list({
+        rr.resolucion_origen_id for rr in rrs_asignados if rr.resolucion_origen_id
+    })
+
     context = {
         "sim": sim,
         "abogado": abogado,
@@ -130,6 +151,7 @@ def abogado_sumario_detalle(request, sim_id: int):
         "es_via_sim": es_via_sim,
         "rrs_asignados": rrs_asignados,
         "pms_rr_pks": list(pms_rr_pks),
+        "rr_origen_pks_asignados": rr_origen_pks_asignados,
         "es_responsable": es_responsable,
         "tiene_custodia": tiene_custodia,
         "custodio_actual": custodio_actual,
@@ -298,31 +320,33 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
     sim = get_object_or_404(SIM, pk=sim_id)
     res = get_object_or_404(Resolucion, pk=res_id, sim=sim, instancia='PRIMERA')
 
-    # Requiere custodia física activa para crear una resolución de RR
-    tiene_custodia = CustodiaSIM.objects.filter(
-        sim=sim,
-        fecha_entrega__isnull=True,
-        abogado=abogado,
-    ).exists()
-    if not tiene_custodia:
-        messages.error(
-            request,
-            "No puede crear una Resolución de RR: la carpeta no está en su poder."
-        )
-        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
-
-    # Validar que no exista un RR para esta RES origen
+    # Buscar shell de RR creado por Admin2 para esta resolución (puede no tener texto aún)
     rr_existente = Resolucion.objects.filter(
         sim=sim,
         instancia='RECONSIDERACION',
         resolucion_origen=res,
-        pm=res.pm
+    ).first()
+
+    # Custodia activa del abogado (excluye ADMIN2_ARCHIVO que solo registra al entregador)
+    tiene_custodia = CustodiaSIM.objects.filter(
+        sim=sim,
+        fecha_entrega__isnull=True,
+        abogado=abogado,
+        tipo_custodio__in=['ABOG_ASESOR', 'ABOG_RR', 'ABOG_AUTOS'],
     ).exists()
-    if rr_existente:
+
+    # Autorizado si tiene custodia física O si el RR le fue asignado directamente
+    esta_asignado_al_rr = rr_existente and rr_existente.abogado_id == abogado.pk
+    if not tiene_custodia and not esta_asignado_al_rr:
         messages.error(
             request,
-            "❌ Ya existe un RR para esta Resolución. No se puede crear un RR duplicado."
+            "No puede completar este RR: la carpeta no está en su poder ni el RR le fue asignado."
         )
+        return redirect("abogado_sumario_detalle", sim_id=sim.pk)
+
+    # Bloquear solo si el RR ya fue completado (ya tiene texto/resolución)
+    if rr_existente and rr_existente.texto:
+        messages.error(request, "❌ Este RR ya fue completado.")
         return redirect("abogado_sumario_detalle", sim_id=sim.pk)
 
     if request.method == "POST":
@@ -335,19 +359,39 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
             with transaction.atomic():
                 rr_num = next_resolucion_num() if autogen else None
 
-                Resolucion.objects.create(
-                    instancia='RECONSIDERACION',
-                    sim=sim,
-                    resolucion_origen=res,
-                    agenda=res.agenda,
-                    abogado=abogado,
-                    pm=res.pm,
-                    numero=rr_num or '',
-                    fecha=rr_fec or None,
-                    tipo=rr_resum,
-                    texto=rr_resol or None,
-                )
-            messages.success(request, f"✅ RR creada ({rr_num or 'S/N'}).")
+                if rr_existente:
+                    # Completar el shell registrado por Admin2
+                    rr_existente.abogado = abogado
+                    rr_existente.agenda = res.agenda
+                    if rr_num:
+                        rr_existente.numero = rr_num
+                    rr_existente.fecha = rr_fec or None
+                    rr_existente.tipo = rr_resum
+                    rr_existente.texto = rr_resol or None
+                    rr_existente.save()
+                    display_num = rr_existente.numero or 'S/N'
+                else:
+                    # Flujo sin shell previo (registro directo por abogado)
+                    nuevo_rr = Resolucion.objects.create(
+                        instancia='RECONSIDERACION',
+                        sim=sim,
+                        resolucion_origen=res,
+                        agenda=res.agenda,
+                        abogado=abogado,
+                        pm=res.pm,
+                        numero=rr_num or '',
+                        fecha=rr_fec or None,
+                        tipo=rr_resum,
+                        texto=rr_resol or None,
+                    )
+                    display_num = nuevo_rr.numero or 'S/N'
+
+                # Avanzar fase: EN_DICTAMEN_RR → 2DA_RESOLUCION al emitir el primer RR
+                if sim.fase == 'EN_DICTAMEN_RR':
+                    sim.fase = '2DA_RESOLUCION'
+                    sim.save()
+
+            messages.success(request, f"✅ RR completado ({display_num}).")
             return redirect("abogado_sumario_detalle", sim_id=sim.pk)
         except Exception as exc:
             messages.error(request, f"❌ Error al crear RR: {exc}")
@@ -356,6 +400,7 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
         "sim": sim,
         "abogado": abogado,
         "res": res,
+        "rr_existente": rr_existente,
     }
     return render(request, "tpe_app/abogado/rr_form.html", context)
 
@@ -646,7 +691,7 @@ def abogado_confirmar_recepcion(request, sim_id: int):
                     estado='RECIBIDA_CONFORME',
                 )
             messages.success(request, f"✅ Recepción confirmada. La carpeta de {sim.codigo} está en su poder.")
-            return redirect('abogado_dashboard')
+            return redirect('abogado_sumario_detalle', sim.pk)
         except Exception as e:
             messages.error(request, f"❌ Error: {str(e)}")
 

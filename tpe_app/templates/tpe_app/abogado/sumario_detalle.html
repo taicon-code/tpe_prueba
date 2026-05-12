@@ -578,7 +578,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if tiene_custodia %}
+                    {% if tiene_custodia or r.pk in rr_origen_pks_asignados %}
                         <a class="btn" style="font-size:.8rem; padding:.3rem .6rem;"
                            href="{% url 'abogado_rr_crear' sim.pk r.pk %}">Crear RR</a>
                     {% else %}

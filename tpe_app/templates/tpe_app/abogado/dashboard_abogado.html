@@ -110,15 +110,16 @@
                 <td>{{ sim.militares.first.grado|default:"-" }}</td>
                 <td>{{ sim.militares.first.nombre|default:"" }} {{ sim.militares.first.paterno|default:"" }} {{ sim.militares.first.materno|default:"" }}</td>
                 <td>{{ sim.resumen|truncatewords:8 }}</td>
-                {# ✅ NUEVO v3.1: Mostrar si tiene custodia activa #}
                 <td style="font-size: 0.85rem;">
                     {% with c=sim.custodio_actual %}
                         {% if c and c.abogado.id == abogado.id %}
-                            <span class="badge" style="background: #10b981; color: #fff; font-size: 0.75rem;">📂 Conmigo</span>
+                            <span class="badge" style="background: #10b981; color: #fff; font-size: 0.75rem; padding: .2rem .55rem; border-radius: 4px;">📂 En mi poder</span>
+                        {% elif c and c.tipo_custodio == 'ADMIN2_ARCHIVO' %}
+                            <span class="badge" style="background: #3b82f6; color: #fff; font-size: 0.75rem; padding: .2rem .55rem; border-radius: 4px;" title="La carpeta está en Archivo (Admin2). Espere que le sea entregada.">📁 En Archivo</span>
                         {% elif c %}
-                            <span class="badge" style="background: #f97316; color: #fff; font-size: 0.75rem;">📭 Con otro</span>
+                            <span class="badge" style="background: #f97316; color: #fff; font-size: 0.75rem; padding: .2rem .55rem; border-radius: 4px;">👤 Con otro abog.</span>
                         {% else %}
-                            <span class="badge" style="background: #6b7280; color: #fff; font-size: 0.75rem;">❓ Sin registrar</span>
+                            <span class="badge" style="background: #6b7280; color: #fff; font-size: 0.75rem; padding: .2rem .55rem; border-radius: 4px;">❓ Sin registrar</span>
                         {% endif %}
                     {% endwith %}
                 </td>
