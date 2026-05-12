@@ -10,7 +10,7 @@ Sistema de gestión de **Sumarios Informativos Militares (SIM)** del
 **Tribunal de Personal del Ejército (TPE)** de Bolivia.
 Tecnología: Django + MySQL + Bootstrap 5.
 
-**VERSIÓN ACTUAL: v4.0** (Abril 2026)
+**VERSIÓN ACTUAL: v4.5** (Mayo 2026)
 - v3.0: Rediseño completo (Admin1/2/3, Abogados diferenciados)
 - v3.1: Custodia de carpetas entre actores
 - v3.2: Gestión de agendas (Admin1)
@@ -18,9 +18,10 @@ Tecnología: Django + MySQL + Bootstrap 5.
 - v3.4: Votos y Asistencia del tribunal, Rol ASESOR_JEFE, Miembros TPE
 - v3.5: Búsqueda por lotes de antecedentes militares
 - v3.5.1: Grado histórico por sumario, año de egreso y cálculo automático de ascensos
-- **v4.0: Estandarización completa de nombres de campos a snake_case (sin prefijos), auditoría de seguridad, índices y correcciones de integridad**
-- **v4.4: Bug fix crítico — transiciones de fase post-1ra resolución (EN_ESPERA_RR, PARA_AGENDA_RR, EN_DICTAMEN_RR nunca se asignaban)**
-- **v4.5: Documentos del Recurrente (incidente, recurso fuera de plazo, amparo constitucional) — flujo paralelo que NO modifica `sim.fase` ni `sim.estado`. Nuevo tipo `AUTO_RESPUESTA` en AUTOTPE**
+- v4.0: Estandarización completa de nombres de campos a snake_case (sin prefijos), auditoría de seguridad, índices y correcciones de integridad
+- v4.4: Bug fix crítico — transiciones de fase post-1ra resolución (EN_ESPERA_RR, PARA_AGENDA_RR, EN_DICTAMEN_RR nunca se asignaban)
+- v4.5: Documentos del Recurrente (incidente, recurso fuera de plazo, amparo constitucional) — flujo paralelo que NO modifica `sim.fase` ni `sim.estado`. Nuevo tipo `AUTO_RESPUESTA` en AUTOTPE
+- **v4.5.1: Dashboard agenda muestra TODOS los casos (fix filtro restrictivo fase) + Modal expandible con historial clasificado (1RA RESOLUCION | RR | AUTOS)**
 
 ---
 
