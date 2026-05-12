@@ -656,6 +656,87 @@ def lista_agendas(request):
 
 
 @rol_requerido('ADMIN1_AGENDADOR')
+def ajax_caso_detalles(request, sim_id, ag_id):
+    """Retorna detalles de un caso para el modal del dashboard de agenda"""
+    from django.http import JsonResponse
+
+    sim = get_object_or_404(SIM, pk=sim_id)
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+
+    # Militares involucrados
+    militares = [{
+        'grado': m.grado or '',
+        'paterno': m.paterno,
+        'materno': m.materno,
+        'nombre': m.nombre,
+    } for m in sim.militares.all()]
+
+    # PRIMERA RESOLUCIÓN
+    res_1ra = Resolucion.objects.filter(
+        sim=sim, instancia='PRIMERA'
+    ).select_related('abogado').first()
+
+    dictamen_1ra = DICTAMEN.objects.filter(
+        sim=sim, agenda=agenda
+    ).select_related('abogado', 'pm').first()
+
+    primera_resolucion = None
+    if res_1ra:
+        primera_resolucion = {
+            'numero': res_1ra.numero or '—',
+            'tipo': res_1ra.get_tipo_display(),
+            'fecha': res_1ra.fecha.strftime('%d/%m/%Y') if res_1ra.fecha else '—',
+            'abogado': f"{res_1ra.abogado.paterno}" if res_1ra.abogado else '—',
+            'dictamen_en_agenda': bool(dictamen_1ra),
+            'dictamen_fecha': dictamen_1ra.fecha.strftime('%d/%m/%Y') if dictamen_1ra and dictamen_1ra.fecha else None,
+            'conclusión': dictamen_1ra.conclusion if dictamen_1ra else None,
+        }
+
+    # RECURSO DE RECONSIDERACIÓN
+    rr = Resolucion.objects.filter(
+        sim=sim, instancia='RECONSIDERACION'
+    ).select_related('abogado', 'dictamen', 'agenda').first()
+
+    recurso_reconsideracion = None
+    if rr:
+        # Verificar si el DICTAMEN del RR está en esta agenda
+        dictamen_rr_en_agenda = rr.dictamen and rr.dictamen.agenda_id == agenda.id if rr.dictamen else False
+
+        recurso_reconsideracion = {
+            'numero': rr.numero or '—',
+            'fecha_presentacion': rr.fecha_presentacion.strftime('%d/%m/%Y') if rr.fecha_presentacion else '—',
+            'fecha_limite': rr.fecha_limite.strftime('%d/%m/%Y') if rr.fecha_limite else '—',
+            'fecha_resolucion': rr.fecha.strftime('%d/%m/%Y') if rr.fecha else '—',
+            'abogado': f"{rr.abogado.paterno}" if rr.abogado else '—',
+            'agendado_en_esta': rr.agenda_id == agenda.id if rr.agenda else False,
+            'dictamen_en_esta': dictamen_rr_en_agenda,
+        }
+
+    # AUTOS TPE
+    autos_leidos = AUTOTPE.objects.filter(
+        sim=sim, agenda=agenda
+    ).select_related('abogado').order_by('fecha')
+
+    autos = [{
+        'numero': a.numero or '—',
+        'tipo': a.get_tipo_display(),
+        'fecha': a.fecha.strftime('%d/%m/%Y') if a.fecha else '—',
+        'abogado': f"{a.abogado.paterno}" if a.abogado else '—',
+    } for a in autos_leidos]
+
+    return JsonResponse({
+        'codigo': sim.codigo,
+        'objeto': sim.objeto or '—',
+        'estado': sim.get_estado_display(),
+        'fase': sim.get_fase_display(),
+        'militares': militares,
+        'primera_resolucion': primera_resolucion,
+        'recurso_reconsideracion': recurso_reconsideracion,
+        'autos': autos,
+    })
+
+
+@rol_requerido('ADMIN1_AGENDADOR')
 def ver_agenda_detalle(request, ag_id):
     """Ver detalles de una agenda: sumarios agendados o con dictámenes"""
 

@@ -97,13 +97,14 @@
                 <th style="width: 180px;">Militar(es)</th>
                 <th style="width: 130px;">Abogado</th>
                 <th style="width: 90px;">Estado</th>
+                <th style="width: 40px;"></th>
                 {% if agenda.estado == 'PROGRAMADA' %}<th style="width: 36px;"></th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for sim in sims %}
             {% with abog_sim=abog_sims_dict|get_item:sim.id dictamen=dictamenes_dict|get_item:sim.id %}
-            <tr>
+            <tr data-sim-id="{{ sim.id }}" class="caso-row" style="cursor: pointer;">
                 <td class="cod navy">
                     <a href="{% url 'abogado_sumario_detalle' sim.id %}?next={% url 'lista_agendas' %}" style="color:#1e3c72; text-decoration:none;">
                         {{ sim.codigo }}
@@ -149,6 +150,9 @@
                     {% else %}
                         <span class="badge badge-gray">{{ sim.get_estado_display }}</span>
                     {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    <button type="button" class="btn-info" data-sim-id="{{ sim.id }}" title="Ver historial del caso">ℹ️</button>
                 </td>
                 {% if agenda.estado == 'PROGRAMADA' %}
                 <td style="text-align:center;">
@@ -318,8 +322,67 @@
     {% endif %}
 </div>
 
+{# ── MODAL: Historial del Caso ────────────────────────────── #}
+<div id="modal-caso" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div style="background: white; max-width: 800px; margin: 40px auto; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+        <div style="background: #1e3c72; color: white; padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 1.2rem;" id="modal-titulo">Historial del Caso</h2>
+            <button type="button" onclick="cerrarModalCaso()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">✕</button>
+        </div>
+        <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+            <div id="modal-contenido">
+                <p style="text-align: center; color: #9ca3af;">Cargando...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .lbl { color: #6b7280; font-size: 0.82rem; margin: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .btn-info {
+        background: none;
+        border: 1px solid #3b82f6;
+        border-radius: 4px;
+        color: #3b82f6;
+        font-size: 0.9rem;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        line-height: 1.2;
+    }
+    .btn-info:hover { background: #eff6ff; }
+
+    .modal-section {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: #f8fafc;
+        border-left: 4px solid #1e3c72;
+        border-radius: 4px;
+    }
+    .modal-section-title {
+        font-weight: 700;
+        color: #1e3c72;
+        font-size: 0.95rem;
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .modal-row {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 1rem;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+    .modal-label {
+        color: #6b7280;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+    .modal-valor {
+        color: #374151;
+    }
 
     .btn-accion {
         display: inline-block;
@@ -411,4 +474,200 @@
     .section-card form { padding: 0 1.2rem 1.2rem; }
     .section-card > table { padding: 0 1.2rem; }
 </style>
+
+<script>
+function abrirModalCaso(simId) {
+    const agendaId = {{ agenda.id }};
+    const url = `/admin1/agendas/${agendaId}/caso/${simId}/detalles/`;
+
+    document.getElementById('modal-contenido').innerHTML = '<p style="text-align: center; color: #9ca3af;">Cargando...</p>';
+    document.getElementById('modal-caso').style.display = 'block';
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => renderizarModalCaso(data))
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('modal-contenido').innerHTML = '<p style="color: #dc2626;">Error al cargar los datos.</p>';
+        });
+}
+
+function cerrarModalCaso() {
+    document.getElementById('modal-caso').style.display = 'none';
+}
+
+function renderizarModalCaso(data) {
+    let html = '';
+
+    // Encabezado
+    html += `
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #1e3c72;">${data.codigo}</h3>
+            <div class="modal-row">
+                <span class="modal-label">Objeto:</span>
+                <span class="modal-valor">${data.objeto}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Estado:</span>
+                <span class="modal-valor">${data.estado}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Fase:</span>
+                <span class="modal-valor">${data.fase}</span>
+            </div>
+        </div>
+    `;
+
+    // Militares involucrados
+    if (data.militares && data.militares.length > 0) {
+        html += '<div class="modal-section">';
+        html += '<div class="modal-section-title">👤 Personal Militar Involucrado</div>';
+        data.militares.forEach(mil => {
+            html += `
+                <div class="modal-row">
+                    <span class="modal-label">${mil.grado}</span>
+                    <span class="modal-valor"><strong>${mil.paterno} ${mil.materno}, ${mil.nombre}</strong></span>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    // PRIMERA RESOLUCIÓN
+    if (data.primera_resolucion) {
+        const res = data.primera_resolucion;
+        html += '<div class="modal-section" style="border-left-color: #3b82f6;">';
+        html += '<div class="modal-section-title">📋 Primera Resolución</div>';
+        if (res.dictamen_en_agenda) {
+            html += `
+                <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb;">
+                    <strong style="color: #059669;">✓ Dictamen en esta agenda</strong>
+                    <div class="modal-row">
+                        <span class="modal-label">Fecha:</span>
+                        <span class="modal-valor">${res.dictamen_fecha || '—'}</span>
+                    </div>
+                </div>
+            `;
+        }
+        html += `
+            <div class="modal-row">
+                <span class="modal-label">Nº Resolución:</span>
+                <span class="modal-valor">${res.numero}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Tipo:</span>
+                <span class="modal-valor">${res.tipo}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Fecha:</span>
+                <span class="modal-valor">${res.fecha}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Abogado:</span>
+                <span class="modal-valor">${res.abogado}</span>
+            </div>
+        `;
+        html += '</div>';
+    }
+
+    // RECURSO DE RECONSIDERACIÓN
+    if (data.recurso_reconsideracion) {
+        const rr = data.recurso_reconsideracion;
+        html += '<div class="modal-section" style="border-left-color: #7b2d00;">';
+        html += '<div class="modal-section-title">⚖️ Recurso de Reconsideración</div>';
+        if (rr.agendado_en_esta || rr.dictamen_en_esta) {
+            html += '<div style="margin-bottom: 0.75rem;">';
+            if (rr.dictamen_en_esta) {
+                html += '<strong style="color: #059669;">✓ Dictamen en esta agenda</strong><br>';
+            }
+            if (rr.agendado_en_esta) {
+                html += '<strong style="color: #059669;">✓ Resolución agendada en esta agenda</strong>';
+            }
+            html += '</div>';
+        }
+        html += `
+            <div class="modal-row">
+                <span class="modal-label">Nº RR:</span>
+                <span class="modal-valor">${rr.numero}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Fec. Presentación:</span>
+                <span class="modal-valor">${rr.fecha_presentacion}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Fec. Límite:</span>
+                <span class="modal-valor">${rr.fecha_limite}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Fec. Resolución:</span>
+                <span class="modal-valor">${rr.fecha_resolucion}</span>
+            </div>
+            <div class="modal-row">
+                <span class="modal-label">Abogado RR:</span>
+                <span class="modal-valor">${rr.abogado}</span>
+            </div>
+        `;
+        html += '</div>';
+    }
+
+    // AUTOS TPE
+    if (data.autos && data.autos.length > 0) {
+        html += '<div class="modal-section" style="border-left-color: #0d9488;">';
+        html += '<div class="modal-section-title">🔖 Autos TPE (Lectura en Esta Sesión)</div>';
+        data.autos.forEach(auto => {
+            html += `
+                <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e5e7eb;">
+                    <div class="modal-row">
+                        <span class="modal-label">Tipo:</span>
+                        <span class="modal-valor"><strong>${auto.tipo}</strong></span>
+                    </div>
+                    <div class="modal-row">
+                        <span class="modal-label">Nº Auto:</span>
+                        <span class="modal-valor">${auto.numero}</span>
+                    </div>
+                    <div class="modal-row">
+                        <span class="modal-label">Fecha:</span>
+                        <span class="modal-valor">${auto.fecha}</span>
+                    </div>
+                    <div class="modal-row">
+                        <span class="modal-label">Abogado:</span>
+                        <span class="modal-valor">${auto.abogado}</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+    }
+
+    if (!data.primera_resolucion && !data.recurso_reconsideracion && (!data.autos || data.autos.length === 0)) {
+        html += '<p style="color: #9ca3af; text-align: center;">Sin documentos registrados en esta sesión.</p>';
+    }
+
+    document.getElementById('modal-contenido').innerHTML = html;
+    document.getElementById('modal-titulo').textContent = `Historial — ${data.codigo}`;
+}
+
+// Event listeners
+document.querySelectorAll('.btn-info').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const simId = this.getAttribute('data-sim-id');
+        abrirModalCaso(simId);
+    });
+});
+
+// Cerrar modal al hacer click fuera
+document.getElementById('modal-caso').addEventListener('click', function(e) {
+    if (e.target === this) {
+        cerrarModalCaso();
+    }
+});
+
+// Cerrar modal con tecla Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        cerrarModalCaso();
+    }
+});
+</script>
 {% endblock %}

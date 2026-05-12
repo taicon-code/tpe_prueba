@@ -93,6 +93,7 @@ urlpatterns = [
     path('admin1/agendas/<int:ag_id>/agregar-auto/', views.agregar_auto_a_agenda, name='agregar_auto_a_agenda'),
     path('admin1/agendas/<int:ag_id>/quitar-auto/<int:auto_id>/', views.quitar_auto_de_agenda, name='quitar_auto_de_agenda'),
     path('admin1/agendas/<int:ag_id>/pdf/', views.agenda_detalle_pdf, name='agenda_detalle_pdf'),
+    path('admin1/agendas/<int:ag_id>/caso/<int:sim_id>/detalles/', views.ajax_caso_detalles, name='ajax_caso_detalles'),
 
     # ✅ NUEVO v4.0: RAP - Recurso de Apelación (Admin1)
     path('admin1/rap/<int:rap_id>/ordenar-entrega/', views.admin1_ordenar_rap, name='admin1_ordenar_rap'),
