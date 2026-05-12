@@ -33,6 +33,7 @@ from .admin1_views import (
     crear_agenda,
     lista_agendas,
     ver_agenda_detalle,
+    ajax_caso_detalles,
     editar_agenda_resultado,
     gestionar_abogados_sim,
     admin1_ordenar_ejecutoria,
