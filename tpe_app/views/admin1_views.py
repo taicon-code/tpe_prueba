@@ -742,48 +742,71 @@ def ver_agenda_detalle(request, ag_id):
 
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
-    # ABOG_SIM con agenda registrada (primera instancia)
-    abog_sims_nuevos = ABOG_SIM.objects.filter(agenda=agenda).select_related(
-        'sim', 'abogado'
-    ).order_by('sim__codigo')
-
-    # DICTAMEN (cubre casos históricos)
-    dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related(
+    # DICTAMEN es la única fuente confiable de participación en una agenda.
+    # ABOG_SIM solo existe en flujo normal; los históricos del Ayudante no lo crean.
+    # Las Resoluciones históricas tampoco tienen FK agenda — solo el DICTAMEN lo tiene.
+    dictamenes_qs = DICTAMEN.objects.filter(agenda=agenda).select_related(
         'sim', 'pm', 'abogado'
     ).order_by('sim__codigo')
 
-    # Obtener todos los SIMs agendados en esta agenda (sin filtro de fase restrictivo)
-    sim_ids_nuevos = set(abog_sims_nuevos.values_list('sim_id', flat=True))
-    sim_ids_dictamenes = set(dictamenes.values_list('sim_id', flat=True))
-    sim_ids_todos = sim_ids_nuevos | sim_ids_dictamenes
+    # SIMs únicos con dictamen en esta agenda, con sus militares y resoluciones/autos
+    sim_ids_todos = set(dictamenes_qs.values_list('sim_id', flat=True))
+    sims_qs = SIM.objects.filter(id__in=sim_ids_todos).prefetch_related('militares').order_by('codigo')
 
-    sims = SIM.objects.filter(id__in=sim_ids_todos).prefetch_related('militares').order_by('codigo')
+    # Prefetch resoluciones y autos de esos SIMs para evitar N+1
+    res_por_sim = {}
+    for r in Resolucion.objects.filter(sim_id__in=sim_ids_todos).select_related('abogado'):
+        res_por_sim.setdefault(r.sim_id, {}).setdefault(r.instancia, []).append(r)
 
-    abog_sims_dict = {abog.sim_id: abog for abog in abog_sims_nuevos}
-    dictamenes_dict = {dict_obj.sim_id: dict_obj for dict_obj in dictamenes}
+    autos_por_sim = {}
+    for a in AUTOTPE.objects.filter(sim_id__in=sim_ids_todos).select_related('abogado'):
+        autos_por_sim.setdefault(a.sim_id, []).append(a)
 
-    # RRs (Recursos de Reconsideración) agendados en esta sesión
-    rrs = Resolucion.objects.filter(
-        agenda=agenda, instancia='RECONSIDERACION'
-    ).select_related('sim', 'abogado', 'pm').order_by('sim__codigo')
+    # Construir filas enriquecidas: una por SIM (agrupando dictámenes del mismo SIM)
+    casos_agenda = []
+    vistos = set()
+    for d in dictamenes_qs:
+        sid = d.sim_id
+        if sid in vistos:
+            continue
+        vistos.add(sid)
+        dictamenes_sim = [x for x in dictamenes_qs if x.sim_id == sid]
+        rrs_sim = res_por_sim.get(sid, {}).get('RECONSIDERACION', [])
+        casos_agenda.append({
+            'sim': d.sim,
+            'dictamenes': dictamenes_sim,
+            'res_1ra':  res_por_sim.get(sid, {}).get('PRIMERA', []),
+            'rrs':      rrs_sim,
+            'autos':    autos_por_sim.get(sid, []),
+        })
 
-    # Autos TPE vinculados explícitamente a esta agenda
-    autos = AUTOTPE.objects.filter(agenda=agenda).select_related(
-        'sim', 'pm', 'abogado'
-    ).order_by('sim__codigo')
+    # Clasificar: si el SIM tiene RRs → sesión de RR; si no → 1ra resolución.
+    # Los dictámenes en el histórico se crean para ambas instancias bajo la misma agenda,
+    # por lo que la presencia de RRs es la señal definitiva de qué se trató en esta sesión.
+    casos_1ra = [c for c in casos_agenda if not c['rrs']]
+    casos_rr  = [c for c in casos_agenda if c['rrs']]
 
-    # Autos de ejecutoria disponibles para agregar (sin agenda asignada aún)
+    # AUTOS DE EJECUTORIA con FK directa a esta agenda (para la sección de lectura)
+    autos_ej_agenda = list(AUTOTPE.objects.filter(
+        agenda=agenda, tipo='AUTO_EJECUTORIA'
+    ).select_related('sim', 'pm', 'abogado').order_by('sim__codigo'))
+
+    # Otros autos con FK directa a esta agenda
+    autos_otros_agenda = list(AUTOTPE.objects.filter(
+        agenda=agenda
+    ).exclude(tipo='AUTO_EJECUTORIA').select_related('sim', 'pm', 'abogado').order_by('sim__codigo'))
+
+    # Autos disponibles para agregar a la agenda
     autos_disponibles = AUTOTPE.objects.filter(
         agenda__isnull=True, tipo='AUTO_EJECUTORIA'
     ).select_related('sim', 'pm').order_by('sim__codigo')
 
     context = {
         'agenda': agenda,
-        'sims': sims,
-        'abog_sims_dict': abog_sims_dict,
-        'dictamenes_dict': dictamenes_dict,
-        'rrs': rrs,
-        'autos': autos,
+        'casos_1ra': casos_1ra,             # solo casos sin RR → card 1ra Resolución
+        'casos_rr': casos_rr,               # casos con RR → card Recurso de Reconsideración
+        'autos_ej_agenda': autos_ej_agenda,
+        'autos_otros_agenda': autos_otros_agenda,
         'autos_disponibles': autos_disponibles,
     }
 
@@ -883,22 +906,40 @@ def agenda_detalle_pdf(request, ag_id):
 
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
-    abog_sims = ABOG_SIM.objects.filter(agenda=agenda).select_related('sim', 'abogado').order_by('sim__codigo')
-    dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
+    # Misma lógica que ver_agenda_detalle: DICTAMEN como fuente única de participación
+    dictamenes_qs = DICTAMEN.objects.filter(agenda=agenda).select_related(
+        'sim', 'pm', 'abogado'
+    ).order_by('sim__codigo')
 
-    # Obtener RRs agendados para excluirlos de la sección PRIMERA INSTANCIA
-    rrs = Resolucion.objects.filter(agenda=agenda, instancia='RECONSIDERACION').select_related('sim', 'abogado', 'pm').order_by('sim__codigo')
-    rr_sim_ids = set(rrs.values_list('sim_id', flat=True))
+    sim_ids_todos = set(dictamenes_qs.values_list('sim_id', flat=True))
 
-    # Filtrar sumarios de PRIMERA instancia: excluir los que solo tienen RRs en la agenda
-    sim_ids_abog = set(abog_sims.values_list('sim_id', flat=True))
-    sim_ids_dict = set(dictamenes.values_list('sim_id', flat=True))
-    sim_ids = (sim_ids_abog | sim_ids_dict) - rr_sim_ids  # Excluir sumarios que solo tienen RRs
+    res_por_sim = {}
+    for r in Resolucion.objects.filter(sim_id__in=sim_ids_todos).select_related('abogado', 'pm'):
+        res_por_sim.setdefault(r.sim_id, {}).setdefault(r.instancia, []).append(r)
 
-    # Obtener todos los SIMs agendados (sin filtro de fase restrictivo)
-    sims = SIM.objects.filter(id__in=sim_ids).prefetch_related('militares').order_by('codigo')
-    abog_dict = {a.sim_id: a for a in abog_sims}
-    dict_dict = {d.sim_id: d for d in dictamenes}
+    autos_por_sim = {}
+    for a in AUTOTPE.objects.filter(sim_id__in=sim_ids_todos).select_related('abogado', 'pm'):
+        autos_por_sim.setdefault(a.sim_id, []).append(a)
+
+    casos_agenda = []
+    vistos = set()
+    for d in dictamenes_qs:
+        sid = d.sim_id
+        if sid in vistos:
+            continue
+        vistos.add(sid)
+        dictamenes_sim = [x for x in dictamenes_qs if x.sim_id == sid]
+        rrs_sim = res_por_sim.get(sid, {}).get('RECONSIDERACION', [])
+        casos_agenda.append({
+            'sim': d.sim,
+            'dictamenes': dictamenes_sim,
+            'res_1ra': res_por_sim.get(sid, {}).get('PRIMERA', []),
+            'rrs': rrs_sim,
+        })
+
+    casos_1ra = [c for c in casos_agenda if not c['rrs']]
+    casos_rr  = [c for c in casos_agenda if c['rrs']]
+
     autos = AUTOTPE.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
 
     buffer = BytesIO()
@@ -950,39 +991,47 @@ def agenda_detalle_pdf(request, ag_id):
         ('LEFTPADDING', (0, 0), (-1, -1), 4),
     ])
 
-    # Tabla: Primera Instancia
-    story.append(Paragraph(f"PRIMERA INSTANCIA  ({sims.count()} sumario(s))", s_seccion))
-    if sims.exists():
-        cols_w = [usable_w * p for p in [0.14, 0.10, 0.36, 0.26, 0.14]]
+    # Tabla: Primera Resolución
+    story.append(Paragraph(f"PRIMERA RESOLUCIÓN  ({len(casos_1ra)} sumario(s))", s_seccion))
+    if casos_1ra:
+        cols_w = [usable_w * p for p in [0.12, 0.30, 0.26, 0.18, 0.14]]
         data = [[
             Paragraph('<b>N° SIM</b>', s_cel_b),
-            Paragraph('<b>Tipo</b>', s_cel_b),
             Paragraph('<b>Objeto del Caso</b>', s_cel_b),
             Paragraph('<b>Militar(es)</b>', s_cel_b),
-            Paragraph('<b>Abogado</b>', s_cel_b),
+            Paragraph('<b>Abogado / Dictamen</b>', s_cel_b),
+            Paragraph('<b>Resolución</b>', s_cel_b),
         ]]
-        for sim in sims:
-            abog_sim = abog_dict.get(sim.id)
-            dict_obj = dict_dict.get(sim.id)
-            abog_nombre = '—'
-            if abog_sim and abog_sim.abogado:
-                abog_nombre = f"{abog_sim.abogado.grado or ''} {abog_sim.abogado.paterno}".strip()
-            elif dict_obj and dict_obj.abogado:
-                abog_nombre = f"{dict_obj.abogado.grado or ''} {dict_obj.abogado.paterno}".strip()
+        for caso in casos_1ra:
+            sim = caso['sim']
+            # Militares: usar pm del dictamen; fallback a militares del SIM
+            mils_txt_parts = []
+            for d in caso['dictamenes']:
+                if d.pm:
+                    mils_txt_parts.append(
+                        f"{d.pm.grado or ''} {d.pm.paterno} {d.pm.materno}, {d.pm.nombre}".strip()
+                    )
+            if not mils_txt_parts:
+                mils_txt_parts = [
+                    f"{m.grado or ''} {m.paterno} {m.materno}, {m.nombre}".strip()
+                    for m in sim.militares.all()
+                ]
+            militares_txt = '\n'.join(mils_txt_parts) or '—'
 
-            militares_txt = ''
-            if dict_obj and dict_obj.pm:
-                militares_txt = f"{dict_obj.pm.grado or ''} {dict_obj.pm.paterno} {dict_obj.pm.materno}, {dict_obj.pm.nombre}".strip()
-            else:
-                mils = list(sim.militares.all()[:3])
-                militares_txt = '\n'.join(f"{m.grado or ''} {m.paterno} {m.materno}, {m.nombre}".strip() for m in mils)
+            # Abogado y dictamen: uno por línea si hay varios
+            abog_dict_txt = '\n'.join(
+                f"{d.abogado.grado or ''} {d.abogado.paterno}  [Dict. {d.numero or 'S/N'}]".strip()
+                for d in caso['dictamenes'] if d.abogado
+            ) or '—'
+
+            res_txt = ' / '.join(r.numero for r in caso['res_1ra'] if r.numero) or '—'
 
             data.append([
                 Paragraph(sim.codigo or '—', s_cel_b),
-                Paragraph(sim.get_tipo_display() if hasattr(sim, 'get_tipo_display') else sim.tipo or '—', s_cel),
-                Paragraph((sim.objeto or '—')[:120], s_cel),
-                Paragraph(militares_txt or '—', s_cel),
-                Paragraph(abog_nombre, s_cel),
+                Paragraph(sim.objeto or '—', s_cel),
+                Paragraph(militares_txt, s_cel),
+                Paragraph(abog_dict_txt, s_cel),
+                Paragraph(res_txt, s_cel),
             ])
         t = Table(data, colWidths=cols_w, repeatRows=1)
         t.setStyle(header_style)
@@ -990,37 +1039,38 @@ def agenda_detalle_pdf(request, ag_id):
     else:
         story.append(Paragraph("Sin sumarios de primera instancia.", s_cel))
 
-    # Tabla: RRs
-    story.append(Paragraph(f"RECURSOS DE RECONSIDERACIÓN  ({rrs.count()} RR(s))", s_seccion))
-    if rrs.exists():
-        cols_w = [usable_w * p for p in [0.13, 0.09, 0.13, 0.13, 0.27, 0.25]]
+    # Tabla: Recurso de Reconsideración
+    story.append(Paragraph(f"RECURSO DE RECONSIDERACIÓN  ({len(casos_rr)} sumario(s))", s_seccion))
+    if casos_rr:
+        cols_w = [usable_w * p for p in [0.12, 0.28, 0.24, 0.22, 0.14]]
         data = [[
             Paragraph('<b>N° SIM</b>', s_cel_b),
+            Paragraph('<b>Objeto del Caso</b>', s_cel_b),
+            Paragraph('<b>Militar Recurrente</b>', s_cel_b),
+            Paragraph('<b>Abogado del RR</b>', s_cel_b),
             Paragraph('<b>N° RR</b>', s_cel_b),
-            Paragraph('<b>Fec. Presentación</b>', s_cel_b),
-            Paragraph('<b>Fec. Límite</b>', s_cel_b),
-            Paragraph('<b>Militar</b>', s_cel_b),
-            Paragraph('<b>Abogado RR</b>', s_cel_b),
         ]]
-        for rr in rrs:
-            fp = rr.fecha_presentacion.strftime('%d/%m/%Y') if rr.fecha_presentacion else '—'
-            fl = rr.fecha_limite.strftime('%d/%m/%Y') if rr.fecha_limite else '—'
-            mil = '—'
-            if rr.pm:
-                mil = f"{rr.pm.grado or ''} {rr.pm.paterno} {rr.pm.materno}, {rr.pm.nombre}".strip()
-            abog = f"{rr.abogado.grado or ''} {rr.abogado.paterno}".strip() if rr.abogado else '—'
-            data.append([
-                Paragraph(rr.sim.codigo or '—', s_cel_b),
-                Paragraph(rr.numero or '—', s_cel),
-                Paragraph(fp, s_cel),
-                Paragraph(fl, s_cel),
-                Paragraph(mil, s_cel),
-                Paragraph(abog, s_cel),
-            ])
+        for caso in casos_rr:
+            sim = caso['sim']
+            for rr in caso['rrs']:
+                mil = '—'
+                if rr.pm:
+                    mil = f"{rr.pm.grado or ''} {rr.pm.paterno} {rr.pm.materno}, {rr.pm.nombre}".strip()
+                abog = f"{rr.abogado.grado or ''} {rr.abogado.paterno}".strip() if rr.abogado else '—'
+                fl = rr.fecha_limite.strftime('%d/%m/%Y') if rr.fecha_limite else ''
+                abog_txt = abog + (f"\nLímite: {fl}" if fl else '')
+                data.append([
+                    Paragraph(sim.codigo or '—', s_cel_b),
+                    Paragraph(sim.objeto or '—', s_cel),
+                    Paragraph(mil, s_cel),
+                    Paragraph(abog_txt, s_cel),
+                    Paragraph(rr.numero or '—', s_cel),
+                ])
         t = Table(data, colWidths=cols_w, repeatRows=1)
         t.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7b2d00')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 7.5),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#fdf6f0')]),
             ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#cccccc')),
@@ -1031,7 +1081,7 @@ def agenda_detalle_pdf(request, ag_id):
         ]))
         story.append(t)
     else:
-        story.append(Paragraph("Sin RRs agendados.", s_cel))
+        story.append(Paragraph("Sin recursos de reconsideración.", s_cel))
 
     # Tabla: Autos vinculados
     if autos.exists():
