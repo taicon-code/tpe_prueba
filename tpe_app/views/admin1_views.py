@@ -815,12 +815,30 @@ def agenda_detalle_pdf(request, ag_id):
 
     abog_sims = ABOG_SIM.objects.filter(agenda=agenda).select_related('sim', 'abogado').order_by('sim__codigo')
     dictamenes = DICTAMEN.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
-    sim_ids = set(abog_sims.values_list('sim_id', flat=True)) | set(dictamenes.values_list('sim_id', flat=True))
-    sims = SIM.objects.filter(id__in=sim_ids).prefetch_related('militares').order_by('codigo')
+
+    # Obtener RRs agendados para excluirlos de la sección PRIMERA INSTANCIA
+    rrs = Resolucion.objects.filter(agenda=agenda, instancia='RECONSIDERACION').select_related('sim', 'abogado', 'pm').order_by('sim__codigo')
+    rr_sim_ids = set(rrs.values_list('sim_id', flat=True))
+
+    # Filtrar sumarios de PRIMERA instancia: excluir los que solo tienen RRs en la agenda
+    sim_ids_abog = set(abog_sims.values_list('sim_id', flat=True))
+    sim_ids_dict = set(dictamenes.values_list('sim_id', flat=True))
+    sim_ids = (sim_ids_abog | sim_ids_dict) - rr_sim_ids  # Excluir sumarios que solo tienen RRs
+
+    # Excluir fases que ya pasaron primera instancia (consistente con HTML)
+    FASES_POST_1RA = [
+        'EN_ESPERA_RR', 'PARA_AGENDA_RR', 'EN_DICTAMEN_RR', '2DA_RESOLUCION',
+        'NOTIFICACION_RR', 'NOTIFICADO_RR', 'EN_ESPERA_RAP', 'ELEVADO_TSP',
+        'RECIBIDO_TSP', 'EN_CUMPLIMIENTO', 'CUMPLIMIENTO_EMITIDO',
+        'CUMPLIMIENTO_NOTIFICADO', 'CONCLUIDO_TSP_TPE', 'NULIDAD_TSP',
+        'EN_AGENDA_EJECUTORIA', 'EN_EJECUTORIA', 'EJECUTORIA_NOTIFICADA',
+        'PENDIENTE_ARCHIVO', 'CONCLUIDO', 'MEMORANDUM_RETORNADO',
+    ]
+    sims = SIM.objects.filter(id__in=sim_ids).exclude(
+        fase__in=FASES_POST_1RA
+    ).prefetch_related('militares').order_by('codigo')
     abog_dict = {a.sim_id: a for a in abog_sims}
     dict_dict = {d.sim_id: d for d in dictamenes}
-
-    rrs = Resolucion.objects.filter(agenda=agenda, instancia='RECONSIDERACION').select_related('sim', 'abogado', 'pm').order_by('sim__codigo')
     autos = AUTOTPE.objects.filter(agenda=agenda).select_related('sim', 'pm', 'abogado').order_by('sim__codigo')
 
     buffer = BytesIO()
