@@ -86,7 +86,7 @@ def get_pendientes_ejecutoria():
     """
     Retorna dos listas de casos pendientes de Auto de Ejecutoria:
     - por_res: Resoluciones PRIMERA notificadas sin RECONSIDERACION, plazo 15d vencido
-    - por_rr:  Resoluciones RECONSIDERACION notificadas sin APELACION, plazo 3d vencido
+    - por_rr:  Resoluciones RECONSIDERACION notificadas sin APELACION, plazo 15d vencido
     """
     from django.utils import timezone
     hoy = timezone.now().date()
@@ -148,7 +148,7 @@ def get_pendientes_ejecutoria():
             continue
         if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
             continue
-        fecha_limite = add_business_days(rr.notificacion.fecha, 3)
+        fecha_limite = add_business_days(rr.notificacion.fecha, 15)
         if fecha_limite <= hoy:
             rr.fecha_limite = fecha_limite
             rr.dias_vencido = (hoy - fecha_limite).days

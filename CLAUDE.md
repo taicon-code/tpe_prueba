@@ -66,13 +66,14 @@ muchos campos pueden ser `null`. El sistema debe tolerarlo sin errores.
 
 | Documento | Plazo | Campo calculado automáticamente |
 |-----------|-------|----------------------------------|
-| RR (Reconsideración) | 15 días hábiles desde `fecha_presentacion` | `fecha_limite` en Resolucion |
-| RAP (Apelación TSP)  | 3 días hábiles desde `fecha_oficio`        | `fecha_limite` en ApelacionTSP |
+| RR (Reconsideración) | 15 días hábiles desde `fecha_presentacion` | `fecha_limite` en Resolucion (modelo `save()`) |
+| RAP (Apelación TSP)  | 3 días hábiles desde `fecha_oficio`        | `fecha_limite` en ApelacionTSP (modelo `save()`) |
+| Ejecutoria tras RR sin RAP | 15 días hábiles desde `notificacion.fecha` del RR | calculado dinámicamente en `get_pendientes_ejecutoria()` — models.py |
 
 La función `add_business_days(fecha, dias)` en `models.py` calcula días hábiles
 excluyendo fines de semana y feriados de Bolivia 2026.
 
-**Nota:** Estos plazos se calculan automáticamente en el método `save()` del modelo correspondiente.
+**Nota:** Los dos primeros plazos se calculan en el método `save()` del modelo. El plazo de ejecutoria tras RR sin RAP se calcula dinámicamente en `get_pendientes_ejecutoria()` y **NO** se persiste en BD — se asigna como atributo Python al objeto para mostrarse en `/ejecutoria/pendientes/`.
 
 ---
 
@@ -435,6 +436,11 @@ Si **NO hay `anio_promocion`** registrado (casos históricos):
     - **Bug 4 — RR agendado sin fase**: `admin1_views.agendar_rr()` asignaba agenda y abogado al RR pero no actualizaba `sim.fase`. **Corrección**: si `sim.fase == 'PARA_AGENDA_RR'` → `sim.fase = 'EN_DICTAMEN_RR'`.
     - **Bug 5 — Quitar RR sin revertir fase**: `admin1_views.quitar_rr_de_agenda()` no restauraba la fase. **Corrección**: si `sim.fase == 'EN_DICTAMEN_RR'` → revertir a `'PARA_AGENDA_RR'`.
     - **Regla multi-militar confirmada**: `sim.fase` avanza con el PRIMER evento de cualquier militar. Cuando un militar no presenta RR, su proceso termina en su última fase; el SIM continúa con el militar que sí avanza.
+
+15. **Bug fix — Plazo ejecutoria RR sin RAP (models.py:151 + lista_pendientes.html)**:
+    - **Error**: `get_pendientes_ejecutoria()` calculaba el `fecha_limite` del RR sin RAP usando `add_business_days(rr.notificacion.fecha, 3)` — 3 días hábiles en lugar de los 15 que corresponden legalmente.
+    - **Corrección**: cambiado a `add_business_days(rr.notificacion.fecha, 15)` en `models.py` y actualizado el texto del template `/ejecutoria/pendientes/`.
+    - **Nota**: Este `fecha_limite` NO se persiste en BD; se asigna como atributo Python al objeto `rr` dentro del loop de `get_pendientes_ejecutoria()` antes de renderizar la tabla.
 
 ---
 
