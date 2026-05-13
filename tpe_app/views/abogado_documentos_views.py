@@ -300,6 +300,9 @@ def abogado_res_crear(request, sim_id: int, dictamen_id: int):
                         tipo=res_tipo,
                         texto=res_resol,
                     )
+                    if sim.fase == 'EN_DICTAMEN_1RA':
+                        sim.fase = '1RA_RESOLUCION'
+                        sim.save()
                 messages.success(request, f"✅ RES creada ({res_num}).")
                 return redirect("abogado_sumario_detalle", sim_id=sim.pk)
             except Exception as exc:
@@ -386,8 +389,8 @@ def abogado_rr_crear(request, sim_id: int, res_id: int):
                     )
                     display_num = nuevo_rr.numero or 'S/N'
 
-                # Avanzar fase: EN_DICTAMEN_RR → 2DA_RESOLUCION al emitir el primer RR
-                if sim.fase == 'EN_DICTAMEN_RR':
+                # Avanzar fase a 2DA_RESOLUCION al emitir el RR
+                if sim.fase in ('EN_DICTAMEN_RR', 'PARA_AGENDA_RR', 'EN_ESPERA_RR'):
                     sim.fase = '2DA_RESOLUCION'
                     sim.save()
 
