@@ -446,6 +446,10 @@ def ayudante_registrar_notificacion_rr(request, rr_id):
                     notif = form.save(commit=False)
                     notif.resolucion = rr
                     notif.save()
+                    sim = rr.sim
+                    if sim.fase in ['2DA_RESOLUCION', 'NOTIFICACION_RR']:
+                        sim.fase = 'NOTIFICADO_RR'
+                        sim.save(update_fields=['fase', 'estado'])
                     messages.success(request, f'Notificación de RR {rr.numero} registrada exitosamente')
                     if next_url:
                         return redirect(next_url)

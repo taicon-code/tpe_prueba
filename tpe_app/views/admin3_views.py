@@ -57,6 +57,7 @@ def admin3_dashboard(request):
         'total_autos': autos.count(),
         'res_sin_pdf': res_sin_pdf,
         'total_res_sin_pdf': total_res_sin_pdf,
+        'next_url': request.GET.get('next', ''),
     }
 
     return render(request, 'tpe_app/admin3/admin3_dashboard.html', context)

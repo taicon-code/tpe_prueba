@@ -475,7 +475,7 @@ class SIM(models.Model):
         'EN_ESPERA_RR': ['PARA_AGENDA_RR'],
         'PARA_AGENDA_RR': ['EN_DICTAMEN_RR'],
         'EN_DICTAMEN_RR': ['2DA_RESOLUCION'],
-        '2DA_RESOLUCION': ['NOTIFICACION_RR'],
+        '2DA_RESOLUCION': ['NOTIFICACION_RR', 'NOTIFICADO_RR'],
         'NOTIFICACION_RR': ['NOTIFICADO_RR'],
         'NOTIFICADO_RR': ['EN_ESPERA_RAP', 'EN_AGENDA_EJECUTORIA'],  # Apelación o ejecutoria
         'EN_ESPERA_RAP': ['ELEVADO_TSP'],

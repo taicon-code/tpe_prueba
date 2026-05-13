@@ -10,7 +10,7 @@ Sistema de gestión de **Sumarios Informativos Militares (SIM)** del
 **Tribunal de Personal del Ejército (TPE)** de Bolivia.
 Tecnología: Django + MySQL + Bootstrap 5.
 
-**VERSIÓN ACTUAL: v4.5** (Mayo 2026)
+**VERSIÓN ACTUAL: v4.5.2** (Mayo 2026)
 - v3.0: Rediseño completo (Admin1/2/3, Abogados diferenciados)
 - v3.1: Custodia de carpetas entre actores
 - v3.2: Gestión de agendas (Admin1)
@@ -22,6 +22,7 @@ Tecnología: Django + MySQL + Bootstrap 5.
 - v4.4: Bug fix crítico — transiciones de fase post-1ra resolución (EN_ESPERA_RR, PARA_AGENDA_RR, EN_DICTAMEN_RR nunca se asignaban)
 - v4.5: Documentos del Recurrente (incidente, recurso fuera de plazo, amparo constitucional) — flujo paralelo que NO modifica `sim.fase` ni `sim.estado`. Nuevo tipo `AUTO_RESPUESTA` en AUTOTPE
 - **v4.5.1: Dashboard agenda muestra TODOS los casos (fix filtro restrictivo fase) + Modal expandible con historial clasificado (1RA RESOLUCION | RR | AUTOS)**
+- **v4.5.2: Bug fix — notificación de RR no avanzaba sim.fase desde `2DA_RESOLUCION` a `NOTIFICADO_RR` (mismo patrón que v4.4 Bug 1 pero para 2da instancia)**
 
 ---
 
@@ -436,6 +437,12 @@ Si **NO hay `anio_promocion`** registrado (casos históricos):
     - **Bug 4 — RR agendado sin fase**: `admin1_views.agendar_rr()` asignaba agenda y abogado al RR pero no actualizaba `sim.fase`. **Corrección**: si `sim.fase == 'PARA_AGENDA_RR'` → `sim.fase = 'EN_DICTAMEN_RR'`.
     - **Bug 5 — Quitar RR sin revertir fase**: `admin1_views.quitar_rr_de_agenda()` no restauraba la fase. **Corrección**: si `sim.fase == 'EN_DICTAMEN_RR'` → revertir a `'PARA_AGENDA_RR'`.
     - **Regla multi-militar confirmada**: `sim.fase` avanza con el PRIMER evento de cualquier militar. Cuando un militar no presenta RR, su proceso termina en su última fase; el SIM continúa con el militar que sí avanza.
+
+16. **v4.5.2 — Bug fix: Notificación RR no avanzaba fase (ayudante_views.py)**:
+    - **Bug**: `ayudante_registrar_notificacion_rr()` guardaba la `Notificacion` pero nunca actualizaba `sim.fase`. El SIM quedaba congelado en `2DA_RESOLUCION` indefinidamente.
+    - **Corrección**: Después de `notif.save()`, si `sim.fase in ['2DA_RESOLUCION', 'NOTIFICACION_RR']` → `sim.fase = 'NOTIFICADO_RR'` + `sim.save()`.
+    - **También**: `FASE_TRANSICIONES_VALIDAS['2DA_RESOLUCION']` actualizado para incluir `'NOTIFICADO_RR'` como transición válida directa.
+    - **Caso real corregido**: DJE-126/24 (RR 7/26, SBTTE. MAMANI) — fase corregida a `NOTIFICADO_RR`, plazo de ejecutoria vencido hace 23 días (límite: 2026-04-20).
 
 15. **Bug fix — Plazo ejecutoria RR sin RAP (models.py:151 + lista_pendientes.html)**:
     - **Error**: `get_pendientes_ejecutoria()` calculaba el `fecha_limite` del RR sin RAP usando `add_business_days(rr.notificacion.fecha, 3)` — 3 días hábiles en lugar de los 15 que corresponden legalmente.
