@@ -226,7 +226,7 @@ class PM(models.Model):
         ('INF.',    'INF.'), ('CAB.',    'CAB.'), ('ART.',    'ART.'),
         ('ING.',    'ING.'), ('COM.',    'COM.'), ('LOG.',    'LOG.'),
         ('M.B.',    'M.B.'), ('INT.',    'INT.'), ('SAN.',    'SAN.'),
-        ('TGRAFO.', 'TGRAFO.'), ('AV.', 'AV.'), ('MÚS.',   'MÚS.'),
+        ('MOT.',    'MOT.'), ('TGRAFO.', 'TGRAFO.'), ('AV.', 'AV.'), ('MÚS.',   'MÚS.'),
     ]
     ESTADO_CHOICES = [
         ('ACTIVO',             'ACTIVO'),
@@ -1187,7 +1187,7 @@ class Resolucion(models.Model):
         ('SOLICITUD_ART_118_(Invalidez Sldo)', 'SOLICITUD ARTÍCULO 118 (INVALIDEZ SLDO)'),
         ('OTRO', 'OTRO'),
         ('PROCEDENCIA',   'PROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN'),
-        ('PROCEDENTE_EN_CURSO', 'PROCEDENTE EN CURSO'),
+        ('PROCEDENCIA_EN_PARTE', 'PROCEDENCIA EN PARTE'),
         ('IMPROCEDENCIA', 'IMPROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN'),
         ('POSESION',      'POSESIÓN DEL TPE'),
         ('CIERRE',        'CIERRE DEL TPE'),
