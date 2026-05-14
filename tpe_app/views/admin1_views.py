@@ -1305,6 +1305,53 @@ def admin1_ordenar_ejecutoria(request, res_id):
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def admin1_archivar_solicitud_directo(request, res_id):
+    """Archivo directo para resoluciones tipo SOLICITUD_*.
+    Salta el Auto de Ejecutoria y transiciona sim.fase directamente a PENDIENTE_ARCHIVO.
+    Admin2 recibirá la orden de archivar en SPRODA/destino correspondiente.
+    """
+    res = get_object_or_404(Resolucion, pk=res_id, instancia='PRIMERA')
+    sim = res.sim
+
+    if not res.tipo.startswith('SOLICITUD_'):
+        messages.error(request, '❌ Solo aplicable a resoluciones de tipo Solicitud.')
+        return redirect('pendientes_ejecutoria')
+
+    if sim.fase not in ('EN_ESPERA_RR', 'NOTIFICADO_1RA'):
+        messages.error(
+            request,
+            f'❌ {sim.codigo} no está en fase válida para archivo directo (fase: {sim.fase}).'
+        )
+        return redirect('pendientes_ejecutoria')
+
+    if CustodiaSIM.objects.filter(sim=sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
+        messages.warning(request, f'⚠️ Ya existe una orden de ejecutoria activa para {sim.codigo}.')
+        return redirect('pendientes_ejecutoria')
+
+    try:
+        with transaction.atomic():
+            sim.fase = 'PENDIENTE_ARCHIVO'
+            sim.save()
+            CustodiaSIM.objects.create(
+                sim=sim,
+                tipo_custodio='ARCHIVO',
+                motivo='ARCHIVO',
+                estado='PENDIENTE_CONFIRMACION',
+                usuario=request.user,
+                observacion=f'Archivo directo — {res.get_tipo_display()} N° {res.numero}',
+            )
+            messages.success(
+                request,
+                f'✅ {sim.codigo} marcado para archivo directo. '
+                f'Admin2 debe proceder con el archivo en SPRODA/destino.'
+            )
+    except Exception as exc:
+        messages.error(request, f'❌ Error al archivar: {exc}')
+
+    return redirect('pendientes_ejecutoria')
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
 def admin1_asignar_doc_recurrente(request, doc_id):
     """Admin1 asigna un Documento del Recurrente al abogado ABOG2_AUTOS y crea
     la orden de custodia (Admin2 deberá entregar los antecedentes)."""

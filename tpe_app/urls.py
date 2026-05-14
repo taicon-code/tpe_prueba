@@ -145,6 +145,7 @@ urlpatterns = [
     path('ejecutoria/pendientes/', views.pendientes_ejecutoria, name='pendientes_ejecutoria'),
     path('ejecutoria/crear/<str:origen>/<int:origen_id>/', views.crear_auto_ejecutoria, name='crear_auto_ejecutoria'),
     path('admin1/ejecutoria/<int:res_id>/entregar/', views.admin1_ordenar_ejecutoria, name='admin1_ordenar_ejecutoria'),
+    path('admin1/ejecutoria/<int:res_id>/archivar-directo/', views.admin1_archivar_solicitud_directo, name='admin1_archivar_solicitud_directo'),
 
     # Memorial Presentado (incidente / recurso fuera de plazo / amparo constitucional)
     path('admin2/memorial/buscar/',

@@ -26,6 +26,8 @@ ROLES_CREAR = ('ABOG2_AUTOS', 'ADMINISTRADOR', 'MASTER')
 def pendientes_ejecutoria(request):
     """Lista los casos con plazo de ejecutoria vencido que aún no tienen Auto de Ejecutoria."""
     por_res, por_rr = get_pendientes_ejecutoria()
+    for res in por_res:
+        res.es_solicitud = res.tipo.startswith('SOLICITUD_')
     return render(request, 'tpe_app/ejecutoria/lista_pendientes.html', {
         'por_res':   por_res,
         'por_rr':    por_rr,

@@ -68,11 +68,20 @@
                     </span>
                 </td>
                 <td style="text-align: center;">
+                    {% if res.es_solicitud %}
+                    <a href="{% url 'admin1_archivar_solicitud_directo' res.id %}"
+                       class="btn"
+                       onclick="return confirm('¿Archivar directamente {{ res.sim.codigo }} sin Auto de Ejecutoria?')"
+                       style="background: #16a34a; color: #fff; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; text-decoration: none;">
+                        📁 Archivar directamente
+                    </a>
+                    {% else %}
                     <a href="{% url 'admin1_ordenar_ejecutoria' res.id %}"
                        class="btn"
                        style="background: #f59e0b; color: #fff; font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 4px; text-decoration: none;">
                         📦 Entregar para Ejecutoria
                     </a>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
