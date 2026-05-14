@@ -1,0 +1,94 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Adjuntar PDF de Oficio — TPE{% endblock %}
+{% block navbar_title %}📎 Adjuntar PDF de Oficio{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'ver_historial_custodia' sim_id=sim.pk %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Historial de Custodia
+    </a>
+</div>
+
+<div style="max-width: 640px;">
+
+    <!-- Info del sumario -->
+    <div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: #1565c0;">📋 {{ sim.codigo }}</h3>
+        <p style="margin: 0.3rem 0; color: #444;">
+            <strong>Custodio:</strong> {{ custodia.get_tipo_custodio_display }}
+        </p>
+        <p style="margin: 0.3rem 0; color: #444;">
+            <strong>Motivo:</strong> {{ custodia.get_motivo_display|default:"—" }}
+        </p>
+        <p style="margin: 0.3rem 0; color: #444;">
+            <strong>Fecha recepción:</strong> {{ custodia.fecha_recepcion|date:"d/m/Y H:i" }}
+        </p>
+        {% if custodia.nro_oficio %}
+        <p style="margin: 0.3rem 0; color: #444;">
+            <strong>Oficio TSP:</strong> {{ custodia.nro_oficio }}
+            {% if custodia.fecha_oficio %}({{ custodia.fecha_oficio|date:"d/m/Y" }}){% endif %}
+        </p>
+        {% endif %}
+        {% if custodia.nro_oficio_archivo %}
+        <p style="margin: 0.3rem 0; color: #444;">
+            <strong>Oficio Archivo:</strong> {{ custodia.nro_oficio_archivo }}
+            {% if custodia.fecha_oficio_archivo %}({{ custodia.fecha_oficio_archivo|date:"d/m/Y" }}){% endif %}
+        </p>
+        {% endif %}
+    </div>
+
+    {% if custodia.archivo_oficio %}
+    <div class="card" style="background: #f0fdf4; border-left: 4px solid #16a34a; margin-bottom: 2rem;">
+        <p style="margin: 0; color: #166534; font-weight: 600;">
+            📄 PDF ya adjuntado:
+            <a href="{{ custodia.archivo_oficio.url }}" target="_blank" style="color: #15803d;">
+                Descargar / Ver oficio actual
+            </a>
+        </p>
+        <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.85rem;">
+            Subir un nuevo PDF reemplazará el anterior.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Formulario de carga -->
+    <form method="post" enctype="multipart/form-data" class="card">
+        {% csrf_token %}
+        <h2 style="margin-top: 0;">
+            {% if custodia.archivo_oficio %}🔄 Reemplazar PDF{% else %}📎 Adjuntar PDF del Oficio{% endif %}
+        </h2>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Archivo PDF del Oficio *
+            </label>
+            <input type="file" name="archivo_oficio" accept=".pdf"
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; background: #fff;">
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.4rem;">
+                Solo archivos PDF. Puede adjuntarlo días después de registrar la custodia.
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn" style="background: #16a34a; color: #fff;">
+                📎 Guardar PDF
+            </button>
+            <a href="{% url 'ver_historial_custodia' sim_id=sim.pk %}" class="btn" style="background: #6c757d; color: #fff;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card { background: #fff; border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .btn {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .5rem 1rem; text-decoration: none; border-radius: 7px;
+        border: none; cursor: pointer; font-size: .875rem;
+        font-family: inherit; font-weight: 500;
+    }
+    .btn:hover { opacity: 0.9; }
+</style>
+{% endblock %}

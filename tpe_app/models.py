@@ -676,7 +676,7 @@ class CustodiaSIM(models.Model):
         ('VOCAL_SESION',        'Secretario de Actas'),
         ('ADMIN1_AGENDADOR',    'Agendador'),
         ('ADMIN3_NOTIFICADOR',  'Notificador'),
-        ('TSP',                 'Tribunal Supremo Policial'),
+        ('TSP',                 'Tribunal Superior de Personal'),
         ('ARCHIVO',             'Archivo Permanente'),
     ]
 
@@ -685,8 +685,9 @@ class CustodiaSIM(models.Model):
         ('REVISION',      'Revisión del abogado'),
         ('NOTIFICACION',  'Para notificación'),
         ('APELACION_TSP', 'Elevado al TSP'),
-        ('EJECUTORIA',    'Para ejecutoria/cumplimiento'),
-        ('ARCHIVO',       'Archivado / Concluido'),
+        ('EJECUTORIA',          'Para ejecutoria/cumplimiento'),
+        ('RESPUESTA_MEMORIAL',  'Respuesta a Memorial'),
+        ('ARCHIVO',             'Archivado / Concluido'),
     ]
 
     ESTADO_CHOICES = [
@@ -719,8 +720,9 @@ class CustodiaSIM(models.Model):
                                         null=True, blank=True, verbose_name='Motivo')
     nro_oficio       = models.CharField(max_length=30, null=True, blank=True, verbose_name='Número de Oficio (TSP)')
     fecha_oficio     = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio (TSP)')
-    nro_oficio_archivo = models.CharField(max_length=30, null=True, blank=True, verbose_name='Número de Oficio (ARCHIVO/SPRODA)')
+    nro_oficio_archivo   = models.CharField(max_length=30, null=True, blank=True, verbose_name='Número de Oficio (ARCHIVO/SPRODA)')
     fecha_oficio_archivo = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio (ARCHIVO/SPRODA)')
+    archivo_oficio       = models.FileField(upload_to='oficios_custodia/%Y/', null=True, blank=True, verbose_name='PDF del Oficio')
     estado           = models.CharField(max_length=25, choices=ESTADO_CHOICES,
                                         default='RECIBIDA_CONFORME', verbose_name='Estado de la Custodia')
 

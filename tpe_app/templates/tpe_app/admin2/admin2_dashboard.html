@@ -157,6 +157,9 @@
                                 <a href="{% url 'detalles_sim' custodia.sim.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                                     📋 Ver
                                 </a>
+                                <a href="{% url 'ver_historial_custodia' sim_id=custodia.sim.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #0891b2; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                                    📂 Custodia
+                                </a>
                                 <a href="{% url 'export_custodia_pdf' custodia.sim.id %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                                     📄 PDF
                                 </a>
@@ -337,8 +340,11 @@
                     <a href="{% url 'admin2_registrar_documento_recurrente' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #b45309; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;" title="Registrar memorial presentado: incidente, recurso fuera de plazo o amparo">
                         📄 Memorial Presentado
                     </a>
+                    <a href="{% url 'ver_historial_custodia' sim_id=custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #0891b2; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
+                        📂 Custodia
+                    </a>
                     <a href="{% url 'detalles_sim' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #8b5cf6; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
-                        📋 Historial
+                        📋 Detalle
                     </a>
                     <a href="{% url 'export_custodia_pdf' custodia.sim.pk %}" class="btn" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; background: #10b981; color: #fff; text-decoration: none; border-radius: 4px; white-space: nowrap;">
                         📄 PDF

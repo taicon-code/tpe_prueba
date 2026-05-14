@@ -340,6 +340,8 @@ def admin2_entregar_carpeta(request, sim_id):
         observacion = request.POST.get('observacion', '').strip()
         nro_oficio = request.POST.get('nro_oficio', '').strip() if tipo_custodio == 'TSP' else None
         fecha_oficio_str = request.POST.get('fecha_oficio') if tipo_custodio == 'TSP' else None
+        nro_oficio_archivo = request.POST.get('nro_oficio_archivo', '').strip() or None
+        fecha_oficio_archivo_str = request.POST.get('fecha_oficio_archivo') or None
 
         if not tipo_custodio:
             messages.error(request, '❌ Debe seleccionar tipo de custodia')
@@ -357,6 +359,9 @@ def admin2_entregar_carpeta(request, sim_id):
                 fecha_oficio = None
                 if fecha_oficio_str:
                     fecha_oficio = datetime.strptime(fecha_oficio_str, '%Y-%m-%d').date()
+                fecha_oficio_archivo = None
+                if fecha_oficio_archivo_str:
+                    fecha_oficio_archivo = datetime.strptime(fecha_oficio_archivo_str, '%Y-%m-%d').date()
 
                 with transaction.atomic():
                     # Cerrar custodia actual (Admin2)
@@ -378,6 +383,8 @@ def admin2_entregar_carpeta(request, sim_id):
                         motivo=motivo,
                         nro_oficio=nro_oficio,
                         fecha_oficio=fecha_oficio,
+                        nro_oficio_archivo=nro_oficio_archivo,
+                        fecha_oficio_archivo=fecha_oficio_archivo,
                         estado=estado_custodia,
                     )
 
@@ -404,7 +411,7 @@ def admin2_entregar_carpeta(request, sim_id):
         ('ABOG_RR', 'Abogado 2 - Recurso de Reconsideración'),
         ('ABOG_AUTOS', 'Abogado 3 - Autos/Ejecutoria'),
         ('ADMIN3', 'Admin3 - Notificador'),
-        ('TSP', 'Tribunal Supremo Policial (TSP)'),
+        ('TSP', 'Tribunal Superior de Personal (TSP)'),
         ('ARCHIVO', 'Archivado / Concluido'),
     ]
 
@@ -414,8 +421,9 @@ def admin2_entregar_carpeta(request, sim_id):
         ('REVISION', 'Revisión del abogado'),
         ('NOTIFICACION', 'Para notificación'),
         ('APELACION_TSP', 'Elevado al TSP'),
-        ('EJECUTORIA', 'Para ejecutoria/cumplimiento'),
-        ('ARCHIVO', 'Archivado / Concluido'),
+        ('EJECUTORIA',         'Para ejecutoria/cumplimiento'),
+        ('RESPUESTA_MEMORIAL', 'Respuesta a Memorial'),
+        ('ARCHIVO',            'Archivado / Concluido'),
     ]
 
     # Detectar si hay una orden de ejecutoria previa
@@ -621,7 +629,7 @@ def ver_historial_custodia_sim(request, sim_id):
         'ABOG_RR': 'Abogado (Reconsideración)',
         'ABOG_AUTOS': 'Abogado (Autos)',
         'VOCAL_SESION': 'Secretario de Actas',
-        'TSP': 'Tribunal Supremo Policial',
+        'TSP': 'Tribunal Superior de Personal',
         'ARCHIVO': 'Archivo Permanente',
     }
 
@@ -638,6 +646,31 @@ def ver_historial_custodia_sim(request, sim_id):
     }
 
     return render(request, 'tpe_app/admin2/ver_historial_custodia.html', context)
+
+
+@rol_requerido('ADMIN2_ARCHIVO')
+def admin2_adjuntar_oficio_custodia(request, custodia_id):
+    """Admin2 adjunta o reemplaza el PDF del oficio de una custodia."""
+    custodia = get_object_or_404(CustodiaSIM, pk=custodia_id)
+
+    if request.method == 'POST':
+        archivo = request.FILES.get('archivo_oficio')
+        if not archivo:
+            messages.error(request, '❌ Debe seleccionar un archivo PDF.')
+        elif not archivo.name.lower().endswith('.pdf'):
+            messages.error(request, '❌ Solo se aceptan archivos PDF.')
+        else:
+            if custodia.archivo_oficio:
+                custodia.archivo_oficio.delete(save=False)
+            custodia.archivo_oficio = archivo
+            custodia.save()
+            messages.success(request, f'✅ PDF adjuntado correctamente a la custodia #{custodia_id}.')
+        return redirect('ver_historial_custodia', sim_id=custodia.sim_id)
+
+    return render(request, 'tpe_app/admin2/adjuntar_oficio_custodia.html', {
+        'custodia': custodia,
+        'sim': custodia.sim,
+    })
 
 
 # ============================================================

@@ -84,12 +84,13 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 150px;">Fecha Recepción</th>
-                    <th style="width: 200px;">Custodio</th>
-                    <th style="width: 150px;">Abogado</th>
-                    <th style="width: 100px;">Estado</th>
-                    <th style="width: 150px;">Fecha Entrega</th>
-                    <th>Observación</th>
+                    <th style="width: 140px;">Fecha Recepción</th>
+                    <th style="width: 190px;">Custodio</th>
+                    <th style="width: 140px;">Abogado</th>
+                    <th style="width: 90px;">Estado</th>
+                    <th style="width: 140px;">Fecha Entrega</th>
+                    <th>Observación / Oficio</th>
+                    <th style="width: 90px; text-align: center;">PDF Oficio</th>
                 </tr>
             </thead>
             <tbody>
@@ -127,7 +128,19 @@
                             <span style="color: #999;">—</span>
                         {% endif %}
                     </td>
-                    <td style="font-size: 0.9rem; color: #666; max-width: 300px;">
+                    <td style="font-size: 0.9rem; color: #666; max-width: 280px;">
+                        {% if custodia.nro_oficio %}
+                            <div style="font-size: 0.8rem; color: #1d4ed8; margin-bottom: 0.3rem;">
+                                📋 Of. TSP: <strong>{{ custodia.nro_oficio }}</strong>
+                                {% if custodia.fecha_oficio %}({{ custodia.fecha_oficio|date:"d/m/Y" }}){% endif %}
+                            </div>
+                        {% endif %}
+                        {% if custodia.nro_oficio_archivo %}
+                            <div style="font-size: 0.8rem; color: #166534; margin-bottom: 0.3rem;">
+                                📁 Of. Archivo: <strong>{{ custodia.nro_oficio_archivo }}</strong>
+                                {% if custodia.fecha_oficio_archivo %}({{ custodia.fecha_oficio_archivo|date:"d/m/Y" }}){% endif %}
+                            </div>
+                        {% endif %}
                         {% if custodia.observacion %}
                             <details style="cursor: pointer;">
                                 <summary style="color: #185FA5; font-weight: 600; user-select: none;">📝 Ver nota</summary>
@@ -135,8 +148,26 @@
                                     {{ custodia.observacion }}
                                 </p>
                             </details>
-                        {% else %}
+                        {% endif %}
+                        {% if not custodia.nro_oficio and not custodia.nro_oficio_archivo and not custodia.observacion %}
                             <span style="color: #999;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        {% if custodia.archivo_oficio %}
+                            <a href="{{ custodia.archivo_oficio.url }}" target="_blank"
+                               style="display: inline-block; background: #1d4ed8; color: #fff; padding: 0.3rem 0.6rem; border-radius: 5px; font-size: 0.78rem; text-decoration: none; margin-bottom: 0.3rem;">
+                                📄 Ver PDF
+                            </a><br>
+                            <a href="{% url 'admin2_adjuntar_oficio_custodia' custodia_id=custodia.pk %}"
+                               style="display: inline-block; background: #6b7280; color: #fff; padding: 0.25rem 0.5rem; border-radius: 5px; font-size: 0.75rem; text-decoration: none;">
+                                🔄 Reemplazar
+                            </a>
+                        {% else %}
+                            <a href="{% url 'admin2_adjuntar_oficio_custodia' custodia_id=custodia.pk %}"
+                               style="display: inline-block; background: #16a34a; color: #fff; padding: 0.3rem 0.6rem; border-radius: 5px; font-size: 0.78rem; text-decoration: none;">
+                                📎 Adjuntar
+                            </a>
                         {% endif %}
                     </td>
                 </tr>

@@ -65,6 +65,7 @@ from .admin2_views import (
     admin2_registrar_salida_tsp,
     admin2_registrar_documento_recurrente,
     admin2_buscar_sim_doc_recurrente,
+    admin2_adjuntar_oficio_custodia,
     registrar_rr,
 )
 from .admin3_views import (

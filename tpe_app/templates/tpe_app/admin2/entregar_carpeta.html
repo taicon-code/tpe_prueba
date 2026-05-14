@@ -97,7 +97,7 @@
 
         <!-- Campos para TSP (condicionales) -->
         <div style="margin-bottom: 1.5rem; background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; border-radius: 4px; display: none;" id="tsp_fields_container">
-            <p style="margin-top: 0; color: #856404; font-weight: 600; margin-bottom: 0.75rem;">⚠️ Elevación al TSP</p>
+            <p style="margin-top: 0; color: #856404; font-weight: 600; margin-bottom: 0.75rem;">⚠️ Elevación al Tribunal Superior de Personal</p>
 
             <div style="margin-bottom: 1rem;">
                 <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">
@@ -116,6 +116,34 @@
                 <input type="date" name="fecha_oficio" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
                 <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
                     Fecha de emisión del oficio
+                </small>
+            </div>
+        </div>
+
+        <!-- Campos para ARCHIVO/SPRODA (condicionales por motivo) -->
+        <div style="margin-bottom: 1.5rem; background: #f0fdf4; border-left: 4px solid #16a34a; padding: 1rem; border-radius: 4px; display: none;" id="archivo_fields_container">
+            <p style="margin-top: 0; color: #166534; font-weight: 600; margin-bottom: 0.75rem;">📁 Oficio de Remisión al Archivo / SPRODA</p>
+            <small style="color: #166534; display: block; margin-bottom: 0.75rem;">
+                Puede completar estos datos ahora o más tarde cuando llegue el oficio firmado.
+            </small>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">
+                    Número de Oficio de Archivo
+                </label>
+                <input type="text" name="nro_oficio_archivo" placeholder="Ej: OF-TPE-012/26" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Número del oficio de remisión a SPRODA / Archivo
+                </small>
+            </div>
+
+            <div>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">
+                    Fecha del Oficio de Archivo
+                </label>
+                <input type="date" name="fecha_oficio_archivo" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                    Fecha de emisión del oficio de remisión
                 </small>
             </div>
         </div>
@@ -143,13 +171,15 @@
 
 <script>
     const tipoCustodioSelect = document.querySelector('select[name="tipo_custodio"]');
-    const abogadoContainer = document.getElementById('abogado_container');
+    const motivoSelect       = document.querySelector('select[name="motivo"]');
+    const abogadoContainer   = document.getElementById('abogado_container');
     const tspFieldsContainer = document.getElementById('tsp_fields_container');
-    const abogadoSelect = document.querySelector('select[name="abogado"]');
-    const nroOficioInput = document.querySelector('input[name="nro_oficio"]');
-    const fechaOficioInput = document.querySelector('input[name="fecha_oficio"]');
+    const archivoFieldsContainer = document.getElementById('archivo_fields_container');
+    const abogadoSelect      = document.querySelector('select[name="abogado"]');
+    const nroOficioInput     = document.querySelector('input[name="nro_oficio"]');
+    const fechaOficioInput   = document.querySelector('input[name="fecha_oficio"]');
 
-    function actualizarCampos() {
+    function actualizarCamposTipo() {
         const tipoSeleccionado = tipoCustodioSelect.value;
 
         // Si es ARCHIVO, no mostrar abogado
@@ -165,7 +195,7 @@
             }
         }
 
-        // Si es TSP, mostrar campos de oficio
+        // Si es TSP, mostrar campos de oficio TSP
         if (tipoSeleccionado === 'TSP') {
             tspFieldsContainer.style.display = 'block';
             nroOficioInput.setAttribute('required', 'required');
@@ -177,8 +207,22 @@
         }
     }
 
-    tipoCustodioSelect.addEventListener('change', actualizarCampos);
-    actualizarCampos(); // Inicializar al cargar
+    function actualizarCamposMotivo() {
+        const motivoSeleccionado = motivoSelect.value;
+
+        // Si motivo es ARCHIVO/CONCLUIDO, mostrar campos oficio de archivo
+        if (motivoSeleccionado === 'ARCHIVO') {
+            archivoFieldsContainer.style.display = 'block';
+        } else {
+            archivoFieldsContainer.style.display = 'none';
+        }
+    }
+
+    tipoCustodioSelect.addEventListener('change', actualizarCamposTipo);
+    motivoSelect.addEventListener('change', actualizarCamposMotivo);
+
+    actualizarCamposTipo();   // Inicializar al cargar
+    actualizarCamposMotivo();
 </script>
 
 <style>
