@@ -397,7 +397,7 @@ class SIM(models.Model):
         ('2DA_RESOLUCION',        'Emitida 2da. Resolución (RR)'),
         ('NOTIFICACION_RR',       'En Proceso de Notificación (RR)'),
         ('NOTIFICADO_RR',         'Notificado (RR)'),
-        ('EN_ESPERA_RAP',         'En Espera de RAP (plazo 3 días)'),
+        ('EN_ESPERA_RAP',         'EN ESPERA DE SU REC. AP. (15 DIAS)'),
         ('EN_AGENDA_EJECUTORIA',  'En Agenda (Auto de Ejecutoria)'),
         ('EN_EJECUTORIA',         'Auto de Ejecutoria Emitido'),
         ('EJECUTORIA_NOTIFICADA', 'Ejecutoria Notificada (Pte. Archivo)'),
