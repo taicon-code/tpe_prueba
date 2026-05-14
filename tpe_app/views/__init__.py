@@ -30,6 +30,7 @@ from .admin1_views import (
     autocomplete_pm,
     agendar_sumario,
     agendar_rr,
+    agendar_auto_ejecutoria,
     crear_agenda,
     lista_agendas,
     ver_agenda_detalle,

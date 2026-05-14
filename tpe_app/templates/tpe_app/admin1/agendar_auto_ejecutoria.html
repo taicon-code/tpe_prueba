@@ -1,0 +1,90 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Agendar Auto de Ejecutoria - TPE Sistema{% endblock %}
+{% block navbar_title %}📅 Agendar para Auto de Ejecutoria{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin1_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 0.5rem; color: #1e3c72;">📅 Agendar para Auto de Ejecutoria</h1>
+<p style="color: #6b7280; margin-bottom: 2rem; font-size: 0.9rem;">
+    Asigna una sesión del tribunal y un abogado ABOG2 al RR sin RAP.<br>
+    Una vez agendado, Admin2 entregará los antecedentes al abogado.
+</p>
+
+{% if pendientes > 0 %}
+<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 2rem;">
+    <p style="margin: 0; color: #856404;">
+        ⚠️ Hay <strong>{{ pendientes }}</strong> recurso(s) pendiente(s) de agendar para ejecutoria.
+    </p>
+</div>
+{% endif %}
+
+<form method="post" style="max-width: 800px;">
+    {% csrf_token %}
+
+    <div class="card">
+        <h2>📋 Datos de la Agenda</h2>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.rr.label }}
+            </label>
+            {{ form.rr }}
+            {% if form.rr.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.rr.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem;">
+                Solo se muestran RR cuyo plazo de apelación venció sin presentar RAP.
+            </small>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.abogado.label }}
+            </label>
+            {{ form.abogado }}
+            {% if form.abogado.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.abogado.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                {{ form.agenda.label }}
+            </label>
+            {{ form.agenda }}
+            {% if form.agenda.errors %}
+                <div style="color: #dc3545; font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ form.agenda.errors.0 }}
+                </div>
+            {% endif %}
+            <small style="color: #666; font-size: 0.85rem;">
+                Solo se muestran agendas con estado PROGRAMADA.
+            </small>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn" style="background: #1e3c72; color: #fff;">
+            📅 Agendar para Ejecutoria
+        </button>
+        <a href="{% url 'admin1_dashboard' %}" class="btn" style="background: #6c757d;">
+            Cancelar
+        </a>
+    </div>
+</form>
+
+<style>
+.card { background: #fff; border-radius: 10px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.card h2 { margin-bottom: 1.2rem; color: #1e3c72; font-size: 1.1rem; }
+</style>
+{% endblock %}

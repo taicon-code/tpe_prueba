@@ -494,9 +494,7 @@ def ayudante_registrar_notificacion_auto(request, auto_id):
                     notif.save()
                     if auto.tipo == 'AUTO_EJECUTORIA' and auto.sim:
                         sim = auto.sim
-                        ESTADOS_ACTIVOS_EXTERNOS = {'PROCESO_EN_EL_TSP', 'CUMPLIMIENTO_EN_TPE'}
-                        if (sim.estado not in ESTADOS_ACTIVOS_EXTERNOS and
-                                sim.fase not in ['EJECUTORIA_NOTIFICADA', 'PENDIENTE_ARCHIVO', 'CONCLUIDO']):
+                        if sim.fase == 'EJECUTORIA_PARA_NOTIFICAR':
                             sim.fase = 'EJECUTORIA_NOTIFICADA'
                             sim.save()
                     elif auto.tipo == 'AUTO_CUMPLIMIENTO' and auto.sim:

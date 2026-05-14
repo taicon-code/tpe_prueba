@@ -199,25 +199,56 @@ VOCAL devuelve a ADMIN2 → ciclo continúa según resolución
 
 ## Flujo de Ejecutoria
 
+### Ruta RES sin RR (1ra resolución, nadie reconsideró)
 ```
-ADMIN1: "Entregar para Ejecutoria" (botón en RES)
+ADMIN1: "Entregar para Ejecutoria" (botón en lista_pendientes.html sobre RES)
+    → Crea CustodiaSIM motivo='EJECUTORIA' estado='PENDIENTE_CONFIRMACION'
     ↓
 ADMIN2: confirma entrega a ABOG2
     ↓
-ABOG2: crea Auto de Ejecutoria (sin agenda previa)
-    → sim.fase = 'EN_EJECUTORIA'
+[Sigue flujo común desde ABOG2 ↓]
+```
+
+### Ruta RR sin RAP (reconsideró pero no apeló al TSP)
+```
+ADMIN1: "📅 Agendar" (botón en lista_pendientes.html sobre RR)
+    → sim.fase = 'EN_AGENDA_EJECUTORIA'
+    → ABOG_SIM.agenda = sesión seleccionada
+    → Crea CustodiaSIM motivo='EJECUTORIA' estado='PENDIENTE_CONFIRMACION'
     ↓
-ADMIN3: notifica Auto → sim.fase = 'EJECUTORIA_NOTIFICADA'
+ADMIN2: confirma entrega de antecedentes a ABOG2
     ↓
-ADMIN1: "Ordenar Archivo a SPRODA" → sim.fase = 'PENDIENTE_ARCHIVO'
+ADMIN1: botón "Resultado" en la agenda → marca REALIZADA
+    → sim.fase = 'EN_EJECUTORIA'  ← automático en editar_agenda_resultado()
     ↓
-ADMIN2: confirma archivo → sim.fase = 'CONCLUIDO' → sim.estado = 'PROCESO_CONCLUIDO_TPE'
+[Sigue flujo común desde ABOG2 ↓]
+```
+
+### Flujo común (desde ABOG2 en adelante)
+```
+ABOG2: crea Auto de Ejecutoria (SIN DICTAMEN, agenda existente)
+    → sim.fase = 'EJECUTORIA_PARA_NOTIFICAR'
+    ↓
+ADMIN2: recibe el Auto (custodia regresa a Admin2)
+    ↓
+ADMIN3: notifica el Auto
+    → sim.fase = 'EJECUTORIA_NOTIFICADA'
+    ↓
+ADMIN2: registra destino (SPRODA / ASCENSO / SCADE / DGJURE)
+    → sim.fase = 'PENDIENTE_ARCHIVO'
+    ↓
+ADMIN2: confirma entrega a destino
+    → sim.fase = 'CONCLUIDO' → sim.estado = 'PROCESO_CONCLUIDO_TPE'
     ↓
 Si hay memorándum (autotpe.memo_numero): ADMIN2 registra retorno
     → sim.estado = 'PROCESO_EJECUTADO'
 ```
 
-Los Autos de Ejecutoria NO requieren agenda previa (a diferencia de RES).
+**Notas clave:**
+- Los Autos de Ejecutoria **SÍ** se vinculan a una sesión de agenda (a diferencia de versiones anteriores).
+- La transición `EN_AGENDA_EJECUTORIA` → `EN_EJECUTORIA` ocurre automáticamente al marcar la agenda como REALIZADA en `editar_agenda_resultado()`, buscando SIMs con `fase='EN_AGENDA_EJECUTORIA'` y `abog_sim__agenda=agenda`.
+- ABOG2 crea el Auto **sin dictamen** (distinto a resoluciones que sí requieren dictamen previo).
+- Nueva fase `EJECUTORIA_PARA_NOTIFICAR` separa "Auto emitido" de "Auto notificado".
 
 ---
 

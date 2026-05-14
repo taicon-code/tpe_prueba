@@ -12,7 +12,7 @@ import calendar
 from ..decorators import rol_requerido
 from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP, DocumentoRecurrente
 from ..models import get_pendientes_ejecutoria
-from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm, SIMInstitucionalForm, ResolucionInstitucionalForm, AutoInstitucionalForm
+from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendarAutoEjecutoriaForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm, SIMInstitucionalForm, ResolucionInstitucionalForm, AutoInstitucionalForm
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -448,6 +448,76 @@ def agendar_rr(request):
         ).count(),
     }
     return render(request, 'tpe_app/admin1/agendar_rr.html', context)
+
+
+@rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
+def agendar_auto_ejecutoria(request):
+    """ADMIN1 agenda un SIM para Auto de Ejecutoria: asigna sesión + abogado ABOG2.
+    Flujo: NOTIFICADO_RR → EN_AGENDA_EJECUTORIA (agendado para ejecutoria).
+    """
+    if request.method == 'POST':
+        form = AgendarAutoEjecutoriaForm(request.POST)
+        if form.is_valid():
+            rr      = form.cleaned_data['rr']
+            abogado = form.cleaned_data['abogado']
+            agenda  = form.cleaned_data['agenda']
+            sim     = rr.sim
+
+            try:
+                with transaction.atomic():
+                    # Asignar abogado al SIM para ejecutoria (con agenda para seguimiento)
+                    abog_sim, _ = ABOG_SIM.objects.get_or_create(sim=sim, abogado=abogado)
+                    if abog_sim.agenda is None:
+                        abog_sim.agenda = agenda
+                        abog_sim.save()
+
+                    # Crear o actualizar custodia: Admin2 debe entregar antecedentes
+                    custodia_existente = CustodiaSIM.objects.filter(
+                        sim=sim, motivo='EJECUTORIA',
+                        estado='PENDIENTE_CONFIRMACION', fecha_entrega__isnull=True
+                    ).first()
+                    if not custodia_existente:
+                        CustodiaSIM.objects.create(
+                            sim=sim,
+                            tipo_custodio='ADMIN2_ARCHIVO',
+                            motivo='EJECUTORIA',
+                            abogado_destino=abogado,
+                            estado='PENDIENTE_CONFIRMACION',
+                            usuario=request.user,
+                            observacion=f'Agendado Ejecutoria — Sesión {agenda.numero}',
+                        )
+
+                    # Avanzar fase
+                    if sim.fase in ['NOTIFICADO_RR', 'EN_ESPERA_RAP']:
+                        sim.fase = 'EN_AGENDA_EJECUTORIA'
+                        sim.save()
+
+                fecha_str = agenda.fecha_prog.strftime('%d/%m/%Y') if agenda.fecha_prog else agenda.numero
+                messages.success(
+                    request,
+                    f'✅ {sim.codigo} agendado para Ejecutoria en Sesión {agenda.numero} ({fecha_str}) '
+                    f'con {abogado}. Admin2 debe entregar antecedentes.'
+                )
+            except Exception as exc:
+                messages.error(request, f'❌ Error al agendar: {exc}')
+            return redirect('admin1_dashboard')
+    else:
+        initial = {}
+        rr_id = request.GET.get('rr')
+        if rr_id:
+            initial['rr'] = rr_id
+        form = AgendarAutoEjecutoriaForm(initial=initial)
+
+    context = {
+        'form': form,
+        'pendientes': Resolucion.objects.filter(
+            instancia='RECONSIDERACION',
+            sim__fase__in=['NOTIFICADO_RR', 'EN_ESPERA_RAP'],
+        ).exclude(
+            sim__fase='EN_AGENDA_EJECUTORIA'
+        ).count(),
+    }
+    return render(request, 'tpe_app/admin1/agendar_auto_ejecutoria.html', context)
 
 
 # ============================================================
@@ -1148,6 +1218,16 @@ def editar_agenda_resultado(request, ag_id):
                     # Determinar mensaje según estado
                     if agenda.estado == 'REALIZADA':
                         msg = f'✅ Agenda {agenda.numero} registrada como REALIZADA el {agenda.fecha_real.strftime("%d/%m/%Y")}'
+                        # Avanzar SIMs de ejecutoria agendados en esta sesión
+                        sims_ejecutoria = SIM.objects.filter(
+                            fase='EN_AGENDA_EJECUTORIA',
+                            abog_sim__agenda=agenda,
+                        ).distinct()
+                        for sim_ej in sims_ejecutoria:
+                            sim_ej.fase = 'EN_EJECUTORIA'
+                            sim_ej.save()
+                        if sims_ejecutoria.exists():
+                            msg += f' — {sims_ejecutoria.count()} sumario(s) de ejecutoria pasaron a EN_EJECUTORIA.'
                     elif agenda.estado == 'SUSPENDIDA':
                         msg = f'⚠️ Agenda {agenda.numero} registrada como SUSPENDIDA'
                     else:

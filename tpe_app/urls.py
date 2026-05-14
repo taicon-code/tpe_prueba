@@ -81,6 +81,7 @@ urlpatterns = [
     path('admin1/sumarios/agendar/', views.agendar_sumario, name='agendar_sumario'),
     path('admin2/rr/registrar/', views.registrar_rr, name='registrar_rr'),
     path('admin1/rr/agendar/', views.agendar_rr, name='agendar_rr'),
+    path('admin1/auto-ejecutoria/agendar/', views.agendar_auto_ejecutoria, name='agendar_auto_ejecutoria'),
     path('admin1/sumarios/<int:sim_id>/abogados/', views.gestionar_abogados_sim, name='gestionar_abogados_sim'),
 
     # ✅ NUEVO v3.2: Gestión de Agendas (Admin1)

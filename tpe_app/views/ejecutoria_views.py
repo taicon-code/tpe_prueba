@@ -65,10 +65,10 @@ def crear_auto_ejecutoria(request, origen, origen_id):
             auto.pm  = pm
             auto.resolucion = resolucion_link
             auto.save()
-            # Auto emitido: SIM pasa a EN_EJECUTORIA (pendiente de notificación y archivo)
-            sim.fase = 'EN_EJECUTORIA'
+            # Auto emitido: SIM pasa a EJECUTORIA_PARA_NOTIFICAR (Admin2 recibe, Admin3 notifica)
+            sim.fase = 'EJECUTORIA_PARA_NOTIFICAR'
             sim.save()
-            messages.success(request, f"Auto de Ejecutoria {auto.numero or ''} registrado correctamente.")
+            messages.success(request, f"Auto de Ejecutoria {auto.numero or ''} registrado. Admin2 debe recibirlo y Admin3 notificará.")
             return redirect('pendientes_ejecutoria')
     else:
         form = AutoEjecutoriaForm()
