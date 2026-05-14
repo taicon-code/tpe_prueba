@@ -326,6 +326,18 @@ class AgendaForm(forms.ModelForm):
             'fecha_prog': 'Fecha Programada',
         }
 
+    def clean_numero(self):
+        numero = self.cleaned_data.get('numero', '').upper()
+        pk = self.instance.pk if self.instance else None
+        qs = AGENDA.objects.filter(numero=numero)
+        if pk:
+            qs = qs.exclude(pk=pk)
+        if qs.exists():
+            raise forms.ValidationError(
+                f'Ya existe una agenda con el número "{numero}". Usa un número diferente para la agenda complementaria.'
+            )
+        return numero
+
 
 class AgendaResultadoForm(forms.ModelForm):
 

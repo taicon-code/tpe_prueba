@@ -159,7 +159,7 @@
                     </label>
                     <input type="text" id="fecha_display" placeholder="Selecciona una fecha en el calendario"
                            style="width: 100%; padding: 0.75rem; border: 2px solid #2196f3; border-radius: 4px; font-weight: bold; color: #1e3c72; background: #e3f2fd; font-size: 0.95rem;" readonly>
-                    <input type="hidden" name="fecha_prog" id="fecha_prog" value="">
+                    <input type="hidden" name="fecha_prog" id="fecha_prog" value="{{ form.fecha_prog.value|default:'' }}">
                 </div>
 
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 0.5rem 0;">
@@ -189,40 +189,6 @@
                         </div>
                     {% endif %}
                 </div>
-
-                {# Campo: Estado de la Agenda #}
-                <div>
-                    <label for="{{ form.estado.id_for_label }}" style="font-weight: bold; color: #1e3c72; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">
-                        Estado de la Agenda
-                    </label>
-                    {{ form.estado }}
-                    {% if form.estado.errors %}
-                        <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">
-                            {{ form.estado.errors }}
-                        </div>
-                    {% endif %}
-                    <small style="color: #666; display: block; margin-top: 0.35rem;">
-                        Selecciona si se <strong>Realizó</strong>, se <strong>Reprogramó</strong>, o fue <strong>Suspendida</strong>
-                    </small>
-                </div>
-
-                {# Campo: Fecha Real (si se realizó) #}
-                <div>
-                    <label for="{{ form.fecha_real.id_for_label }}" style="font-weight: bold; color: #1e3c72; display: block; margin-bottom: 0.5rem; font-size: 0.95rem;">
-                        Fecha de Realización (si aplica)
-                    </label>
-                    {{ form.fecha_real }}
-                    {% if form.fecha_real.errors %}
-                        <div style="color: #dc2626; font-size: 0.85rem; margin-top: 0.25rem;">
-                            {{ form.fecha_real.errors }}
-                        </div>
-                    {% endif %}
-                    <small style="color: #666; display: block; margin-top: 0.35rem;">
-                        Completa esto cuando la agenda se realice
-                    </small>
-                </div>
-
-                <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 0.5rem 0;">
 
                 {# Otros campos del formulario #}
                 {% for field in form %}
@@ -337,23 +303,34 @@
 </style>
 
 <script>
+    const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
     function selectDate(day, fullDate) {
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const year = {{ current_year }};
         const month = {{ current_month }};
         const monthName = monthNames[month - 1];
 
-        // Actualizar el campo de fecha visible
         document.getElementById('fecha_display').value = `${day} de ${monthName} de ${year}`;
-
-        // Actualizar el campo oculto con la fecha en formato YYYY-MM-DD
         const dateFormatted = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         document.getElementById('fecha_prog').value = dateFormatted;
 
-        // Scroll suave al formulario
         const form = document.querySelector('.card');
         form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    // Si hay fecha pre-existente (POST fallido), mostrarla en el campo visible
+    document.addEventListener('DOMContentLoaded', function () {
+        const hiddenFecha = document.getElementById('fecha_prog').value;
+        if (hiddenFecha) {
+            const parts = hiddenFecha.split('-');
+            if (parts.length === 3) {
+                const year = parseInt(parts[0]);
+                const month = parseInt(parts[1]);
+                const day = parseInt(parts[2]);
+                document.getElementById('fecha_display').value = `${day} de ${monthNames[month - 1]} de ${year}`;
+            }
+        }
+    });
 </script>
 {% endblock %}
