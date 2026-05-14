@@ -41,6 +41,7 @@ from .admin1_views import (
     admin1_asignar_doc_recurrente,
     admin1_ordenar_rap,
     admin1_ordenar_archivo_sproda,
+    admin1_archivar_solicitud_directo,
     registrar_sim_institucional,
     sim_institucional_detalle,
     agregar_resolucion_institucional,
