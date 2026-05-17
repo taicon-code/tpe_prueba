@@ -21,6 +21,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from tpe_app.decorators import rol_requerido, ROLES_OPERATIVOS
 from tpe_app.models import PM, SIM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, PerfilUsuario
+from tpe_app.services.pdf_watermark import hacer_callback as _watermark_callback
 from tpe_app.utils.audit import log_acceso
 
 
@@ -506,7 +507,8 @@ def export_person_historial_pdf(request, personal_id):
                 story.append(HRFlowable(width="100%", thickness=0.4, color=colors.lightgrey))
                 story.append(Spacer(1, 4))
 
-    doc.build(story, onFirstPage=_pie_pagina, onLaterPages=_pie_pagina)
+    _cb = _watermark_callback(estado='REPORTE', extra=_pie_pagina)
+    doc.build(story, onFirstPage=_cb, onLaterPages=_cb)
     buffer.seek(0)
 
     fecha_export = datetime.now().strftime("%d-%m-%Y")
@@ -969,7 +971,8 @@ def export_sim_pdf(request, sim_id):
     if not hay_actuados:
         story.append(Paragraph("Sin actuados registrados.", s_dato))
 
-    doc.build(story, onFirstPage=_pie_pagina, onLaterPages=_pie_pagina)
+    _cb = _watermark_callback(estado='REPORTE', extra=_pie_pagina)
+    doc.build(story, onFirstPage=_cb, onLaterPages=_cb)
     buffer.seek(0)
 
     fecha_export = datetime.now().strftime("%d-%m-%Y")
