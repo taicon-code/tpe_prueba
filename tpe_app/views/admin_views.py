@@ -1,4 +1,6 @@
 # tpe_app/views/admin_views.py
+import logging
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -7,6 +9,8 @@ from django.views.decorators.http import require_http_methods
 from ..decorators import rol_requerido
 from ..models import SIM, PM, PerfilUsuario, VOCAL_TPE
 from datetime import date
+
+security_log = logging.getLogger('tpe_app.security')
 
 @rol_requerido('ADMINISTRADOR')
 def admin_dashboard(request):
@@ -99,6 +103,10 @@ def crear_usuario_con_rol(request):
                 activo=True,
             )
 
+            security_log.info(
+                'USER_CREATED actor=%s new_user=%s rol=%s',
+                request.user.username, username, rol,
+            )
             messages.success(request,
                 f'Usuario "{username}" creado con rol {perfil.get_rol_display()}')
             return redirect('admin_dashboard')

@@ -1,6 +1,7 @@
 # tpe_app/views/admin1_views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q, Exists, OuterRef
 from django.urls import reverse
@@ -13,6 +14,7 @@ from ..decorators import rol_requerido
 from ..models import SIM, PM, PM_SIM, ABOG_SIM, CustodiaSIM, AGENDA, DICTAMEN, Resolucion, AUTOTPE, ApelacionTSP, DocumentoRecurrente
 from ..models import get_pendientes_ejecutoria
 from ..forms import SIMForm, PMSIMFormSet, AgendarSumarioForm, AgendarRRForm, AgendarAutoEjecutoriaForm, AgendaForm, AgendaResultadoForm, GestionarAbogadosSIMForm, SIMInstitucionalForm, ResolucionInstitucionalForm, AutoInstitucionalForm
+from ..utils.upload_validators import validar_imagen
 
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR')
@@ -271,10 +273,15 @@ def registrar_sumario(request):
                             # Guardar foto si se subió para este militar
                             foto = request.FILES.get(f'pm_sim_set-{i}-foto')
                             if foto and pm:
-                                if pm.foto:
-                                    pm.foto.delete(save=False)
-                                pm.foto = foto
-                                pm.save(update_fields=['foto'])
+                                try:
+                                    validar_imagen(foto)
+                                except ValidationError as e:
+                                    messages.error(request, f'Foto militar {i + 1}: {"; ".join(e.messages)}')
+                                else:
+                                    if pm.foto:
+                                        pm.foto.delete(save=False)
+                                    pm.foto = foto
+                                    pm.save(update_fields=['foto'])
 
                             if pm:
                                 PM_SIM.objects.get_or_create(sim=sumario, pm=pm)

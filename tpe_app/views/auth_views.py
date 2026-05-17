@@ -1,19 +1,35 @@
 # tpe_app/views/auth_views.py
+import logging
+
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from tpe_app.models import PerfilUsuario
+
+security_log = logging.getLogger('tpe_app.security')
+
+
+def _client_ip(request):
+    """IP del cliente respetando proxy (X-Forwarded-For tiene prioridad)."""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', '-')
 
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        
+
         user = authenticate(request, username=username, password=password)
-        
+        ip = _client_ip(request)
+
         if user is not None:
             login(request, user)
+            security_log.info('LOGIN_OK user=%s ip=%s', user.username, ip)
             
             # Redirigir según el rol
             try:
@@ -47,8 +63,10 @@ def login_view(request):
                 logout(request)
                 return redirect('login')
         else:
+            # No loguear el password ni stacks; solo username intentado e IP.
+            security_log.warning('LOGIN_FAIL user=%s ip=%s', username, ip)
             messages.error(request, 'Usuario o contraseña incorrectos')
-    
+
     return render(request, 'tpe_app/login.html')
 
 def logout_view(request):
@@ -66,15 +84,25 @@ def cambiar_password(request):
 
         if not request.user.check_password(password_actual):
             messages.error(request, 'La contraseña actual es incorrecta.')
-        elif len(password_nueva) < 8:
-            messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
         elif password_nueva != password_confirm:
             messages.error(request, 'La nueva contraseña y la confirmación no coinciden.')
         else:
-            request.user.set_password(password_nueva)
-            request.user.save()
-            update_session_auth_hash(request, request.user)  # mantiene la sesión activa
-            messages.success(request, 'Contraseña cambiada correctamente.')
-            return redirect('cambiar_password')
+            # Aplica TODOS los validadores de AUTH_PASSWORD_VALIDATORS
+            # (longitud, complejidad, similitud al user, contrasenas comunes, etc.)
+            try:
+                validate_password(password_nueva, user=request.user)
+            except ValidationError as e:
+                for msg in e.messages:
+                    messages.error(request, msg)
+            else:
+                request.user.set_password(password_nueva)
+                request.user.save()
+                update_session_auth_hash(request, request.user)  # mantiene la sesión activa
+                security_log.info(
+                    'PASSWORD_CHANGED user=%s ip=%s',
+                    request.user.username, _client_ip(request),
+                )
+                messages.success(request, 'Contraseña cambiada correctamente.')
+                return redirect('cambiar_password')
 
     return render(request, 'tpe_app/cambiar_password.html')

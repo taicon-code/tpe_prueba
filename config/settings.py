@@ -113,12 +113,17 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 12},  # Endurecido para sistema judicial
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+    {
+        # Mayuscula + minuscula + digito + simbolo
+        'NAME': 'tpe_app.utils.password_validators.ComplejidadPasswordValidator',
     },
 ]
 
@@ -234,13 +239,26 @@ AXES_META_KEYS = ('HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR')  # Intentar obtener IP 
 # - Si no existe: bloquear la IP (para prevenir enumeración de usuarios)
 AXES_LEGACY_USER_LOCKOUT = False  # Desactiva bloqueo por IP cuando existe username válido
 
-# Logging para diagnóstico
+# ============================================================
+# LOGGING
+# ============================================================
+# Tres canales:
+#   - console: humano-legible, util en dev y para journalctl en prod
+#   - file_app: logs de aplicacion rotados (10 MB x 10 archivos = 100 MB max)
+#   - file_security: logs de seguridad rotados (10 MB x 30 archivos = 300 MB max).
+#     Logger 'tpe_app.security' debe usarse para: cambios de rol, creacion de
+#     usuarios, fallos repetidos de permisos, exports masivos, etc.
+# La carpeta de logs se crea automaticamente si no existe.
+
+LOG_DIR = Path(env('LOG_DIR', default=str(BASE_DIR / 'logs')))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {name} pid={process:d} {message}',
             'style': '{',
         },
         'simple': {
@@ -253,15 +271,46 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
+        'file_app': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOG_DIR / 'tpe.log'),
+            'maxBytes': 10 * 1024 * 1024,   # 10 MB
+            'backupCount': 10,
+            'encoding': 'utf-8',
+            'formatter': 'verbose',
+        },
+        'file_security': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOG_DIR / 'security.log'),
+            'maxBytes': 10 * 1024 * 1024,   # 10 MB
+            'backupCount': 30,              # ~300 MB de retencion
+            'encoding': 'utf-8',
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
         'tpe_app': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file_app'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,
         },
+        'tpe_app.security': {
+            'handlers': ['console', 'file_security'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file_app'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console', 'file_security'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'axes': {
+            'handlers': ['console', 'file_security'],
             'level': 'INFO',
             'propagate': False,
         },
