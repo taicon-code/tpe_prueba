@@ -4,6 +4,10 @@ from datetime import date
 from django.test import TestCase
 
 from tpe_app.services.plazos import (
+    PLAZO_EJECUTORIA_POST_RR,
+    PLAZO_RAP,
+    PLAZO_RR,
+    PlazoLegal,
     add_business_days,
     calcular_fecha_limite_ejecutoria,
     calcular_fecha_limite_rap,
@@ -55,3 +59,29 @@ class CalcularFechaLimiteTests(TestCase):
     def test_fecha_none_retorna_none(self):
         self.assertIsNone(calcular_fecha_limite_rr(None))
         self.assertIsNone(calcular_fecha_limite_rap(None))
+
+
+class PlazoLegalTests(TestCase):
+    def test_etiqueta_incluye_dias_y_articulo(self):
+        p = PlazoLegal(dias_habiles=7, articulo='Art. 42 RFD-FFAA')
+        self.assertIn('7 dias habiles', p.etiqueta)
+        self.assertIn('Art. 42 RFD-FFAA', p.etiqueta)
+
+    def test_calcular_None_retorna_None(self):
+        self.assertIsNone(PLAZO_RR.calcular(None))
+
+    def test_constantes_rr_rap_ejecutoria_son_PlazoLegal(self):
+        self.assertIsInstance(PLAZO_RR, PlazoLegal)
+        self.assertIsInstance(PLAZO_RAP, PlazoLegal)
+        self.assertIsInstance(PLAZO_EJECUTORIA_POST_RR, PlazoLegal)
+
+    def test_articulos_no_vacios(self):
+        # Si alguien borra una cita normativa por accidente, este test lo detecta
+        self.assertTrue(PLAZO_RR.articulo.strip())
+        self.assertTrue(PLAZO_RAP.articulo.strip())
+        self.assertTrue(PLAZO_EJECUTORIA_POST_RR.articulo.strip())
+
+    def test_dias_habiles_rr_es_15(self):
+        self.assertEqual(PLAZO_RR.dias_habiles, 15)
+        self.assertEqual(PLAZO_RAP.dias_habiles, 3)
+        self.assertEqual(PLAZO_EJECUTORIA_POST_RR.dias_habiles, 15)
