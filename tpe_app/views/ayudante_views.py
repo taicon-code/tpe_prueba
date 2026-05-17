@@ -4,6 +4,7 @@ Vistas para el rol AYUDANTE - Registro de datos históricos y búsqueda de antec
 """
 
 import logging
+from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
@@ -13,6 +14,7 @@ from django.http import JsonResponse
 from django.urls import reverse
 from datetime import date
 from ..decorators import rol_requerido
+from ..utils.upload_validators import validar_imagen, validar_pdf, client_ip
 
 logger = logging.getLogger(__name__)
 from ..models import (
@@ -1240,14 +1242,15 @@ def ayudante_editar_pm(request, pm_id):
 
         update_fields = ['grado', 'escalafon', 'estado', 'anio_promocion', 'no_ascendio', 'arma', 'ci']
         if foto:
-            content_type = getattr(foto, 'content_type', '') or ''
-            if content_type.startswith('image/'):
+            try:
+                validar_imagen(foto)
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages))
+            else:
                 if pm.foto:
                     pm.foto.delete(save=False)
                 pm.foto = foto
                 update_fields.append('foto')
-            else:
-                messages.error(request, 'La foto debe ser una imagen (JPG, PNG).')
 
         pm.save(update_fields=update_fields)
 
@@ -1423,23 +1426,30 @@ def subir_pdf_autotpe(request, auto_id):
 
         if not archivo_pdf:
             messages.error(request, 'Selecciona un archivo PDF')
-        elif not archivo_pdf.name.lower().endswith('.pdf'):
-            messages.error(request, 'Solo se permiten archivos PDF')
-        else:
-            try:
-                with transaction.atomic():
-                    DocumentoAdjunto.objects.filter(autotpe_id=auto.pk).delete()
-                    pm_label = (f'{auto.pm.grado} {auto.pm.paterno}' if auto.pm else 'S/N')
-                    DocumentoAdjunto.objects.create(
-                        autotpe=auto,
-                        tipo='auto',
-                        archivo=archivo_pdf,
-                        nombre=f'AUTO {auto.numero} - {pm_label}',
-                    )
-                    messages.success(request, f'PDF del Auto {auto.numero} subido correctamente')
-                    return redirect(next_url or 'ayudante_dashboard')
-            except Exception as e:
-                messages.error(request, f'Error al subir PDF: {str(e)}')
+            return redirect(next_url or 'ayudante_dashboard')
+
+        try:
+            validar_pdf(archivo_pdf)
+        except ValidationError as e:
+            messages.error(request, '; '.join(e.messages))
+            return redirect(next_url or 'ayudante_dashboard')
+
+        try:
+            with transaction.atomic():
+                DocumentoAdjunto.objects.filter(autotpe_id=auto.pk).delete()
+                pm_label = (f'{auto.pm.grado} {auto.pm.paterno}' if auto.pm else 'S/N')
+                DocumentoAdjunto.objects.create(
+                    autotpe=auto,
+                    tipo='auto',
+                    archivo=archivo_pdf,
+                    nombre=f'AUTO {auto.numero} - {pm_label}',
+                    subido_por=request.user,
+                    ip_origen=client_ip(request),
+                )
+                messages.success(request, f'PDF del Auto {auto.numero} subido correctamente')
+                return redirect(next_url or 'ayudante_dashboard')
+        except Exception as e:
+            messages.error(request, f'Error al subir PDF: {str(e)}')
 
         return redirect(next_url or 'ayudante_dashboard')
 

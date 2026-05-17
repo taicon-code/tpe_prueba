@@ -1,6 +1,7 @@
 # tpe_app/views/admin2_views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -8,6 +9,7 @@ from datetime import datetime
 from ..decorators import rol_requerido
 from ..models import SIM, PM, CustodiaSIM, DocumentoAdjunto, Resolucion, ABOG_SIM, AUTOTPE, ApelacionTSP, DocumentoRecurrente
 from ..forms import RegistrarRRForm, DocumentoRecurrenteForm
+from ..utils.upload_validators import validar_pdf, client_ip
 
 
 # ============================================================
@@ -563,8 +565,10 @@ def subir_pdf_res(request, res_id):
             messages.error(request, '❌ Selecciona un archivo PDF')
             return redirect('subir_pdf_res', res_id=res.pk)
 
-        if not archivo_pdf.name.lower().endswith('.pdf'):
-            messages.error(request, '❌ Solo se permiten archivos PDF')
+        try:
+            validar_pdf(archivo_pdf)
+        except ValidationError as e:
+            messages.error(request, f'❌ {"; ".join(e.messages)}')
             return redirect('subir_pdf_res', res_id=res.pk)
 
         next_url = request.POST.get('next', '').strip()
@@ -575,12 +579,14 @@ def subir_pdf_res(request, res_id):
                     resolucion_id=res.pk
                 ).delete()
 
-                # Crear nuevo documento
+                # Crear nuevo documento (sha256 + tamano se calculan en save())
                 DocumentoAdjunto.objects.create(
                     resolucion=res,
                     tipo='resolucion',
                     archivo=archivo_pdf,
-                    nombre=f'RES {res.numero} - {res.pm.grado} {res.pm.paterno}' if res.pm else f'RES {res.numero}'
+                    nombre=f'RES {res.numero} - {res.pm.grado} {res.pm.paterno}' if res.pm else f'RES {res.numero}',
+                    subido_por=request.user,
+                    ip_origen=client_ip(request),
                 )
 
                 messages.success(
@@ -657,14 +663,17 @@ def admin2_adjuntar_oficio_custodia(request, custodia_id):
         archivo = request.FILES.get('archivo_oficio')
         if not archivo:
             messages.error(request, '❌ Debe seleccionar un archivo PDF.')
-        elif not archivo.name.lower().endswith('.pdf'):
-            messages.error(request, '❌ Solo se aceptan archivos PDF.')
         else:
-            if custodia.archivo_oficio:
-                custodia.archivo_oficio.delete(save=False)
-            custodia.archivo_oficio = archivo
-            custodia.save()
-            messages.success(request, f'✅ PDF adjuntado correctamente a la custodia #{custodia_id}.')
+            try:
+                validar_pdf(archivo)
+            except ValidationError as e:
+                messages.error(request, f'❌ {"; ".join(e.messages)}')
+            else:
+                if custodia.archivo_oficio:
+                    custodia.archivo_oficio.delete(save=False)
+                custodia.archivo_oficio = archivo
+                custodia.save()
+                messages.success(request, f'✅ PDF adjuntado correctamente a la custodia #{custodia_id}.')
         return redirect('ver_historial_custodia', sim_id=custodia.sim_id)
 
     return render(request, 'tpe_app/admin2/adjuntar_oficio_custodia.html', {

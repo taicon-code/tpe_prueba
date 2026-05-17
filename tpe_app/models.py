@@ -1152,6 +1152,19 @@ class DocumentoAdjunto(models.Model):
     nombre         = models.CharField(max_length=100, verbose_name='Nombre descriptivo')
     fecha_registro = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de registro')
 
+    # Cadena de custodia digital: permite probar que el PDF no fue alterado tras
+    # subirse. SHA-256 se calcula automaticamente en save() la primera vez.
+    sha256       = models.CharField(max_length=64, db_index=True, blank=True, default='',
+                                    verbose_name='SHA-256 del archivo')
+    tamano_bytes = models.BigIntegerField(null=True, blank=True, editable=False,
+                                          verbose_name='Tamano en bytes')
+    subido_por   = models.ForeignKey('auth.User', null=True, blank=True,
+                                     on_delete=models.PROTECT,
+                                     related_name='documentos_subidos',
+                                     verbose_name='Subido por')
+    ip_origen    = models.GenericIPAddressField(null=True, blank=True,
+                                                verbose_name='IP de origen')
+
     class Meta:
         db_table            = 'documentos_adjuntos'
         verbose_name        = 'Documento Adjunto'
@@ -1159,6 +1172,44 @@ class DocumentoAdjunto(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def save(self, *args, **kwargs):
+        """Calcula SHA-256 y tamano la primera vez que se guarda el archivo.
+
+        Si el archivo se reemplaza con otra instancia, recalcula. Si solo se
+        editan campos de metadata, no recalcula (evita re-leer el blob).
+        """
+        recalcular = False
+        if self.archivo and not self.sha256:
+            recalcular = True
+        elif self.pk:
+            try:
+                anterior = DocumentoAdjunto.objects.get(pk=self.pk)
+                if anterior.archivo != self.archivo:
+                    recalcular = True
+            except DocumentoAdjunto.DoesNotExist:
+                recalcular = bool(self.archivo)
+
+        if recalcular and self.archivo:
+            import hashlib
+            sha = hashlib.sha256()
+            tam = 0
+            self.archivo.open('rb')
+            try:
+                for chunk in self.archivo.chunks():
+                    sha.update(chunk)
+                    tam += len(chunk)
+            finally:
+                self.archivo.close()
+            self.sha256 = sha.hexdigest()
+            self.tamano_bytes = tam
+
+        super().save(*args, **kwargs)
+
+    @property
+    def sha256_corto(self):
+        """Primeros 12 chars del hash, para mostrar en UI sin saturar."""
+        return self.sha256[:12] if self.sha256 else ''
 
 
 # ============================================================
@@ -1430,6 +1481,70 @@ class Notificacion(models.Model):
                 f'(resolucion, autotpe, apelacion_tsp o actuado_tsp). Actualmente: {vinculados}.'
             )
         super().save(*args, **kwargs)
+
+
+# ============================================================
+# MODELO: AccesoLog — Bitacora append-only de accesos sensibles
+# ============================================================
+class AccesoLog(models.Model):
+    """Registro inmutable de accesos a vistas/exportaciones sensibles.
+
+    Complementa `simple_history` (que registra CAMBIOS) con un registro de
+    LECTURAS: quien consulto un sumario, descargo un PDF, exporto datos, etc.
+
+    Las entradas se insertan, nunca se modifican ni borran. Solo el rol
+    AUDITOR (o superuser) puede leer la tabla via panel admin.
+    """
+
+    ACCION_CHOICES = [
+        ('VIEW_SIM',          'Consulta detalle SIM'),
+        ('VIEW_PM',           'Consulta personal militar'),
+        ('VIEW_HISTORIAL',    'Consulta historial personal'),
+        ('EXPORT_PDF',        'Exportacion PDF'),
+        ('EXPORT_EXCEL',      'Exportacion Excel'),
+        ('EXPORT_BATCH',      'Exportacion por lotes'),
+        ('DOWNLOAD_MEDIA',    'Descarga archivo media'),
+        ('SEARCH',            'Busqueda'),
+        ('LOGIN_OK',          'Login exitoso'),
+        ('LOGIN_FAIL',        'Login fallido'),
+        ('PASSWORD_CHANGE',   'Cambio de contrasena'),
+        ('USER_CREATE',       'Creacion de usuario'),
+        ('USER_ROLE_CHANGE',  'Cambio de rol'),
+        ('PERMISSION_DENIED', 'Acceso denegado por rol'),
+    ]
+
+    usuario     = models.ForeignKey('auth.User', null=True, blank=True,
+                                    on_delete=models.PROTECT,
+                                    related_name='accesos_log',
+                                    verbose_name='Usuario')
+    accion      = models.CharField(max_length=30, choices=ACCION_CHOICES, db_index=True,
+                                   verbose_name='Accion')
+    objeto_tipo = models.CharField(max_length=30, blank=True, default='', db_index=True,
+                                   verbose_name='Tipo de objeto')
+    objeto_id   = models.IntegerField(null=True, blank=True, db_index=True,
+                                      verbose_name='ID del objeto')
+    detalle     = models.CharField(max_length=200, blank=True, default='',
+                                   verbose_name='Detalle')
+    ip          = models.GenericIPAddressField(null=True, blank=True, verbose_name='IP')
+    user_agent  = models.CharField(max_length=200, blank=True, default='',
+                                   verbose_name='User-Agent')
+    fecha       = models.DateTimeField(auto_now_add=True, db_index=True,
+                                       verbose_name='Fecha y hora')
+
+    class Meta:
+        db_table            = 'acceso_log'
+        verbose_name        = 'Acceso (bitacora)'
+        verbose_name_plural = 'Bitacora de accesos'
+        ordering            = ['-fecha']
+        indexes = [
+            models.Index(fields=['usuario', '-fecha']),
+            models.Index(fields=['accion', '-fecha']),
+            models.Index(fields=['objeto_tipo', 'objeto_id']),
+        ]
+
+    def __str__(self):
+        u = self.usuario.username if self.usuario else 'anon'
+        return f'{self.fecha:%Y-%m-%d %H:%M} {u} {self.accion} {self.objeto_tipo}:{self.objeto_id or "-"}'
 
 
 # ============================================================

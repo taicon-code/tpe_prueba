@@ -1,8 +1,32 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum, DocumentoRecurrente
+from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum, DocumentoRecurrente, AccesoLog
 from .widgets import ResumenConOpcionesWidget
+
+
+# ============================================================
+#  ADMIN: AccesoLog (bitacora append-only — solo lectura)
+# ============================================================
+@admin.register(AccesoLog)
+class AccesoLogAdmin(admin.ModelAdmin):
+    list_display  = ('fecha', 'usuario', 'accion', 'objeto_tipo', 'objeto_id', 'ip', 'detalle')
+    list_filter   = ('accion', 'objeto_tipo', 'fecha')
+    search_fields = ('usuario__username', 'detalle', 'ip', 'objeto_id')
+    date_hierarchy = 'fecha'
+    readonly_fields = tuple(f.name for f in AccesoLog._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # La bitacora es append-only: ni siquiera el superuser puede borrar
+        # entradas individualmente desde la UI. La retencion se gestiona
+        # por separado (rotacion / purga programada en mantenimiento).
+        return False
 
 
 # ============================================================
@@ -360,10 +384,12 @@ class DocumentoRecurrenteAdmin(admin.ModelAdmin):
 # ════════════════════════════════════════════════════════════════════════════
 @admin.register(DocumentoAdjunto)
 class DocumentoAdjuntoAdmin(admin.ModelAdmin):
-    list_display  = ('nombre', 'tipo', 'sim', 'resolucion', 'autotpe', 'apelacion_tsp', 'actuado_tsp', 'fecha_registro')
-    search_fields = ('nombre',)
+    list_display  = ('nombre', 'tipo', 'sim', 'resolucion', 'autotpe', 'apelacion_tsp', 'actuado_tsp',
+                     'fecha_registro', 'sha256_corto', 'subido_por')
+    search_fields = ('nombre', 'sha256')
     list_filter   = ('tipo',)
     raw_id_fields = ('sim', 'resolucion', 'autotpe', 'apelacion_tsp', 'actuado_tsp')
+    readonly_fields = ('sha256', 'tamano_bytes', 'subido_por', 'ip_origen', 'fecha_registro')
 # ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
