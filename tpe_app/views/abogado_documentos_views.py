@@ -104,16 +104,11 @@ def abogado_sumario_detalle(request, sim_id: int):
     custodio_actual = sim.custodio_actual()
 
     # Obtener información del usuario Admin2 (para mostrar en template)
-    admin2_user = None
-    try:
-        admin2_perfil = PerfilUsuario.objects.filter(
-            rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
-            activo=True
-        ).first()
-        if admin2_perfil:
-            admin2_user = admin2_perfil.user
-    except:
-        admin2_user = None
+    admin2_perfil = PerfilUsuario.objects.filter(
+        rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
+        activo=True
+    ).first()
+    admin2_user = admin2_perfil.user if admin2_perfil else None
 
     # Documentos adjuntos al SIM (PDFs escaneados)
     documentos_sim = DocumentoAdjunto.objects.filter(
@@ -699,16 +694,11 @@ def abogado_confirmar_recepcion(request, sim_id: int):
             messages.error(request, f"❌ Error: {str(e)}")
 
     # Obtener información del usuario Admin2 (para mostrar en template)
-    admin2_user = None
-    try:
-        admin2_perfil = PerfilUsuario.objects.filter(
-            rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
-            activo=True
-        ).first()
-        if admin2_perfil:
-            admin2_user = admin2_perfil.user
-    except:
-        admin2_user = None
+    admin2_perfil = PerfilUsuario.objects.filter(
+        rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
+        activo=True
+    ).first()
+    admin2_user = admin2_perfil.user if admin2_perfil else None
 
     return render(request, 'tpe_app/abogado/confirmar_recepcion.html', {
         'sim': sim,
@@ -754,16 +744,11 @@ def abogado_devolver_carpeta(request, sim_id: int):
             messages.error(request, f"❌ Error: {str(e)}")
 
     # Obtener información del usuario Admin2 (para mostrar en template)
-    admin2_user = None
-    try:
-        admin2_perfil = PerfilUsuario.objects.filter(
-            rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
-            activo=True
-        ).first()
-        if admin2_perfil:
-            admin2_user = admin2_perfil.user
-    except:
-        admin2_user = None
+    admin2_perfil = PerfilUsuario.objects.filter(
+        rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
+        activo=True
+    ).first()
+    admin2_user = admin2_perfil.user if admin2_perfil else None
 
     return render(request, 'tpe_app/abogado/devolver_carpeta.html', {
         'sim': sim,

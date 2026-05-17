@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from tpe_app.models import PerfilUsuario
 
 def login_view(request):
     if request.method == 'POST':
@@ -41,7 +42,7 @@ def login_view(request):
                     messages.error(request, f'Rol no reconocido: {perfil.rol}')
                     logout(request)
                     return redirect('login')
-            except:
+            except PerfilUsuario.DoesNotExist:
                 messages.error(request, 'Tu usuario no tiene un perfil asignado')
                 logout(request)
                 return redirect('login')
