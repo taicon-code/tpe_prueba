@@ -87,67 +87,72 @@ def get_pendientes_ejecutoria():
     Retorna dos listas de casos pendientes de Auto de Ejecutoria:
     - por_res: Resoluciones PRIMERA notificadas sin RECONSIDERACION, plazo 15d vencido
     - por_rr:  Resoluciones RECONSIDERACION notificadas sin APELACION, plazo 15d vencido
+
+    Implementacion con subqueries Exists() para evitar N+1: una sola query
+    SQL por lista, en lugar de ~5 queries por resolucion. Para 1000
+    resoluciones esto pasa de ~5000 queries a 2.
     """
+    from django.db.models import Exists, OuterRef
     from django.utils import timezone
+
     hoy = timezone.now().date()
 
-    por_res = []
-    res_notificadas = (
-        Resolucion.objects
-        .filter(instancia='PRIMERA', notificacion__isnull=False, sim__estado='PROCESO_EN_EL_TPE')
-        .select_related('sim', 'pm', 'abogado', 'notificacion')
+    # Subqueries reutilizables (referencian a la resolucion outer por pk/sim)
+    tiene_rap          = ApelacionTSP.objects.filter(resolucion=OuterRef('pk'))
+    tiene_memo_directo = Memorandum.objects.filter(resolucion=OuterRef('pk'))
+    tiene_auto_ejec    = AUTOTPE.objects.filter(sim=OuterRef('sim'), tipo='AUTO_EJECUTORIA')
+    tiene_custodia_ejec = CustodiaSIM.objects.filter(
+        sim=OuterRef('sim'), motivo='EJECUTORIA', fecha_entrega__isnull=True
     )
-    for res in res_notificadas:
-        if res.recursos_reconsideracion.exists():
-            continue
-        # Excluir si ya hay Recurso de Apelación contra esta PRIMERA resolución
-        if ApelacionTSP.objects.filter(resolucion=res).exists():
-            continue
-        # Verificar si la resolución tiene memorándum directo
-        if res.memorandums.exists():
-            continue
-        auto_ejecucion = AUTOTPE.objects.filter(sim=res.sim, tipo='AUTO_EJECUTORIA').first()
-        if not auto_ejecucion:
-            # No existe auto de ejecutoria aún
-            pass
-        elif auto_ejecucion.memorandums.exists():
-            # Auto ya tiene memorándum → ejecución completada
-            continue
-        else:
-            # Auto existe pero sin memorándum → ya fue creado
-            continue
-        if CustodiaSIM.objects.filter(sim=res.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
-            continue
+
+    def _aplicar_exclusiones_comunes(qs):
+        """Excluye resoluciones que ya tienen RAP, memo, auto de ejecutoria o custodia activa."""
+        return (
+            qs.annotate(
+                _tiene_rap=Exists(tiene_rap),
+                _tiene_memo=Exists(tiene_memo_directo),
+                _tiene_auto_ejec=Exists(tiene_auto_ejec),
+                _tiene_custodia=Exists(tiene_custodia_ejec),
+            )
+            .filter(_tiene_rap=False, _tiene_memo=False,
+                    _tiene_auto_ejec=False, _tiene_custodia=False)
+        )
+
+    # ── PRIMERA RESOLUCION ───────────────────────────────────────────
+    tiene_rr_contra = Resolucion.objects.filter(
+        instancia='RECONSIDERACION', resolucion_origen=OuterRef('pk')
+    )
+    res_qs = (
+        _aplicar_exclusiones_comunes(
+            Resolucion.objects
+            .filter(instancia='PRIMERA',
+                    notificacion__isnull=False,
+                    sim__estado='PROCESO_EN_EL_TPE')
+            .select_related('sim', 'pm', 'abogado', 'notificacion')
+        )
+        .annotate(_tiene_rr=Exists(tiene_rr_contra))
+        .filter(_tiene_rr=False)
+    )
+
+    por_res = []
+    for res in res_qs:
         fecha_limite = add_business_days(res.notificacion.fecha, 15)
         if fecha_limite <= hoy:
             res.fecha_limite = fecha_limite
             res.dias_vencido = (hoy - fecha_limite).days
             por_res.append(res)
 
-    por_rr = []
-    rr_notificados = (
+    # ── RECURSO DE RECONSIDERACION ───────────────────────────────────
+    rr_qs = _aplicar_exclusiones_comunes(
         Resolucion.objects
-        .filter(instancia='RECONSIDERACION', notificacion__isnull=False, sim__estado='PROCESO_EN_EL_TPE')
+        .filter(instancia='RECONSIDERACION',
+                notificacion__isnull=False,
+                sim__estado='PROCESO_EN_EL_TPE')
         .select_related('sim', 'pm', 'abogado', 'resolucion_origen', 'notificacion')
     )
-    for rr in rr_notificados:
-        if ApelacionTSP.objects.filter(resolucion=rr).exists():
-            continue
-        # Verificar si la resolución tiene memorándum directo
-        if rr.memorandums.exists():
-            continue
-        auto_ejecucion = AUTOTPE.objects.filter(sim=rr.sim, tipo='AUTO_EJECUTORIA').first()
-        if not auto_ejecucion:
-            # No existe auto de ejecutoria aún
-            pass
-        elif auto_ejecucion.memorandums.exists():
-            # Auto ya tiene memorándum → ejecución completada
-            continue
-        else:
-            # Auto existe pero sin memorándum → ya fue creado
-            continue
-        if CustodiaSIM.objects.filter(sim=rr.sim, motivo='EJECUTORIA', fecha_entrega__isnull=True).exists():
-            continue
+
+    por_rr = []
+    for rr in rr_qs:
         fecha_limite = add_business_days(rr.notificacion.fecha, 15)
         if fecha_limite <= hoy:
             rr.fecha_limite = fecha_limite
