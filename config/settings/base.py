@@ -32,6 +32,12 @@ DEBUG = env.bool('DEBUG', default=False)
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
 
+# IP allowlist: lista de CIDRs o IPs sueltas que pueden acceder al sistema.
+# Vacio = sin restriccion (default). Configurar en .env como:
+#   IP_ALLOWLIST=10.0.0.0/8,192.168.1.0/24,127.0.0.1
+# Tipico para intranet judicial: solo subredes institucionales + loopback.
+IP_ALLOWLIST = env.list('IP_ALLOWLIST', default=[])
+
 
 # ============================================================
 # APLICACIONES
@@ -49,6 +55,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # IP allowlist VA PRIMERO: rechaza antes de gastar ciclos en security,
+    # sessions, csrf, etc.
+    'tpe_app.middleware.IPAllowlistMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
