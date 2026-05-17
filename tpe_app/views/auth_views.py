@@ -19,6 +19,39 @@ def _client_ip(request):
         return xff.split(',')[0].strip()
     return request.META.get('REMOTE_ADDR', '-')
 
+
+def _terminar_sesiones_previas(user, request):
+    """Elimina todas las sesiones activas del usuario salvo la actual.
+
+    Politica: 1 sesion concurrente por usuario. Evita compartir credenciales
+    y reduce ventana de exposicion ante robo de session-id.
+
+    Solo se ejecuta despues de un `login(request, user)` exitoso, asi que
+    request.session.session_key ya es el de la nueva sesion.
+    """
+    from django.contrib.sessions.models import Session
+    from django.utils import timezone
+
+    current_key = request.session.session_key
+    sesiones_eliminadas = 0
+    for s in Session.objects.filter(expire_date__gt=timezone.now()):
+        try:
+            data = s.get_decoded()
+        except Exception:
+            continue
+        # auth.SESSION_KEY guarda el user.pk como string
+        if str(data.get('_auth_user_id', '')) == str(user.pk) and s.session_key != current_key:
+            s.delete()
+            sesiones_eliminadas += 1
+
+    if sesiones_eliminadas:
+        security_log.info(
+            'SESSION_PREEMPTED user=%s eliminadas=%s ip=%s',
+            user.username, sesiones_eliminadas, _client_ip(request),
+        )
+    return sesiones_eliminadas
+
+
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -29,6 +62,7 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
+            _terminar_sesiones_previas(user, request)
             security_log.info('LOGIN_OK user=%s ip=%s', user.username, ip)
             
             # Redirigir según el rol
