@@ -1,17 +1,28 @@
 import logging
 
+from django.conf import settings
+
 logger = logging.getLogger(__name__)
 
 
 class SessionDiagnosticsMiddleware:
-    """Middleware para diagnosticar problemas de sesión en wizard paso 3"""
+    """Diagnostico de sesion del wizard paso 3.
+
+    Loguea identificadores de sesion y fragmentos del token CSRF, asi que SOLO
+    debe activarse cuando DEBUG=True. En produccion se convierte en un no-op.
+    """
 
     def __init__(self, get_response):
         self.get_response = get_response
+        self._enabled = bool(settings.DEBUG)
 
     def __call__(self, request):
-        # Registrar estado de sesión ANTES de procesar la solicitud
-        if 'wizard' in request.path and 'paso3' in request.path:
+        if not self._enabled:
+            return self.get_response(request)
+
+        is_wizard_paso3 = 'wizard' in request.path and 'paso3' in request.path
+
+        if is_wizard_paso3:
             logger.debug(
                 f"[BEFORE] {request.method} {request.path} | "
                 f"User: {request.user.username if request.user.is_authenticated else 'ANONYMOUS'} | "
@@ -21,8 +32,7 @@ class SessionDiagnosticsMiddleware:
 
         response = self.get_response(request)
 
-        # Registrar estado de sesión DESPUÉS de procesar la solicitud
-        if 'wizard' in request.path and 'paso3' in request.path:
+        if is_wizard_paso3:
             logger.debug(
                 f"[AFTER] {request.method} {request.path} | "
                 f"Status: {response.status_code} | "
