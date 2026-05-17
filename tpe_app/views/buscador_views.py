@@ -4,8 +4,12 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q, Value
 from django.db.models.functions import Replace, Collate
+from django.core.exceptions import ValidationError
+
 from ..decorators import rol_requerido, ROLES_OPERATIVOS, ROLES_REGISTRO_PM
 from ..models import SIM, PM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, DocumentoAdjunto, CustodiaSIM
+from ..utils.upload_validators import validar_imagen, validar_pdf
+from ..utils.audit import log_acceso
 
 
 def _normalizar(texto):
@@ -208,6 +212,11 @@ def buscador_dashboard(request):
             personal_seleccionado = resultados_pm[0]
             historial = _obtener_historial_completo(personal_seleccionado.id)
             estado = _obtener_estado_actual(personal_seleccionado.id)
+            log_acceso(request, 'VIEW_HISTORIAL', objeto_tipo='PM',
+                       objeto_id=personal_seleccionado.id,
+                       detalle=f'{personal_seleccionado.paterno} {personal_seleccionado.nombre}')
+
+        log_acceso(request, 'SEARCH', detalle=query[:200])
 
     # Si hay búsqueda por promoción y exactamente 1 resultado, también mostrar historial
     if promocion and promocion.isdigit() and len(resultados_pm) == 1:
@@ -234,6 +243,7 @@ def detalles_sim(request, sim_id):
     """Vista detallada de un SIM: militares, resoluciones, autos, custodia (solo Admin2), etc."""
 
     sim = get_object_or_404(SIM, id=sim_id)
+    log_acceso(request, 'VIEW_SIM', objeto_tipo='SIM', objeto_id=sim.id, detalle=sim.codigo)
 
     # Obtener militares del SIM ordenados por jerarquía militar
     _orden_grado = {g: i for i, (g, _) in enumerate(PM.GRADO_CHOICES)}
@@ -311,6 +321,9 @@ def detalles_sim(request, sim_id):
     return render(request, 'tpe_app/buscador/detalles_sim.html', context)
 
 
+MAX_LINEAS_BUSQUEDA_LOTES = 100
+
+
 @rol_requerido(*ROLES_OPERATIVOS)
 def busqueda_por_lotes(request):
     """Vista para búsqueda y reporte por lotes de múltiples militares por AP + AM"""
@@ -322,6 +335,18 @@ def busqueda_por_lotes(request):
         if lista_apellidos:
             # Procesar cada línea como "APELLIDO_PATERNO, APELLIDO_MATERNO"
             lineas = [l.strip() for l in lista_apellidos.split('\n') if l.strip()]
+
+            # Tope defensivo: cada línea dispara una query a PM y N queries de historial.
+            # 100 líneas ya es muy generoso para uso humano; más sugiere abuso o error.
+            if len(lineas) > MAX_LINEAS_BUSQUEDA_LOTES:
+                messages.error(
+                    request,
+                    f'❌ Máximo {MAX_LINEAS_BUSQUEDA_LOTES} apellidos por búsqueda. '
+                    f'Se recibieron {len(lineas)}. Divida la búsqueda en lotes más pequeños.'
+                )
+                return render(request, 'tpe_app/buscador/busqueda_lotes.html', {
+                    'militares_encontrados': [],
+                })
 
             for linea in lineas:
                 partes = [p.strip() for p in linea.split(',')]
@@ -355,6 +380,7 @@ def busqueda_por_lotes(request):
 @rol_requerido(*ROLES_OPERATIVOS)
 def export_batch_pdf(request):
     """Genera PDF con tabla compacta de múltiples militares"""
+    log_acceso(request, 'EXPORT_BATCH', detalle='PDF lote')
     from django.http import HttpResponse
     from io import BytesIO
     from reportlab.lib.pagesizes import letter
@@ -583,6 +609,7 @@ def export_batch_pdf(request):
 @rol_requerido(*ROLES_OPERATIVOS)
 def export_batch_excel(request):
     """Genera Excel con tabla de múltiples militares"""
+    log_acceso(request, 'EXPORT_BATCH', detalle='Excel lote')
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
@@ -712,20 +739,19 @@ def upload_foto_pm(request, pm_id):
 
     if request.method == 'POST':
         foto = request.FILES.get('foto')
-        if foto:
-            # Validar que sea imagen
-            content_type = foto.content_type or ''
-            if not content_type.startswith('image/'):
-                messages.error(request, '❌ El archivo debe ser una imagen (JPG, PNG, etc.)')
+        if not foto:
+            messages.error(request, '❌ No se seleccionó ningún archivo')
+        else:
+            try:
+                validar_imagen(foto)
+            except ValidationError as e:
+                messages.error(request, f'❌ {"; ".join(e.messages)}')
             else:
-                # Eliminar foto anterior si existe
                 if pm.foto:
                     pm.foto.delete(save=False)
                 pm.foto = foto
                 pm.save(update_fields=['foto'])
                 messages.success(request, f'✅ Foto actualizada para {pm.nombre} {pm.paterno}')
-        else:
-            messages.error(request, '❌ No se seleccionó ningún archivo')
 
     next_url = request.POST.get('next', '').strip()
     if next_url:
@@ -739,6 +765,7 @@ def upload_foto_pm(request, pm_id):
 @rol_requerido('ADMIN2_ARCHIVO')
 def export_custodia_pdf(request, sim_id):
     """Descargar PDF del historial de custodia de un SIM (Solo Admin2)"""
+    log_acceso(request, 'EXPORT_PDF', objeto_tipo='SIM', objeto_id=sim_id, detalle='custodia')
     from django.http import HttpResponse
     from django.utils import timezone as tz
     from reportlab.lib.pagesizes import letter

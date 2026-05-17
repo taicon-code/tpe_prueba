@@ -21,6 +21,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from tpe_app.decorators import rol_requerido, ROLES_OPERATIVOS
 from tpe_app.models import PM, SIM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, PerfilUsuario
+from tpe_app.utils.audit import log_acceso
 
 
 def _format_date(date_obj):
@@ -231,6 +232,8 @@ def export_person_historial_pdf(request, personal_id):
     if not personal or not historial:
         get_object_or_404(PM, id=personal_id)
         return HttpResponse("Personal no encontrado", status=404)
+    log_acceso(request, 'EXPORT_PDF', objeto_tipo='PM', objeto_id=personal_id,
+               detalle=f'historial {personal.paterno} {personal.nombre}')
 
     # Registrar fuente Arial desde Windows
     try:
@@ -534,6 +537,9 @@ def export_person_excel(request, personal_id):
         personal = get_object_or_404(PM, id=personal_id)
         return HttpResponse("Personal no encontrado", status=404)
 
+    log_acceso(request, 'EXPORT_EXCEL', objeto_tipo='PM', objeto_id=personal_id,
+               detalle=f'historial {personal.paterno} {personal.nombre}')
+
     if not historial:
         return HttpResponse("Personal no encontrado", status=404)
 
@@ -700,6 +706,7 @@ def export_person_excel(request, personal_id):
 def export_sim_pdf(request, sim_id):
     """Exporta un SIM completo a PDF con militares y actuados — Formato Platypus moderno"""
     sim = get_object_or_404(SIM, id=sim_id)
+    log_acceso(request, 'EXPORT_PDF', objeto_tipo='SIM', objeto_id=sim_id, detalle=sim.codigo)
     _orden_grado = {g: i for i, (g, _) in enumerate(PM.GRADO_CHOICES)}
     militares = sorted(
         sim.militares.all(),
@@ -977,6 +984,7 @@ def export_sim_pdf(request, sim_id):
 def export_sim_excel(request, sim_id):
     """Exporta un SIM completo a Excel con 3 hojas: SIM, Militares, Actuados"""
     sim = get_object_or_404(SIM, id=sim_id)
+    log_acceso(request, 'EXPORT_EXCEL', objeto_tipo='SIM', objeto_id=sim_id, detalle=sim.codigo)
     militares = sim.militares.all()
     resoluciones = Resolucion.objects.filter(sim=sim)
     autos_tpe = AUTOTPE.objects.filter(sim=sim)
