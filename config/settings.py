@@ -36,6 +36,10 @@ DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['127.0.0.1', 'localhost'])
 
+# Origenes de confianza para CSRF (necesario detras de proxy/HTTPS).
+# Configurar en .env como: CSRF_TRUSTED_ORIGINS=https://tpe.ejercito.bo,https://otrohost
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
 
 # Application definition
 
@@ -129,11 +133,11 @@ SESSION_SAVE_EVERY_REQUEST = True   # renueva el timeout en cada request (inacti
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_SECURE = USE_SECURE_COOKIES
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Strict'
 
 CSRF_COOKIE_SECURE = USE_SECURE_COOKIES
-CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = True   # JS no necesita leer el token; Django lo inyecta en forms
+CSRF_COOKIE_SAMESITE = 'Strict'
 
 # Security Headers
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -142,10 +146,14 @@ SECURE_REFERRER_POLICY = 'same-origin'
 X_FRAME_OPTIONS = 'DENY'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# HSTS solo en HTTPS real
+# HSTS solo en HTTPS real. Para un sistema judicial los defaults son seguros:
+# - SECURE_SSL_REDIRECT=True fuerza HTTPS en todas las requests.
+# - SECURE_HSTS_SECONDS=1 ano (31536000) instruye al navegador a usar siempre HTTPS.
+# Si necesita desactivarlos temporalmente (ej. primera puesta en marcha), poner
+# SECURE_SSL_REDIRECT=False y SECURE_HSTS_SECONDS=0 en .env.
 if USE_SECURE_COOKIES and not DEBUG:
-    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
-    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0)
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = False
 
