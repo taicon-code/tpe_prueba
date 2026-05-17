@@ -19,7 +19,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from django.contrib.auth.decorators import login_required
+from tpe_app.decorators import rol_requerido, ROLES_OPERATIVOS
 from tpe_app.models import PM, SIM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, PerfilUsuario
 
 
@@ -224,7 +224,7 @@ def _obtener_historial(personal_id):
     return personal, historial
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_person_historial_pdf(request, personal_id):
     """Genera PDF formal del historial disciplinario de un militar."""
     personal, historial = _obtener_historial(personal_id)
@@ -513,7 +513,7 @@ def export_person_historial_pdf(request, personal_id):
     return response
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_person_pdfs_zip(request, personal_id):
     """
     DEPRECATED: Mantener por compatibilidad. Redirige a export_person_historial_pdf.
@@ -523,7 +523,7 @@ def export_person_pdfs_zip(request, personal_id):
 
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_person_excel(request, personal_id):
     """
     Genera un Excel con 4 hojas: Personal, Sumarios, Resoluciones, Cronología.
@@ -696,7 +696,7 @@ def export_person_excel(request, personal_id):
 # EXPORTACIÓN DE SIM COMPLETO
 # ============================================================
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_sim_pdf(request, sim_id):
     """Exporta un SIM completo a PDF con militares y actuados — Formato Platypus moderno"""
     sim = get_object_or_404(SIM, id=sim_id)
@@ -973,7 +973,7 @@ def export_sim_pdf(request, sim_id):
     return response
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_sim_excel(request, sim_id):
     """Exporta un SIM completo a Excel con 3 hojas: SIM, Militares, Actuados"""
     sim = get_object_or_404(SIM, id=sim_id)

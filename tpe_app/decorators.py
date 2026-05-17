@@ -6,6 +6,29 @@ from functools import wraps
 
 logger = logging.getLogger(__name__)
 
+
+# ============================================================
+# Conjuntos de roles reutilizables
+# ============================================================
+# NOTA: MASTER y superusers tienen acceso automatico via rol_requerido(),
+# por lo que NO es necesario incluirlos en estas tuplas.
+
+# Whitelist amplia: todos los roles operativos del TPE.
+# Usar para endpoints de exportacion (PDF/Excel) y consulta de datos sensibles
+# donde queremos excluir solo a usuarios sin rol o desactivados.
+ROLES_OPERATIVOS = (
+    'ADMINISTRADOR',
+    'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMIN3_NOTIFICADOR',
+    'ABOG1_ASESOR', 'ABOG2_AUTOS', 'ABOG3_BUSCADOR',
+    'SECRETARIO_ACTAS', 'ASESOR_JEFE', 'ASESOR_JURIDICO',
+    'AYUDANTE', 'BUSCADOR',
+)
+
+# Roles autorizados a modificar datos de Personal Militar (foto, edicion).
+ROLES_REGISTRO_PM = (
+    'AYUDANTE', 'ADMIN1_AGENDADOR', 'ADMIN2_ARCHIVO', 'ADMINISTRADOR',
+)
+
 def rol_requerido(*roles_permitidos):
     """
     Decorador para proteger vistas según el rol del usuario.

@@ -2,10 +2,9 @@
 import unicodedata
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Value
 from django.db.models.functions import Replace, Collate
-from ..decorators import rol_requerido
+from ..decorators import rol_requerido, ROLES_OPERATIVOS, ROLES_REGISTRO_PM
 from ..models import SIM, PM, AUTOTPE, ActuadoTSP, Resolucion, ApelacionTSP, DocumentoAdjunto, CustodiaSIM
 
 
@@ -134,7 +133,7 @@ def _obtener_estado_actual(personal_id):
     }
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def buscador_dashboard(request):
     """Dashboard para búsqueda unificada - búsqueda por CI, código SIM, nombre, apellidos"""
 
@@ -230,7 +229,7 @@ def buscador_dashboard(request):
     return render(request, 'tpe_app/buscador/dashboard_buscador.html', context)
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def detalles_sim(request, sim_id):
     """Vista detallada de un SIM: militares, resoluciones, autos, custodia (solo Admin2), etc."""
 
@@ -312,7 +311,7 @@ def detalles_sim(request, sim_id):
     return render(request, 'tpe_app/buscador/detalles_sim.html', context)
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def busqueda_por_lotes(request):
     """Vista para búsqueda y reporte por lotes de múltiples militares por AP + AM"""
     militares_encontrados = []
@@ -353,7 +352,7 @@ def busqueda_por_lotes(request):
     return render(request, 'tpe_app/buscador/busqueda_lotes.html', context)
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_batch_pdf(request):
     """Genera PDF con tabla compacta de múltiples militares"""
     from django.http import HttpResponse
@@ -581,7 +580,7 @@ def export_batch_pdf(request):
     return response
 
 
-@login_required
+@rol_requerido(*ROLES_OPERATIVOS)
 def export_batch_excel(request):
     """Genera Excel con tabla de múltiples militares"""
     from openpyxl import Workbook
@@ -706,7 +705,7 @@ def export_batch_excel(request):
     return response
 
 
-@login_required
+@rol_requerido(*ROLES_REGISTRO_PM)
 def upload_foto_pm(request, pm_id):
     """Subir o reemplazar la foto de un Personal Militar"""
     pm = get_object_or_404(PM, pk=pm_id)
@@ -737,7 +736,7 @@ def upload_foto_pm(request, pm_id):
     return redirect('buscador_dashboard')
 
 
-@login_required
+@rol_requerido('ADMIN2_ARCHIVO')
 def export_custodia_pdf(request, sim_id):
     """Descargar PDF del historial de custodia de un SIM (Solo Admin2)"""
     from django.http import HttpResponse
@@ -764,11 +763,6 @@ def export_custodia_pdf(request, sim_id):
         # Fallback si no está Arial (Linux/Mac en producción)
         FONT_NORMAL = 'Helvetica'
         FONT_BOLD   = 'Helvetica-Bold'
-
-    # Verificar que sea Admin2
-    if not (hasattr(request.user, 'perfilusuario') and request.user.perfilusuario.rol == 'ADMIN2_ARCHIVO'):
-        messages.error(request, '❌ No tienes permiso para descargar este archivo')
-        return redirect('admin2_dashboard')
 
     sim = get_object_or_404(SIM, id=sim_id)
     custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abogado').order_by('fecha_recepcion')
