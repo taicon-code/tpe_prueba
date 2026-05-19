@@ -955,6 +955,110 @@ def admin2_registrar_salida_tsp(request, rap_id):
 
 
 # ============================================================
+# ADMIN2: REGISTRAR SALIDA DE CARPETA (con constancia de oficio)
+# ============================================================
+
+@rol_requerido('ADMIN2_ARCHIVO')
+def admin2_registrar_salida_carpeta(request, sim_id):
+    """Admin2 registra la salida formal de la carpeta del TPE a un destino final.
+
+    Registra:
+    - Destino final (DGJURE, SDISCAPE, SCADE, SPRODA, ASCENSO, etc.)
+    - Número de oficio (obligatorio)
+    - Fecha de envío (obligatoria)
+    - PDF escaneado del oficio (obligatorio)
+    """
+    sim = get_object_or_404(SIM, pk=sim_id)
+
+    # Verificar que la carpeta esté en poder de Admin2 y en fase PENDIENTE_ARCHIVO
+    if sim.fase != 'PENDIENTE_ARCHIVO':
+        messages.error(request, f"❌ El sumario debe estar en fase PENDIENTE_ARCHIVO. Fase actual: {sim.get_fase_display()}")
+        return redirect('admin2_dashboard')
+
+    if request.method == 'POST':
+        destino_final = request.POST.get('destino_final', '').strip()
+        nro_oficio = request.POST.get('nro_oficio', '').strip()
+        fecha_envio_str = request.POST.get('fecha_envio', '').strip()
+        archivo_oficio = request.FILES.get('archivo_oficio')
+        observacion = request.POST.get('observacion', '').strip()
+
+        # Validar campos obligatorios
+        errores = []
+        if not destino_final:
+            errores.append('Destino final es obligatorio')
+        if not nro_oficio:
+            errores.append('Número de oficio es obligatorio')
+        if not fecha_envio_str:
+            errores.append('Fecha de envío es obligatoria')
+        if not archivo_oficio:
+            errores.append('PDF del oficio es obligatorio')
+
+        if errores:
+            for error in errores:
+                messages.error(request, f'❌ {error}')
+            return redirect('admin2_registrar_salida_carpeta', sim_id=sim.pk)
+
+        try:
+            # Validar PDF
+            validar_pdf(archivo_oficio)
+        except ValidationError as e:
+            messages.error(request, f'❌ {"; ".join(e.messages)}')
+            return redirect('admin2_registrar_salida_carpeta', sim_id=sim.pk)
+
+        try:
+            fecha_envio = datetime.strptime(fecha_envio_str, '%Y-%m-%d').date()
+
+            with transaction.atomic():
+                # Obtener la custodia actual (debe estar en poder de Admin2)
+                custodia_actual = sim.custodio_actual()
+                if not custodia_actual or custodia_actual.tipo_custodio != 'ADMIN2_ARCHIVO':
+                    messages.error(request, "❌ La carpeta debe estar en poder de Archivo SIM")
+                    return redirect('admin2_dashboard')
+
+                # Cerrar custodia actual
+                custodia_actual.fecha_entrega = timezone.now()
+                custodia_actual.save()
+
+                # Crear nueva custodia con registro de salida
+                custodia_salida = CustodiaSIM.objects.create(
+                    sim=sim,
+                    tipo_custodio='ARCHIVO',
+                    destino_final=destino_final,
+                    nro_oficio_archivo=nro_oficio,
+                    fecha_oficio_archivo=fecha_envio,
+                    archivo_oficio=archivo_oficio,
+                    usuario=request.user,
+                    motivo='ARCHIVO',
+                    observacion=observacion or None,
+                    estado='RECIBIDA_CONFORME',
+                )
+
+                # Transicionar el SIM a CONCLUIDO
+                sim.fase = 'CONCLUIDO'
+                sim.estado = 'PROCESO_CONCLUIDO_TPE'
+                sim.save()
+
+                destino_display = custodia_salida.get_destino_final_display() if destino_final else destino_final
+                messages.success(
+                    request,
+                    f"✅ Salida registrada: SIM {sim.codigo} → {destino_display} "
+                    f"(Oficio {nro_oficio} del {fecha_envio.strftime('%d/%m/%Y')})"
+                )
+                return redirect('admin2_dashboard')
+
+        except ValueError:
+            messages.error(request, '❌ Formato de fecha inválido (debe ser YYYY-MM-DD)')
+        except Exception as e:
+            messages.error(request, f'❌ Error al registrar salida: {str(e)}')
+
+    context = {
+        'sim': sim,
+        'destinos': CustodiaSIM.DESTINO_FINAL_CHOICES,
+    }
+    return render(request, 'tpe_app/admin2/registrar_salida_carpeta.html', context)
+
+
+# ============================================================
 # ADMIN2: ANULAR ENTREGA DE CUSTODIA (Huérfanas)
 # ============================================================
 @rol_requerido('ADMIN2_ARCHIVO')

@@ -1,0 +1,160 @@
+{% extends 'tpe_app/base.html' %}
+
+{% block title %}Registrar Salida de Carpeta - Archivo SIM{% endblock %}
+{% block navbar_title %}📤 Archivo SIM - Registrar Salida de Carpeta{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem;">
+    <a href="{% url 'admin2_dashboard' %}" style="color: #1e3c72; text-decoration: none;">
+        ← Volver al Dashboard
+    </a>
+</div>
+
+<h1 style="margin-bottom: 2rem; color: #1e3c72;">📋 Registrar Salida de Carpeta del TPE</h1>
+
+<div style="max-width: 700px;">
+    <!-- Información del sumario -->
+    <div class="card" style="background: #f0f7ff; border-left: 4px solid #2196f3; margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; color: #1565c0;">📄 Información del Sumario</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Código:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.codigo }}</p>
+            </div>
+            <div>
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Fase:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.get_fase_display }}</p>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <p style="margin: 0; color: #666; font-size: 0.9rem;"><strong>Objeto:</strong></p>
+                <p style="margin: 0.3rem 0 0 0; color: #333; font-size: 1rem;">{{ sim.objeto }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje de constancia -->
+    <div class="card" style="background: #ecfdf5; border-left: 4px solid #10b981; margin-bottom: 2rem;">
+        <p style="margin: 0; color: #047857; font-size: 0.95rem; font-weight: 500;">
+            🔒 Este registro constituye una constancia formal de salida de la carpeta del Tribunal.
+        </p>
+        <p style="margin: 0.5rem 0 0 0; color: #047857; font-size: 0.9rem;">
+            Los datos aquí registrados (destino, oficio y fecha) junto con el PDF adjunto servirán como comprobante de entrega.
+        </p>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post" enctype="multipart/form-data" class="card">
+        {% csrf_token %}
+
+        <h2 style="color: #1e3c72; margin-bottom: 1.5rem;">Datos de Salida</h2>
+
+        <!-- Destino -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Destino Final *
+            </label>
+            <select name="destino_final" required style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem;">
+                <option value="">— Seleccionar destino —</option>
+                {% for value, label in destinos %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Selecciona dónde se envía la carpeta (SPRODA, DGJURE, SDISCAPE, SCADE, etc.)
+            </small>
+        </div>
+
+        <!-- Número de Oficio -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Número de Oficio *
+            </label>
+            <input type="text" name="nro_oficio" placeholder="Ej: OF-TPE-025/26" required
+                   style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem;">
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Número del oficio de remisión/envío de la carpeta
+            </small>
+        </div>
+
+        <!-- Fecha de Envío -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Fecha de Envío *
+            </label>
+            <input type="date" name="fecha_envio" required
+                   style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem;">
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Fecha en que se envía la carpeta al destino
+            </small>
+        </div>
+
+        <!-- PDF del Oficio -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                📎 PDF del Oficio *
+            </label>
+            <input type="file" name="archivo_oficio" accept=".pdf" required
+                   style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 4px; font-size: 1rem; cursor: pointer;">
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Escaneo del oficio firmado (formato PDF, máx 10 MB)
+            </small>
+        </div>
+
+        <!-- Observaciones opcionales -->
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Observaciones (opcional)
+            </label>
+            <textarea name="observacion"
+                      style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: inherit; resize: vertical; min-height: 60px;"></textarea>
+            <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                Ej: "Carpeta entregada en mano", "Se remitió por correo", etc.
+            </small>
+        </div>
+
+        <!-- Botones -->
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="background: #10b981; color: #fff; flex: 1;">
+                ✅ Confirmar Salida
+            </button>
+            <a href="{% url 'admin2_dashboard' %}" class="btn" style="background: #6c757d; color: #fff; text-align: center; flex: 1;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        padding: 0.75rem 1rem;
+        text-decoration: none;
+        border-radius: 7px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-family: inherit;
+        font-weight: 500;
+        transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+
+    input[type="file"] {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}

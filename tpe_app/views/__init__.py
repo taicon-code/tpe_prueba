@@ -61,6 +61,7 @@ from .admin2_views import (
     subir_pdf_res,
     ver_historial_custodia_sim,
     admin2_confirmar_archivo_sproda,
+    admin2_registrar_salida_carpeta,
     admin2_registrar_retorno_memo,
     admin2_registrar_rap,
     admin2_registrar_salida_tsp,

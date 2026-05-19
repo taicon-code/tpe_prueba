@@ -10,7 +10,7 @@ Sistema de gestión de **Sumarios Informativos Militares (SIM)** del
 **Tribunal de Personal del Ejército (TPE)** de Bolivia.
 Tecnología: Django + MySQL + Bootstrap 5.
 
-**VERSIÓN ACTUAL: v4.5.2** (Mayo 2026)
+**VERSIÓN ACTUAL: v4.5.3** (Mayo 2026)
 - v3.0: Rediseño completo (Admin1/2/3, Abogados diferenciados)
 - v3.1: Custodia de carpetas entre actores
 - v3.2: Gestión de agendas (Admin1)
@@ -23,6 +23,7 @@ Tecnología: Django + MySQL + Bootstrap 5.
 - v4.5: Documentos del Recurrente (incidente, recurso fuera de plazo, amparo constitucional) — flujo paralelo que NO modifica `sim.fase` ni `sim.estado`. Nuevo tipo `AUTO_RESPUESTA` en AUTOTPE
 - **v4.5.1: Dashboard agenda muestra TODOS los casos (fix filtro restrictivo fase) + Modal expandible con historial clasificado (1RA RESOLUCION | RR | AUTOS)**
 - **v4.5.2: Bug fix — notificación de RR no avanzaba sim.fase desde `2DA_RESOLUCION` a `NOTIFICADO_RR` (mismo patrón que v4.4 Bug 1 pero para 2da instancia)**
+- **v4.5.3: Registro formal de salida de carpeta — Admin2 registra destino final (SPRODA, DGJURE, SDISCAPE, SCADE, SASCENSO, etc.) + número de oficio + fecha + PDF escaneado del oficio como constancia**
 
 ---
 
@@ -234,18 +235,24 @@ ADMIN2: recibe el Auto (custodia regresa a Admin2)
 ADMIN3: notifica el Auto
     → sim.fase = 'EJECUTORIA_NOTIFICADA'
     ↓
-ADMIN2: registra destino (SPRODA / ASCENSO / SCADE / DGJURE)
+ADMIN1: ordena el archivo final (botón en Admin1)
     → sim.fase = 'PENDIENTE_ARCHIVO'
     ↓
-ADMIN2: confirma entrega a destino
+ADMIN2: Registra Salida de Carpeta (vista admin2_registrar_salida_carpeta)
+    Rellena: Destino final + Número oficio + Fecha + PDF del oficio
+    → CustodiaSIM.destino_final = SPRODA / SASCENSO / SCADE / SDISCAPE / DGJURE / etc.
+    → CustodiaSIM.nro_oficio_archivo (obligatorio)
+    → CustodiaSIM.fecha_oficio_archivo (obligatoria)
+    → CustodiaSIM.archivo_oficio (PDF escaneado, obligatorio)
     → sim.fase = 'CONCLUIDO' → sim.estado = 'PROCESO_CONCLUIDO_TPE'
     ↓
-Si hay memorándum (autotpe.memo_numero): ADMIN2 registra retorno
+Si hay memorándum (autotpe.memorandum): ADMIN2 registra retorno
     → sim.estado = 'PROCESO_EJECUTADO'
 ```
 
 **Notas clave:**
 - Los Autos de Ejecutoria **SÍ** se vinculan a una sesión de agenda (a diferencia de versiones anteriores).
+- **v4.5.3 NUEVO**: El registro de salida es formal y constituye constancia. Requiere número de oficio, fecha y PDF escaneado del oficio.
 - La transición `EN_AGENDA_EJECUTORIA` → `EN_EJECUTORIA` ocurre automáticamente al marcar la agenda como REALIZADA en `editar_agenda_resultado()`, buscando SIMs con `fase='EN_AGENDA_EJECUTORIA'` y `abog_sim__agenda=agenda`.
 - ABOG2 crea el Auto **sin dictamen** (distinto a resoluciones que sí requieren dictamen previo).
 - Nueva fase `EJECUTORIA_PARA_NOTIFICAR` separa "Auto emitido" de "Auto notificado".

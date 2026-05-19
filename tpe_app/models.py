@@ -695,6 +695,15 @@ class CustodiaSIM(models.Model):
         ('ARCHIVO',             'Archivado / Concluido'),
     ]
 
+    DESTINO_FINAL_CHOICES = [
+        ('SPRODA',      'SPRODA (Sección de Procesamiento de Datos)'),
+        ('DGJURE',      'DGJURE (Dirección General Jurídica del Ejército)'),
+        ('SDISCAPE',    'SDISCAPE (Sección de Disciplina y Capacitación)'),
+        ('SCADE',       'SCADE (Sección de Cargos y Destinos)'),
+        ('SASCENSO',    'SASCENSO (Sección Ascenso)'),
+        ('OTRO',        'Otro destino'),
+    ]
+
     ESTADO_CHOICES = [
         ('RECIBIDA_CONFORME',      'Recibida Conforme'),
         ('PENDIENTE_CONFIRMACION', 'Pendiente de Confirmación'),
@@ -727,6 +736,8 @@ class CustodiaSIM(models.Model):
     fecha_oficio     = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio (TSP)')
     nro_oficio_archivo   = models.CharField(max_length=30, null=True, blank=True, verbose_name='Número de Oficio (ARCHIVO/SPRODA)')
     fecha_oficio_archivo = models.DateField(null=True, blank=True, verbose_name='Fecha del Oficio (ARCHIVO/SPRODA)')
+    destino_final    = models.CharField(max_length=30, null=True, blank=True, choices=DESTINO_FINAL_CHOICES,
+                                        verbose_name='Destino Final de la Carpeta')
     archivo_oficio       = models.FileField(upload_to='oficios_custodia/%Y/', null=True, blank=True, verbose_name='PDF del Oficio')
     estado           = models.CharField(max_length=25, choices=ESTADO_CHOICES,
                                         default='RECIBIDA_CONFORME', verbose_name='Estado de la Custodia')

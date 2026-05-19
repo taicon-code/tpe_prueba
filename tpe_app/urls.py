@@ -161,6 +161,7 @@ urlpatterns = [
     # Archivo final SPRODA (flujo post-ejecutoria notificada)
     path('admin1/sim/<int:sim_id>/ordenar-archivo/', views.admin1_ordenar_archivo_sproda, name='admin1_ordenar_archivo_sproda'),
     path('admin2/sim/<int:sim_id>/confirmar-archivo/', views.admin2_confirmar_archivo_sproda, name='admin2_confirmar_archivo_sproda'),
+    path('admin2/sim/<int:sim_id>/registrar-salida/', views.admin2_registrar_salida_carpeta, name='admin2_registrar_salida_carpeta'),
     path('admin2/auto/<int:auto_id>/retorno-memo/', views.admin2_registrar_retorno_memo, name='admin2_registrar_retorno_memo'),
 
     # Redirección por defecto (opcional)
