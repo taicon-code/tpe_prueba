@@ -17,10 +17,10 @@
 
     <p style="color: #374151; margin: 1.5rem 0; font-size: 0.95rem;">
         Confirme que ha recibido la carpeta física de este sumario de parte de
-        {% if admin2_user %}
-            {{ admin2_user.first_name }} {{ admin2_user.last_name }}
+        {% if admin2_perfil and admin2_perfil.pm %}
+            <strong>{{ admin2_perfil.pm.grado }} {{ admin2_perfil.pm.paterno }}</strong> (Admin2 del Archivo)
         {% else %}
-            Admin2
+            <strong>Admin2 del Archivo</strong>
         {% endif %}.
         Una vez confirmado, podrá realizar su trabajo (crear dictámenes, resoluciones, etc.).
     </p>

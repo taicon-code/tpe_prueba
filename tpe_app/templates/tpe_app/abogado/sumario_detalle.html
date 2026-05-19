@@ -166,18 +166,15 @@
                     </p>
                 {% else %}
                     <p style="margin: 0; color: #1e40af; font-size: 0.95rem;">
-                        <strong>ℹ️ Carpeta en poder de
-                            {% if admin2_user %}
-                                {{ admin2_user.first_name }} {{ admin2_user.last_name }}
-                            {% else %}
-                                Admin2
-                            {% endif %}
-                        </strong><br>
+                        <strong>ℹ️ Carpeta en su poder</strong><br>
                         <small style="color: #6b7280; font-size: 0.85rem;">
-                            {% if custodio_actual.abogado %}
-                                Entregada por <strong>{{ custodio_actual.abogado.grado }} {{ custodio_actual.abogado.paterno }}</strong>.
-                            {% endif %}
-                            Es el custodio actual. Puede continuar con su trabajo.
+                            Entregada por
+                            {% if admin2_perfil and admin2_perfil.pm %}
+                                <strong>{{ admin2_perfil.pm.grado }} {{ admin2_perfil.pm.paterno }}</strong>
+                            {% else %}
+                                <strong>Admin2 del Archivo</strong>
+                            {% endif %}.
+                            Puede continuar con su trabajo.
                         </small>
                     </p>
                 {% endif %}

@@ -108,7 +108,6 @@ def abogado_sumario_detalle(request, sim_id: int):
         rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
         activo=True
     ).first()
-    admin2_user = admin2_perfil.user if admin2_perfil else None
 
     # Documentos adjuntos al SIM (PDFs escaneados)
     documentos_sim = DocumentoAdjunto.objects.filter(
@@ -153,7 +152,7 @@ def abogado_sumario_detalle(request, sim_id: int):
         "documentos_sim": documentos_sim,
         "es_abog2": es_abog2,
         "autos_asignados": autos_asignados,
-        "admin2_user": admin2_user,
+        "admin2_perfil": admin2_perfil,
         "next_url": next_url,
     }
     return render(request, "tpe_app/abogado/sumario_detalle.html", context)
@@ -698,12 +697,11 @@ def abogado_confirmar_recepcion(request, sim_id: int):
         rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
         activo=True
     ).first()
-    admin2_user = admin2_perfil.user if admin2_perfil else None
 
     return render(request, 'tpe_app/abogado/confirmar_recepcion.html', {
         'sim': sim,
         'custodia': custodia,
-        'admin2_user': admin2_user,
+        'admin2_perfil': admin2_perfil,
     })
 
 
@@ -748,12 +746,11 @@ def abogado_devolver_carpeta(request, sim_id: int):
         rol__in=['ADMIN2_ARCHIVO', 'ADMIN2'],
         activo=True
     ).first()
-    admin2_user = admin2_perfil.user if admin2_perfil else None
 
     return render(request, 'tpe_app/abogado/devolver_carpeta.html', {
         'sim': sim,
         'custodia': custodia,
-        'admin2_user': admin2_user,
+        'admin2_perfil': admin2_perfil,
     })
 
 
