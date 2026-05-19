@@ -1,108 +1,88 @@
-"""Carga feriados nacionales de Bolivia para un ano dado.
-
+﻿"""
+Comando para cargar o actualizar feriados de Bolivia
 Uso:
-    python manage.py cargar_feriados 2027
-    python manage.py cargar_feriados 2027 --replace   (sobrescribe existentes)
-
-Maneja:
-    - Feriados de fecha fija (Ano Nuevo, Dia del Trabajador, Navidad, etc.)
-    - Feriados moviles (Carnaval, Viernes Santo, Corpus Christi) calculados
-      a partir de la fecha de Pascua (algoritmo Anonymous Gregorian).
-
-Notas:
-    - 21 de junio (Ano Nuevo Andino-Amazonico) es feriado nacional desde 2010.
-    - Las fechas de Corpus Christi y los carnavales mueven cada ano segun Pascua.
-    - 22-jun (Ano Nuevo Aymara) y 6-ago (Independencia) son fijos.
+  python manage.py cargar_feriados --año 2027
+  python manage.py cargar_feriados --limpiar 2026  # borra feriados del año anterior
 """
-import logging
-from datetime import date, timedelta
 
-from django.core.management.base import BaseCommand, CommandError
-
-security_log = logging.getLogger('tpe_app.security')
+from django.core.management.base import BaseCommand
+from tpe_app.models import FeriadoBolivia
+from datetime import date
 
 
-def _pascua(year):
-    """Devuelve la fecha del Domingo de Pascua para el ano dado (algoritmo Meeus)."""
-    a = year % 19
-    b = year // 100
-    c = year % 100
-    d = b // 4
-    e = b % 4
-    f = (b + 8) // 25
-    g = (b - f + 1) // 3
-    h = (19 * a + b - d - g + 15) % 30
-    i = c // 4
-    k = c % 4
-    L = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * L) // 451
-    month = (h + L - 7 * m + 114) // 31
-    day = ((h + L - 7 * m + 114) % 31) + 1
-    return date(year, month, day)
-
-
-def feriados_bolivia(year):
-    """Lista de (fecha, descripcion) feriados nacionales de Bolivia para el ano."""
-    pascua = _pascua(year)
-    return [
-        (date(year, 1, 1),   'Ano Nuevo'),
-        (date(year, 1, 22),  'Dia del Estado Plurinacional'),
-        (pascua - timedelta(days=48), 'Carnaval (Lunes)'),
-        (pascua - timedelta(days=47), 'Carnaval (Martes)'),
-        (pascua - timedelta(days=2),  'Viernes Santo'),
-        (date(year, 5, 1),   'Dia del Trabajador'),
-        (pascua + timedelta(days=60), 'Corpus Christi'),
-        (date(year, 6, 21),  'Ano Nuevo Andino-Amazonico'),
-        (date(year, 8, 6),   'Dia de la Independencia'),
-        (date(year, 11, 2),  'Dia de Todos los Difuntos'),
-        (date(year, 12, 25), 'Navidad'),
-    ]
+FERIADOS_BOLIVIA = {
+    2026: [
+        (date(2026, 1, 23), "Aniversario de la Revolución Democrática"),
+        (date(2026, 2, 16), "Lunes de Carnaval"),
+        (date(2026, 2, 17), "Martes de Carnaval"),
+        (date(2026, 4, 3), "Viernes de Dolores"),
+        (date(2026, 5, 1), "Día del Trabajo"),
+        (date(2026, 6, 4), "Día de la Bandera"),
+        (date(2026, 6, 5), "Corpus Christi"),
+        (date(2026, 6, 22), "Aniversario de la Batalla de la Coronilla"),
+        (date(2026, 8, 6), "Independencia de Bolivia"),
+        (date(2026, 8, 7), "Día de los Derechos Cívicos"),
+        (date(2026, 11, 2), "Día de Difuntos"),
+        (date(2026, 12, 25), "Navidad"),
+    ],
+    2027: [
+        (date(2027, 1, 23), "Aniversario de la Revolución Democrática"),
+        (date(2027, 2, 8), "Lunes de Carnaval"),
+        (date(2027, 2, 9), "Martes de Carnaval"),
+        (date(2027, 3, 26), "Viernes de Dolores"),
+        (date(2027, 5, 1), "Día del Trabajo"),
+        (date(2027, 6, 4), "Día de la Bandera"),
+        (date(2027, 5, 28), "Corpus Christi"),
+        (date(2027, 6, 22), "Aniversario de la Batalla de la Coronilla"),
+        (date(2027, 8, 6), "Independencia de Bolivia"),
+        (date(2027, 8, 7), "Día de los Derechos Cívicos"),
+        (date(2027, 11, 2), "Día de Difuntos"),
+        (date(2027, 12, 25), "Navidad"),
+    ],
+}
 
 
 class Command(BaseCommand):
-    help = 'Carga los feriados nacionales de Bolivia para un ano en la tabla FeriadoBolivia.'
+    help = "Carga o actualiza los feriados de Bolivia en la BD"
 
     def add_arguments(self, parser):
-        parser.add_argument('anio', type=int, help='Ano a cargar (ej: 2027)')
-        parser.add_argument(
-            '--replace', action='store_true',
-            help='Si una fecha ya existe, sobrescribir su descripcion.',
-        )
+        parser.add_argument('--año', type=int, help='Año específico a cargar')
+        parser.add_argument('--limpiar', type=int, help='Borrar feriados de un año antes de cargar')
 
-    def handle(self, *args, **opts):
-        from tpe_app.models import FeriadoBolivia
+    def handle(self, *args, **options):
+        año = options.get('año')
+        limpiar = options.get('limpiar')
 
-        anio = opts['anio']
-        replace = opts['replace']
+        if limpiar:
+            count = FeriadoBolivia.objects.filter(anio=limpiar).delete()[0]
+            self.stdout.write(
+                self.style.WARNING(f"✓ Borrados {count} feriados de {limpiar}")
+            )
 
-        if anio < 2010 or anio > 2100:
-            raise CommandError(f'Ano fuera de rango razonable (2010-2100): {anio}')
+        años_a_cargar = [año] if año else FERIADOS_BOLIVIA.keys()
 
-        feriados = feriados_bolivia(anio)
-        creados, actualizados, omitidos = 0, 0, 0
+        for anio in años_a_cargar:
+            if anio not in FERIADOS_BOLIVIA:
+                self.stdout.write(
+                    self.style.ERROR(f"✗ No hay feriados definidos para {anio}")
+                )
+                continue
 
-        for fecha, descripcion in feriados:
-            existente = FeriadoBolivia.objects.filter(fecha=fecha).first()
-            if existente:
-                if replace and existente.descripcion != descripcion:
-                    existente.descripcion = descripcion
-                    existente.anio = anio
-                    existente.save(update_fields=['descripcion', 'anio'])
-                    actualizados += 1
-                    self.stdout.write(f'  ~ {fecha} {descripcion} (actualizado)')
+            creados = 0
+            actualizados = 0
+
+            for fecha, descripcion in FERIADOS_BOLIVIA[anio]:
+                obj, created = FeriadoBolivia.objects.update_or_create(
+                    fecha=fecha,
+                    defaults={'descripcion': descripcion, 'anio': anio}
+                )
+                if created:
+                    creados += 1
                 else:
-                    omitidos += 1
-                    self.stdout.write(f'  - {fecha} ya existe ({existente.descripcion})')
-            else:
-                FeriadoBolivia.objects.create(fecha=fecha, descripcion=descripcion, anio=anio)
-                creados += 1
-                self.stdout.write(f'  + {fecha} {descripcion}')
+                    actualizados += 1
 
-        self.stdout.write('')
-        self.stdout.write(self.style.SUCCESS(
-            f'Ano {anio}: creados={creados}, actualizados={actualizados}, omitidos={omitidos}'
-        ))
-        security_log.info(
-            'FERIADOS_LOADED anio=%s creados=%s actualizados=%s omitidos=%s',
-            anio, creados, actualizados, omitidos,
-        )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"✓ {anio}: {creados} nuevos, {actualizados} actualizados"
+                )
+            )
