@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.utils.html import mark_safe
-from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum, DocumentoRecurrente, AccesoLog
+from .models import DICTAMEN, PM, SIM, PM_SIM, AGENDA, AUTOTPE, ApelacionTSP, ActuadoTSP, DocumentoAdjunto, PerfilUsuario, VOCAL_TPE, Resolucion, Notificacion, Memorandum, DocumentoRecurrente, AccesoLog, FeriadoBolivia
 from .widgets import ResumenConOpcionesWidget
 
 
@@ -391,12 +391,29 @@ class DocumentoAdjuntoAdmin(admin.ModelAdmin):
     raw_id_fields = ('sim', 'resolucion', 'autotpe', 'apelacion_tsp', 'actuado_tsp')
     readonly_fields = ('sha256', 'tamano_bytes', 'subido_por', 'ip_origen', 'fecha_registro')
 # ════════════════════════════════════════════════════════════════════════════
+#  ADMIN: Feriados de Bolivia
+# ════════════════════════════════════════════════════════════════════════════
+@admin.register(FeriadoBolivia)
+class FeriadoBoliviaAdmin(admin.ModelAdmin):
+    list_display  = ('fecha', 'descripcion', 'anio')
+    list_filter   = ('anio',)
+    search_fields = ('descripcion',)
+    ordering      = ('-fecha',)
+    date_hierarchy = 'fecha'
+
+    fieldsets = (
+        ('Datos del Feriado', {
+            'fields': ('fecha', 'descripcion', 'anio')
+        }),
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════════
 #  FIN DE ARCHIVO
 # ════════════════════════════════════════════════════════════════════════════
 
 # Agregar al FINAL de admin.py
 
-from .models import PerfilUsuario
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
