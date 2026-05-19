@@ -164,7 +164,7 @@ def admin2_dashboard(request):
         estado='PENDIENTE_CONFIRMACION',
         fecha_entrega__isnull=True
     ).exclude(
-        tipo_custodio='ADMIN2_ARCHIVO'
+        tipo_custodio__in=['ADMIN2_ARCHIVO', 'ARCHIVO']
     ).select_related('sim').prefetch_related('sim__militares')
 
     carpetas_pendientes = []
@@ -990,34 +990,30 @@ def admin2_registrar_salida_carpeta(request, sim_id):
             errores.append('Número de oficio es obligatorio')
         if not fecha_envio_str:
             errores.append('Fecha de envío es obligatoria')
-        if not archivo_oficio:
-            errores.append('PDF del oficio es obligatorio')
 
         if errores:
             for error in errores:
                 messages.error(request, f'❌ {error}')
             return redirect('admin2_registrar_salida_carpeta', sim_id=sim.pk)
 
-        try:
-            # Validar PDF
-            validar_pdf(archivo_oficio)
-        except ValidationError as e:
-            messages.error(request, f'❌ {"; ".join(e.messages)}')
-            return redirect('admin2_registrar_salida_carpeta', sim_id=sim.pk)
+        if archivo_oficio:
+            try:
+                validar_pdf(archivo_oficio)
+            except ValidationError as e:
+                messages.error(request, f'❌ {"; ".join(e.messages)}')
+                return redirect('admin2_registrar_salida_carpeta', sim_id=sim.pk)
 
         try:
             fecha_envio = datetime.strptime(fecha_envio_str, '%Y-%m-%d').date()
 
             with transaction.atomic():
-                # Obtener la custodia actual (debe estar en poder de Admin2)
-                custodia_actual = sim.custodio_actual()
-                if not custodia_actual or custodia_actual.tipo_custodio != 'ADMIN2_ARCHIVO':
-                    messages.error(request, "❌ La carpeta debe estar en poder de Archivo SIM")
+                # Cerrar todas las custodias abiertas del SIM
+                # (puede haber más de una si admin1 usó archivo directo sin cerrar la anterior)
+                abiertas = sim.custodias.filter(fecha_entrega__isnull=True)
+                if not abiertas.exists():
+                    messages.error(request, "❌ No hay custodia activa para este sumario")
                     return redirect('admin2_dashboard')
-
-                # Cerrar custodia actual
-                custodia_actual.fecha_entrega = timezone.now()
-                custodia_actual.save()
+                abiertas.update(fecha_entrega=timezone.now())
 
                 # Crear nueva custodia con registro de salida
                 custodia_salida = CustodiaSIM.objects.create(

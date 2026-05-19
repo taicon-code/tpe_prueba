@@ -648,6 +648,40 @@
     </div>
     {% endif %}
 
+    <!-- Django messages -->
+    {% if messages %}
+    <div style="position: fixed; top: 68px; right: 1.25rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; max-width: 420px;">
+        {% for message in messages %}
+        <div class="tpe-toast tpe-toast--{{ message.tags }}" role="alert">
+            {{ message }}
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;line-height:1;margin-left:auto;opacity:.7;">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    <style>
+        .tpe-toast {
+            display: flex; align-items: flex-start; gap: .6rem;
+            padding: .85rem 1rem; border-radius: 8px;
+            font-size: .9rem; font-weight: 500; box-shadow: 0 4px 16px rgba(0,0,0,.15);
+            animation: tpe-toast-in .25s ease;
+        }
+        @keyframes tpe-toast-in { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:none; } }
+        .tpe-toast--success { background:#dcfce7; color:#15803d; border-left:4px solid #16a34a; }
+        .tpe-toast--error   { background:#fee2e2; color:#b91c1c; border-left:4px solid #dc2626; }
+        .tpe-toast--warning { background:#fef9c3; color:#92400e; border-left:4px solid #d97706; }
+        .tpe-toast--info    { background:#dbeafe; color:#1d4ed8; border-left:4px solid #2563eb; }
+    </style>
+    <script>
+        document.querySelectorAll('.tpe-toast').forEach(function(el) {
+            setTimeout(function() {
+                el.style.transition = 'opacity .4s';
+                el.style.opacity = '0';
+                setTimeout(function() { el.remove(); }, 400);
+            }, 6000);
+        });
+    </script>
+    {% endif %}
+
     <!-- Page content -->
     <main class="content">
         {% block content %}{% endblock %}

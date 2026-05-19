@@ -791,139 +791,191 @@ def export_custodia_pdf(request, sim_id):
         FONT_NORMAL = 'Helvetica'
         FONT_BOLD   = 'Helvetica-Bold'
 
-    sim = get_object_or_404(SIM, id=sim_id)
-    custodia_historial = CustodiaSIM.objects.filter(sim=sim).select_related('abogado').order_by('fecha_recepcion')
+    from reportlab.lib.pagesizes import landscape
 
-    # Crear PDF en orientación vertical (portrait)
+    sim = get_object_or_404(SIM, id=sim_id)
+    custodia_historial = list(
+        CustodiaSIM.objects.filter(sim=sim)
+        .select_related('abogado', 'abogado_destino', 'usuario')
+        .order_by('fecha_recepcion')
+    )
+
+    militares = sim.militares.all()
+
+    # PDF en landscape carta (usable ≈ 25.4 cm ancho)
     response = HttpResponse(content_type='application/pdf')
     now_local = tz.localtime(tz.now())
     response['Content-Disposition'] = f'attachment; filename="custodia_{sim.codigo}_{now_local.strftime("%d%m%Y")}.pdf"'
 
-    doc = SimpleDocTemplate(response, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch,
-                            leftMargin=0.5*inch, rightMargin=0.5*inch)
+    doc = SimpleDocTemplate(
+        response, pagesize=landscape(letter),
+        topMargin=0.45*inch, bottomMargin=0.45*inch,
+        leftMargin=0.5*inch, rightMargin=0.5*inch,
+    )
     story = []
     styles = getSampleStyleSheet()
 
-    # Título (sin emoji para evitar caracteres mezclados en reportlab)
     title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=13,
+        'CustomTitle', parent=styles['Heading1'],
+        fontName=FONT_BOLD, fontSize=13,
         textColor=colors.HexColor('#185FA5'),
-        spaceAfter=10,
-        alignment=1
+        spaceAfter=8, alignment=1,
     )
-    story.append(Paragraph(f'Historial de Custodia de Carpeta - {sim.codigo}', title_style))
-    story.append(Spacer(1, 0.15*inch))
+    story.append(Paragraph(f'Historial de Custodia — {sim.codigo}', title_style))
+    story.append(Spacer(1, 0.1*inch))
 
-    # Información del SIM — ancho ajustado a portrait (carta usable ≈ 7.5 in)
+    # ── Bloque info del SIM ──────────────────────────────────────────────────
+    cell_label = ParagraphStyle('Label', parent=styles['Normal'],
+                                fontName=FONT_BOLD, fontSize=8, leading=10)
+    cell_val   = ParagraphStyle('Val',   parent=styles['Normal'],
+                                fontName=FONT_NORMAL, fontSize=8, leading=10)
+
+    nombres_militares = ', '.join(
+        f"{pm.grado} {pm.paterno} {pm.materno}".strip()
+        for pm in militares
+    ) or '-'
+
     info_data = [
-        ['Codigo', sim.codigo],
-        ['Tipo', sim.get_tipo_display()],
-        ['Estado', sim.get_estado_display()],
-        ['Ingreso', sim.fecha_ingreso.strftime('%d/%m/%Y') if sim.fecha_ingreso else '-'],
+        [Paragraph('Codigo SIM', cell_label),  Paragraph(sim.codigo or '-', cell_val),
+         Paragraph('Tipo', cell_label),         Paragraph(sim.get_tipo_display() or '-', cell_val)],
+        [Paragraph('Estado', cell_label),       Paragraph(sim.get_estado_display() or '-', cell_val),
+         Paragraph('Fase', cell_label),         Paragraph(sim.get_fase_display() or '-', cell_val)],
+        [Paragraph('Ingreso', cell_label),      Paragraph(sim.fecha_ingreso.strftime('%d/%m/%Y') if sim.fecha_ingreso else '-', cell_val),
+         Paragraph('Militar(es)', cell_label),  Paragraph(nombres_militares, cell_val)],
+        [Paragraph('Objeto', cell_label),       Paragraph(sim.objeto or '-', cell_val), '', ''],
     ]
-    info_table = Table(info_data, colWidths=[1.4*inch, 6.1*inch])
+    # Anchos: label1 | val1 | label2 | val2  (total ≈ 25.4 cm)
+    info_table = Table(info_data, colWidths=[2.8*cm, 8.5*cm, 2.8*cm, 11.3*cm])
     info_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#E8F4F8')),
+        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#E8F4F8')),
         ('BACKGROUND', (1, 0), (1, -1), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, 0), (0, -1), FONT_BOLD),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BACKGROUND', (3, 0), (3, -1), colors.white),
+        ('SPAN', (1, 3), (3, 3)),
+        ('ALIGN',  (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CCCCCC')),
-        ('LEFTPADDING', (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING',  (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING',   (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING',(0, 0), (-1, -1), 4),
     ]))
     story.append(info_table)
-    story.append(Spacer(1, 0.2*inch))
+    story.append(Spacer(1, 0.18*inch))
 
-    # Historial de custodia
+    # ── Tabla de movimientos ─────────────────────────────────────────────────
     heading_style = ParagraphStyle(
-        'SectionHead',
-        parent=styles['Heading2'],
-        fontSize=10,
-        textColor=colors.HexColor('#185FA5'),
-        spaceAfter=6,
+        'SectionHead', parent=styles['Heading2'],
+        fontName=FONT_BOLD, fontSize=10,
+        textColor=colors.HexColor('#185FA5'), spaceAfter=5,
     )
     story.append(Paragraph('Movimientos de Custodia', heading_style))
 
-    # Estilo para celdas con texto largo (permite salto de línea automático)
-    cell_style = ParagraphStyle(
-        'CellText',
-        parent=styles['Normal'],
-        fontName=FONT_NORMAL,
-        fontSize=8,
-        leading=10,
-        wordWrap='CJK',
-    )
+    cell_s = ParagraphStyle('Cell', parent=styles['Normal'],
+                            fontName=FONT_NORMAL, fontSize=7.5, leading=9.5, wordWrap='CJK')
+    cell_b = ParagraphStyle('CellB', parent=styles['Normal'],
+                            fontName=FONT_BOLD,   fontSize=7.5, leading=9.5)
 
-    # Anchos para portrait carta (usable ≈ 19.05 cm)
-    # Fecha Recep | Custodio | Abogado | Estado | Fecha Entrega | Observacion
-    col_widths = [2.2*cm, 3.7*cm, 2.5*cm, 3.2*cm, 2.2*cm, 5.25*cm]
+    def _fmt_persona(custodia):
+        """Devuelve nombre legible del abogado/destino según la custodia."""
+        pm = custodia.abogado_destino or custodia.abogado
+        if pm:
+            return f"{pm.grado} {pm.paterno} {pm.materno}".strip()
+        nombre = custodia.nombre_abogado_destino or custodia.nombre_abogado
+        return nombre or '-'
+
+    def _fmt_destino(custodia):
+        """Para custodias ARCHIVO: devuelve destino final + oficio + fecha oficio."""
+        if custodia.tipo_custodio != 'ARCHIVO':
+            return '-'
+        partes = []
+        if custodia.destino_final:
+            partes.append(custodia.get_destino_final_display() or custodia.destino_final)
+        if custodia.nro_oficio_archivo:
+            partes.append(f"Of. {custodia.nro_oficio_archivo}")
+        if custodia.fecha_oficio_archivo:
+            partes.append(custodia.fecha_oficio_archivo.strftime('%d/%m/%Y'))
+        return '\n'.join(partes) if partes else '-'
+
+    MOTIVO_DISPLAY = {
+        'AGENDA':               'Agenda',
+        'REVISION':             'Revision',
+        'NOTIFICACION':         'Notificacion',
+        'APELACION_TSP':        'Apelacion TSP',
+        'EJECUTORIA':           'Ejecutoria',
+        'RESPUESTA_MEMORIAL':   'Resp. Memorial',
+        'ARCHIVO':              'Archivo Final',
+    }
+
+    # Columnas (landscape carta, usable ≈ 25.4 cm):
+    # N° | Fecha Recep. | Custodio | Persona | Motivo | Estado | Fecha Entrega | Destino/Oficio | Observacion
+    col_widths = [0.55*cm, 2.1*cm, 3.6*cm, 4.0*cm, 2.3*cm, 2.8*cm, 2.1*cm, 3.8*cm, 4.05*cm]
 
     if custodia_historial:
-        custodia_data = [
-            ['Fecha Recep.', 'Custodio', 'Abogado', 'Estado', 'Fecha Entrega', 'Observacion']
+        headers = [
+            Paragraph('#',              cell_b),
+            Paragraph('Fecha Recep.',   cell_b),
+            Paragraph('Custodio',       cell_b),
+            Paragraph('Abogado/Persona',cell_b),
+            Paragraph('Motivo',         cell_b),
+            Paragraph('Estado',         cell_b),
+            Paragraph('Fecha Entrega',  cell_b),
+            Paragraph('Destino/Oficio', cell_b),
+            Paragraph('Observacion',    cell_b),
         ]
+        tabla_data = [headers]
 
-        for custodia in custodia_historial:
-            observacion = custodia.observacion if custodia.observacion else '-'
+        for idx, c in enumerate(custodia_historial, start=1):
+            motivo_txt  = MOTIVO_DISPLAY.get(c.motivo, c.motivo or '-')
+            estado_txt  = c.get_estado_display()
+            fecha_recep = tz.localtime(c.fecha_recepcion).strftime('%d/%m/%Y\n%H:%M')
+            fecha_entr  = (tz.localtime(c.fecha_entrega).strftime('%d/%m/%Y\n%H:%M')
+                           if c.fecha_entrega else 'Activa')
+            destino_txt = _fmt_destino(c)
+            persona_txt = _fmt_persona(c)
+            obs_txt     = c.observacion or '-'
 
-            custodia_data.append([
-                tz.localtime(custodia.fecha_recepcion).strftime('%d/%m/%Y\n%H:%M'),
-                custodia.get_tipo_custodio_display(),
-                custodia.abogado.paterno if custodia.abogado else '-',
-                custodia.get_estado_display(),
-                tz.localtime(custodia.fecha_entrega).strftime('%d/%m/%Y\n%H:%M') if custodia.fecha_entrega else 'Activa',
-                Paragraph(observacion, cell_style),
+            tabla_data.append([
+                Paragraph(str(idx),        cell_s),
+                Paragraph(fecha_recep,     cell_s),
+                Paragraph(c.get_tipo_custodio_display(), cell_s),
+                Paragraph(persona_txt,     cell_s),
+                Paragraph(motivo_txt,      cell_s),
+                Paragraph(estado_txt,      cell_s),
+                Paragraph(fecha_entr,      cell_s),
+                Paragraph(destino_txt,     cell_s),
+                Paragraph(obs_txt,         cell_s),
             ])
 
-        custodia_table = Table(custodia_data, colWidths=col_widths)
-
-        custodia_table.setStyle(TableStyle([
-            # Cabecera: fondo blanco, texto negro en negrita (sin relleno azul)
-            ('BACKGROUND', (0, 0), (-1, 0), colors.white),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-            ('FONTNAME', (0, 0), (-1, 0), FONT_BOLD),
-            ('FONTSIZE', (0, 0), (-1, 0), 8),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
-            ('TOPPADDING', (0, 0), (-1, 0), 7),
-            # Línea inferior de la cabecera más gruesa para separar visualmente
-            ('LINEBELOW', (0, 0), (-1, 0), 1.2, colors.HexColor('#185FA5')),
-            # Filas de datos
-            ('ALIGN', (0, 1), (4, -1), 'CENTER'),
-            ('ALIGN', (5, 1), (5, -1), 'LEFT'),
+        tabla = Table(tabla_data, colWidths=col_widths, repeatRows=1)
+        tabla.setStyle(TableStyle([
+            ('BACKGROUND',    (0, 0), (-1, 0),  colors.HexColor('#185FA5')),
+            ('TEXTCOLOR',     (0, 0), (-1, 0),  colors.white),
+            ('ALIGN',         (0, 0), (-1, 0),  'CENTER'),
+            ('VALIGN',        (0, 0), (-1, 0),  'MIDDLE'),
+            ('TOPPADDING',    (0, 0), (-1, 0),  6),
+            ('BOTTOMPADDING', (0, 0), (-1, 0),  6),
+            ('LINEBELOW',     (0, 0), (-1, 0),  1.2, colors.HexColor('#0d3a7a')),
+            ('ALIGN',  (0, 1), (0, -1), 'CENTER'),
             ('VALIGN', (0, 1), (-1, -1), 'TOP'),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('FONTNAME', (0, 1), (-1, -1), FONT_NORMAL),
-            ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#CCCCCC')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F5F5F5')]),
-            ('LEFTPADDING', (0, 0), (-1, -1), 5),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
-            ('TOPPADDING', (0, 1), (-1, -1), 4),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+            ('FONTSIZE', (0, 1), (-1, -1), 7.5),
+            ('GRID',   (0, 0), (-1, -1), 0.4, colors.HexColor('#CCCCCC')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F0F6FF')]),
+            ('LEFTPADDING',  (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING',   (0, 1), (-1, -1), 3),
+            ('BOTTOMPADDING',(0, 1), (-1, -1), 3),
         ]))
-
-        story.append(custodia_table)
+        story.append(tabla)
     else:
         story.append(Paragraph('<i>No hay movimientos de custodia registrados.</i>', styles['Normal']))
 
-    # Pie de página
-    story.append(Spacer(1, 0.25*inch))
-    pie_style = ParagraphStyle(
-        'Footer',
-        parent=styles['Normal'],
-        fontSize=7,
-        textColor=colors.HexColor('#999999'),
-        alignment=0,
-    )
-    generated_time = now_local.strftime('%d/%m/%Y %H:%M:%S')
-    story.append(Paragraph(f'Generado: {generated_time}', pie_style))
+    # ── Pie de página ────────────────────────────────────────────────────────
+    story.append(Spacer(1, 0.2*inch))
+    pie_style = ParagraphStyle('Footer', parent=styles['Normal'],
+                               fontName=FONT_NORMAL, fontSize=7,
+                               textColor=colors.HexColor('#999999'), alignment=0)
+    story.append(Paragraph(f'Generado: {now_local.strftime("%d/%m/%Y %H:%M:%S")}', pie_style))
 
     doc.build(story)
     return response
