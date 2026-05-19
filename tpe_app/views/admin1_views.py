@@ -971,15 +971,25 @@ def quitar_auto_de_agenda(request, ag_id, auto_id):
 
 @rol_requerido('ADMIN1_AGENDADOR', 'ADMINISTRADOR', 'MASTER')
 def agenda_detalle_pdf(request, ag_id):
-    """Genera PDF de la agenda con los casos que se tratarán."""
+    """Genera PDF/XLS/CSV de la agenda con los casos que se tratarán."""
     from io import BytesIO
+    from django.http import HttpResponse
+
+    # Verificar formato solicitado
+    export_format = request.GET.get('format', 'pdf').lower()
+
+    if export_format == 'excel':
+        return agenda_detalle_excel(request, ag_id)
+    elif export_format == 'csv':
+        return agenda_detalle_csv(request, ag_id)
+
+    # Por defecto: PDF
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.pagesizes import letter
     from reportlab.lib.units import inch
     from reportlab.lib import colors
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
-    from django.http import HttpResponse
 
     agenda = get_object_or_404(AGENDA, pk=ag_id)
 
@@ -1205,6 +1215,246 @@ def agenda_detalle_pdf(request, ag_id):
     filename = f"Agenda_{agenda.numero.replace('/', '-')}.pdf"
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+
+def agenda_detalle_excel(request, ag_id):
+    """Exporta la agenda a Excel."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from io import BytesIO
+    from django.http import HttpResponse
+
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+
+    # Obtener datos de la agenda (misma lógica que PDF)
+    dictamenes_qs = DICTAMEN.objects.filter(agenda=agenda).select_related(
+        'sim', 'pm', 'abogado'
+    ).order_by('sim__codigo')
+
+    sim_ids_todos = set(dictamenes_qs.values_list('sim_id', flat=True))
+
+    res_por_sim = {}
+    for r in Resolucion.objects.filter(sim_id__in=sim_ids_todos).select_related('abogado', 'pm'):
+        res_por_sim.setdefault(r.sim_id, {}).setdefault(r.instancia, []).append(r)
+
+    casos_agenda = []
+    vistos = set()
+    for d in dictamenes_qs:
+        sid = d.sim_id
+        if sid in vistos:
+            continue
+        vistos.add(sid)
+        dictamenes_sim = [x for x in dictamenes_qs if x.sim_id == sid]
+        rrs_sim = res_por_sim.get(sid, {}).get('RECONSIDERACION', [])
+        casos_agenda.append({
+            'sim': d.sim,
+            'dictamenes': dictamenes_sim,
+            'res_1ra': res_por_sim.get(sid, {}).get('PRIMERA', []),
+            'rrs': rrs_sim,
+        })
+
+    casos_1ra = [c for c in casos_agenda if not c['rrs']]
+    casos_rr = [c for c in casos_agenda if c['rrs']]
+
+    # Crear workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Agenda"
+
+    # Estilos
+    header_fill = PatternFill(start_color="1e3c72", end_color="1e3c72", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    title_font = Font(bold=True, size=12)
+    border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+
+    # Encabezado
+    ws['A1'] = f"TRIBUNAL DE PERSONAL DEL EJÉRCITO - AGENDA N° {agenda.numero}"
+    ws['A1'].font = title_font
+    ws.merge_cells('A1:E1')
+
+    ws['A2'] = f"Tipo: {agenda.get_tipo_display()} | Estado: {agenda.get_estado_display()}"
+    ws['A2'].font = Font(size=10)
+    ws.merge_cells('A2:E2')
+
+    ws['A3'] = f"Fecha Programada: {agenda.fecha_prog.strftime('%d/%m/%Y') if agenda.fecha_prog else '—'} | Realizada: {agenda.fecha_real.strftime('%d/%m/%Y') if agenda.fecha_real else '—'}"
+    ws['A3'].font = Font(size=10)
+    ws.merge_cells('A3:E3')
+
+    row = 5
+
+    # Primera Resolución
+    ws[f'A{row}'] = "PRIMERA RESOLUCIÓN"
+    ws[f'A{row}'].font = Font(bold=True, size=11, color="1e3c72")
+    ws.merge_cells(f'A{row}:E{row}')
+    row += 1
+
+    headers = ["N° SIM", "Objeto", "Militar(es)", "Abogado", "N° Resolución"]
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+
+    row += 1
+
+    for caso in casos_1ra:
+        sim = caso['sim']
+        militares = " | ".join([
+            f"{d.pm.grado or ''} {d.pm.paterno} {d.pm.materno}, {d.pm.nombre}".strip()
+            for d in caso['dictamenes'] if d.pm
+        ]) or "—"
+        abogados = " | ".join([
+            f"{d.abogado.grado or ''} {d.abogado.paterno} [Dict. {d.numero or 'S/N'}]".strip()
+            for d in caso['dictamenes'] if d.abogado
+        ]) or "—"
+        resolucion = " / ".join(r.numero for r in caso['res_1ra'] if r.numero) or "—"
+
+        ws.cell(row=row, column=1, value=sim.codigo or "—").border = border
+        ws.cell(row=row, column=2, value=sim.objeto or "—").border = border
+        ws.cell(row=row, column=3, value=militares).border = border
+        ws.cell(row=row, column=4, value=abogados).border = border
+        ws.cell(row=row, column=5, value=resolucion).border = border
+        row += 1
+
+    row += 1
+
+    # Recurso de Reconsideración
+    ws[f'A{row}'] = "RECURSO DE RECONSIDERACIÓN"
+    ws[f'A{row}'].font = Font(bold=True, size=11, color="f57c00")
+    ws.merge_cells(f'A{row}:E{row}')
+    row += 1
+
+    headers = ["N° SIM", "Objeto", "Militar Recurrente", "Abogado RR", "N° RR"]
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.fill = PatternFill(start_color="f57c00", end_color="f57c00", fill_type="solid")
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+
+    row += 1
+
+    for caso in casos_rr:
+        sim = caso['sim']
+        for rr in caso['rrs']:
+            militar = f"{rr.pm.grado or ''} {rr.pm.paterno} {rr.pm.materno}, {rr.pm.nombre}".strip() if rr.pm else "—"
+            abogado = f"{rr.abogado.grado or ''} {rr.abogado.paterno}".strip() if rr.abogado else "—"
+
+            ws.cell(row=row, column=1, value=sim.codigo or "—").border = border
+            ws.cell(row=row, column=2, value=sim.objeto or "—").border = border
+            ws.cell(row=row, column=3, value=militar).border = border
+            ws.cell(row=row, column=4, value=abogado).border = border
+            ws.cell(row=row, column=5, value=rr.numero or "—").border = border
+            row += 1
+
+    # Ajustar ancho de columnas
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 30
+    ws.column_dimensions['D'].width = 25
+    ws.column_dimensions['E'].width = 15
+
+    # Enviar respuesta
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    filename = f"Agenda_{agenda.numero.replace('/', '-')}.xlsx"
+    response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def agenda_detalle_csv(request, ag_id):
+    """Exporta la agenda a CSV."""
+    import csv
+    from io import StringIO
+    from django.http import HttpResponse
+
+    agenda = get_object_or_404(AGENDA, pk=ag_id)
+
+    # Obtener datos de la agenda (misma lógica)
+    dictamenes_qs = DICTAMEN.objects.filter(agenda=agenda).select_related(
+        'sim', 'pm', 'abogado'
+    ).order_by('sim__codigo')
+
+    sim_ids_todos = set(dictamenes_qs.values_list('sim_id', flat=True))
+
+    res_por_sim = {}
+    for r in Resolucion.objects.filter(sim_id__in=sim_ids_todos).select_related('abogado', 'pm'):
+        res_por_sim.setdefault(r.sim_id, {}).setdefault(r.instancia, []).append(r)
+
+    casos_agenda = []
+    vistos = set()
+    for d in dictamenes_qs:
+        sid = d.sim_id
+        if sid in vistos:
+            continue
+        vistos.add(sid)
+        dictamenes_sim = [x for x in dictamenes_qs if x.sim_id == sid]
+        rrs_sim = res_por_sim.get(sid, {}).get('RECONSIDERACION', [])
+        casos_agenda.append({
+            'sim': d.sim,
+            'dictamenes': dictamenes_sim,
+            'res_1ra': res_por_sim.get(sid, {}).get('PRIMERA', []),
+            'rrs': rrs_sim,
+        })
+
+    casos_1ra = [c for c in casos_agenda if not c['rrs']]
+    casos_rr = [c for c in casos_agenda if c['rrs']]
+
+    # Crear CSV
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+
+    # Encabezado
+    writer.writerow([f"TRIBUNAL DE PERSONAL DEL EJÉRCITO - AGENDA N° {agenda.numero}"])
+    writer.writerow([f"Tipo: {agenda.get_tipo_display()} | Estado: {agenda.get_estado_display()}"])
+    writer.writerow([f"Fecha Programada: {agenda.fecha_prog.strftime('%d/%m/%Y') if agenda.fecha_prog else '—'} | Realizada: {agenda.fecha_real.strftime('%d/%m/%Y') if agenda.fecha_real else '—'}"])
+    writer.writerow([])
+
+    # Primera Resolución
+    writer.writerow(["PRIMERA RESOLUCIÓN"])
+    writer.writerow(["N° SIM", "Objeto", "Militar(es)", "Abogado", "N° Resolución"])
+
+    for caso in casos_1ra:
+        sim = caso['sim']
+        militares = " | ".join([
+            f"{d.pm.grado or ''} {d.pm.paterno} {d.pm.materno}, {d.pm.nombre}".strip()
+            for d in caso['dictamenes'] if d.pm
+        ]) or "—"
+        abogados = " | ".join([
+            f"{d.abogado.grado or ''} {d.abogado.paterno} [Dict. {d.numero or 'S/N'}]".strip()
+            for d in caso['dictamenes'] if d.abogado
+        ]) or "—"
+        resolucion = " / ".join(r.numero for r in caso['res_1ra'] if r.numero) or "—"
+
+        writer.writerow([sim.codigo or "—", sim.objeto or "—", militares, abogados, resolucion])
+
+    writer.writerow([])
+
+    # Recurso de Reconsideración
+    writer.writerow(["RECURSO DE RECONSIDERACIÓN"])
+    writer.writerow(["N° SIM", "Objeto", "Militar Recurrente", "Abogado RR", "N° RR"])
+
+    for caso in casos_rr:
+        sim = caso['sim']
+        for rr in caso['rrs']:
+            militar = f"{rr.pm.grado or ''} {rr.pm.paterno} {rr.pm.materno}, {rr.pm.nombre}".strip() if rr.pm else "—"
+            abogado = f"{rr.abogado.grado or ''} {rr.abogado.paterno}".strip() if rr.abogado else "—"
+
+            writer.writerow([sim.codigo or "—", sim.objeto or "—", militar, abogado, rr.numero or "—"])
+
+    # Enviar respuesta
+    buffer.seek(0)
+    filename = f"Agenda_{agenda.numero.replace('/', '-')}.csv"
+    response = HttpResponse(buffer.getvalue(), content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
 
