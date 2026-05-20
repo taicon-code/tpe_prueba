@@ -21,9 +21,13 @@
 {% endif %}
 <div class="card" style="max-width: 1000px; margin: 0 auto;">
     <p style="margin: 0 0 0.25rem 0;"><strong>RES origen:</strong> {{ res.numero }} — {{ res.get_tipo_display }}</p>
-    {% if res.agenda %}
+    {% if rr_existente.agenda %}
     <p style="margin: 0 0 1rem 0; font-size: 0.95rem; color: #555;">
-        📅 Agenda: <strong>{{ res.agenda.fecha_real|date:"d/m/Y" }}</strong>
+        📅 Agendado para: <strong>{{ rr_existente.agenda.fecha_prog|date:"d/m/Y" }}</strong>
+    </p>
+    {% elif res.agenda %}
+    <p style="margin: 0 0 1rem 0; font-size: 0.95rem; color: #555;">
+        📅 Agenda (RES original): <strong>{{ res.agenda.fecha_prog|date:"d/m/Y" }}</strong>
     </p>
     {% endif %}
 
@@ -36,10 +40,11 @@
                 <input class="form-control" type="date" name="RR_FEC" />
             </div>
             <div>
-                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">Procedencia del Recurso</label>
+                <label style="display:block; font-weight:600; margin-bottom:0.5rem;">RESOLUTIVA DEL RECURSO DE RECONSIDERACIÓN</label>
                 <select class="form-control" name="RR_RESUM" style="cursor: pointer;">
                     <option value="">— Seleccionar —</option>
                     <option value="PROCEDENCIA">✅ PROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN</option>
+                    <option value="PROCEDENCIA_EN_PARTE">⚖️ PROCEDENCIA EN PARTE</option>
                     <option value="IMPROCEDENCIA">❌ IMPROCEDENCIA A SU RECURSO DE RECONSIDERACIÓN</option>
                 </select>
             </div>
