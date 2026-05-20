@@ -678,10 +678,26 @@ def abogado_confirmar_recepcion(request, sim_id: int):
                 # Cerrar la custodia PENDIENTE_CONFIRMACION
                 custodia.fecha_entrega = timezone.now()
                 custodia.save()
-                # Crear nueva custodia RECIBIDA_CONFORME con abogado ya asignado
+                # Crear nueva custodia RECIBIDA_CONFORME con abogado ya asignado.
+                # Si la custodia pendiente era ADMIN2_ARCHIVO (flujo de agendar_sumario),
+                # se determina el tipo de tenencia según el rol del abogado.
+                _ROL_A_TIPO = {
+                    'ABOG1_ASESOR': 'ABOG_ASESOR',
+                    'ABOG2_AUTOS':  'ABOG_AUTOS',
+                    'ABOG3_BUSCADOR': 'ABOG_ASESOR',
+                    'ABOGADO': 'ABOG_ASESOR',
+                }
+                if custodia.tipo_custodio == 'ADMIN2_ARCHIVO':
+                    perfil_abog = getattr(request.user, 'perfilusuario', None)
+                    tipo_tenencia = _ROL_A_TIPO.get(
+                        perfil_abog.rol if perfil_abog else '', 'ABOG_ASESOR'
+                    )
+                else:
+                    tipo_tenencia = custodia.tipo_custodio
+
                 CustodiaSIM.objects.create(
                     sim=sim,
-                    tipo_custodio=custodia.tipo_custodio,
+                    tipo_custodio=tipo_tenencia,
                     abogado=abogado,
                     usuario=request.user,
                     motivo=custodia.motivo or 'AGENDA',

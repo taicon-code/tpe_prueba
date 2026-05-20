@@ -253,7 +253,7 @@
                 <td style="white-space: nowrap;"><strong>RES {{ rr.res.numero|default:"-" }}</strong></td>
                 <td style="white-space: nowrap;">
                     {% if rr.res.id %}
-                        {{ rr.res.pm.grado }} {{ rr.res.pm.paterno }}<br>
+                        {{ rr.res.pm.grado }} {{ rr.res.pm.paterno }} {{ rr.res.pm.materno|default:"" }}, {{ rr.res.pm.nombre|default:"" }}<br>
                         <small style="color: #6b7280;">SIM: {{ rr.sim.codigo }}</small>
                     {% else %}
                         <span style="color: #9ca3af;">—</span>
