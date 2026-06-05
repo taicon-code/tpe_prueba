@@ -86,6 +86,43 @@ def _obtener_historial_completo(personal_id):
     return historial
 
 
+def _agrupar_actuados_por_sumario(historial, personal):
+    """Agrupa los actuados de UNA persona por cada sumario, con paneles TPE/TSP
+    separados — mismo formato que `militares_con_docs` de detalles_sim, pero
+    invertido (un militar fijo, iterando por sumario). Permite renderizar el
+    resultado de búsqueda como acordeones plegables y compactos."""
+    sumarios_con_docs = []
+    for sim in historial['sumarios']:
+        res_primera = historial['resoluciones'].filter(sim=sim).order_by('fecha')
+        rrs         = historial['segundas_resoluciones'].filter(sim=sim).order_by('fecha')
+        autos       = historial['autos_tpe'].filter(sim=sim).order_by('fecha')
+        raps        = historial['apelaciones_tsp'].filter(sim=sim).order_by('fecha_presentacion')
+
+        tsp_raee    = ActuadoTSP.objects.filter(
+            apelacion_tsp__in=raps, instancia='RAEE'
+        ).order_by('fecha')
+        tsp_nulidad = ActuadoTSP.objects.filter(
+            apelacion_tsp__in=raps,
+            instancia__in=['NULIDAD', 'NULIDAD_DEFECTOS_ABSOLUTOS']
+        ).order_by('fecha')
+        tsp_auto    = ActuadoTSP.objects.filter(
+            apelacion_tsp__in=raps, instancia='AUTO_TSP'
+        ).order_by('fecha')
+
+        sumarios_con_docs.append({
+            'sim':             sim,
+            'resoluciones':    res_primera,
+            'rrs':             rrs,
+            'autos_tpe':       autos,
+            'apelaciones_tsp': raps,
+            'tsp_raee':        tsp_raee,
+            'tsp_nulidad':     tsp_nulidad,
+            'tsp_auto':        tsp_auto,
+            'has_tsp':         raps.exists(),
+        })
+    return sumarios_con_docs
+
+
 def _compilar_documentos_lotes(sim, historial):
     """Compila documentos coordinados para reportes por lote
     Retorna string formateado con tipo, numero, fecha y resolutiva"""
@@ -224,6 +261,11 @@ def buscador_dashboard(request):
         historial = _obtener_historial_completo(personal_seleccionado.id)
         estado = _obtener_estado_actual(personal_seleccionado.id)
 
+    # Agrupar actuados por sumario para mostrar acordeones plegables y compactos
+    sumarios_con_docs = []
+    if personal_seleccionado and historial:
+        sumarios_con_docs = _agrupar_actuados_por_sumario(historial, personal_seleccionado)
+
     context = {
         'query': query,
         'promocion': promocion,
@@ -234,6 +276,7 @@ def buscador_dashboard(request):
         'personal_seleccionado': personal_seleccionado,
         'historial': historial,
         'estado': estado,
+        'sumarios_con_docs': sumarios_con_docs,
     }
     return render(request, 'tpe_app/buscador/dashboard_buscador.html', context)
 

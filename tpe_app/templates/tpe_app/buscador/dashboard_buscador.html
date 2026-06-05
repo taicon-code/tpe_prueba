@@ -1,4 +1,4 @@
-{% extends 'tpe_app/base.html' %}
+﻿{% extends 'tpe_app/base.html' %}
 {% load static %}
 
 {% block title %}Panel de Búsqueda - TPE Sistema{% endblock %}
@@ -637,6 +637,124 @@
     background: #f9fafb;
     border-radius: 8px;
   }
+
+  /* ────────────────────────────────────────────────────
+     ACORDEÓN PLEGABLE POR SUMARIO (resultado de búsqueda)
+     Estilo compacto inspirado en el panel /buscador/sim/
+     ──────────────────────────────────────────────────── */
+  .sim-accordion {
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: .85rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  }
+  .sim-acc-header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5282 100%);
+    padding: .8rem 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    user-select: none;
+  }
+  .sim-acc-header .codigo { font-weight: 800; font-size: 1rem; color: #fff; line-height: 1.3; }
+  .sim-acc-header .sub    { font-size: .78rem; color: rgba(255,255,255,.72); margin-top: 2px; }
+  .sim-acc-badges { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; max-width: 240px; }
+  .sim-acc-badge  {
+    background: rgba(255,255,255,.18);
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .sim-acc-badge.empty { background: rgba(255,255,255,.10); color: rgba(255,255,255,.7); font-style: italic; }
+  .sim-acc-caret { margin-left: auto; color: rgba(255,255,255,.7); transition: transform .22s; font-size: 1rem; flex-shrink: 0; }
+  .sim-acc-header.open .sim-acc-caret { transform: rotate(180deg); }
+
+  .sim-acc-body { background: #f8fafc; padding: .9rem; display: none; }
+  .sim-acc-body.open { display: block; }
+
+  /* Tira de metadatos del sumario dentro del acordeón */
+  .sim-acc-meta {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: .75rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: .75rem .9rem;
+    margin-bottom: .85rem;
+    font-size: .85rem;
+  }
+  .sim-acc-meta .k { font-size: .68rem; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; display: block; margin-bottom: 2px; }
+  .sim-acc-meta .v { color: #1f2937; font-weight: 600; }
+
+  /* Tarjeta de actuado compacta */
+  .acc-doc {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    margin-bottom: .55rem;
+    overflow: hidden;
+  }
+  .acc-doc-stripe { display: flex; align-items: stretch; }
+  .acc-doc-bar    { width: 5px; flex-shrink: 0; background: var(--doc-color, #185FA5); }
+  .acc-doc-main   { flex: 1; padding: .6rem .85rem; }
+  .acc-doc-top    { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem; }
+  .acc-tipo-badge {
+    display: inline-block;
+    font-size: .7rem; font-weight: 800;
+    padding: 3px 10px; border-radius: 4px;
+    letter-spacing: .4px; color: #fff;
+    text-transform: uppercase;
+    background: var(--doc-color, #185FA5);
+    margin-right: .4rem;
+  }
+  .acc-doc-num   { font-weight: 700; font-size: .92rem; color: #1f2937; }
+  .acc-doc-fecha { font-size: .8rem; color: #6b7280; }
+  .acc-doc-campos { display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; margin-top: .5rem; }
+  .acc-doc-campos .k { font-size: .68rem; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; display: block; }
+  .acc-doc-campos .v { font-size: .85rem; font-weight: 600; color: #1f2937; }
+  .acc-doc-links a {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 4px;
+    background: #f0f0f0; text-decoration: none; font-size: .9rem;
+  }
+  .acc-doc-links a:hover { background: #e2e8f0; }
+  .acc-chip-ok  { background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 2px 7px; border-radius: 4px; font-size: .76rem; font-weight: 600; }
+  .acc-chip-pen { background: #f3f4f6; border: 1px solid #d1d5db; color: #9ca3af; padding: 2px 7px; border-radius: 4px; font-size: .76rem; font-weight: 600; }
+  .acc-resolutiva {
+    border-left: 5px solid var(--doc-color, #185FA5);
+    background: #eef2f8;
+    padding: .6rem .9rem;
+    font-size: .88rem;
+    line-height: 1.55;
+    color: #111827;
+  }
+  .acc-resolutiva .lbl { display: block; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 4px; opacity: .75; color: var(--doc-color, #185FA5); }
+
+  /* Sub-panel TPE / TSP */
+  .acc-panel { border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; margin-bottom: .85rem; }
+  /* Dos columnas (TPE izquierda · TSP derecha) cuando hay actuados TSP */
+  .acc-panels.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; align-items: start; }
+  .acc-panels.two-col .acc-panel { margin-bottom: 0; height: 100%; }
+  @media (max-width: 900px) { .acc-panels.two-col { grid-template-columns: 1fr; } }
+  .acc-panel-head { padding: .45rem .9rem; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #fff; }
+  .acc-panel-body { padding: .65rem .75rem; background: #f8fafc; }
+  .acc-sep { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; color: #6b7280; border-bottom: 1px solid #e5e7eb; padding-bottom: 3px; margin: .65rem 0 .45rem; }
+  .acc-panel-body .acc-sep:first-child { margin-top: 0; }
+
+  /* Colores por tipo (reaprovecha la paleta del dashboard) */
+  .acc-doc.res     { --doc-color: #001B48; }
+  .acc-doc.rr      { --doc-color: #2d82b5; }
+  .acc-doc.auto-tpe{ --doc-color: #018ABE; }
+  .acc-doc.rap     { --doc-color: #3e3c3b; }
+  .acc-doc.raee    { --doc-color: #06b6d4; }
+  .acc-doc.auto-tsp{ --doc-color: #10b981; }
+  .acc-doc.memo    { --doc-color: #0d7c66; background: #f0fdfa; border-color: #a7f3d0; margin-left: 1.1rem; }
 </style>
 
 <!-- TABS DE BÚSQUEDA -->
@@ -780,372 +898,243 @@
   </div>
   {% endif %}
 
-  <!-- SUMARIOS PANEL -->
-  {% if historial.sumarios %}
-  <div class="sumarios-panel">
-    <h3>Sumarios ({{ historial.sumarios.count }})</h3>
-    {% for sim in historial.sumarios %}
-    <div class="sumario-item">
-      <div class="sumario-codigo">{{ sim.codigo }} - {{ sim.get_tipo_display }}{% if sim.version > 1 %} <span style="background:#f59e0b;color:#1a1a1a;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;">v{{ sim.version }} REAPERTURA</span>{% endif %}</div>
-      <div class="sumario-info">
-        <strong>Objeto:</strong> {{ sim.objeto }}<br>
-        <strong>Resumen:</strong> {{ sim.resumen|truncatewords:15 }}<br>
-        <strong>Fecha Ingreso:</strong> {{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}<br>
-        <strong>Estado:</strong> {{ sim.get_estado_display }} &nbsp;
-        <strong>Fase:</strong> {% include "tpe_app/buscador/_fase_badge.html" %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- ACTUADOS POR SUMARIO Y/O SOLICITUD -->
-  {% if historial.sumarios %}
+  <!-- ACTUADOS POR SUMARIO (acordeones plegables, estilo panel SIM) -->
+  {% if sumarios_con_docs %}
   <div class="actuados-container">
     <h3 class="actuados-section-title">📋 Actuados por Sumario y/o Solicitud</h3>
 
-    {% for sim in historial.sumarios %}
-    <div class="sumario-box">
-      <!-- Encabezado del Sumario -->
-      <div class="sumario-box-header">
-        <h4>{{ sim.codigo }} — {{ sim.get_tipo_display }}{% if sim.version > 1 %} <span style="background:#f59e0b;color:#1a1a1a;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:700;">v{{ sim.version }} REAPERTURA</span>{% endif %}</h4>
-        <div class="sumario-box-header-meta">
-          <div>
-            <strong>Objeto</strong>
-            {{ sim.objeto }}
-          </div>
-          <div>
-            <strong>Estado</strong>
-            {{ sim.get_estado_display }}
-          </div>
-          <div>
-            <strong>Fase</strong>
-            {% include "tpe_app/buscador/_fase_badge.html" %}
-          </div>
+    {% for grupo in sumarios_con_docs %}
+    {% with sim=grupo.sim %}
+    <div class="sim-accordion">
+
+      <!-- Cabecera plegable -->
+      <div class="sim-acc-header" onclick="toggleSumAcc(this)">
+        <div style="flex:1;min-width:0;">
+          <div class="codigo">{{ sim.codigo }} — {{ sim.get_tipo_display }}{% if sim.version > 1 %} <span class="sim-acc-badge" style="background:#f59e0b;color:#1a1a1a;">v{{ sim.version }} REAPERTURA</span>{% endif %}</div>
+          <div class="sub">{{ sim.get_estado_display }}{% if sim.objeto %} &bull; {{ sim.objeto|truncatewords:9 }}{% endif %}</div>
         </div>
+        <div class="sim-acc-badges">
+          {% if grupo.resoluciones %}<span class="sim-acc-badge">{{ grupo.resoluciones|length }} Resolución</span>{% endif %}
+          {% if grupo.rrs %}<span class="sim-acc-badge">{{ grupo.rrs|length }} Reconsideración</span>{% endif %}
+          {% if grupo.autos_tpe %}<span class="sim-acc-badge">{{ grupo.autos_tpe|length }} Auto TPE</span>{% endif %}
+          {% if grupo.has_tsp %}<span class="sim-acc-badge">Apelación TSP</span>{% endif %}
+          {% if not grupo.resoluciones and not grupo.rrs and not grupo.autos_tpe and not grupo.has_tsp %}<span class="sim-acc-badge empty">Sin actuados</span>{% endif %}
+        </div>
+        <span class="sim-acc-caret">▾</span>
       </div>
 
-      <!-- Mostrar solo el personal buscado (no todos los involucrados del SIM) -->
-      {% with militar=personal_seleccionado %}
-        <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f0f7ff; border-radius: 8px; border-left: 4px solid #185FA5;">
-          <h5 style="margin: 0 0 1rem 0; color: #185FA5; font-weight: 700; font-size: 0.95rem;">
-            👤 {{ militar.grado }} {{ militar.nombre }} {{ militar.paterno }}{% if militar.materno %} {{ militar.materno }}{% endif %}
-          </h5>
+      <!-- Cuerpo plegable -->
+      <div class="sim-acc-body">
 
-          <!-- Resoluciones (PRIMERA INSTANCIA) para este militar -->
-          {% for res in historial.resoluciones %}
-            {% if res.sim.id == sim.id and res.pm.id == militar.id %}
-            <div class="documento-item res">
-              <div class="documento-header">
-                <div class="documento-tipo-badge res-badge">📄 Resolución</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ res.numero|default:"N/A" }}</div>
-                  <div class="documento-links">
-                    {% with docs=res.documentos.all %}
-                      {% for doc in docs %}
-                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
-                      {% endfor %}
-                    {% endwith %}
-                  </div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha</span>
-                  <span class="documento-field-value">{{ res.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Tipo</span>
-                  <span class="documento-field-value">{{ res.get_tipo_display|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Notificación</span>
-                  <span class="documento-field-value">{% if res.notificacion %}{{ res.notificacion.get_tipo_display }} ({{ res.notificacion.fecha|date:"d/m/Y" }}){% else %}<span style="color: #999;">NO</span>{% endif %}</span>
-                </div>
-                {% if res.texto %}
-                <div class="documento-resolutiva">
-                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
-                  <span class="documento-field-value">{{ res.texto }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- Recurso Reconsideración (RR) para este militar -->
-          {% for rr in historial.segundas_resoluciones %}
-            {% if rr.sim.id == sim.id and rr.pm.id == militar.id %}
-            <div class="documento-item rr">
-              <div class="documento-header">
-                <div class="documento-tipo-badge rr-badge">🔄 Recurso Reconsideración (RR)</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ rr.numero|default:"N/A" }}</div>
-                  <div class="documento-links">
-                    {% with docs=rr.documentos.all %}
-                      {% for doc in docs %}
-                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
-                      {% endfor %}
-                    {% endwith %}
-                  </div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha</span>
-                  <span class="documento-field-value">{{ rr.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Tipo</span>
-                  <span class="documento-field-value">{{ rr.get_tipo_display|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Notificación</span>
-                  <span class="documento-field-value">{% if rr.notificacion %}{{ rr.notificacion.get_tipo_display }} ({{ rr.notificacion.fecha|date:"d/m/Y" }}){% else %}<span style="color: #999;">NO</span>{% endif %}</span>
-                </div>
-                {% if rr.texto %}
-                <div class="documento-resolutiva">
-                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
-                  <span class="documento-field-value">{{ rr.texto }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- Autos TPE para este militar -->
-          {% for auto in historial.autos_tpe %}
-            {% if auto.sim.id == sim.id and auto.pm.id == militar.id %}
-            <div class="documento-item auto-tpe">
-              <div class="documento-header">
-                <div class="documento-tipo-badge auto-tpe-badge">⚖️ Auto TPE</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ auto.numero|default:"S/N" }}</div>
-                  <div class="documento-links">
-                    {% with docs=auto.documentos.all %}
-                      {% for doc in docs %}
-                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
-                      {% endfor %}
-                    {% endwith %}
-                  </div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha</span>
-                  <span class="documento-field-value">{{ auto.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Disposición</span>
-                  <span class="documento-field-value">{{ auto.get_tipo_display|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Notificación</span>
-                  <span class="documento-field-value">{% if auto.notificacion %}{{ auto.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
-                </div>
-                {% if auto.texto %}
-                <div class="documento-resolutiva">
-                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
-                  <span class="documento-field-value">{{ auto.texto }}</span>
-                </div>
-                {% endif %}
-                {% if auto.memo_numero %}
-                <div class="documento-memo">
-                  <span class="documento-resolutiva-label">Memorándum</span>
-                  <span class="documento-field-value">Nº {{ auto.memo_numero }} — {{ auto.memo_fecha|date:"d/m/Y"|default:"N/A" }} — Entrega: {{ auto.memo_fecha_entrega|date:"d/m/Y"|default:"Pendiente" }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- Memorándums para este militar -->
-          {% for memo in historial.memorandums %}
-            {% if memo.resolucion and memo.resolucion.sim.id == sim.id and memo.resolucion.pm.id == militar.id %}
-            <div class="documento-item memo">
-              <div class="documento-header">
-                <div class="documento-tipo-badge" style="background: #e0f7f4; color: #0d7c66; border-radius: 4px; padding: 2px 8px; font-weight: 600; font-size: 0.85rem;">📋 Memorándum</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ memo.numero|default:"N/A" }}</div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha</span>
-                  <span class="documento-field-value">{{ memo.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                {% if memo.fecha_entrega %}
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha Entrega</span>
-                  <span class="documento-field-value">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
-                </div>
-                {% endif %}
-                <div class="documento-field">
-                  <span class="documento-field-label">Ligado a</span>
-                  <span class="documento-field-value">{% if memo.resolucion %}RES {{ memo.resolucion.numero }}{% elif memo.autotpe %}AUTO {{ memo.autotpe.numero }}{% else %}—{% endif %}</span>
-                </div>
-              </div>
-            </div>
-            {% elif memo.autotpe and memo.autotpe.sim.id == sim.id and memo.autotpe.pm.id == militar.id %}
-            <div class="documento-item memo">
-              <div class="documento-header">
-                <div class="documento-tipo-badge" style="background: #e0f7f4; color: #0d7c66; border-radius: 4px; padding: 2px 8px; font-weight: 600; font-size: 0.85rem;">📋 Memorándum</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ memo.numero|default:"N/A" }}</div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha</span>
-                  <span class="documento-field-value">{{ memo.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                {% if memo.fecha_entrega %}
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha Entrega</span>
-                  <span class="documento-field-value">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>
-                </div>
-                {% endif %}
-                <div class="documento-field">
-                  <span class="documento-field-label">Ligado a</span>
-                  <span class="documento-field-value">{% if memo.resolucion %}RES {{ memo.resolucion.numero }}{% elif memo.autotpe %}AUTO {{ memo.autotpe.numero }}{% else %}—{% endif %}</span>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- Recurso Apelación (RAP) para este militar -->
-          {% for rap in historial.recursos_apelacion %}
-            {% if rap.sim.id == sim.id and rap.pm.id == militar.id %}
-            <div class="documento-item rap">
-              <div class="documento-header">
-                <div class="documento-tipo-badge rap-badge">📢 Recurso Apelación (RAP)</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ rap.numero|default:"N/A" }}</div>
-                  <div class="documento-links">
-                    {% with docs=rap.documentos.all %}
-                      {% for doc in docs %}
-                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
-                      {% endfor %}
-                    {% endwith %}
-                  </div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Presentación</span>
-                  <span class="documento-field-value">{{ rap.fecha_presentacion|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Oficio</span>
-                  <span class="documento-field-value">{{ rap.numero_oficio|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha Oficio</span>
-                  <span class="documento-field-value">{{ rap.fecha_oficio|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Notificación</span>
-                  <span class="documento-field-value">{% if rap.notificacion %}{{ rap.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
-                </div>
-                {% if rap.texto %}
-                <div class="documento-resolutiva">
-                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
-                  <span class="documento-field-value">{{ rap.texto }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- RAEE para este militar -->
-          {% for raee in historial.raees %}
-            {% if raee.sim.id == sim.id and raee.pm.id == militar.id %}
-            <div class="documento-item raee">
-              <div class="documento-header">
-                <div class="documento-tipo-badge raee-badge">🔍 RAEE</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ raee.numero|default:"N/A" }}</div>
-                  <div class="documento-links">
-                    {% with docs=raee.documentos.all %}
-                      {% for doc in docs %}
-                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
-                      {% endfor %}
-                    {% endwith %}
-                  </div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Presentación</span>
-                  <span class="documento-field-value">{{ raee.fecha_presentacion|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Notificación</span>
-                  <span class="documento-field-value">{% if raee.notificacion %}{{ raee.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
-                </div>
-                {% if raee.texto %}
-                <div class="documento-resolutiva">
-                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
-                  <span class="documento-field-value">{{ raee.texto }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- Auto TSP para este militar -->
-          {% for autotsp in historial.autos_tsp %}
-            {% if autotsp.sim.id == sim.id and autotsp.pm.id == militar.id %}
-            <div class="documento-item auto-tsp">
-              <div class="documento-header">
-                <div class="documento-tipo-badge auto-tsp-badge">⚖️ Auto TSP</div>
-                <div class="documento-header-info">
-                  <div class="documento-numero">Nº {{ autotsp.numero|default:"N/A" }}</div>
-                  <div class="documento-links">
-                    {% with docs=autotsp.documentos.all %}
-                      {% for doc in docs %}
-                        <a href="{{ doc.archivo.url }}" target="_blank" title="Descargar PDF">📥</a>
-                      {% endfor %}
-                    {% endwith %}
-                  </div>
-                </div>
-              </div>
-              <div class="documento-body">
-                <div class="documento-field">
-                  <span class="documento-field-label">Fecha</span>
-                  <span class="documento-field-value">{{ autotsp.fecha|date:"d/m/Y"|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Disposición</span>
-                  <span class="documento-field-value">{{ autotsp.get_tipo_display|default:"N/A" }}</span>
-                </div>
-                <div class="documento-field">
-                  <span class="documento-field-label">Notificación</span>
-                  <span class="documento-field-value">{% if autotsp.notificacion %}{{ autotsp.notificacion.get_tipo_display }}{% else %}<span style="color: #999;">NO</span>{% endif %}</span>
-                </div>
-                {% if autotsp.texto %}
-                <div class="documento-resolutiva">
-                  <span class="documento-resolutiva-label">Parte Resolutiva</span>
-                  <span class="documento-field-value">{{ autotsp.texto }}</span>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-          {% endfor %}
-
-          <!-- Sin actuados para este militar -->
-          {% if not historial.resoluciones|dictsort:"sim_id"|slice:":1" and not historial.segundas_resoluciones|dictsort:"sim_id"|slice:":1" and not historial.autos_tpe|dictsort:"sim_id"|slice:":1" and not historial.recursos_apelacion|dictsort:"sim_id"|slice:":1" and not historial.raees|dictsort:"sim_id"|slice:":1" and not historial.autos_tsp|dictsort:"sim_id"|slice:":1" %}
-          <div class="sin-actuados" style="margin: 1rem 0;">Sin actuados registrados para {{ militar.nombre }} {{ militar.paterno }}.</div>
-          {% endif %}
+        <!-- Metadatos del sumario -->
+        <div class="sim-acc-meta">
+          <div><span class="k">Objeto</span><span class="v">{{ sim.objeto|default:"—" }}</span></div>
+          <div><span class="k">Fecha Ingreso</span><span class="v">{{ sim.fecha_ingreso|date:"d/m/Y"|default:"N/A" }}</span></div>
+          <div><span class="k">Fase</span><span class="v">{% include "tpe_app/buscador/_fase_badge.html" %}</span></div>
+          {% if sim.resumen %}<div style="grid-column:1/-1;"><span class="k">Resumen</span><span class="v" style="font-weight:500;">{{ sim.resumen|truncatewords:30 }}</span></div>{% endif %}
         </div>
-      {% endwith %}
-    </div>
+
+        {% if not grupo.resoluciones and not grupo.rrs and not grupo.autos_tpe and not grupo.has_tsp %}
+        <div class="sin-actuados" style="margin:0;">Sin actuados registrados para este sumario.</div>
+        {% else %}
+
+        <!-- ── Paneles TPE (izq) · TSP (der) ── -->
+        <div class="acc-panels{% if grupo.has_tsp %} two-col{% endif %}">
+
+        <!-- ── Panel TPE ── -->
+        <div class="acc-panel">
+          <div class="acc-panel-head" style="background:linear-gradient(135deg,#1e3a5f,#2d5282);">🏛️ Actuados TPE</div>
+          <div class="acc-panel-body">
+
+            {% if not grupo.resoluciones and not grupo.rrs and not grupo.autos_tpe %}
+            <p style="margin:0;color:#9ca3af;font-style:italic;font-size:.82rem;">Sin actuados TPE registrados.</p>
+            {% endif %}
+
+            {# — Resoluciones — #}
+            {% if grupo.resoluciones %}
+            <div class="acc-sep">Resoluciones</div>
+            {% for res in grupo.resoluciones %}
+            <div class="acc-doc res">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">Resolución</span><span class="acc-doc-num">Nº {{ res.numero|default:"S/N" }}</span></div>
+                  <span class="acc-doc-fecha">📅 {{ res.fecha|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  <div><span class="k">Tipo</span><span class="v">{{ res.get_tipo_display|default:"—" }}</span></div>
+                  <div><span class="k">Notificación</span><span class="v">{% if res.notificacion %}<span class="acc-chip-ok">{{ res.notificacion.get_tipo_display }} — {{ res.notificacion.fecha|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div>
+                  {% with docs=res.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+              {% if res.texto %}<div class="acc-resolutiva"><span class="lbl">Resolutiva</span>{{ res.texto }}</div>{% endif %}
+            </div>
+            {% for memo in res.memorandums.all %}
+            <div class="acc-doc memo">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top"><div><span class="acc-tipo-badge" style="background:var(--doc-color);">Memorándum</span><span class="acc-doc-num">Nº {{ memo.numero }}</span></div><span class="acc-doc-fecha">📅 {{ memo.fecha|date:"d/m/Y"|default:"—" }}</span></div>
+                <div class="acc-doc-campos"><div><span class="k">Entrega</span><span class="v">{% if memo.fecha_entrega %}<span class="acc-chip-ok">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Sin entrega</span>{% endif %}</span></div></div>
+              </div></div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+            {% endif %}
+
+            {# — Recursos de Reconsideración — #}
+            {% if grupo.rrs %}
+            <div class="acc-sep">Recursos de Reconsideración</div>
+            {% for rr in grupo.rrs %}
+            <div class="acc-doc rr">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">Reconsideración</span><span class="acc-doc-num">Nº {{ rr.numero|default:"S/N" }}</span></div>
+                  <span class="acc-doc-fecha">📅 {{ rr.fecha|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  <div><span class="k">Tipo</span><span class="v">{{ rr.get_tipo_display|default:"—" }}</span></div>
+                  <div><span class="k">Notificación</span><span class="v">{% if rr.notificacion %}<span class="acc-chip-ok">{{ rr.notificacion.get_tipo_display }} — {{ rr.notificacion.fecha|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div>
+                  {% with docs=rr.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+              {% if rr.texto %}<div class="acc-resolutiva"><span class="lbl">Resolutiva</span>{{ rr.texto }}</div>{% endif %}
+            </div>
+            {% for memo in rr.memorandums.all %}
+            <div class="acc-doc memo">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top"><div><span class="acc-tipo-badge" style="background:var(--doc-color);">Memorándum</span><span class="acc-doc-num">Nº {{ memo.numero }}</span></div><span class="acc-doc-fecha">📅 {{ memo.fecha|date:"d/m/Y"|default:"—" }}</span></div>
+                <div class="acc-doc-campos"><div><span class="k">Entrega</span><span class="v">{% if memo.fecha_entrega %}<span class="acc-chip-ok">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Sin entrega</span>{% endif %}</span></div></div>
+              </div></div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+            {% endif %}
+
+            {# — Autos TPE — #}
+            {% if grupo.autos_tpe %}
+            <div class="acc-sep">Autos TPE</div>
+            {% for auto in grupo.autos_tpe %}
+            <div class="acc-doc auto-tpe">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">Auto TPE</span><span class="acc-doc-num">Nº {{ auto.numero|default:"S/N" }}</span></div>
+                  <span class="acc-doc-fecha">📅 {{ auto.fecha|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  <div><span class="k">Disposición</span><span class="v">{{ auto.get_tipo_display|default:"—" }}</span></div>
+                  <div><span class="k">Notificación</span><span class="v">{% if auto.notificacion %}<span class="acc-chip-ok">{{ auto.notificacion.get_tipo_display }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div>
+                  {% with docs=auto.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+              {% if auto.texto %}<div class="acc-resolutiva"><span class="lbl">Resolutiva</span>{{ auto.texto }}</div>{% endif %}
+            </div>
+            {% for memo in auto.memorandums.all %}
+            <div class="acc-doc memo">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top"><div><span class="acc-tipo-badge" style="background:var(--doc-color);">Memorándum Ejecutoria</span><span class="acc-doc-num">Nº {{ memo.numero }}</span></div><span class="acc-doc-fecha">📅 {{ memo.fecha|date:"d/m/Y"|default:"—" }}</span></div>
+                <div class="acc-doc-campos"><div><span class="k">Entrega</span><span class="v">{% if memo.fecha_entrega %}<span class="acc-chip-ok">{{ memo.fecha_entrega|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div></div>
+              </div></div>
+            </div>
+            {% endfor %}
+            {% endfor %}
+            {% endif %}
+
+          </div>
+        </div>
+
+        {# ── Panel TSP ── #}
+        {% if grupo.has_tsp %}
+        <div class="acc-panel">
+          <div class="acc-panel-head" style="background:#3e3c3b;">⚖️ Actuados TSP</div>
+          <div class="acc-panel-body">
+
+            {% if grupo.apelaciones_tsp %}
+            <div class="acc-sep">Recursos de Apelación al TSP</div>
+            {% for rap in grupo.apelaciones_tsp %}
+            <div class="acc-doc rap">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">Apelación al TSP</span></div>
+                  <span class="acc-doc-fecha">📅 {{ rap.fecha_presentacion|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  {% if rap.numero_oficio %}<div><span class="k">Oficio</span><span class="v">{{ rap.numero_oficio }}</span></div>{% endif %}
+                  {% if rap.fecha_oficio %}<div><span class="k">Fecha Oficio</span><span class="v">{{ rap.fecha_oficio|date:"d/m/Y" }}</span></div>{% endif %}
+                  {% with docs=rap.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if grupo.tsp_raee %}
+            <div class="acc-sep">Recurso de Aclaración, Explicación y Enmienda</div>
+            {% for actuado in grupo.tsp_raee %}
+            <div class="acc-doc raee">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">{{ actuado.get_instancia_display }}</span><span class="acc-doc-num">Nº {{ actuado.numero|default:"S/N" }}</span></div>
+                  <span class="acc-doc-fecha">📅 {{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  {% if actuado.tipo %}<div><span class="k">Tipo</span><span class="v">{{ actuado.get_tipo_display }}</span></div>{% endif %}
+                  <div><span class="k">Notificación</span><span class="v">{% if actuado.notificacion %}<span class="acc-chip-ok">{{ actuado.notificacion.get_tipo_display }} — {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div>
+                  {% with docs=actuado.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+              {% if actuado.texto %}<div class="acc-resolutiva"><span class="lbl">Resolutiva</span>{{ actuado.texto }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if grupo.tsp_nulidad %}
+            <div class="acc-sep">Recurso de Nulidad</div>
+            {% for actuado in grupo.tsp_nulidad %}
+            <div class="acc-doc auto-tsp">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">{{ actuado.get_instancia_display }}</span><span class="acc-doc-num">Nº {{ actuado.numero|default:"S/N" }}</span></div>
+                  <span class="acc-doc-fecha">📅 {{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  {% if actuado.tipo %}<div><span class="k">Tipo</span><span class="v">{{ actuado.get_tipo_display }}</span></div>{% endif %}
+                  <div><span class="k">Notificación</span><span class="v">{% if actuado.notificacion %}<span class="acc-chip-ok">{{ actuado.notificacion.get_tipo_display }} — {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div>
+                  {% with docs=actuado.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+              {% if actuado.texto %}<div class="acc-resolutiva"><span class="lbl">Resolutiva</span>{{ actuado.texto }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if grupo.tsp_auto %}
+            <div class="acc-sep">Autos del TSP</div>
+            {% for actuado in grupo.tsp_auto %}
+            <div class="acc-doc auto-tsp">
+              <div class="acc-doc-stripe"><div class="acc-doc-bar"></div><div class="acc-doc-main">
+                <div class="acc-doc-top">
+                  <div><span class="acc-tipo-badge">{{ actuado.get_instancia_display }}</span><span class="acc-doc-num">Nº {{ actuado.numero|default:"S/N" }}</span></div>
+                  <span class="acc-doc-fecha">📅 {{ actuado.fecha|date:"d/m/Y"|default:"—" }}</span>
+                </div>
+                <div class="acc-doc-campos">
+                  {% if actuado.tipo %}<div><span class="k">Tipo</span><span class="v">{{ actuado.get_tipo_display }}</span></div>{% endif %}
+                  <div><span class="k">Notificación</span><span class="v">{% if actuado.notificacion %}<span class="acc-chip-ok">{{ actuado.notificacion.get_tipo_display }} — {{ actuado.notificacion.fecha|date:"d/m/Y" }}</span>{% else %}<span class="acc-chip-pen">Pendiente</span>{% endif %}</span></div>
+                  {% with docs=actuado.documentos.all %}{% if docs %}<div class="acc-doc-links"><span class="k">Archivo</span><a href="{{ docs.0.archivo.url }}" target="_blank" title="Ver PDF">📥</a></div>{% endif %}{% endwith %}
+                </div>
+              </div></div>
+              {% if actuado.texto %}<div class="acc-resolutiva"><span class="lbl">Resolutiva</span>{{ actuado.texto }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+          </div>
+        </div>
+        {% endif %}
+
+        </div><!-- /acc-panels -->
+
+        {% endif %}{# fin: tiene actuados #}
+      </div><!-- /sim-acc-body -->
+    </div><!-- /sim-accordion -->
+    {% endwith %}
     {% endfor %}
   </div>
   {% endif %}
@@ -1269,5 +1258,21 @@
 {% endif %}
 
 </div>
+
+<script>
+  // Acordeón de sumarios en el resultado de búsqueda
+  function toggleSumAcc(header) {
+    header.classList.toggle('open');
+    header.nextElementSibling.classList.toggle('open');
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var accs = document.querySelectorAll('.sim-acc-header');
+    // Si solo hay un sumario, abrirlo automáticamente
+    if (accs.length === 1) {
+      accs[0].classList.add('open');
+      accs[0].nextElementSibling.classList.add('open');
+    }
+  });
+</script>
 
 {% endblock %}
