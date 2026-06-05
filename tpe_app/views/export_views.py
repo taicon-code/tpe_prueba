@@ -310,6 +310,10 @@ def export_person_historial_pdf(request, personal_id):
         texto_pie = (f"Impreso por: {texto_impreso}   |   "
                      f"{fecha_hoy}  {hora_hoy}   |   Pág. {doc.page}")
         canv.drawCentredString(page_w / 2, 0.33 * inch, texto_pie)
+        canv.setFont('Helvetica-Oblique', 6.5)
+        canv.drawCentredString(
+            page_w / 2, 0.20 * inch,
+            "Reporte de consulta TPE - No reemplaza al documento oficial firmado")
         canv.restoreState()
 
     doc = SimpleDocTemplate(
@@ -789,6 +793,10 @@ def export_sim_pdf(request, sim_id):
         texto_pie = (f"Impreso por: {texto_impreso}   |   "
                      f"{fecha_hoy}  {hora_hoy}   |   Pág. {doc.page}")
         canv.drawCentredString(page_w / 2, 0.33 * inch, texto_pie)
+        canv.setFont('Helvetica-Oblique', 6.5)
+        canv.drawCentredString(
+            page_w / 2, 0.20 * inch,
+            "Reporte de consulta TPE - No reemplaza al documento oficial firmado")
         canv.restoreState()
 
     doc = SimpleDocTemplate(
