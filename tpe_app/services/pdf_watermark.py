@@ -25,16 +25,8 @@ def _marca_diagonal_grande(canvas, text, color, size=72, alpha=0.18):
 
 
 def _aviso_reporte(canvas):
-    """Texto pequeno bottom-center: 'Reporte de consulta - No reemplaza...'."""
-    canvas.saveState()
-    canvas.setFillColor(colors.HexColor('#555555'))
-    canvas.setFont('Helvetica-Oblique', 7)
-    canvas.drawCentredString(
-        canvas._pagesize[0] / 2,
-        22,
-        'Reporte de consulta TPE — No reemplaza al documento oficial firmado',
-    )
-    canvas.restoreState()
+    """Aviso de reporte desactivado."""
+    return
 
 
 def _footer_sha(canvas, sha_corto):
@@ -71,7 +63,7 @@ def hacer_callback(estado='REPORTE', sha_corto='', extra=None):
         elif estado == 'FIRMADO':
             _marca_diagonal_grande(canvas, 'FIRMADO', colors.HexColor('#0a7e2e'))
         elif estado == 'REPORTE':
-            _aviso_reporte(canvas)
+            pass
         # estado vacio: sin marca, solo SHA si lo hay
 
         _footer_sha(canvas, sha_corto)
