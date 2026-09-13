@@ -1295,7 +1295,7 @@ class Resolucion(models.Model):
         verbose_name        = 'Resolución'
         verbose_name_plural = 'Resoluciones'
         ordering            = ['-fecha']
-        unique_together     = [('numero', 'instancia')]
+        unique_together     = [('numero', 'instancia','pm')]
         indexes = [
             models.Index(fields=['instancia']),
             models.Index(fields=['sim', 'instancia']),
